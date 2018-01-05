@@ -19,3 +19,8 @@ import requests as req
 import json
 import pysher
 
+def bitstamp_socket(channel, event, callback):
+    pusher = pysher.Pusher(APP_KEY)
+    pusher.connect()
+    channel = pusher.subscribe(channel)
+    channel.bind(event, callback)
