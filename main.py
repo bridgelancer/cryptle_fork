@@ -26,8 +26,8 @@ def bitstamp_socket(channel, event, callback):
     channel = pusher.subscribe(channel)
     channel.bind(event, callback)
 
-def bitstamp_api(endpoint, callback=None):
-    res = req.get(BITSTAMP_URL + endpoint)
+def bitstamp_api(endpoint, callback=None, params=None):
+    res = req.get(BITSTAMP_URL + endpoint, pararms)
     c = res.status_code
 
     if c != 200:
