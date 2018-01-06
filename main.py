@@ -6,8 +6,9 @@ import numpy as np
 import pandas as pd
 import requests as req
 import json
-import pysher
+import time
 
+import pysher
 import hmac
 import hashlib
 
@@ -37,3 +38,37 @@ def bitstamp_api(endpoint, callback=None, params=None):
         return callback(res)
     else:
         return res
+
+class live_min_price:
+
+    def __init__(self, ticker):
+        self.ticks= []
+        self.ticker = ticker
+        self.volume = 0
+        self.avg = 0
+        self.high = 0
+        self.low = 100000000
+
+    def __str__(self):
+        return self.ticker
+
+    def update(self, price, volume, timestamp=None):
+
+        if self.high < price:
+            self.high = price
+        elif self.low > price:
+            self.low = price
+
+        if timestamp == None:
+            timestamp = time.time()
+
+        new_vol = self.volume + volume
+        self.avg = (self.volume * self.avg + price * volume) / new_vol
+        self.volume = new_vol
+
+        ticks.append((price, volume, timestamp))
+        self.clear()
+
+    def clear(self):
+        i = self.ticks
+        self.ticks = self.ticks[i:]
