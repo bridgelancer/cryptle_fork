@@ -21,12 +21,6 @@ def sign(nonce, customer_id, api_key):
     ).hexdigest().upper()
     return signature
 
-def bitstamp_socket(channel, event, callback):
-    pusher = pysher.Pusher(APP_KEY)
-    pusher.connect()
-    channel = pusher.subscribe(channel)
-    channel.bind(event, callback)
-
 def bitstamp_api(endpoint, callback=None, params=None):
     res = req.get(BITSTAMP_URL + endpoint, pararms)
     c = res.status_code
@@ -40,6 +34,34 @@ def bitstamp_api(endpoint, callback=None, params=None):
         return callback(parsed_res)
     else:
         return parsed_res
+
+class Bitstamp:
+
+    def __init__(self, secret=None)
+        self.secret = secret
+        pusher = pysher.Pusher(APP_KEY)
+        pusher.connect()
+
+    def onTrade(pair, callback):
+        _checkCallback(callback)
+        _bindSocket('live_trades_' + pair, 'trade' callback)
+
+    def onOrderCreate(pair, callback):
+        _checkCallback(callback)
+        _bindSocket('live_orders' + pair, 'order_created', callback)
+
+    def _bindSocket(channel_name, event, callback)
+        if pusher.channel(channel_name):
+            channel = pusher.channel(channel_name)
+        else:
+            channel = pusher.subscribe(channel_name)
+
+        channel.bind(event, callback)
+
+    def _checkCallback(callback):
+        if !callable(callback):
+            raise TypeError("Non-callable argument passed")
+
 
 class PriceWindow:
 
