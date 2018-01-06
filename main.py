@@ -41,16 +41,18 @@ def bitstamp_api(endpoint, callback=None, params=None):
     else:
         return parsed_res
 
-class price_window:
+class PriceWindow:
 
-    def __init__(self, ticker, period):
+    # Period is the number of seconds in the lookback window
+    # Ticker (optional) is meta-info about what series is being tracked
+    def __init__(self, period, ticker=None):
         self.ticks= []
-        self.ticker = ticker
         self.volume = 0
         self.avg = 0
         self.high = 0
         self.low = 100000000000
         self.period = period
+        self.ticker = ticker
 
     def __str__(self):
         return self.ticker
