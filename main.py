@@ -27,7 +27,7 @@ class Bitstamp:
         pusher.connect()
 
     def get(endpoint, callback=None, params=None):
-        url = 'https://www.bitstamp.net/api/v2/'
+        url = 'https://www.bitstamp.net/api/v2'
         res = req.get(url + endpoint, pararms)
         c = res.status_code
 
@@ -36,10 +36,16 @@ class Bitstamp:
 
         parsed_res = json.loads(res.text)
 
-        if callback != None:
-            return callback(parsed_res)
-        else:
+        if callback == None:
             return parsed_res
+        elif _checkCallback(callback):
+            return callback(parsed_res)
+
+    def getTicker(self, pair, callback=None,):
+        return get('/ticker/' + pair, callback)
+
+    def getOrderbook(self, pair, callback=None,):
+        return get('/order_book/' + pair, callback)
 
     def onTrade(pair, callback):
         _checkCallback(callback)
