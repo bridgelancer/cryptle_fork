@@ -10,7 +10,7 @@ import hashlib
 
 class Bitstamp:
 
-    def __init__(self, key=None, secret=None, customer_id=None)
+    def __init__(self, key=None, secret=None, customer_id=None):
         self.key = key
         self.secret = secret
         self.id = customer_id
@@ -41,18 +41,18 @@ class Bitstamp:
         return get('/order_book/' + pair, callback=callback)
 
     def getBalance(self):
-        if !_hasSecret():
-            return get('/balance/', params={'key': })
+        if (not self._hasSecret()):
+            return get('/balance/', params={})
 
     def onTrade(self, pair, callback):
         _isCallback(callback)
-        _bindSocket('live_trades_' + pair, 'trade' callback)
+        _bindSocket('live_trades_' + pair, 'trade', callback)
 
     def onOrderCreate(self, pair, callback):
         _isCallback(callback)
         _bindSocket('live_orders' + pair, 'order_created', callback)
 
-    def _bindSocket(self, channel_name, event, callback)
+    def _bindSocket(self, channel_name, event, callback):
         if pusher.channel(channel_name):
             channel = pusher.channel(channel_name)
         else:
@@ -75,17 +75,17 @@ class Bitstamp:
 
     @staticmethod
     def _isCallback(callback):
-        if !callable(callback):
+        if not callable(callback):
             raise TypeError("Non-callable argument passed")
         return True
 
 
-class PriceWindow:
+class MovingWindow:
 
     # Period is the number of seconds in the lookback window
     # Ticker (optional) is meta-info about what series is being tracked
     def __init__(self, period, ticker=None):
-        self._ticks = []
+        self._ticks = [] # @OPTIMIZE use NumPy arrays
 
         self.avg = 0
         self.volume = 0
@@ -129,6 +129,31 @@ class PriceWindow:
     def low(self):
         return min(self._ticks)
 
+
+class CandleBar:
+
+    # _bars: List of (open, close, high, low)
+    # default bar size is 1 minute
+    # max_lookback is number of bars to store
+    def __init__(self, period=60, max_lookback=100):
+        self._bars = []
+        self._max_lookback = max_lookback
+
+        self.period = period
+        self.last = 0
+
+    def update(self, price, timestamp=None):
+
+        if timestamp == None:
+            timestamp = time.time()
+
+        self.last = price
+
+    def prune():
+        self._bars = self.bars[self.max_lookback:]
+
 if __name__ == '__main__':
-    print('Hello crypto!)
+    print('Hello crypto!')
+    bit = Bitstamp()
+
 
