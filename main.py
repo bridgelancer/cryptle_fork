@@ -41,15 +41,16 @@ def bitstamp_api(endpoint, callback=None, params=None):
     else:
         return parsed_res
 
-class live_min_price:
+class price_window:
 
-    def __init__(self, ticker):
+    def __init__(self, ticker, period):
         self.ticks= []
         self.ticker = ticker
         self.volume = 0
         self.avg = 0
         self.high = 0
-        self.low = 100000000
+        self.low = 100000000000
+        self.period = period
 
     def __str__(self):
         return self.ticker
@@ -72,5 +73,11 @@ class live_min_price:
         self.clear()
 
     def clear(self):
-        i = self.ticks
-        self.ticks = self.ticks[i:]
+        now = time.time()
+        lookback = now - self.period
+
+        for x in self.ticks:
+            if x[2] < lookback:
+                self.ticks.pop(0)
+            else:
+                break
