@@ -129,3 +129,6 @@ class PriceWindow:
     def low(self):
         return min(self._ticks)
 
+if __name__ == '__main__':
+    print('Hello crypto!)
+
