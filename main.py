@@ -47,15 +47,15 @@ class Bitstamp:
     def getOrderbook(self, pair, callback=None,):
         return get('/order_book/' + pair, callback)
 
-    def onTrade(pair, callback):
+    def onTrade(self, pair, callback):
         _isCallback(callback)
         _bindSocket('live_trades_' + pair, 'trade' callback)
 
-    def onOrderCreate(pair, callback):
+    def onOrderCreate(self, pair, callback):
         _isCallback(callback)
         _bindSocket('live_orders' + pair, 'order_created', callback)
 
-    def _bindSocket(channel_name, event, callback)
+    def _bindSocket(self, channel_name, event, callback)
         if pusher.channel(channel_name):
             channel = pusher.channel(channel_name)
         else:
