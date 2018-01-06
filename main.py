@@ -34,10 +34,12 @@ def bitstamp_api(endpoint, callback=None, params=None):
     if c != 200:
         raise ConnectionError('Server returned error ' + str(c))
 
+    parsed_res = json.loads(res.text)
+
     if callback != None:
-        return callback(res)
+        return callback(parsed_res)
     else:
-        return res
+        return parsed_res
 
 class live_min_price:
 
