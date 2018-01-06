@@ -88,6 +88,7 @@ class MovingWindow:
     def __init__(self, period, ticker=None):
         self._ticks = [] # @OPTIMIZE use NumPy arrays
 
+
         self.avg = 0
         self.volume = 0
         self.dollar_volume = 0
@@ -108,7 +109,7 @@ class MovingWindow:
         self.dollar_volume = self.dollar_volume + price * volume
         self.avg = self.dollar_volume / self.volume
 
-        _ticks.append((price, volume, timestamp))
+        self._ticks.append((price, volume, timestamp))
         self.clear()
 
     def clear(self):
@@ -153,9 +154,23 @@ class CandleBar:
     def prune():
         self._bars = self.bars[self.max_lookback:]
 
+five_min = MovingWindow(300, 'eth')
+
+def trade_strategy(tick):
+    tick = json.loads(tick)
+    price = tick['price']
+    volume = tick['amount']
+    timestamp = float(tick['timestamp'])
+
+    print("Some idiot traded ETH")
+
+    five_min.update(price, volume, timestamp)
+    if five_min.avg < price:
+        print("Lets buy that shit: @", price)
+
 def main():
     bs = Bitstamp()
-    bs.onTrade('ethusd', lambda x: print(x))
+    bs.onTrade('ethusd', trade_strategy)
 
     while True:
         time.sleep(1)
