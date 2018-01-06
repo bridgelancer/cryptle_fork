@@ -18,6 +18,9 @@ class Bitstamp:
         api_key = 'de504dc5763aeef9ff52'
         pusher = pysher.Pusher(api_key)
         pusher.connect()
+        time.sleep(2)
+
+        self.pusher = pusher
 
     def get(endpoint, callback=None, params=None):
         url = 'https://www.bitstamp.net/api/v2'
@@ -31,7 +34,7 @@ class Bitstamp:
 
         if callback == None:
             return parsed_res
-        elif _isCallback(callback):
+        elif self._isCallback(callback):
             return callback(parsed_res)
 
     def getTicker(self, pair, callback=None):
@@ -45,20 +48,19 @@ class Bitstamp:
             return get('/balance/', params={})
 
     def onTrade(self, pair, callback):
-        _isCallback(callback)
-        _bindSocket('live_trades_' + pair, 'trade', callback)
+        self._isCallback(callback)
+        self._bindSocket('live_trades_' + pair, 'trade', callback)
 
     def onOrderCreate(self, pair, callback):
-        _isCallback(callback)
-        _bindSocket('live_orders' + pair, 'order_created', callback)
+        self._isCallback(callback)
+        self._bindSocket('live_orders' + pair, 'order_created', callback)
 
     def _bindSocket(self, channel_name, event, callback):
-        if pusher.channel(channel_name):
-            channel = pusher.channel(channel_name)
-        else:
-            channel = pusher.subscribe(channel_name)
-
-        channel.bind(event, callback)
+        try:
+            channel = self.pusher.subscribe(channel_name)
+            channel.bind(event, callback)
+        except:
+            self.pusher.channels[channel_name].bind(event, callback)
 
     def _sign(self, nonce):
         message = nonce + self.id + self.key
@@ -70,8 +72,7 @@ class Bitstamp:
         return signature
 
     def _hasSecret(self):
-
-        return secret != None
+        return self.secret != None
 
     @staticmethod
     def _isCallback(callback):
@@ -152,8 +153,14 @@ class CandleBar:
     def prune():
         self._bars = self.bars[self.max_lookback:]
 
+def main():
+    bs = Bitstamp()
+    bs.onTrade('ethusd', lambda x: print(x))
+
+    while True:
+        time.sleep(1)
+
 if __name__ == '__main__':
     print('Hello crypto!')
-    bit = Bitstamp()
-
+    main()
 
