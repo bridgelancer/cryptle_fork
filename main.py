@@ -1,7 +1,3 @@
-API_SECRET = ''
-API_KEY = 'de504dc5763aeef9ff52'
-BITSTAMP_URL = 'https://www.bitstamp.net/api/v2/'
-
 import numpy as np
 import pandas as pd
 import requests as req
@@ -12,35 +8,38 @@ import pysher
 import hmac
 import hashlib
 
-def sign(nonce, customer_id, api_key):
+def sign(nonce, customer_id, api_key, secret):
     message = nonce + customer_id + api_key
     signature = hmac.new(
-            API_SECRET,
+            secret,
             msg=message.encode('utf-8'),
             digestmod=hashlib.sha256
     ).hexdigest().upper()
     return signature
 
-def bitstamp_api(endpoint, callback=None, params=None):
-    res = req.get(BITSTAMP_URL + endpoint, pararms)
-    c = res.status_code
-
-    if c != 200:
-        raise ConnectionError('Server returned error ' + str(c))
-
-    parsed_res = json.loads(res.text)
-
-    if callback != None:
-        return callback(parsed_res)
-    else:
-        return parsed_res
-
 class Bitstamp:
 
     def __init__(self, secret=None)
         self.secret = secret
-        pusher = pysher.Pusher(APP_KEY)
+
+        api_key = 'de504dc5763aeef9ff52'
+        pusher = pysher.Pusher(api_key)
         pusher.connect()
+
+    def get(endpoint, callback=None, params=None):
+        url = 'https://www.bitstamp.net/api/v2/'
+        res = req.get(url + endpoint, pararms)
+        c = res.status_code
+
+        if c != 200:
+            raise ConnectionError('Server returned error ' + str(c))
+
+        parsed_res = json.loads(res.text)
+
+        if callback != None:
+            return callback(parsed_res)
+        else:
+            return parsed_res
 
     def onTrade(pair, callback):
         _checkCallback(callback)
