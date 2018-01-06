@@ -8,19 +8,12 @@ import pysher
 import hmac
 import hashlib
 
-def sign(nonce, customer_id, api_key, secret):
-    message = nonce + customer_id + api_key
-    signature = hmac.new(
-            secret,
-            msg=message.encode('utf-8'),
-            digestmod=hashlib.sha256
-    ).hexdigest().upper()
-    return signature
-
 class Bitstamp:
 
-    def __init__(self, secret=None)
+    def __init__(self, key=None, secret=None, customer_id=None)
+        self.key = key
         self.secret = secret
+        self.id = customer_id
 
         api_key = 'de504dc5763aeef9ff52'
         pusher = pysher.Pusher(api_key)
@@ -41,11 +34,15 @@ class Bitstamp:
         elif _isCallback(callback):
             return callback(parsed_res)
 
-    def getTicker(self, pair, callback=None,):
-        return get('/ticker/' + pair, callback)
+    def getTicker(self, pair, callback=None):
+        return get('/ticker/' + pair, callback=callback)
 
-    def getOrderbook(self, pair, callback=None,):
-        return get('/order_book/' + pair, callback)
+    def getOrderbook(self, pair, callback=None):
+        return get('/order_book/' + pair, callback=callback)
+
+    def getBalance(self):
+        if !_hasSecret():
+            return get('/balance/', params={'key': })
 
     def onTrade(self, pair, callback):
         _isCallback(callback)
@@ -62,6 +59,19 @@ class Bitstamp:
             channel = pusher.subscribe(channel_name)
 
         channel.bind(event, callback)
+
+    def _sign(self, nonce):
+        message = nonce + self.id + self.key
+        signature = hmac.new(
+                self.secret,
+                msg=message.encode('utf-8'),
+                digestmod=hashlib.sha256
+        ).hexdigest().upper()
+        return signature
+
+    def _hasSecret(self):
+
+        return secret != None
 
     @staticmethod
     def _isCallback(callback):
