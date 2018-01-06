@@ -38,7 +38,7 @@ class Bitstamp:
 
         if callback == None:
             return parsed_res
-        elif _checkCallback(callback):
+        elif _isCallback(callback):
             return callback(parsed_res)
 
     def getTicker(self, pair, callback=None,):
@@ -48,11 +48,11 @@ class Bitstamp:
         return get('/order_book/' + pair, callback)
 
     def onTrade(pair, callback):
-        _checkCallback(callback)
+        _isCallback(callback)
         _bindSocket('live_trades_' + pair, 'trade' callback)
 
     def onOrderCreate(pair, callback):
-        _checkCallback(callback)
+        _isCallback(callback)
         _bindSocket('live_orders' + pair, 'order_created', callback)
 
     def _bindSocket(channel_name, event, callback)
@@ -63,9 +63,11 @@ class Bitstamp:
 
         channel.bind(event, callback)
 
-    def _checkCallback(callback):
+    @staticmethod
+    def _isCallback(callback):
         if !callable(callback):
             raise TypeError("Non-callable argument passed")
+        return True
 
 
 class PriceWindow:
