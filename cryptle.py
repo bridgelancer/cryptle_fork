@@ -14,66 +14,6 @@ from talib import ATR
 # Check ORDER STATUS/OPEN ORDERS?
 # WIll we CANCEL ORDER?
 
-class context:
-    """
-    Initialize parameters.
-    """
-
-    def __init__(self):
-        self.symbols = [
-            'BTC',
-            'XRP',
-            'ETH'
-        ]
-
-        self.required_information = [
-            'keep track or trade', # trading or keeping track the performance #format: keep_track/trade
-            'scale-in stage', #0-4
-            'quantity', #ok only have value when TRADING
-            'avg price', #ok only have value when TRADING
-            'initial entry time',
-            'second entry time',
-            'third entry time',
-            'fourth entry time',
-            'stop loss price',
-            'exit price', #ok
-            'ATR', #ok
-            'unit size', #ok
-            'strat 2 long breakout price', #ok
-            'strat 2 short breakout price', #ok
-        ]
-
-        #creating a Master Table
-        self.MT= pd.DataFrame(data = None, index = context.symbols, columns = context.required_information)
-        self.MT'scale-in stage'] = 0
-
-        #initializations
-        self.latest_trade_orders={}
-        self.latest_stop_orders={}
-
-        # Breakout and exit signals
-        self.strat_one_breakout = 20
-        self.strat_one_exit = 10
-        
-        self.strat_two_breakout = 55
-        self.strat_two_exit = 20
-
-        # Risk
-        self.tradable_capital = context.portfolio.starting_cash
-        self.capital_risk_per_trade = 0.01
-        self.capital_lost_multiplier = 2
-
-        self.market_risk_limit = 4
-        self.stop_loss_in_N = 2
-
-        # Order
-        self.open = 0
-        self.filled = 1
-        self.canceled = 2
-        self.rejected = 3
-
-
-# @ USER TRANSACTIONS - keep track of performance in fixed interval
 
 def compute_breakout_price(context, data):
 # context.prices should be changed to relevant data structure
@@ -90,15 +30,6 @@ def compute_breakout_price(context, data):
             [-context.strat_two_breakout-1:-1]\
             .max()
         
-        context.MT.loc[sym]['strat 1 short breakout price'] = context.prices\
-            .loc[sym, 'low']\
-            [-context.strat_one_breakout-1:-1]\
-            .min()
-        context.MT.loc[sym]['strat 2 short breakout price'] = context.prices\
-            .loc[sym, 'low']\
-            [-context.strat_two_breakout-1:-1]\
-            .min()
-
 def compute_exit_price(context,data):
     """
     Compute Exit Price
@@ -106,14 +37,8 @@ def compute_exit_price(context,data):
     exit_prices[sym]['strat_one_long'] = context.prices.loc[sym, 'low']\
         [-context.strat_one_exit-1:-1].min()
 
-    exit_prices[sym]['strat_one_short'] = context.prices.loc[sym, 'high']\
-        [-context.strat_one_exit-1:-1].max()
-
     exit_prices[sym]['strat_two_long'] = context.prices.loc[sym, 'low']\
         [-context.strat_two_exit-1:-1].min()
-
-    exit_prices[sym]['strat_two_short'] = context.prices.loc[sym, 'high']\
-        [-context.strat_two_exit-1:-1].max()
     
     for sym in context.symbols:
         context.MT['exit price'] = exit_prices[sym]\
@@ -153,13 +78,10 @@ def update_risks(context,data):
 
     tradingMT = context.MT[context.MT['keep track or trade'] == 'trade']
     long_risk_numbers = [x for x in tradingMT['scale-in stage'] if x > 0]
-    short_risk_numbers = [x for x in tradingMT['scale-in stage'] if x < 0]
 
     context.long_risk = sum(long_risk_numbers)
-    context.short_risk = sum(short_risk_numbers)
 
     context.long_quota = context.direction_risk_limit - context.long_risk
-    context.short_quota = context.direction_risk_limit - context. short_risk
 # @Buy limit order
 def detect_entry_signals(context,data):
     """
@@ -184,15 +106,6 @@ def detect_entry_signals(context,data):
                 context.MT[sym]['keep track or trade']= 'trade'
                 context.long_quota -= 1
                 long_or_short = 1
-
-            else if (context.short_quota > 0 and
-                     current_price <= context.MT[sym]['strat 2 short breakout price']):
-                       
-                context.MT[sym]['scale-in stage'] = -1
-                context.MT[sym]['type of breakout'] = 'strat_two_short'
-                context.MT[sym]['keep track or trade']= 'trade'
-                context.short_quota -= 1
-                long_or_short = -1
 
         if long_or_short != 0:
             return True
