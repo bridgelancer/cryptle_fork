@@ -85,12 +85,12 @@ class PriceWindow:
     # Period is the number of seconds in the lookback window
     # Ticker (optional) is meta-info about what series is being tracked
     def __init__(self, period, ticker=None):
-        self.ticks= []
+        self._ticks = []
+
         self.avg = 0
-        self.high = 0
-        self.low = 100000000000
         self.volume = 0
         self.dollar_volume = 0
+
         self.period = period
         self.ticker = ticker
 
@@ -98,20 +98,16 @@ class PriceWindow:
         return self.ticker
 
     def update(self, price, volume, timestamp=None):
-        if self.high < price:
-            self.high = price
-        elif self.low > price:
-            self.low = price
 
         if timestamp == None:
             timestamp = time.time()
 
-        self.latest = price
+        self.last = price
         self.volume = self.volume + volume
         self.dollar_volume = self.dollar_volume + price * volume
         self.avg = self.dollar_volume / self.volume
 
-        ticks.append((price, volume, timestamp))
+        _ticks.append((price, volume, timestamp))
         self.clear()
 
     def clear(self):
@@ -119,11 +115,17 @@ class PriceWindow:
         lookback = now - self.period
 
         while True:
-            if self.ticks[0][2] < lookback:
-                tick = self.ticks.pop(0)
+            if self._ticks[0][2] < lookback:
+                tick = self._ticks.pop(0)
                 self.volume = self.volume - tick[1]
                 self.dollar_volume = self.dollar_volume - tick[0] * tick[1]
                 self.avg = self.dollar_volume / self.volume
             else:
                 break
+
+    def high(self):
+        return max(self._ticks)
+
+    def low(self):
+        return min(self._ticks)
 
