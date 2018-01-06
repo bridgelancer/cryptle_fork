@@ -78,8 +78,8 @@ class PriceWindow:
         now = time.time()
         lookback = now - self.period
 
-        for x in self.ticks:
-            if x[2] < lookback:
+        while True:
+            if self.ticks[0][2] < lookback:
                 self.ticks.pop(0)
             else:
                 break
