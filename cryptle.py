@@ -15,136 +15,46 @@ from talib import ATR
 # WIll we CANCEL ORDER?
 
 
-def compute_breakout_price(context, data):
+def detect_entry_signal(price_window_5, price_window_8):
 # context.prices should be changed to relevant data structure
     """
     Compute high and low for breakout price
     """
-    for sym in context.symbols:
-        context.MT.loc[sym]['strat 1 long breakout price'] = context.prices\
-            .loc[sym, 'high']\
-            [-context.strat_one_breakout-1:-1]\
-            .max()
-        context.MT.loc[sym]['strat 2 long breakout price'] = context.prices\
-            .loc[sym, 'high']\
-            [-context.strat_two_breakout-1:-1]\
-            .max()
+    if price_window_5.avg > price_window_8.avg:
+        #limit buy (maybe market price + 0.3%?)
+        res = request.post('https://www.bitstamp.net/api/v2/buy/xxxxxx/', param = {'key': '', 'signature': '', 'nonce': '', 'amount': '', 'price': price * 1.003, 'limit_price': price * 0.98})
         
-def compute_exit_price(context,data):
+        
+def compute_exit_signal(price_window_5, price_window_8):
     """
-    Compute Exit Price
+    Determine exit signal and place market sell order
     """
-    exit_prices[sym]['strat_one_long'] = context.prices.loc[sym, 'low']\
-        [-context.strat_one_exit-1:-1].min()
+    res = request.post('https://www.bitstamp.net/api/user_transactions/', param = ('key': '', 'signature': '', 'nonce': '', 'limit': ''))
 
-    exit_prices[sym]['strat_two_long'] = context.prices.loc[sym, 'low']\
-        [-context.strat_two_exit-1:-1].min()
-    
-    for sym in context.symbols:
-        context.MT['exit price'] = exit_prices[sym]\
-            [context.MT[sym]['type of breakout']]
-
-def compute_average_true_ranges(context, data):
+    for item in res.json(): # check user transactions
+        order_id = item['order_id'] # this needs to be revised
+        if order_id == id and live_min_price_5.avg < live_min_price_8.avg:
+            #Market sell
+            res = request.post('https://www.bitstamp.net/api/v2/sell/market/xxxxxx/', param = {'key': '', 'signature': '', 'nonce': '', 'amount': ''}) #amount should be equivalent to the amount bought
+            
+# taking time period as 5 currently
+def compute_average_true_ranges(price_window):
     """
     Compute ATR, aka N
     """
-
-    rolling_window = context.strat_one_breakout+1
-    moving_average = context.strat_one_breakout
-
-    for sym in context.symbols:
-        context.MT[sym]['ATR'] = ATR(
-            context.prices.loc[sym, 'high'][-rolling_window:],
-            context.prices.loc[sym, 'low'][-rolling_window:],
-            context.prices.loc[sym, 'close'][-rolling_window:],
-            timeperiod=moving_average
-        )[-1]
+   return ATR(
+        price_window.high, #should be a list with 2 elements instead
+        price_window.low, #should be a list with 2 elements instead
+        price_window.close, #should be a list with 2 elements instead
+        timeperiod= 5
+    )
 
 
-def compute_trade_sizes(context, data):
+def compute_trade_sizes(price_window):
     """
     how many unit equivilants to 1% of equity
     """
-    for sym in context.symbols:
-        dollar_volatility = context.contracts[sym].multiplier\
-            * context.MT[sym]['ATR']
+    dollar_volatility =
+           2 * compute_average_true_ranges(price_window) #multiplier * N
 
-        context.MT[sym]['unit size'] = int(context.tradable_capital/dollar_volatility)
-
-def update_risks(context,data):
-    """
-    Calculate long and short risk and calculate quota for long and short
-    """
-
-    tradingMT = context.MT[context.MT['keep track or trade'] == 'trade']
-    long_risk_numbers = [x for x in tradingMT['scale-in stage'] if x > 0]
-
-    context.long_risk = sum(long_risk_numbers)
-
-    context.long_quota = context.direction_risk_limit - context.long_risk
-# @Buy limit order
-def detect_entry_signals(context,data):
-    """
-    Place limit orders when reach breakout
-    hirachy of entry signals: strat 1 > strat 2 > keep track
-    """
-    for sym in context.symbols:
-
-        if context.MT[sym]['scale-in stage'] != 0:
-            continue
-    
-        long_or_short = 0
-        current_price = data.current(context.cfutures[sym], 'price') #needs to be changed
-
-        #check strat 2 breakout
-        if(true):
-            if (context.long_quota > 0 and
-                current_price >= context.MT[sym]['strat 2 long breakout price']):
-
-                context.MT[sym]['scale-in stage'] = 1
-                context.MT[sym]['type of breakout'] = 'strat_two_long'
-                context.MT[sym]['keep track or trade']= 'trade'
-                context.long_quota -= 1
-                long_or_short = 1
-
-        if long_or_short != 0:
-            return True
-# @Buy limit order / user transactions
-def detect_scaling_signals(context, data):
-    ###
-    #Place limit orders when reach scaling signals
-    ###
-    for sym in context.tradable_symbol:
-        
-        # ABS??
-        if context.MT[sym]['scale-in stage'] == 0 or ABS(context.MT[sym]['scale-in stage']) == 4:
-            continue
-        
-        current_price = data.current(context.cfutures[market], 'price') # needs to be changed
-        long_or_short = 0
-
-        previous_entry_time = retrieve_entry_time(sym, ABS(context.MT[sym]["scale-in stage"]))
-        previous_entry_price = retrieve_entry_price(context, data, sym, previous_entry_time)
-
-        if context.MT[sym]['scale-in stage'] > 0:
-            if current_price - previous_entry_price > 0.5*context.MT[sym]['ATR']:
-
-                long_or_short = 1
-                context.MT[sym]['scale-in stage'] += 1
-
-
-        else if context.MT[sym]['scale-in stage'] < 0:
-            if previous_entry_price - current price > 0.5*context.MT[sym]['ATR']:
-
-                long_or_short = -1
-                context.MT[sym]['scale-in stage'] -= 1
-        #ABS??
-        if long_or_short != 0:
-            entry_time = get_datetime()
-            store_entry_time(sym, ABS(context.MT[sym]['scale-in stage']), entry_time)
-
-            #chnage to HTTPS - BUY LIMIT ORDER
-            return True
-    
-# @Sell market order
-def detect_exit_signals(context, data):
+        return account_balance/dollar_volatility #no account_balance
