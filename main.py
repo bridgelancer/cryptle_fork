@@ -7,6 +7,7 @@ import time
 import pysher
 import hmac
 import hashlib
+import logging
 
 
 class BitstampREST:
@@ -27,8 +28,13 @@ class BitstampREST:
 
 
     def getBalance(self):
+<<<<<<< 8753e500c9e4fd7b5909f5d7ee352292f5ca4f97
         params = self._authParams()
         return self._post('/balance/', params=params)
+=======
+        params = self._authParams() 
+        return _post('/balance/', params=params)
+>>>>>>> Add some stop feature?
 
 
     def getOrderStatus(self, order_id):
@@ -115,8 +121,6 @@ class BitstampREST:
         ).hexdigest().upper()
         return signature
 
-
-
 class BitstampFeed:
 
     def __init__(self):
@@ -160,6 +164,8 @@ class MovingWindow:
 
         self.window = window
         self.ticker = ticker
+
+        self.atr_val = self.atr(8)
 
 
     def __str__(self):
@@ -258,6 +264,7 @@ class CandleBar:
             self.ticks.clear()
 
             self.timestamp_last = timestamp
+            print(self._bars[-1])
 
         self.ticks.append([price, timestamp])
 
@@ -326,6 +333,11 @@ def trade_strategy(tick):
                 print("Lets sell that shit: @", price)
                 portfolio.update()
                 crossover_time = None
+        elif price < price - 2 * five_min.atr_val # stop loss
+            #sell
+            print("Lets sell that shit: @", price)
+            portfolio.update()
+
         else :
             crossover_time = None
 
