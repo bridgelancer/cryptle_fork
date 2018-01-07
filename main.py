@@ -8,6 +8,8 @@ import pysher
 import hmac
 import hashlib
 
+
+
 class Bitstamp:
 
     def __init__(self, key=None, secret=None, customer_id=None):
@@ -21,6 +23,7 @@ class Bitstamp:
         time.sleep(2)
 
         self.pusher = pusher
+
 
     def get(endpoint, callback=None, params=None):
         url = 'https://www.bitstamp.net/api/v2'
@@ -37,23 +40,29 @@ class Bitstamp:
         elif self._isCallback(callback):
             return callback(parsed_res)
 
+
     def getTicker(self, pair, callback=None):
         return get('/ticker/' + pair, callback=callback)
 
+
     def getOrderbook(self, pair, callback=None):
         return get('/order_book/' + pair, callback=callback)
+
 
     def getBalance(self):
         if (not self._hasSecret()):
             return get('/balance/', params={})
 
+
     def onTrade(self, pair, callback):
         self._isCallback(callback)
         self._bindSocket('live_trades_' + pair, 'trade', callback)
 
+
     def onOrderCreate(self, pair, callback):
         self._isCallback(callback)
         self._bindSocket('live_orders' + pair, 'order_created', callback)
+
 
     def _bindSocket(self, channel_name, event, callback):
         try:
@@ -61,6 +70,7 @@ class Bitstamp:
             channel.bind(event, callback)
         except:
             self.pusher.channels[channel_name].bind(event, callback)
+
 
     def _sign(self, nonce):
         message = nonce + self.id + self.key
@@ -71,14 +81,17 @@ class Bitstamp:
         ).hexdigest().upper()
         return signature
 
+
     def _hasSecret(self):
         return self.secret != None
+
 
     @staticmethod
     def _isCallback(callback):
         if not callable(callback):
             raise TypeError("Non-callable argument passed")
         return True
+
 
 
 class MovingWindow:
@@ -95,8 +108,10 @@ class MovingWindow:
         self.window = window
         self.ticker = ticker
 
+
     def __str__(self):
         return self.ticker
+
 
     def update(self, price, volume, timestamp=None):
 
@@ -110,6 +125,7 @@ class MovingWindow:
 
         self._ticks.append((price, volume, timestamp))
         self.clear()
+
 
     def atr(self, period):
         now = time.time()
@@ -128,6 +144,7 @@ class MovingWindow:
 
         return (true_range_prev * (self.window/period- 1) + true_range_this) / (self.window/period)
 
+
     def clear(self):
         now = time.time()
         lookback = now - self.window
@@ -141,11 +158,14 @@ class MovingWindow:
             else:
                 break
 
+
     def high(self):
         return max(self._ticks)
 
+
     def low(self):
         return min(self._ticks)
+
 
 
 class CandleBar:
@@ -160,17 +180,21 @@ class CandleBar:
         self.period = period
         self.last = 0
 
-    def update(self, price, timestamp=None):
 
+    def update(self, price, timestamp=None):
         if timestamp == None:
             timestamp = time.time()
 
         self.last = price
 
+
     def prune():
         self._bars = self.bars[self.max_lookback:]
 
+
+# @HARDCODE @REMOVE
 five_min = MovingWindow(300, 'eth')
+
 
 def trade_strategy(tick):
     tick = json.loads(tick)
@@ -184,12 +208,14 @@ def trade_strategy(tick):
     if five_min.avg < price:
         print("Lets buy that shit: @", price)
 
+
 def main():
     bs = Bitstamp()
     bs.onTrade('ethusd', trade_strategy)
 
     while True:
         time.sleep(1)
+
 
 if __name__ == '__main__':
     print('Hello crypto!')
