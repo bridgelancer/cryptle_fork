@@ -15,6 +15,7 @@ class BitstampREST:
         self.key = key
         self.secret = secret
         self.id = customer_id
+        self.url = 'https://www.bitstamp.net/api/v2'
 
 
     def getTicker(self, pair, callback=None):
@@ -41,8 +42,9 @@ class BitstampREST:
 
 
     def get(endpoint, callback=None, params=None):
-        url = 'https://www.bitstamp.net/api/v2'
-        res = req.get(url + endpoint, pararms)
+        assert params is None or isinstance(params, dict)
+
+        res = req.get(self.url + endpoint, pararms)
         c = res.status_code
 
         if c != 200:
@@ -52,8 +54,10 @@ class BitstampREST:
 
         if callback == None:
             return parsed_res
-        elif self._isCallback(callback):
+        else:
+            assert callable(callback)
             return callback(parsed_res)
+
 
     def _authParams(self):
         nonce = time.time()
@@ -62,6 +66,7 @@ class BitstampREST:
         params['signature'] = self._sign(nonce)
         params['nonce'] = nonce
         return params
+
 
     def _sign(self, nonce):
         message = nonce + self.id + self.key
@@ -85,12 +90,12 @@ class BitstampFeed:
 
 
     def onTrade(self, pair, callback):
-        self._isCallback(callback)
+        assert callable(callback)
         self._bindSocket('live_trades_' + pair, 'trade', callback)
 
 
     def onOrderCreate(self, pair, callback):
-        self._isCallback(callback)
+        assert callable(callback)
         self._bindSocket('live_orders' + pair, 'order_created', callback)
 
 
@@ -98,15 +103,9 @@ class BitstampFeed:
         try:
             channel = self.pusher.subscribe(channel_name)
             channel.bind(event, callback)
+        # @HANDLE Catch proper type of exception
         except:
             self.pusher.channels[channel_name].bind(event, callback)
-
-
-    @staticmethod
-    def _isCallback(callback):
-        if not callable(callback):
-            raise TypeError("Non-callable argument passed")
-        return True
 
 
 
