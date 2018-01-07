@@ -83,17 +83,16 @@ class Bitstamp:
 
 class MovingWindow:
 
-    # Period is the number of seconds in the lookback window
+    # window is the number of seconds in the lookback window
     # Ticker (optional) is meta-info about what series is being tracked
-    def __init__(self, period, ticker=None):
+    def __init__(self, window, ticker=None):
         self._ticks = [] # @OPTIMIZE use NumPy arrays
-
 
         self.avg = 0
         self.volume = 0
         self.dollar_volume = 0
 
-        self.period = period
+        self.window = window
         self.ticker = ticker
 
     def __str__(self):
@@ -112,9 +111,26 @@ class MovingWindow:
         self._ticks.append((price, volume, timestamp))
         self.clear()
 
+    def atr(self, period):
+        now = time.time()
+
+        lookback_1 = now - period
+        lookback_2 = now - 2 * period
+
+        this_minute = [x[0] if x[2] > lookback_1 for x in self._ticks]
+        prev_minute = [x[0] if x[2] < lookback_1 and x[2] > lookback_2 for x in self._ticks]
+
+        bound_high = max(this_minute[0], this_minute[-1])
+        bound_low  = max(this_minute[0], this_minute[-1])
+
+        true_range_this = max(max(this_minute) - bound_low, bound_high - min(this_minute))
+        true_range_prev = max(prev_minute) - min(prev_minute)
+
+        return (true_range_prev * (self.window/period- 1) + true_range_this) / (self.window/period)
+
     def clear(self):
         now = time.time()
-        lookback = now - self.period
+        lookback = now - self.window
 
         while True:
             if self._ticks[0][2] < lookback:
