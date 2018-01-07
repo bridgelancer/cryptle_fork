@@ -1,14 +1,12 @@
-import numpy as np
-import pandas as pd
-import requests as req
-import json
+import logging
 import time
-
-import pysher
+import json
 import hmac
 import hashlib
 import logging
 
+import pysher
+import requests as req
 
 class BitstampREST:
 
