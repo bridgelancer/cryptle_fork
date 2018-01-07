@@ -269,9 +269,11 @@ class CandleBar:
 class Portfolio:
 
     def __init__(self):
-        self.amount = 0
+        self.amount = 0 #current portfolio capital
 
-    #def update() #use to recalculate your liquidity AFTER A TRADE IS REALIZED
+    def update(self): #use to recalculate your liquidity AFTER A TRADE IS REALIZED
+        self.amount = 0 #current portfolio capital  #This need to be changed if we use this program to trade more than one currency
+        return amount
 
 
 # @HARDCODE @REMOVE
@@ -287,7 +289,7 @@ crossover_time = None
 def update_candle(tick):
     tick = json.loads(tick)
     price = tick['price']
-    timestamp = tick['timestamp']
+    timestamp = float(tick['timestamp'])
 
     bar.update(price, timestamp)
 
