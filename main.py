@@ -222,14 +222,7 @@ class MovingWindow:
 
 
 class CandleBar:
-<<<<<<< 37d5edb536a27010b3969a9bf6072e07f6dac772
-
-    timestamp_last = 0
-
-    # _bars: List of (open, close, high, low, minute)
-=======
     # _bars: List of (open, close, high, low, minute) 
->>>>>>> Tested CandleBar class
     # @only recording the stat of the previous minute
     # default bar size is 1 minute
     # max_lookback is number of bars to store
@@ -245,32 +238,11 @@ class CandleBar:
     def update(self, price, timestamp=None):
         now = time.time()
 
-        self.ticks.append([price, timestamp])
-
         if timestamp == None:
             timestamp = time.time()
 
         if (timestamp - self.timestamp_last) >= 60 or (timestamp % self.period)  < (self.timestamp_last % self.period):
             print("Updating...")
-<<<<<<< 37d5edb536a27010b3969a9bf6072e07f6dac772
-
-            ticks = []
-            ticks.append(price, timestamp)
-
-            ticks_last = []
-            for tick in ticks:
-                if tick[1] > (now - now % period) - period:
-                    tick_last.append(tick)
-                tick = []
-
-            self._min = min(item[0] for item in tick_last)
-            self._max = max(item[1] for item in tick_last)
-            self._open = min(item[0] for item in tick_last)
-            self._close = max(item[1] for item in tick_last)
-
-            self._bars.append[self._open, self._close, self._max, self._min, timestamp % self.period]
-
-=======
             
             self._min = min(item[0] for item in self.ticks)
             self._max = max(item[0] for item in self.ticks)
@@ -279,18 +251,18 @@ class CandleBar:
 
             self._bars.append([self._open, self._close, self._max, self._min, int(timestamp/self.period)])
 
->>>>>>> Tested CandleBar class
             self.close = self.last # the last 1 min close is the previous tick price
             self.last = price  # update the current tick prcie
 
             self.ticks.clear()
             
             self.timestamp_last = timestamp
+            
+        self.ticks.append([price, timestamp])
 
 
     def prune(self): #discard the inital entries after 100 periods
         self._bars = self._bars[-self._max_lookback:]
-
 
 
 class Portfolio:
@@ -306,7 +278,7 @@ five_min = MovingWindow(300, 'eth')
 eight_min = MovingWindow(480, 'eth')
 bar = CandleBar()
 
-equity_at_risk: 0.1
+equity_at_risk = 0.1
 timelag_required = 10
 crossover_time = None
 
