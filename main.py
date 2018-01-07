@@ -4,6 +4,7 @@ import requests as req
 import json
 import time
 
+
 import pysher
 import hmac
 import hashlib
@@ -217,7 +218,7 @@ five_min = MovingWindow(300, 'eth')
 eight_min = MovingWindow(480, 'eth')
 equity_at_risk: 0.1
 timelag_required = 10
-crossover_timelag = 0
+crossover_time = None
 
 
 def trade_strategy(tick):
@@ -233,25 +234,26 @@ def trade_strategy(tick):
 
     if #we have not entered the position:
         if five_min.avg > eight_min.avg :
-            crossover_timelag += 1
-            if crossover_timelag == timelag_required:
+            if crossover_time is None:
+                crossover_time = time.time()
+            elif time.time() - crossover_time >= 10: 
                 #buy in
                 print("Lets buy that shit: @", price)
-                crossover_timelag = 0
+                crossover_time = None
         else :
-            crossover_timelag = 0
+            crossover_time = None
     
     else :
-        if five_min.avg > eight_min.avg :
-            crossover_timelag += 1
-
-            if crossover_timelag == timelag_required:
+        if five_min.avg < eight_min.avg :
+            if crossover_time is None:
+                crossover_time = time.time()
+            elif time.time() - crossover_time >= 10:
                 #sell 
                 print("Lets sell that shit: @", price)
-                portfolio.update
-                crossover_timelag = 0
+                portfolio.update()
+                crossover_time = None
         else :
-            crossover_timelag = 0
+            crossover_time = None
 
 
 
