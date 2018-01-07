@@ -186,8 +186,8 @@ class MovingWindow:
         lookback_1 = now - period
         lookback_2 = now - 2 * period
 
-        this_minute = [x[0] if x[2] > lookback_1 for x in self._ticks]
-        prev_minute = [x[0] if x[2] < lookback_1 and x[2] > lookback_2 for x in self._ticks]
+        this_minute = [x[0] for x in self._ticks if x[2] > lookback_1]
+        prev_minute = [x[0] for x in self._ticks if x[2] < lookback_1 and x[2] > lookback_2]
 
         bound_high = max(this_minute[0], this_minute[-1])
         bound_low  = max(this_minute[0], this_minute[-1])
@@ -251,7 +251,7 @@ class CandleBar:
 
             ticks_last = []
             for tick in ticks:
-                if tick[1] > (now - now%period) - period
+                if tick[1] > (now - now % period) - period:
                     tick_last.append(tick)
                 tick = []
 
@@ -309,7 +309,8 @@ def trade_strategy(tick):
     five_min.update(price, volume, timestamp)
     eight_min.update(price, volume, timestamp)
 
-    if #we have not entered the position:
+    # @HARDCODE @TODO
+    if True: #we have not entered the position:
         if five_min.avg > eight_min.avg :
             if crossover_time is None:
                 crossover_time = time.time()
