@@ -222,10 +222,14 @@ class MovingWindow:
 
 
 class CandleBar:
+<<<<<<< 37d5edb536a27010b3969a9bf6072e07f6dac772
 
     timestamp_last = 0
 
     # _bars: List of (open, close, high, low, minute)
+=======
+    # _bars: List of (open, close, high, low, minute) 
+>>>>>>> Tested CandleBar class
     # @only recording the stat of the previous minute
     # default bar size is 1 minute
     # max_lookback is number of bars to store
@@ -235,16 +239,20 @@ class CandleBar:
 
         self.period = period
         self.last = 0
-
+        self.timestamp_last = 0
+        self.ticks = []
 
     def update(self, price, timestamp=None):
         now = time.time()
 
+        self.ticks.append([price, timestamp])
+
         if timestamp == None:
             timestamp = time.time()
 
-        if timestamp - timestamp_last >= 60 or timestamp % period  < timestamp_last % period:
+        if (timestamp - self.timestamp_last) >= 60 or (timestamp % self.period)  < (self.timestamp_last % self.period):
             print("Updating...")
+<<<<<<< 37d5edb536a27010b3969a9bf6072e07f6dac772
 
             ticks = []
             ticks.append(price, timestamp)
@@ -262,13 +270,26 @@ class CandleBar:
 
             self._bars.append[self._open, self._close, self._max, self._min, timestamp % self.period]
 
+=======
+            
+            self._min = min(item[0] for item in self.ticks)
+            self._max = max(item[0] for item in self.ticks)
+            self._open = self.ticks[0][0]
+            self._close = self.ticks[-1][0]
+
+            self._bars.append([self._open, self._close, self._max, self._min, int(timestamp/self.period)])
+
+>>>>>>> Tested CandleBar class
             self.close = self.last # the last 1 min close is the previous tick price
             self.last = price  # update the current tick prcie
 
-            timestamp_last = timestamp
+            self.ticks.clear()
+            
+            self.timestamp_last = timestamp
 
-    def prune(): #discard the entries after 100 trades within one minute
-        self._bars = self._bars[self.max_lookback:]
+
+    def prune(self): #discard the inital entries after 100 periods
+        self._bars = self._bars[-self._max_lookback:]
 
 
 
@@ -293,7 +314,7 @@ crossover_time = None
 def update_candle(tick):
     tick = json.loads(tick)
     price = tick['price']
-    timestamp = float(tick['timestamp'])
+    timestamp = tick['timestamp']
 
     bar.update(price, timestamp)
 
