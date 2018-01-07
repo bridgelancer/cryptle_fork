@@ -9,20 +9,25 @@ import hmac
 import hashlib
 
 
-
-class Bitstamp:
+class BitstampREST:
 
     def __init__(self, key=None, secret=None, customer_id=None):
         self.key = key
         self.secret = secret
         self.id = customer_id
 
-        api_key = 'de504dc5763aeef9ff52'
-        pusher = pysher.Pusher(api_key)
-        pusher.connect()
-        time.sleep(2)
 
-        self.pusher = pusher
+    def getTicker(self, pair, callback=None):
+        return get('/ticker/' + pair, callback=callback)
+
+
+    def getOrderbook(self, pair, callback=None):
+        return get('/order_book/' + pair, callback=callback)
+
+
+    def getBalance(self):
+        if (not self._hasSecret()):
+            return get('/balance/', params={})
 
 
     def get(endpoint, callback=None, params=None):
@@ -41,17 +46,29 @@ class Bitstamp:
             return callback(parsed_res)
 
 
-    def getTicker(self, pair, callback=None):
-        return get('/ticker/' + pair, callback=callback)
+    def _sign(self, nonce):
+        message = nonce + self.id + self.key
+        signature = hmac.new(
+                self.secret,
+                msg=message.encode('utf-8'),
+                digestmod=hashlib.sha256
+        ).hexdigest().upper()
+        return signature
 
 
-    def getOrderbook(self, pair, callback=None):
-        return get('/order_book/' + pair, callback=callback)
+    def _hasSecret(self):
+        return self.secret != None
 
 
-    def getBalance(self):
-        if (not self._hasSecret()):
-            return get('/balance/', params={})
+
+class BitstampFeed:
+
+    def __init__(self):
+        api_key = 'de504dc5763aeef9ff52'
+
+        self.pusher = pysher.Pusher(api_key)
+        self.pusher.connect()
+        time.sleep(2)
 
 
     def onTrade(self, pair, callback):
@@ -70,20 +87,6 @@ class Bitstamp:
             channel.bind(event, callback)
         except:
             self.pusher.channels[channel_name].bind(event, callback)
-
-
-    def _sign(self, nonce):
-        message = nonce + self.id + self.key
-        signature = hmac.new(
-                self.secret,
-                msg=message.encode('utf-8'),
-                digestmod=hashlib.sha256
-        ).hexdigest().upper()
-        return signature
-
-
-    def _hasSecret(self):
-        return self.secret != None
 
 
     @staticmethod
@@ -210,7 +213,7 @@ def trade_strategy(tick):
 
 
 def main():
-    bs = Bitstamp()
+    bs = BitstampFeed()
     bs.onTrade('ethusd', trade_strategy)
 
     while True:
