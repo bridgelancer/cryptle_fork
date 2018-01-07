@@ -8,6 +8,22 @@ import logging
 import pysher
 import requests as req
 
+logger = logging.getLogger('Cryptle')
+logger.setLevel(logging.DEBUG)
+
+fh = logging.FileHandler('cryptle.log')
+fh.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%Y-%m-%d %H:%M:%S [%(levelname)s] %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+
+logger.addHandler(fh)
+logger.addHandler(ch)
+
 class BitstampREST:
 
     def __init__(self, key=None, secret=None, customer_id=None):
@@ -26,13 +42,8 @@ class BitstampREST:
 
 
     def getBalance(self):
-<<<<<<< 8753e500c9e4fd7b5909f5d7ee352292f5ca4f97
         params = self._authParams()
         return self._post('/balance/', params=params)
-=======
-        params = self._authParams() 
-        return _post('/balance/', params=params)
->>>>>>> Add some stop feature?
 
 
     def getOrderStatus(self, order_id):
@@ -276,19 +287,19 @@ class Portfolio:
     def __init__(self):
         self.amount = 0 #current portfolio capital
 
-    def update(self): #use to recalculate your liquidity AFTER A TRADE IS REALIZED
-        self.amount = 0 #current portfolio capital  #This need to be changed if we use this program to trade more than one currency
-        return amount
+    def update(self, amount): #use to recalculate your liquidity AFTER A TRADE IS REALIZED
+        self.amount = amount #current portfolio capital  #This need to be changed if we use this program to trade more than one currency
 
 
 # @HARDCODE @REMOVE
 five_min = MovingWindow(300, 'eth')
 eight_min = MovingWindow(480, 'eth')
 bar = CandleBar()
+port = Portfolio()
 
 equity_at_risk = 0.1
 timelag_required = 10
-crossover_time = None
+prev_crossover_time = None
 
 
 def update_candle(tick):
@@ -305,39 +316,29 @@ def trade_strategy(tick):
     volume = tick['amount']
     timestamp = float(tick['timestamp'])
 
-    print("Some idiot traded ETH")
+    logger.debug('Recieved new tick')
 
     five_min.update(price, volume, timestamp)
     eight_min.update(price, volume, timestamp)
 
-    # @HARDCODE @TODO
-    if True: #we have not entered the position:
-        if five_min.avg > eight_min.avg :
-            if crossover_time is None:
-                crossover_time = time.time()
-            elif time.time() - crossover_time >= 10:
-                #buy in
-                print("Lets buy that shit: @", price)
-                crossover_time = None
-        else :
-            crossover_time = None
+    if port.amount == 0 and five_min.avg > eight_min.avg:
+        if prev_crossover_time is None:
+            prev_crossover_time = time.time()
+        elif time.time() - prev_crossover_time >= 10:
+            logger.debug('Bought ETH @' + str(price))
+            portfolio.update(100)
+            prev_crossover_time = None
 
-    else :
-        if five_min.avg < eight_min.avg :
-            if crossover_time is None:
-                crossover_time = time.time()
-            elif time.time() - crossover_time >= 10:
-                #sell
-                print("Lets sell that shit: @", price)
-                portfolio.update()
-                crossover_time = None
-        elif price < price - 2 * five_min.atr_val # stop loss
-            #sell
-            print("Lets sell that shit: @", price)
-            portfolio.update()
+    elif five_min.avg < eight_min.avg:
+        if prev_crossover_time is None:
+            prev_crossover_time = time.time()
+        elif time.time() - prev_crossover_time >= 10:
+            logger.info('Sold ETH @' + str(price))
+            portfolio.update(0)
+            prev_crossover_time = None
 
-        else :
-            crossover_time = None
+    else:
+        prev_crossover_time = None
 
 
 def main():
