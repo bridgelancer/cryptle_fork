@@ -219,51 +219,54 @@ class MovingWindow:
 
 class CandleBar:
 
-    # _bars: List of (close, high, low) @only recording the stat of the previous minute
+    timestamp_last = 0
+    
+    # _bars: List of (open, close, high, low, minute) 
+    # @only recording the stat of the previous minute
     # default bar size is 1 minute
     # max_lookback is number of bars to store
     def __init__(self, period=60, max_lookback=100):
         self._bars = []
-        self._ticks = []
         self._max_lookback = max_lookback
 
         self.period = period
         self.last = 0
 
 
-<<<<<<< 2bca44775752600dcfcc9e192fefd4f94ae09156
     def update(self, price, timestamp=None):
-=======
         now = time.time()
 
->>>>>>> Coded a draft version of CandleBar class
         if timestamp == None:
             timestamp = time.time()
 
-        self._ticks.append(price, timestamp)
+        if timestamp - timestamp_last >= 60 or timestamp % period  < timestamp_last % period:
+            print("Updating...")
 
-        tick_last = []
-        for tick in self._ticks:
-            if tick[1] > (now - now%period) - 60
-                tick_last.append(tick)
-        
-        self.min = min(item[0] for item in tick_last)
-        self.max = max(item[1] for item in tick_last)
-        self.open = min(item[0] for item in tick_last)
-        self.close = max(item[1] for item in tick_last)
+            ticks = []
+            ticks.append(price, timestamp)
 
-        self._bars.appned[self.open, self.close, self.min, self.max]
-                
-        self.close = self.last # the last 1 min close is the previous tick price
-        self.last = price  # update the current tick prcie
+            ticks_last = []
+            for tick in ticks:
+                if tick[1] > (now - now%period) - period
+                    tick_last.append(tick)
+                tick = []
+            
+            self._min = min(item[0] for item in tick_last)
+            self._max = max(item[1] for item in tick_last)
+            self._open = min(item[0] for item in tick_last)
+            self._close = max(item[1] for item in tick_last)
 
-<<<<<<< 2bca44775752600dcfcc9e192fefd4f94ae09156
+            self._bars.append[self._open, self._close, self._max, self._min, timestamp % self.period]
+                    
+            self.close = self.last # the last 1 min close is the previous tick price
+            self.last = price  # update the current tick prcie
 
-    def prune():
-=======
+            timestamp_last = timestamp
+
     def prune(): #discard the entries after 100 trades within one minute
->>>>>>> Coded a draft version of CandleBar class
-        self._bars = self.bars[self.max_lookback:]
+        self._bars = self._bars[self.max_lookback:]
+
+
 
 class Portfolio:
     
@@ -274,9 +277,20 @@ class Portfolio:
 # @HARDCODE @REMOVE
 five_min = MovingWindow(300, 'eth')
 eight_min = MovingWindow(480, 'eth')
+bar = CandleBar()
+
 equity_at_risk: 0.1
 timelag_required = 10
 crossover_time = None
+
+def update_candle(tick):
+    tick = json.loads(tick)
+    price = tick['price']
+    timestamp = float(tick['timestamp'])
+
+    bar.update(price, timestamp)
+
+    
 
 
 def trade_strategy(tick):
@@ -314,11 +328,10 @@ def trade_strategy(tick):
             crossover_time = None
 
 
-
-
 def main():
     bs = BitstampFeed()
     bs.onTrade('ethusd', trade_strategy)
+    bs.onTrade('ethusd', update_candle)
 
     while True:
         time.sleep(1)
