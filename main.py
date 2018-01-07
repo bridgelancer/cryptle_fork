@@ -138,12 +138,12 @@ class BitstampFeed:
 
 
     def _bindSocket(self, channel_name, event, callback):
-        try:
-            channel = self.pusher.subscribe(channel_name)
-            channel.bind(event, callback)
-        # @HANDLE Catch proper type of exception
-        except:
-            self.pusher.channels[channel_name].bind(event, callback)
+
+        if channel_name not in self.pusher.channels:
+            self.pusher.subscribe(channel_name)
+
+        channel = self.pusher.channels[channel_name]
+        channel.bind(event, callback)
 
 
 
