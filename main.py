@@ -222,8 +222,8 @@ class MovingWindow:
 
 
 class CandleBar:
-    # _bars: List of (open, close, high, low, minute) 
-    # @only recording the stat of the previous minute
+    # _bars: List of (open, close, high, low, nth minute bar) 
+    # This class is for storing the min-by-min bars the minute before the current tick
     # default bar size is 1 minute
     # max_lookback is number of bars to store
     def __init__(self, period=60, max_lookback=100):
@@ -249,15 +249,14 @@ class CandleBar:
             self._open = self.ticks[0][0]
             self._close = self.ticks[-1][0]
 
-            self._bars.append([self._open, self._close, self._max, self._min, int(timestamp/self.period)])
+            self._bars.append([self._open, self._close, self._max, self._min, int(self.timestamp_last/self.period) + 1])
 
-            self.close = self.last # the last 1 min close is the previous tick price
             self.last = price  # update the current tick prcie
 
             self.ticks.clear()
             
             self.timestamp_last = timestamp
-            
+
         self.ticks.append([price, timestamp])
 
 
