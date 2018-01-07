@@ -232,17 +232,19 @@ class CandleBar:
 
         self.period = period
         self.last = 0
-        self.timestamp_last = 0
+        self.timestamp_last = time.time()
         self.ticks = []
 
     def update(self, price, timestamp=None):
-        now = time.time()
 
         if timestamp == None:
             timestamp = time.time()
 
+        # execute the following block if the current trade happens 60s after the last trade OR
+        #                             if the current trade falls in the following 60s window
+        #                                 with the window defined to start at initialization
         if (timestamp - self.timestamp_last) >= 60 or (timestamp % self.period)  < (self.timestamp_last % self.period):
-            print("Updating...")
+            print("Updating candle bar...")
             
             self._min = min(item[0] for item in self.ticks)
             self._max = max(item[0] for item in self.ticks)
