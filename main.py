@@ -102,10 +102,10 @@ class BitstampREST:
     def _authParams(self):
         assert self.secret is not None
 
-        nonce = time.time()
+        nonce = int(time.time())
         params = {}
         params['key'] = self.key
-        params['signature'] = self._sign(nonce)
+        params['signature'] = self._sign(str(nonce))
         params['nonce'] = nonce
         return params
 
@@ -113,7 +113,7 @@ class BitstampREST:
     def _sign(self, nonce):
         message = nonce + self.id + self.key
         signature = hmac.new(
-                self.secret,
+                self.secret.encode('utf-8'),
                 msg=message.encode('utf-8'),
                 digestmod=hashlib.sha256
         ).hexdigest().upper()
