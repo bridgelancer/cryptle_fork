@@ -19,60 +19,60 @@ class BitstampREST:
 
 
     def getTicker(self, pair):
-        return _get('/ticker/' + pair)
+        return self._get('/ticker/' + pair)
 
 
     def getOrderbook(self, pair):
-        return _get('/order_book/' + pair)
+        return self._get('/order_book/' + pair)
 
 
     def getBalance(self):
         params = self._authParams()
-        return _post('/balance/', params=params)
+        return self._post('/balance/', params=params)
 
 
     def getOrderStatus(self, order_id):
         params = self._authParams()
         params['id'] = order_id
-        return _post('/order_status', params=params)
+        return self._post('/order_status', params=params)
 
 
     def limitBuy(self, pair, amount, price):
         params = self._authParams()
         params['amount'] = amount
         params['price'] = price
-        return _post('/buy/' + pair, params=params)
+        return self._post('/buy/' + pair, params=params)
 
 
     def limitSell(self, pair, amount, price):
         params = self._authParams()
         params['amount'] = amount
         params['price'] = price
-        return _post('/sell/' + pair, params=params)
+        return self._post('/sell/' + pair, params=params)
 
 
     def marketBuy(self, pair, amount):
         params = self._authParams()
         params['amount'] = amount
-        return _post('/buy/market/' + pair, params=params)
+        return self._post('/buy/market/' + pair, params=params)
 
 
     def marketSell(self, pair, amount):
         params = self._authParams()
         params['amount'] = amount
-        return _post('/sell/market/' + pair, params=params)
+        return self._post('/sell/market/' + pair, params=params)
 
 
     def cancnelOrder(self, order_id):
         params = self._authParams()
         params['id'] = price
-        return _post('/order_status', params=params)
+        return self._post('/order_status', params=params)
 
 
-    def _get(endpoint, params=None):
+    def _get(self, endpoint, params=None):
         assert params is None or isinstance(params, dict)
 
-        res = req.get(self.url + endpoint, pararms)
+        res = req.get(self.url + endpoint, params)
         c = res.status_code
 
         if c != 200:
@@ -82,10 +82,10 @@ class BitstampREST:
         return parsed_res
 
 
-    def _post(endpoint, params):
+    def _post(self, endpoint, params):
         assert isinstance(params, dict)
 
-        res = req.post(self.url + endpoint, pararms)
+        res = req.post(self.url + endpoint, params)
         c = res.status_code
 
         if c != 200:
@@ -222,7 +222,7 @@ class MovingWindow:
 
 
 class CandleBar:
-    # _bars: List of (open, close, high, low, nth minute bar) 
+    # _bars: List of (open, close, high, low, nth minute bar)
     # This class is for storing the min-by-min bars the minute before the current tick
     # default bar size is 1 minute
     # max_lookback is number of bars to store
@@ -245,7 +245,7 @@ class CandleBar:
         #                                 with the window defined to start at initialization
         if (timestamp - self.timestamp_last) >= 60 or (timestamp % self.period)  < (self.timestamp_last % self.period):
             print("Updating candle bar...")
-            
+
             self._min = min(item[0] for item in self.ticks)
             self._max = max(item[0] for item in self.ticks)
             self._open = self.ticks[0][0]
@@ -256,7 +256,7 @@ class CandleBar:
             self.last = price  # update the current tick prcie
 
             self.ticks.clear()
-            
+
             self.timestamp_last = timestamp
 
         self.ticks.append([price, timestamp])
