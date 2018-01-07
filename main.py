@@ -127,39 +127,6 @@ class BitstampFeed:
         time.sleep(2)
 
 
-    # Consider initializing url for HTTPS API functions
-    self.url = 'https://www.bitstamp.net/api/v2/'
-
-    def postMarketOrder(self, nonce, amount, pair):
-        action = 'buy/market'
-
-        http = self.url + action + pair #where pair should be a string of currency pair (in format of '/btcusd/')
-
-        res = request.post(http, param = {'key': self.key, 'signature': _sign(self, nonce), 'nonce': nonce, 'amount': amount})
-
-    def postLimitOrder(self, nonce, price, amount, limit_price, pair):
-        action = 'buy'
-
-        http = self.url + action + pair #where pair should be a string of currency pair (in format of '/btcusd/')
-
-        res = request.post(http, param = {'key': self.key, 'signature': _sign(self, nonce), 'nonce': nonce, 'price': price, 'amount': amount, 'limit_price': limit_price})
-
-    def postMarketExitOrder(self, nonce, price, amount, pair)
-        action = 'sell'
-
-        http = url + action + pair #where pair should be a string of currency pair (in format of '/btcusd/')
-
-        res = request.post(http, param = {'key': self.key, 'signature': _sign(self, nonce), 'nonce': nonce, 'amount': amount}
-        )
-
-      def postLimitExitOrder(self, nonce, amount, limit_price, pair)
-        action = 'sell/market'
-
-        http = url + action + pair #where pair should be a string of currency pair (in format of '/btcusd/')
-
-        res = request.post(http, param = {'key': self.key, 'signature': _sign(self, nonce), 'nonce': nonce, 'amount': amount, 'limit_price': limit_price}
-        )
-
     def onTrade(self, pair, callback):
         assert callable(callback)
         self._bindSocket('live_trades_' + pair, 'trade', callback)
@@ -307,8 +274,10 @@ class CandleBar:
 
 class Portfolio:
 
-    def amount() # how much portfolio I have rn
-    def update() #use to recalculate your liquidity AFTER A TRADE IS REALIZED
+    def __init__(self):
+        self.amount = 0
+
+    #def update() #use to recalculate your liquidity AFTER A TRADE IS REALIZED
 
 
 # @HARDCODE @REMOVE
@@ -319,6 +288,7 @@ bar = CandleBar()
 equity_at_risk: 0.1
 timelag_required = 10
 crossover_time = None
+
 
 def update_candle(tick):
     tick = json.loads(tick)
