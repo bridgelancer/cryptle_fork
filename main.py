@@ -194,9 +194,18 @@ class CandleBar:
     def prune():
         self._bars = self.bars[self.max_lookback:]
 
+class Portfolio:
+    
+    def amount() # how much portfolio I have rn
+    def update() #use to recalculate your liquidity AFTER A TRADE IS REALIZED
+
 
 # @HARDCODE @REMOVE
 five_min = MovingWindow(300, 'eth')
+eight_min = MovingWindow(480, 'eth')
+equity_at_risk: 0.1
+timelag_required = 10
+crossover_timelag = 0
 
 
 def trade_strategy(tick):
@@ -208,8 +217,31 @@ def trade_strategy(tick):
     print("Some idiot traded ETH")
 
     five_min.update(price, volume, timestamp)
-    if five_min.avg < price:
-        print("Lets buy that shit: @", price)
+    eight_min.update(price, volume, timestamp)
+
+    if #we have not entered the position:
+        if five_min.avg > eight_min.avg :
+            crossover_timelag += 1
+            if crossover_timelag == timelag_required:
+                #buy in
+                print("Lets buy that shit: @", price)
+                crossover_timelag = 0
+        else :
+            crossover_timelag = 0
+    
+    else :
+        if five_min.avg > eight_min.avg :
+            crossover_timelag += 1
+
+            if crossover_timelag == timelag_required:
+                #sell 
+                print("Lets sell that shit: @", price)
+                portfolio.update
+                crossover_timelag = 0
+        else :
+            crossover_timelag = 0
+
+
 
 
 def main():
