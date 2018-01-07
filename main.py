@@ -17,7 +17,7 @@ fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
 
-formatter = logging.Formatter('%Y-%m-%d %H:%M:%S [%(levelname)s] %(message)s')
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H-%M-%S')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 
@@ -174,8 +174,6 @@ class MovingWindow:
         self.window = window
         self.ticker = ticker
 
-        self.atr_val = self.atr(8)
-
 
     def __str__(self):
         return self.ticker
@@ -316,8 +314,6 @@ def trade_strategy(tick):
     volume = tick['amount']
     timestamp = float(tick['timestamp'])
 
-    logger.debug('Recieved new tick')
-
     five_min.update(price, volume, timestamp)
     eight_min.update(price, volume, timestamp)
 
@@ -343,6 +339,7 @@ def trade_strategy(tick):
 
 def main():
     bs = BitstampFeed()
+    bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
     bs.onTrade('ethusd', trade_strategy)
     bs.onTrade('ethusd', update_candle)
 
