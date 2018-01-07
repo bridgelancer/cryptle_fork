@@ -26,8 +26,18 @@ class BitstampREST:
 
 
     def getBalance(self):
-        if (not self._hasSecret()):
-            return get('/balance/', params={})
+        assert self.secret is not None
+
+        params = self._authParams()
+        return get('/balance/', params=params)
+
+
+    def getOrderStatus(self, order_id):
+        assert self.secret is not None
+
+        params = self._authParams()
+        params['id'] = order_id
+        return get('/order_status', params=params)
 
 
     def get(endpoint, callback=None, params=None):
@@ -45,6 +55,13 @@ class BitstampREST:
         elif self._isCallback(callback):
             return callback(parsed_res)
 
+    def _authParams(self):
+        nonce = time.time()
+        params = {}
+        params['key'] = self.key
+        params['signature'] = self._sign(nonce)
+        params['nonce'] = nonce
+        return params
 
     def _sign(self, nonce):
         message = nonce + self.id + self.key
@@ -54,10 +71,6 @@ class BitstampREST:
                 digestmod=hashlib.sha256
         ).hexdigest().upper()
         return signature
-
-
-    def _hasSecret(self):
-        return self.secret != None
 
 
 
