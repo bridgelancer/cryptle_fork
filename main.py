@@ -90,6 +90,39 @@ class BitstampFeed:
         time.sleep(2)
 
 
+    # Consider initializing url for HTTPS API functions
+    self.url = 'https://www.bitstamp.net/api/v2/'
+
+    def postMarketOrder(self, nonce, amount, pair):
+        action = 'buy/market'
+
+        http = self.url + action + pair #where pair should be a string of currency pair (in format of '/btcusd/')
+
+        res = request.post(http, param = {'key': self.key, 'signature': _sign(self, nonce), 'nonce': nonce, 'amount': amount})
+
+    def postLimitOrder(self, nonce, price, amount, limit_price, pair):
+        action = 'buy'
+
+        http = self.url + action + pair #where pair should be a string of currency pair (in format of '/btcusd/')
+
+        res = request.post(http, param = {'key': self.key, 'signature': _sign(self, nonce), 'nonce': nonce, 'price': price, 'amount': amount, 'limit_price': limit_price})
+
+    def postMarketExitOrder(self, nonce, price, amount, pair)
+        action = 'sell'
+
+        http = url + action + pair #where pair should be a string of currency pair (in format of '/btcusd/')
+
+        res = request.post(http, param = {'key': self.key, 'signature': _sign(self, nonce), 'nonce': nonce, 'amount': amount}
+        )
+
+      def postLimitExitOrder(self, nonce, amount, limit_price, pair)
+        action = 'sell/market'
+
+        http = url + action + pair #where pair should be a string of currency pair (in format of '/btcusd/')
+
+        res = request.post(http, param = {'key': self.key, 'signature': _sign(self, nonce), 'nonce': nonce, 'amount': amount, 'limit_price': limit_price}
+        )
+
     def onTrade(self, pair, callback):
         assert callable(callback)
         self._bindSocket('live_trades_' + pair, 'trade', callback)
@@ -186,25 +219,50 @@ class MovingWindow:
 
 class CandleBar:
 
-    # _bars: List of (open, close, high, low)
+    # _bars: List of (close, high, low) @only recording the stat of the previous minute
     # default bar size is 1 minute
     # max_lookback is number of bars to store
     def __init__(self, period=60, max_lookback=100):
         self._bars = []
+        self._ticks = []
         self._max_lookback = max_lookback
 
         self.period = period
         self.last = 0
 
 
+<<<<<<< 2bca44775752600dcfcc9e192fefd4f94ae09156
     def update(self, price, timestamp=None):
+=======
+        now = time.time()
+
+>>>>>>> Coded a draft version of CandleBar class
         if timestamp == None:
             timestamp = time.time()
 
-        self.last = price
+        self._ticks.append(price, timestamp)
 
+        tick_last = []
+        for tick in self._ticks:
+            if tick[1] > (now - now%period) - 60
+                tick_last.append(tick)
+        
+        self.min = min(item[0] for item in tick_last)
+        self.max = max(item[1] for item in tick_last)
+        self.open = min(item[0] for item in tick_last)
+        self.close = max(item[1] for item in tick_last)
+
+        self._bars.appned[self.open, self.close, self.min, self.max]
+                
+        self.close = self.last # the last 1 min close is the previous tick price
+        self.last = price  # update the current tick prcie
+
+<<<<<<< 2bca44775752600dcfcc9e192fefd4f94ae09156
 
     def prune():
+=======
+    def prune(): #discard the entries after 100 trades within one minute
+>>>>>>> Coded a draft version of CandleBar class
         self._bars = self.bars[self.max_lookback:]
 
 class Portfolio:
