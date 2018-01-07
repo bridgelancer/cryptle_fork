@@ -8,6 +8,7 @@ import logging
 import pysher
 import requests as req
 
+
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
@@ -23,6 +24,7 @@ ch.setFormatter(formatter)
 
 logger.addHandler(fh)
 logger.addHandler(ch)
+
 
 class BitstampREST:
 
@@ -293,11 +295,7 @@ class Portfolio:
 five_min = MovingWindow(300, 'eth')
 eight_min = MovingWindow(480, 'eth')
 bar = CandleBar()
-port = Portfolio()
-
-equity_at_risk = 0.1
-timelag_required = 10
-prev_crossover_time = None
+portfolio = Portfolio()
 
 
 def update_candle(tick):
@@ -317,11 +315,13 @@ def trade_strategy(tick):
     five_min.update(price, volume, timestamp)
     eight_min.update(price, volume, timestamp)
 
-    if port.amount == 0 and five_min.avg > eight_min.avg:
+    prev_crossover_time = trade_strategy.prev_crossover_time
+
+    if portfolio.amount == 0 and five_min.avg > eight_min.avg:
         if prev_crossover_time is None:
             prev_crossover_time = time.time()
         elif time.time() - prev_crossover_time >= 10:
-            logger.debug('Bought ETH @' + str(price))
+            logger.info('Bought XRP @' + str(price))
             portfolio.update(100)
             prev_crossover_time = None
 
@@ -329,19 +329,24 @@ def trade_strategy(tick):
         if prev_crossover_time is None:
             prev_crossover_time = time.time()
         elif time.time() - prev_crossover_time >= 10:
-            logger.info('Sold ETH @' + str(price))
+            logger.info('Sold XRP @' + str(price))
             portfolio.update(0)
             prev_crossover_time = None
 
     else:
         prev_crossover_time = None
 
+    trade_strategy.prev_crossover_time = prev_crossover_time
+
+trade_strategy.prev_crossover_time = None
+trade_strategy.equity_at_risk = 0.1
+trade_strategy.timelag_required = 10
+
 
 def main():
     bs = BitstampFeed()
     bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
     bs.onTrade('ethusd', trade_strategy)
-    bs.onTrade('ethusd', update_candle)
 
     while True:
         time.sleep(1)
