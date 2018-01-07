@@ -4,7 +4,6 @@ import requests as req
 import json
 import time
 
-
 import pysher
 import hmac
 import hashlib
@@ -19,30 +18,58 @@ class BitstampREST:
         self.url = 'https://www.bitstamp.net/api/v2'
 
 
-    def getTicker(self, pair, callback=None):
-        return get('/ticker/' + pair, callback=callback)
+    def getTicker(self, pair):
+        return _get('/ticker/' + pair)
 
 
-    def getOrderbook(self, pair, callback=None):
-        return get('/order_book/' + pair, callback=callback)
+    def getOrderbook(self, pair):
+        return _get('/order_book/' + pair)
 
 
     def getBalance(self):
-        assert self.secret is not None
-
         params = self._authParams()
-        return get('/balance/', params=params)
+        return _post('/balance/', params=params)
 
 
     def getOrderStatus(self, order_id):
-        assert self.secret is not None
-
         params = self._authParams()
         params['id'] = order_id
-        return get('/order_status', params=params)
+        return _post('/order_status', params=params)
 
 
-    def get(endpoint, callback=None, params=None):
+    def limitBuy(self, pair, amount, price):
+        params = self._authParams()
+        params['amount'] = amount
+        params['price'] = price
+        return _post('/buy/' + pair, params=params)
+
+
+    def limitSell(self, pair, amount, price):
+        params = self._authParams()
+        params['amount'] = amount
+        params['price'] = price
+        return _post('/sell/' + pair, params=params)
+
+
+    def marketBuy(self, pair, amount):
+        params = self._authParams()
+        params['amount'] = amount
+        return _post('/buy/market/' + pair, params=params)
+
+
+    def marketSell(self, pair, amount):
+        params = self._authParams()
+        params['amount'] = amount
+        return _post('/sell/market/' + pair, params=params)
+
+
+    def cancnelOrder(self, order_id):
+        params = self._authParams()
+        params['id'] = price
+        return _post('/order_status', params=params)
+
+
+    def _get(endpoint, params=None):
         assert params is None or isinstance(params, dict)
 
         res = req.get(self.url + endpoint, pararms)
@@ -52,15 +79,25 @@ class BitstampREST:
             raise ConnectionError('Server returned error ' + str(c))
 
         parsed_res = json.loads(res.text)
+        return parsed_res
 
-        if callback == None:
-            return parsed_res
-        else:
-            assert callable(callback)
-            return callback(parsed_res)
+
+    def _post(endpoint, params):
+        assert isinstance(params, dict)
+
+        res = req.post(self.url + endpoint, pararms)
+        c = res.status_code
+
+        if c != 200:
+            raise ConnectionError('Server returned error ' + str(c))
+
+        parsed_res = json.loads(res.text)
+        return parsed_res
 
 
     def _authParams(self):
+        assert self.secret is not None
+
         nonce = time.time()
         params = {}
         params['key'] = self.key
@@ -220,8 +257,8 @@ class MovingWindow:
 class CandleBar:
 
     timestamp_last = 0
-    
-    # _bars: List of (open, close, high, low, minute) 
+
+    # _bars: List of (open, close, high, low, minute)
     # @only recording the stat of the previous minute
     # default bar size is 1 minute
     # max_lookback is number of bars to store
@@ -250,14 +287,14 @@ class CandleBar:
                 if tick[1] > (now - now%period) - period
                     tick_last.append(tick)
                 tick = []
-            
+
             self._min = min(item[0] for item in tick_last)
             self._max = max(item[1] for item in tick_last)
             self._open = min(item[0] for item in tick_last)
             self._close = max(item[1] for item in tick_last)
 
             self._bars.append[self._open, self._close, self._max, self._min, timestamp % self.period]
-                    
+
             self.close = self.last # the last 1 min close is the previous tick price
             self.last = price  # update the current tick prcie
 
@@ -269,7 +306,7 @@ class CandleBar:
 
 
 class Portfolio:
-    
+
     def amount() # how much portfolio I have rn
     def update() #use to recalculate your liquidity AFTER A TRADE IS REALIZED
 
@@ -290,8 +327,6 @@ def update_candle(tick):
 
     bar.update(price, timestamp)
 
-    
-
 
 def trade_strategy(tick):
     tick = json.loads(tick)
@@ -308,19 +343,19 @@ def trade_strategy(tick):
         if five_min.avg > eight_min.avg :
             if crossover_time is None:
                 crossover_time = time.time()
-            elif time.time() - crossover_time >= 10: 
+            elif time.time() - crossover_time >= 10:
                 #buy in
                 print("Lets buy that shit: @", price)
                 crossover_time = None
         else :
             crossover_time = None
-    
+
     else :
         if five_min.avg < eight_min.avg :
             if crossover_time is None:
                 crossover_time = time.time()
             elif time.time() - crossover_time >= 10:
-                #sell 
+                #sell
                 print("Lets sell that shit: @", price)
                 portfolio.update()
                 crossover_time = None
