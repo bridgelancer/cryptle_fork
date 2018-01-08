@@ -288,6 +288,29 @@ class Portfolio:
         self.balance = starting_balance
 
 
+    def deposit(self, pair, amount):
+        try:
+            self.balance[pair] += amount
+        except KeyError:
+            self.balance[pair] = amount
+
+
+    def withdraw(self, pair, amount):
+        try:
+            self.balance[pair] -= amount
+        except KeyError:
+            raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
+
+
+    def clear(self, pair):
+        self.balance[pair] = 0
+
+
+    def clearAll(self, pair):
+        self.balance = {}
+
+
+
 class Strategy:
 
     # @TODO @CONSIDER Should a portfolio be passed to
@@ -433,7 +456,7 @@ class Strategy:
         assert isinstance(amount, int)
         assert isinstance(message, str)
         logger.info('Buy  ' + self.pair.upper() + '@' + str(price) + ' ' + message)
-        self.portfolio.balance[self.pair] += amount
+        self.portfolio.deposit(pair, amount)
         self.portfolio.cash = 0
 
 
@@ -441,7 +464,7 @@ class Strategy:
         assert isinstance(amount, int)
         assert isinstance(message, str)
         logger.info('Sell ' + self.pair.upper() + '@' + str(price) + ' ' + message)
-        self.portfolio.balance[self.pair] -= amount
+        self.portfolio.withdraw(pair, amount)
         self.portfolio.cash = 100
 
     def test(self, tick):
