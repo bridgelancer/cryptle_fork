@@ -232,6 +232,7 @@ class CandleBar:
         self.ticks = []
 
         self.ls = []
+        self.atr_val = 0
 
     def update(self, price, timestamp=None):
 
@@ -273,10 +274,10 @@ class CandleBar:
     
     def get_atr(self):
     
-    if (self._bars > period):
-        return self.atr_val
-    else
-        raise RuntimeWarning("ATR not yet available")
+        if (self._bars > period):
+            return self.atr_val
+        else:
+            raise RuntimeWarning("ATR not yet available")
 
     def prune(self, lookback): #discard the inital entries after 100 periods
         self._bars = self._bars[-lookback:]
@@ -420,14 +421,14 @@ class Strategy:
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
-        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg and self.five_min.avg < price - self.atr_shift * self.five_min.atr(60):
+        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg and self.five_min.avg < price - self.atr_shift * self.bar.get_atr():
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
                     self.buy(1, '[ATR strat]', price)
                     prev_crossover_time = None
 
-        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg or min(self.five_min.avg, self.eight_min.avg) > price + self.atr_shift * self.five_min.atr(60):
+        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg or min(self.five_min.avg, self.eight_min.avg) > price + self.atr_shift * self.bar.get_atr():
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
