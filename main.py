@@ -257,7 +257,7 @@ class CandleBar:
 
             if not len(self._bars) == 0:
                 logger.debug(self._bars[-1])
-            
+
             self.compute_atr(5)
 
         self.ticks.append([price, timestamp])
@@ -271,10 +271,11 @@ class CandleBar:
             self.ls.clear()
             TR = self._bars[-1][2] - self._bars[-1][3]
             self.atr_val = (self.atr_var * (period - 1) + TR) / period
-    
+
     def get_atr(self):
-    
-        if (self._bars > period):
+
+        #@HARDCOD
+        if (len(self._bars) > 5):
             return self.atr_val
         else:
             raise RuntimeWarning("ATR not yet available")
@@ -525,7 +526,6 @@ def main():
     bs.onTrade('ethusd', old)
     bs.onTrade('ethusd', rf)
     bs.onTrade('ethusd', atr)
-    bs.onTrade('ethusd', test)
 
     while True:
         time.sleep(1)
