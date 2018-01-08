@@ -306,7 +306,23 @@ class Strategy:
         self.equity_at_risk = 0.1
         self.timelag_required = 10
 
-    def trade_strategy(self, tick):
+        self.isLastTradeWin = True
+        self.isRapidFire = False
+        self.prev_sell_time = None
+        self.prev_tick_price = None
+    
+    def update_candle(self, tick):
+        tick = json.loads(tick)
+        price = tick['price']
+        timestamp = float(tick['timestamp'])
+
+        self.bar.update(price, timestamp)
+
+    # wrap trade_strategy to strategy class
+
+    def trade_strategy_mod(self, tick):
+        prev_tick_price = self.prev_tick_price
+
         tick = json.loads(tick)
         price = tick['price']
         volume = tick['amount']
@@ -316,27 +332,68 @@ class Strategy:
         self.eight_min.update(price, volume, timestamp)
 
         prev_crossover_time = self.prev_crossover_time
+        prev_sell_time = self.prev_sell_time
 
         if self.portfolio.balance[self.pair] == 0 and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= 10:
-                logger.info('Bought XRP @' + str(price))
-                self.portfolio.amount = 00
-                prev_crossover_time = None
+                prev_tick_price = price
+
+            elif time.time() - prev_crossover_time >= 30:
+                if time.time() - prev_sell_time >= 120 or price >= 1.0075 * prev_tick_price:
+                    logger.info('Modified strategy: Bought XRP @' + str(price))
+                    self.portfolio.update(100)
+                    prev_crossover_time = None
+                    prev_tick_price = None
 
         elif self.portfolio.balance[self.pair] > 0 and self.five_min.avg < self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= 10:
-                logger.info('Sold XRP @' + str(price))
-                self.portfolio.amount = 0
+            elif time.time() - prev_crossover_time >= 5:
+                logger.info('Modified strategy: Sold XRP @' + str(price))
+                self.portfolio.update(0)
                 prev_crossover_time = None
-
+                prev_sell_time = time.time()
         else:
             prev_crossover_time = None
 
         self.prev_crossover_time = prev_crossover_time
+        self.prev_sell_time = prev_sell_time
+
+    def trade_strategy_original(self, tick):
+        tick = json.loads(tick)
+        price = tick['price']
+        volume = tick['amount']
+        timestamp = float(tick['timestamp'])
+
+        self.five_min.update(price, volume, timestamp)
+        self.eight_min.update(price, volume, timestamp)
+
+        prev_crossover_time = self.prev_crossover_time
+        prev_sell_time = self.prev_sell_time
+
+        if self.portfolio.amount == 0 and self.five_min.avg > self.eight_min.avg:
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= 30:
+                if time.time() - prev_sell_time >= 90:
+                    logger.info('Original strategy: Bought XRP @' + str(price))
+                    self.portfolio.update(100)
+                    prev_crossover_time = None
+
+        elif self.five_min.avg < self.eight_min.avg:
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= 5:
+                logger.info('Original strategy: Sold XRP @' + str(price))
+                self.portfolio.update(0)
+                prev_crossover_time = None
+                prev_sell_time = time.time()
+        else:
+            prev_crossover_time = None
+
+        self.prev_crossover_time = prev_crossover_time
+        self.prev_sell_time = prev_sell_time
 
 
 def update_candle(bar, tick):
@@ -353,8 +410,9 @@ def main():
     eth_strat = Strategy('ethusd')
 
     bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
-    bs.onTrade('ethusd', lambda x: update_candle(bar, x))
-    bs.onTrade('ethusd', eth_strat.trade_strategy)
+    bs.onTrade('ethusd', eth_strat.update_candle)
+    bs.onTrade('ethusd', eth_strat.trade_strategy_original)
+    bs.onTrade('ethusd', eth_strat.trade_strategy_mod)
 
     while True:
         time.sleep(1)
