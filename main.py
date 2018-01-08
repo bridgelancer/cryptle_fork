@@ -1,3 +1,4 @@
+import sys
 import logging
 import time
 import json
@@ -289,9 +290,13 @@ class CandleBar:
 
 class Portfolio:
 
-    def __init__(self, starting_cash, starting_balance={}):
+    def __init__(self, starting_cash, starting_balance=None):
         self.cash = starting_cash
-        self.balance = starting_balance
+        if starting_balance is None:
+            self.balance = {}
+        else:
+            self.balance = starting_balance
+
 
 
     def deposit(self, pair, amount):
@@ -526,21 +531,21 @@ def update_candle(bar, tick):
     bar.update(price, timestamp)
 
 
-def main():
+def main(pair='ethusd'):
     bs = BitstampFeed()
 
     port1 = Portfolio(100)
     port2 = Portfolio(100)
     port3 = Portfolio(100)
 
-    old  = Strat('ethusd', port1)
-    rf   = RFStrat('ethusd', port2)
-    atr  = ATRStrat('ethusd', port3)
+    old  = Strat(pair, port1)
+    rf   = RFStrat(pair, port2)
+    atr  = ATRStrat(pair, port3)
 
-    bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
-    bs.onTrade('ethusd', old)
-    bs.onTrade('ethusd', rf)
-    bs.onTrade('ethusd', atr)
+    bs.onTrade(pair, lambda x: logger.debug('Recieved new tick'))
+    bs.onTrade(pair, old)
+    bs.onTrade(pair, rf)
+    bs.onTrade(pair, atr)
 
     while True:
         logger.debug('Old Cash: ' + str(port1.cash))
@@ -554,5 +559,8 @@ def main():
 
 if __name__ == '__main__':
     print('Hello crypto!')
-    main()
+    try:
+        main(sys.argv[1])
+    except:
+        main()
 
