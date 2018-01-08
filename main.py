@@ -349,6 +349,7 @@ class Strategy:
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
 
+
     def trade_strategy_original(self, tick):
         tick = json.loads(tick)
         price = tick['price']
@@ -420,6 +421,7 @@ class Strategy:
         except:
             return False
 
+
     def hasCash(self):
         return self.portfolio.cash > 0
 
@@ -442,6 +444,14 @@ class Strategy:
         self.portfolio.balance[self.pair] -= amount
         self.portfolio.cash = 100
 
+    def test(self, tick):
+        tick = json.loads(tick)
+        price = tick['price']
+        volume = tick['amount']
+        timestamp = float(tick['timestamp'])
+
+        self.buy(1, 'Testing Buy', price)
+        self.sell(1, 'Testing Sell', price)
 
 
 def update_candle(bar, tick):
@@ -454,14 +464,19 @@ def update_candle(bar, tick):
 
 def main():
     bs = BitstampFeed()
+
     port1 = Portfolio(100)
     port2 = Portfolio(100)
     port3 = Portfolio(100)
+    port4 = Portfolio(100)
+
     eth_strat_new = Strategy('ethusd', port1)
     eth_strat_old = Strategy('ethusd', port2)
     eth_strat_rf  = Strategy('ethusd', port3)
+    eth_strat_test  = Strategy('ethusd', port3)
 
     bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
+    bs.onTrade('ethusd', eth_strat_test.test)
     bs.onTrade('ethusd', eth_strat_new.trade_strategy_atr)
     bs.onTrade('ethusd', eth_strat_old.trade_strategy_original)
     bs.onTrade('ethusd', eth_strat_rf.trade_strategy_rf)
