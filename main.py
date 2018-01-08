@@ -263,8 +263,6 @@ class CandleBar:
         #                                 with the window defined to start at initialization
         if (timestamp - self.timestamp_last) >= self.period or (timestamp % self.period)  < (self.timestamp_last % self.period):
 
-            print("Testing candle")
-
             logger.debug("Updating candle bar...")
 
             self._min = min(item[0] for item in self.ticks)
@@ -278,7 +276,6 @@ class CandleBar:
             self.ticks.clear()
             self.timestamp_last = timestamp
 
-            print(self._bars[-1])
             if not len(self._bars) == 0:
                 logger.debug(self._bars[-1])
 
@@ -291,12 +288,9 @@ class CandleBar:
 
 class Portfolio:
 
-    def __init__(self):
-        self.amount = 0 #current portfolio capital
-
-    def update(self, amount): #use to recalculate your liquidity AFTER A TRADE IS REALIZED
-        self.amount = amount #current portfolio capital  #This need to be changed if we use this program to trade more than one currency
-
+    def __init__(self, starting_cash, starting_balance={}):
+        self.cash = starting_cash
+        self.balance = starting_balance
 
 
 class Strategy:
@@ -312,15 +306,6 @@ class Strategy:
         self.equity_at_risk = 0.1
         self.timelag_required = 10
 
-    def update_candle(self, tick):
-        tick = json.loads(tick)
-        price = tick['price']
-        timestamp = float(tick['timestamp'])
-
-        self.bar.update(price, timestamp)
-
-    # wrap trade_strategy to strategy class
-
     def trade_strategy(self, tick):
         tick = json.loads(tick)
         price = tick['price']
@@ -332,20 +317,20 @@ class Strategy:
 
         prev_crossover_time = self.prev_crossover_time
 
-        if self.portfolio.amount == 0 and self.five_min.avg > self.eight_min.avg:
+        if self.portfolio.balance[self.pair] == 0 and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= 10:
                 logger.info('Bought XRP @' + str(price))
-                self.portfolio.update(100)
+                self.portfolio.amount = 00
                 prev_crossover_time = None
 
-        elif self.five_min.avg < self.eight_min.avg:
+        elif self.portfolio.balance[self.pair] > 0 and self.five_min.avg < self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= 10:
                 logger.info('Sold XRP @' + str(price))
-                self.portfolio.update(0)
+                self.portfolio.amount = 0
                 prev_crossover_time = None
 
         else:
@@ -354,12 +339,21 @@ class Strategy:
         self.prev_crossover_time = prev_crossover_time
 
 
+def update_candle(bar, tick):
+    tick = json.loads(tick)
+    price = tick['price']
+    timestamp = float(tick['timestamp'])
+
+    bar.update(price, timestamp)
+
+
 def main():
     bs = BitstampFeed()
-    eth_strat = Strategy('eth')
+    bar = CandleBar()
+    eth_strat = Strategy('ethusd')
 
     bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
-    bs.onTrade('ethusd', eth_strat.update_candle)
+    bs.onTrade('ethusd', lambda x: update_candle(bar, x))
     bs.onTrade('ethusd', eth_strat.trade_strategy)
 
     while True:
