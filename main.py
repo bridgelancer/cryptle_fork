@@ -297,7 +297,7 @@ class Strategy:
         self.eight_min = MovingWindow(480, pair)
         self.bar = CandleBar()
 
-        self.portfolio = Portfolio(1000) ## @TODO whether to keep individual coin portfolio
+        self.portfolio = Portfolio(100) ## @TODO whether to keep individual coin portfolio
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
@@ -382,6 +382,30 @@ class Strategy:
 
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
+
+    def hasBalance(self):
+        try:
+            return self.portfolio.balance[self.pair] > 0
+        except:
+            return False
+
+
+    # @HARDCODE @REMOVE The portfolio needs to be updated properly
+    def buy(self, amount, message=''):
+        assert isinstance(amount, int)
+        assert isinstance(message, str)
+        logger.info('Buy  ' + self.pair.upper() + '@' + str(price) + ' ' + message)
+        self.portfolio.balance[self.pair] += amount
+        self.portfolio.cash = 0
+
+
+    def sell(self, amount, message=''):
+        assert isinstance(amount, int)
+        assert isinstance(message, str)
+        logger.info('Sell ' + self.pair.upper() + '@' + str(price) + ' ' + message)
+        self.portfolio.balance[self.pair] -= amount
+        self.portfolio.cash = 100
+
 
 
 def update_candle(bar, tick):
