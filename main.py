@@ -291,13 +291,13 @@ class Portfolio:
 class Strategy:
 
     # @TODO @CONSIDER Should a portfolio be passed to
-    def __init__(self, pair=None):
+    def __init__(self, pair, portfolio):
         self.pair = pair
         self.five_min = MovingWindow(300, pair)
         self.eight_min = MovingWindow(480, pair)
         self.bar = CandleBar()
 
-        self.portfolio = Portfolio(100) ## @TODO whether to keep individual coin portfolio
+        self.portfolio = portfolio
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
@@ -330,7 +330,7 @@ class Strategy:
 
             elif time.time() - prev_crossover_time >= 30:
                 if time.time() - prev_sell_time >= 120 or price >= 1.0075 * prev_tick_price:
-                    self.buy(1, '[New strat]')
+                    self.buy(1, '[New strat]', price)
                     prev_crossover_time = None
                     prev_tick_price = None
 
@@ -338,7 +338,7 @@ class Strategy:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= 5:
-                self.sell(1, '[New strat]')
+                self.sell(1, '[New strat]', price)
                 prev_crossover_time = None
                 prev_sell_time = time.time()
         else:
@@ -359,19 +359,19 @@ class Strategy:
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
-        if self.portfolio.cash == 0 and self.five_min.avg > self.eight_min.avg:
+        if self.hasCash() and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= 30:
                 if time.time() - prev_sell_time >= 90:
-                    self.buy(1, '[Old strat]')
+                    self.buy(1, '[Old strat]', price)
                     prev_crossover_time = None
 
         elif self.five_min.avg < self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= 5:
-                self.sell(1, '[Old strat]')
+                self.sell(1, '[Old strat]', price)
                 prev_crossover_time = None
                 prev_sell_time = time.time()
         else:
@@ -389,8 +389,11 @@ class Strategy:
     def hasCash(self):
         return self.portfolio.cash > 0
 
-    # @HARDCODE @REMOVE The portfolio needs to be updated properly
-    def buy(self, amount, message=''):
+    # @HARDCODE @REMOVE
+    # Portfolio needs to be updated properly
+    # Price should be acquired from the exchange
+    # Give message a default value
+    def buy(self, amount, message, price):
         assert isinstance(amount, int)
         assert isinstance(message, str)
         logger.info('Buy  ' + self.pair.upper() + '@' + str(price) + ' ' + message)
@@ -398,7 +401,7 @@ class Strategy:
         self.portfolio.cash = 0
 
 
-    def sell(self, amount, message=''):
+    def sell(self, amount, message, price):
         assert isinstance(amount, int)
         assert isinstance(message, str)
         logger.info('Sell ' + self.pair.upper() + '@' + str(price) + ' ' + message)
@@ -417,9 +420,10 @@ def update_candle(bar, tick):
 
 def main():
     bs = BitstampFeed()
-    bar = CandleBar()
-    eth_strat_new = Strategy('ethusd')
-    eth_strat_old = Strategy('ethusd')
+    port1 = Portfolio(100)
+    port2 = Portfolio(100)
+    eth_strat_new = Strategy('ethusd', port1)
+    eth_strat_old = Strategy('ethusd', port2)
 
     bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
     bs.onTrade('ethusd', eth_strat_new.trade_strategy_mod)
