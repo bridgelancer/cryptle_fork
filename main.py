@@ -434,7 +434,11 @@ class ATRStrat(Strategy):
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
-        bound = self.atr_shift * self.bar.get_atr()
+        try:
+            bound = self.atr_shift * self.bar.get_atr()
+        except RuntimeWarning:
+            return
+
         uptrend = self.five_min.avg > self.eight_min.avg
         downtrend = self.five_min.avg < self.eight_min.avg
 
