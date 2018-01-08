@@ -242,15 +242,15 @@ class CandleBar:
         # execute the following block if
         # - the current trade happens 60s after the last trade OR
         # - the current trade falls in the following 60s window
-        if int(timestamp / 60) < int(self.timestamp_last / 60):
+        if int(timestamp / 60) != int(self.timestamp_last / 60):
 
-            self._min = min(item[0] for item in self.ticks)
-            self._max = max(item[0] for item in self.ticks)
-            self._open = self.ticks[0][0]
-            self._close = self.ticks[-1][0]
+            barmin = min(item[0] for item in self.ticks)
+            barmax = max(item[0] for item in self.ticks)
+            baropen = self.ticks[0][0]
+            barclose = self.ticks[-1][0]
             self.last = price  # update the current tick prcie
 
-            self._bars.append([self._open, self._close, self._max, self._min, int(self.timestamp_last/self.period) + 1])
+            self._bars.append([baropen, barclose, barmax, barmin, int(self.timestamp_last/self.period) + 1])
 
             self.ticks.clear()
             self.timestamp_last = timestamp
@@ -258,7 +258,8 @@ class CandleBar:
             if not len(self._bars) == 0:
                 logger.debug(self._bars[-1])
 
-            self.compute_atr(5)
+            # @HARDCODE
+            self.compute_atr(1)
 
         self.ticks.append([price, timestamp])
 
@@ -266,11 +267,12 @@ class CandleBar:
 
         if (len(self._bars) <= period):
             self.ls.append(self._bars[-1][2] - self._bars[-1][3])
-            self.atr_var = sum(ls) / len(ls)
-        elif(len(self._bars) > period):
+            self.atr_var = sum(self.ls) / len(self.ls)
+        # @HARDCODE
+        elif(len(self._bars) > 1):
             self.ls.clear()
             TR = self._bars[-1][2] - self._bars[-1][3]
-            self.atr_val = (self.atr_var * (period - 1) + TR) / period
+            self.atr_val = (self.atr_val * (period - 1) + TR) / period
 
     def get_atr(self):
 
@@ -345,7 +347,9 @@ class Strategy:
     def buy(self, amount, message, price):
         assert isinstance(amount, int)
         assert isinstance(message, str)
-        logger.info('Buy  ' + self.pair.upper() + '@' + str(price) + ' ' + message)
+        assert price > 0
+
+        logger.info('Buy  ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
         self.portfolio.deposit(self.pair, amount)
         self.portfolio.cash -= price
 
@@ -353,7 +357,9 @@ class Strategy:
     def sell(self, amount, message, price):
         assert isinstance(amount, int)
         assert isinstance(message, str)
-        logger.info('Sell ' + self.pair.upper() + '@' + str(price) + ' ' + message)
+        assert price > 0
+
+        logger.info('Sell ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += price
 
@@ -423,18 +429,25 @@ class ATRStrat(Strategy):
 
         self.five_min.update(price, volume, timestamp)
         self.eight_min.update(price, volume, timestamp)
+        self.bar.update(price, timestamp)
 
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
-        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg and self.five_min.avg < price - self.atr_shift * self.bar.get_atr():
+        bound = self.atr_shift * self.bar.get_atr()
+        uptrend = self.five_min.avg > self.eight_min.avg
+        downtrend = self.five_min.avg < self.eight_min.avg
+
+        if self.hasCash() and not self.hasBalance() and uptrend and self.five_min.avg < price - bound:
+            logger.debug('ATRStrat gonna buy')
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
                     self.buy(1, '[ATR strat]', price)
                     prev_crossover_time = None
 
-        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg or min(self.five_min.avg, self.eight_min.avg) > price + self.atr_shift * self.bar.get_atr():
+        elif self.hasBalance() and (downtrend or min(self.five_min.avg, self.eight_min.avg) > price+ bound):
+            logger.debug('ATRStrat gonna sell')
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
@@ -524,11 +537,14 @@ def main():
 
     bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
     bs.onTrade('ethusd', old)
-    bs.onTrade('ethusd', rf)
-    bs.onTrade('ethusd', atr)
+    #bs.onTrade('ethusd', rf)
+    #bs.onTrade('ethusd', atr)
+    #bs.onTrade('ethusd', test)
 
     while True:
-        time.sleep(1)
+        logger.debug('Cash: ' + str(port3.cash))
+        logger.debug('Balance: ' + str(port3.balance))
+        time.sleep(30)
 
 
 if __name__ == '__main__':
