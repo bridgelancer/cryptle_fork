@@ -258,24 +258,29 @@ class CandleBar:
         # execute the following block if the current trade happens 60s after the last trade OR
         #                             if the current trade falls in the following 60s window
         #                                 with the window defined to start at initialization
-        if (timestamp - self.timestamp_last) >= 60 or (timestamp % self.period)  < (self.timestamp_last % self.period):
-            print("Updating candle bar...")
+        if (timestamp - self.timestamp_last) >= self.period or (timestamp % self.period)  < (self.timestamp_last % self.period):
+
+            print("Testing candle")
+
+            logger.debug("Updating candle bar...")
 
             self._min = min(item[0] for item in self.ticks)
             self._max = max(item[0] for item in self.ticks)
             self._open = self.ticks[0][0]
             self._close = self.ticks[-1][0]
+            self.last = price  # update the current tick prcie
 
             self._bars.append([self._open, self._close, self._max, self._min, int(self.timestamp_last/self.period) + 1])
 
-            self.last = price  # update the current tick prcie
-
             self.ticks.clear()
-
             self.timestamp_last = timestamp
+
             print(self._bars[-1])
 
         self.ticks.append([price, timestamp])
+        
+        if not len(self._bars) == 0:
+            logger.debug(self._bars[-1])
 
 
     def prune(self): #discard the inital entries after 100 periods
@@ -291,62 +296,68 @@ class Portfolio:
         self.amount = amount #current portfolio capital  #This need to be changed if we use this program to trade more than one currency
 
 
-# @HARDCODE @REMOVE
-five_min = MovingWindow(300, 'eth')
-eight_min = MovingWindow(480, 'eth')
-bar = CandleBar()
-portfolio = Portfolio()
+class Strategy:
+    def __init__(self, pair):
+        self.pair = pair
+        self.five_min = MovingWindow(300, pair)
+        self.eight_min = MovingWindow(480, pair)
+        self.bar = CandleBar()
 
+        self.portfolio = Portfolio() ## @TODO whether to keep individual coin portfolio
 
-def update_candle(tick):
-    tick = json.loads(tick)
-    price = tick['price']
-    timestamp = float(tick['timestamp'])
+        self.prev_crossover_time = None
+        self.equity_at_risk = 0.1
+        self.timelag_required = 10
+    
+    def update_candle(self, tick):
+        tick = json.loads(tick)
+        price = tick['price']
+        timestamp = float(tick['timestamp'])
 
-    bar.update(price, timestamp)
+        self.bar.update(price, timestamp)
 
+    # wrap trade_strategy to strategy class
 
-def trade_strategy(tick):
-    tick = json.loads(tick)
-    price = tick['price']
-    volume = tick['amount']
-    timestamp = float(tick['timestamp'])
+    def trade_strategy(self, tick):
+        tick = json.loads(tick)
+        price = tick['price']
+        volume = tick['amount']
+        timestamp = float(tick['timestamp'])
 
-    five_min.update(price, volume, timestamp)
-    eight_min.update(price, volume, timestamp)
+        self.five_min.update(price, volume, timestamp)
+        self.eight_min.update(price, volume, timestamp)
 
-    prev_crossover_time = trade_strategy.prev_crossover_time
+        prev_crossover_time = self.prev_crossover_time
 
-    if portfolio.amount == 0 and five_min.avg > eight_min.avg:
-        if prev_crossover_time is None:
-            prev_crossover_time = time.time()
-        elif time.time() - prev_crossover_time >= 10:
-            logger.info('Bought XRP @' + str(price))
-            portfolio.update(100)
+        if self.portfolio.amount == 0 and self.five_min.avg > self.eight_min.avg:
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= 10:
+                logger.info('Bought XRP @' + str(price))
+                self.portfolio.update(100)
+                prev_crossover_time = None
+
+        elif self.five_min.avg < self.eight_min.avg:
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= 10:
+                logger.info('Sold XRP @' + str(price))
+                self.portfolio.update(0)
+                prev_crossover_time = None
+
+        else:
             prev_crossover_time = None
 
-    elif five_min.avg < eight_min.avg:
-        if prev_crossover_time is None:
-            prev_crossover_time = time.time()
-        elif time.time() - prev_crossover_time >= 10:
-            logger.info('Sold XRP @' + str(price))
-            portfolio.update(0)
-            prev_crossover_time = None
-
-    else:
-        prev_crossover_time = None
-
-    trade_strategy.prev_crossover_time = prev_crossover_time
-
-trade_strategy.prev_crossover_time = None
-trade_strategy.equity_at_risk = 0.1
-trade_strategy.timelag_required = 10
+        self.prev_crossover_time = prev_crossover_time
 
 
 def main():
     bs = BitstampFeed()
+    eth_strat = Strategy('eth')
+
     bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
-    bs.onTrade('ethusd', trade_strategy)
+    bs.onTrade('ethusd', eth_strat.update_candle)
+    bs.onTrade('ethusd', eth_strat.trade_strategy)
 
     while True:
         time.sleep(1)
