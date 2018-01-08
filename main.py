@@ -276,12 +276,10 @@ class CandleBar:
             self.timestamp_last = timestamp
 
             print(self._bars[-1])
-
+            if not len(self._bars) == 0:
+                logger.debug(self._bars[-1])
+                
         self.ticks.append([price, timestamp])
-        
-        if not len(self._bars) == 0:
-            logger.debug(self._bars[-1])
-
 
     def prune(self): #discard the inital entries after 100 periods
         self._bars = self._bars[-self._max_lookback:]
