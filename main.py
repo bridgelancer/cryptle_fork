@@ -307,8 +307,9 @@ class Strategy:
         self.prev_tick_price = None
 
 
-    # @TODO @REFACTOR
+    # @TODO @REFACTOR @HARDCODE
     # One instance of Strategy can only ever use strat_a or strat_b in callbacks
+    # Use proper portfolio management to determine amount to buy/sell
     def trade_strategy_mod(self, tick):
         tick = json.loads(tick)
         price = tick['price']
@@ -322,15 +323,14 @@ class Strategy:
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
-        if not self.hasBalance() and self.five_min.avg > self.eight_min.avg:
+        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
                 prev_tick_price = price
 
             elif time.time() - prev_crossover_time >= 30:
                 if time.time() - prev_sell_time >= 120 or price >= 1.0075 * prev_tick_price:
-                    logger.info('Modified strategy: Buy  ' + self.pair.upper() + '@' + str(price))
-                    self.portfolio.cash = 100
+                    self.buy(1, '[New strat]')
                     prev_crossover_time = None
                     prev_tick_price = None
 
@@ -338,8 +338,7 @@ class Strategy:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= 5:
-                logger.info('Modified strategy: Sell ' + self.pair.upper() + '@' + str(price))
-                self.portfolio.cash = 100
+                self.sell(1, '[New strat]')
                 prev_crossover_time = None
                 prev_sell_time = time.time()
         else:
@@ -365,16 +364,14 @@ class Strategy:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= 30:
                 if time.time() - prev_sell_time >= 90:
-                    logger.info('Original strategy: Buy  ' + self.pair.upper() + '@' + str(price))
-                    self.portfolio.cash = 100
+                    self.buy(1, '[Old strat]')
                     prev_crossover_time = None
 
         elif self.five_min.avg < self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= 5:
-                logger.info('Original strategy: Sell ' + self.pair.upper() + '@' + str(price))
-                self.portfolio.cash = 0
+                self.sell(1, '[Old strat]')
                 prev_crossover_time = None
                 prev_sell_time = time.time()
         else:
@@ -389,6 +386,8 @@ class Strategy:
         except:
             return False
 
+    def hasCash(self):
+        return self.portfolio.cash > 0
 
     # @HARDCODE @REMOVE The portfolio needs to be updated properly
     def buy(self, amount, message=''):
