@@ -13,9 +13,6 @@ import requests as req
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
-fh = logging.FileHandler('cryptle.log', mode='w')
-fh.setLevel(logging.DEBUG)
-
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
@@ -23,7 +20,6 @@ formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 
-logger.addHandler(fh)
 logger.addHandler(ch)
 
 
@@ -561,7 +557,10 @@ def main(pair='ethusd'):
 if __name__ == '__main__':
     print('Hello crypto!')
     try:
-        main(sys.argv[1])
+        pair = sys.argv[1]
+        fh = logging.FileHandler(pair + '.csv')
+        logger.addHandler(fh)
+        main(pair)
     except:
         main()
 
