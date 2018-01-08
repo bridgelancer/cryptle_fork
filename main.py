@@ -277,7 +277,7 @@ class CandleBar:
     def get_atr(self):
 
         #@HARDCOD
-        if (len(self._bars) > 5):
+        if (len(self._bars) >= 5):
             return self.atr_val
         else:
             raise RuntimeWarning("ATR not yet available")
@@ -328,8 +328,8 @@ class Strategy:
         self.equity_at_risk = 0.1
         self.timelag_required = 20
 
-        self.prev_sell_time = None
-        self.prev_tick_price = None
+        self.prev_sell_time = 0
+        self.prev_tick_price = 0
 
 
     def hasBalance(self):
@@ -420,7 +420,7 @@ class ATRStrat(Strategy):
         super().__init__(pair, portfolio)
         self.five_min = MovingWindow(300, pair)
         self.eight_min = MovingWindow(480, pair)
-        self.bar = CandleBar()
+        self.bar = CandleBar(60)
         self.atr_shift = 0.5
 
 
@@ -487,7 +487,7 @@ class RFStrat(Strategy):
 
             elif time.time() - prev_crossover_time >= 30:
                 if time.time() - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
-                    self.buy(1, '[New strat]', price)
+                    self.buy(1, '[RF strat]', price)
                     prev_crossover_time = None
                     prev_tick_price = None
 
@@ -495,7 +495,7 @@ class RFStrat(Strategy):
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= 5:
-                self.sell(1, '[New strat]', price)
+                self.sell(1, '[RF strat]', price)
                 prev_crossover_time = None
                 prev_sell_time = time.time()
         else:
@@ -528,22 +528,17 @@ def main():
     port1 = Portfolio(100)
     port2 = Portfolio(100)
     port3 = Portfolio(100)
-    port4 = Portfolio(100)
 
     old  = Strat('ethusd', port1)
     rf   = RFStrat('ethusd', port2)
     atr  = ATRStrat('ethusd', port3)
-    test = TestStrat('ethusd', port4)
 
     bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
     bs.onTrade('ethusd', old)
-    #bs.onTrade('ethusd', rf)
-    #bs.onTrade('ethusd', atr)
-    #bs.onTrade('ethusd', test)
+    bs.onTrade('ethusd', rf)
+    bs.onTrade('ethusd', atr)
 
     while True:
-        logger.debug('Cash: ' + str(port3.cash))
-        logger.debug('Balance: ' + str(port3.balance))
         time.sleep(30)
 
 
