@@ -543,6 +543,12 @@ def main():
     bs.onTrade('ethusd', atr)
 
     while True:
+        logger.debug('Old Cash: ' + str(port1.cash))
+        logger.debug('Old Balance: ' + str(port1.balance))
+        logger.debug('RF Cash: ' + str(port2.cash))
+        logger.debug('RF Balance: ' + str(port2.balance))
+        logger.debug('ATR Cash: ' + str(port3.cash))
+        logger.debug('ATR Balance: ' + str(port3.balance))
         time.sleep(30)
 
 
