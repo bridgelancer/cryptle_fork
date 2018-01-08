@@ -196,25 +196,6 @@ class MovingWindow:
         self._ticks.append((price, volume, timestamp))
         self.clear()
 
-
-    def atr(self, period):
-        now = time.time()
-
-        lookback_1 = now - period
-        lookback_2 = now - 2 * period
-
-        this_minute = [x[0] for x in self._ticks if x[2] > lookback_1]
-        prev_minute = [x[0] for x in self._ticks if x[2] < lookback_1 and x[2] > lookback_2]
-
-        bound_high = max(this_minute[0], this_minute[-1])
-        bound_low  = max(this_minute[0], this_minute[-1])
-
-        true_range_this = max(max(this_minute) - bound_low, bound_high - min(this_minute))
-        true_range_prev = max(prev_minute) - min(prev_minute)
-
-        return (true_range_prev * (self.window/period- 1) + true_range_this) / (self.window/period)
-
-
     def clear(self):
         now = time.time()
         lookback = now - self.window
@@ -250,6 +231,8 @@ class CandleBar:
         self.timestamp_last = time.time()
         self.ticks = []
 
+        self.ls = []
+
     def update(self, price, timestamp=None):
 
         if timestamp == None:
@@ -273,8 +256,27 @@ class CandleBar:
 
             if not len(self._bars) == 0:
                 logger.debug(self._bars[-1])
+            
+            self.compute_atr(5)
 
         self.ticks.append([price, timestamp])
+
+    def compute_atr(self, period):
+
+        if (len(self._bars) <= period):
+            self.ls.append(self._bars[-1][2] - self._bars[-1][3])
+            self.atr_var = sum(ls) / len(ls)
+        elif(len(self._bars) > period):
+            self.ls.clear()
+            TR = self._bars[-1][2] - self._bars[-1][3]
+            self.atr_val = (self.atr_var * (period - 1) + TR) / period
+    
+    def get_atr(self):
+    
+    if (self._bars > period):
+        return self.atr_val
+    else
+        raise RuntimeWarning("ATR not yet available")
 
     def prune(self, lookback): #discard the inital entries after 100 periods
         self._bars = self._bars[-lookback:]
@@ -418,14 +420,14 @@ class Strategy:
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
-        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg and self.five_min.avg < price - self.atr_shift * self.five_min.atr(5):
+        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg and self.five_min.avg < price - self.atr_shift * self.five_min.atr(60):
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
                     self.buy(1, '[ATR strat]', price)
                     prev_crossover_time = None
 
-        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg or min(self.five_min.avg, self.eight_min.avg) > price + self.atr_shift * self.five_min.atr(5):
+        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg or min(self.five_min.avg, self.eight_min.avg) > price + self.atr_shift * self.five_min.atr(60):
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
