@@ -456,16 +456,17 @@ class Strategy:
         assert isinstance(amount, int)
         assert isinstance(message, str)
         logger.info('Buy  ' + self.pair.upper() + '@' + str(price) + ' ' + message)
-        self.portfolio.deposit(pair, amount)
-        self.portfolio.cash = 0
+        self.portfolio.deposit(self.pair, amount)
+        self.portfolio.cash -= price
 
 
     def sell(self, amount, message, price):
         assert isinstance(amount, int)
         assert isinstance(message, str)
         logger.info('Sell ' + self.pair.upper() + '@' + str(price) + ' ' + message)
-        self.portfolio.withdraw(pair, amount)
-        self.portfolio.cash = 100
+        self.portfolio.withdraw(self.pair, amount)
+        self.portfolio.cash += price
+
 
     def test(self, tick):
         tick = json.loads(tick)
