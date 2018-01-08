@@ -319,10 +319,6 @@ class Strategy:
     # @TODO @CONSIDER Should a portfolio be passed to
     def __init__(self, pair, portfolio):
         self.pair = pair
-        self.five_min = MovingWindow(300, pair)
-        self.eight_min = MovingWindow(480, pair)
-        self.bar = CandleBar()
-
         self.portfolio = portfolio
 
         self.prev_crossover_time = None
@@ -332,17 +328,136 @@ class Strategy:
         self.prev_sell_time = None
         self.prev_tick_price = None
 
-        self.atr_shift = 0.5
+
+    def hasBalance(self):
+        try:
+            return self.portfolio.balance[self.pair] > 0
+        except:
+            return False
 
 
-    # @TODO @REFACTOR @HARDCODE
-    # One instance of Strategy can only ever use strat_a or strat_b in callbacks
-    # Use proper portfolio management to determine amount to buy/sell
-    def trade_strategy_rf(self, tick):
+    def hasCash(self):
+        return self.portfolio.cash > 0
+
+
+    # Give message a default value
+    def buy(self, amount, message, price):
+        assert isinstance(amount, int)
+        assert isinstance(message, str)
+        logger.info('Buy  ' + self.pair.upper() + '@' + str(price) + ' ' + message)
+        self.portfolio.deposit(self.pair, amount)
+        self.portfolio.cash -= price
+
+
+    def sell(self, amount, message, price):
+        assert isinstance(amount, int)
+        assert isinstance(message, str)
+        logger.info('Sell ' + self.pair.upper() + '@' + str(price) + ' ' + message)
+        self.portfolio.withdraw(self.pair, amount)
+        self.portfolio.cash += price
+
+
+    @staticmethod
+    def unpackTick(tick):
         tick = json.loads(tick)
         price = tick['price']
         volume = tick['amount']
         timestamp = float(tick['timestamp'])
+        return price, volume, timestamp
+
+
+
+class Strat(Strategy):
+
+    def __init__(self, pair, portfolio):
+        super().__init__(pair, portfolio)
+        self.five_min = MovingWindow(300, pair)
+        self.eight_min = MovingWindow(480, pair)
+
+
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+
+        self.five_min.update(price, volume, timestamp)
+        self.eight_min.update(price, volume, timestamp)
+
+        prev_crossover_time = self.prev_crossover_time
+        prev_sell_time = self.prev_sell_time
+
+        if self.hasCash() and not self.hasBalance()  and self.five_min.avg > self.eight_min.avg:
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= self.timelag_required:
+                if time.time() - prev_sell_time >= 120:
+                    self.buy(1, '[Old strat]', price)
+                    prev_crossover_time = None
+
+        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= self.timelag_required:
+                self.sell(1, '[Old strat]', price)
+                prev_crossover_time = None
+                prev_sell_time = time.time()
+        else:
+            prev_crossover_time = None
+
+        self.prev_crossover_time = prev_crossover_time
+        self.prev_sell_time = prev_sell_time
+
+
+
+class ATRStrat(Strategy):
+
+    def __init__(self, pair, portfolio):
+        super().__init__(pair, portfolio)
+        self.five_min = MovingWindow(300, pair)
+        self.eight_min = MovingWindow(480, pair)
+        self.bar = CandleBar()
+        self.atr_shift = 0.5
+
+
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+
+        self.five_min.update(price, volume, timestamp)
+        self.eight_min.update(price, volume, timestamp)
+
+        prev_crossover_time = self.prev_crossover_time
+        prev_sell_time = self.prev_sell_time
+
+        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg and self.five_min.avg < price - self.atr_shift * self.bar.get_atr():
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= self.timelag_required:
+                    self.buy(1, '[ATR strat]', price)
+                    prev_crossover_time = None
+
+        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg or min(self.five_min.avg, self.eight_min.avg) > price + self.atr_shift * self.bar.get_atr():
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= self.timelag_required:
+                self.sell(1, '[ATR strat]', price)
+                prev_crossover_time = None
+                prev_sell_time = time.time()
+        else:
+            prev_crossover_time = None
+
+        self.prev_crossover_time = prev_crossover_time
+        self.prev_sell_time = prev_sell_time
+
+
+
+class RFStrat(Strategy):
+
+    def __init__(self, pair, portfolio):
+        super().__init__(pair, portfolio)
+        self.five_min = MovingWindow(300, pair)
+        self.eight_min = MovingWindow(480, pair)
+
+
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
 
         self.five_min.update(price, volume, timestamp)
         self.eight_min.update(price, volume, timestamp)
@@ -376,107 +491,11 @@ class Strategy:
         self.prev_sell_time = prev_sell_time
 
 
-    def trade_strategy_original(self, tick):
-        tick = json.loads(tick)
-        price = tick['price']
-        volume = tick['amount']
-        timestamp = float(tick['timestamp'])
 
-        self.five_min.update(price, volume, timestamp)
-        self.eight_min.update(price, volume, timestamp)
+class TestStrat(Strategy):
 
-        prev_crossover_time = self.prev_crossover_time
-        prev_sell_time = self.prev_sell_time
-
-        if self.hasCash() and not self.hasBalance()  and self.five_min.avg > self.eight_min.avg:
-            if prev_crossover_time is None:
-                prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= self.timelag_required:
-                if time.time() - prev_sell_time >= 120:
-                    self.buy(1, '[Old strat]', price)
-                    prev_crossover_time = None
-
-        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
-            if prev_crossover_time is None:
-                prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= self.timelag_required:
-                self.sell(1, '[Old strat]', price)
-                prev_crossover_time = None
-                prev_sell_time = time.time()
-        else:
-            prev_crossover_time = None
-
-        self.prev_crossover_time = prev_crossover_time
-        self.prev_sell_time = prev_sell_time
-
-    def trade_strategy_atr(self, tick):
-        tick = json.loads(tick)
-        price = tick['price']
-        volume = tick['amount']
-        timestamp = float(tick['timestamp'])
-
-        self.five_min.update(price, volume, timestamp)
-        self.eight_min.update(price, volume, timestamp)
-
-        prev_crossover_time = self.prev_crossover_time
-        prev_sell_time = self.prev_sell_time
-
-        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg and self.five_min.avg < price - self.atr_shift * self.bar.get_atr():
-            if prev_crossover_time is None:
-                prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= self.timelag_required:
-                    self.buy(1, '[ATR strat]', price)
-                    prev_crossover_time = None
-
-        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg or min(self.five_min.avg, self.eight_min.avg) > price + self.atr_shift * self.bar.get_atr():
-            if prev_crossover_time is None:
-                prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= self.timelag_required:
-                self.sell(1, '[ATR strat]', price)
-                prev_crossover_time = None
-                prev_sell_time = time.time()
-        else:
-            prev_crossover_time = None
-
-        self.prev_crossover_time = prev_crossover_time
-        self.prev_sell_time = prev_sell_time
-
-    def hasBalance(self):
-        try:
-            return self.portfolio.balance[self.pair] > 0
-        except:
-            return False
-
-
-    def hasCash(self):
-        return self.portfolio.cash > 0
-
-    # @HARDCODE @REMOVE
-    # Portfolio needs to be updated properly
-    # Price should be acquired from the exchange
-    # Give message a default value
-    def buy(self, amount, message, price):
-        assert isinstance(amount, int)
-        assert isinstance(message, str)
-        logger.info('Buy  ' + self.pair.upper() + '@' + str(price) + ' ' + message)
-        self.portfolio.deposit(self.pair, amount)
-        self.portfolio.cash -= price
-
-
-    def sell(self, amount, message, price):
-        assert isinstance(amount, int)
-        assert isinstance(message, str)
-        logger.info('Sell ' + self.pair.upper() + '@' + str(price) + ' ' + message)
-        self.portfolio.withdraw(self.pair, amount)
-        self.portfolio.cash += price
-
-
-    def test(self, tick):
-        tick = json.loads(tick)
-        price = tick['price']
-        volume = tick['amount']
-        timestamp = float(tick['timestamp'])
-
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
         self.buy(1, 'Testing Buy', price)
         self.sell(1, 'Testing Sell', price)
 
@@ -497,17 +516,16 @@ def main():
     port3 = Portfolio(100)
     port4 = Portfolio(100)
 
-    eth_strat_new = Strategy('ethusd', port1)
-    eth_strat_old = Strategy('ethusd', port2)
-    eth_strat_rf  = Strategy('ethusd', port3)
-    eth_strat_test  = Strategy('ethusd', port3)
+    old  = Strat('ethusd', port1)
+    rf   = RFStrat('ethusd', port2)
+    atr  = ATRStrat('ethusd', port3)
+    test = TestStrat('ethusd', port4)
 
     bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
-    bs.onTrade('ethusd', eth_strat_test.test)
-    bs.onTrade('ethusd', eth_strat_new.trade_strategy_atr)
-    bs.onTrade('ethusd', eth_strat_old.trade_strategy_original)
-    bs.onTrade('ethusd', eth_strat_rf.trade_strategy_rf)
-
+    bs.onTrade('ethusd', old)
+    bs.onTrade('ethusd', rf)
+    bs.onTrade('ethusd', atr)
+    bs.onTrade('ethusd', test)
 
     while True:
         time.sleep(1)
