@@ -152,7 +152,7 @@ class BitstampFeed:
 
     def onOrderCreate(self, pair, callback):
         assert callable(callback)
-        self._bindSocket('live_orders' + pair, 'order_created', callback)
+        self._bindSocket('live_orders_' + pair, 'order_created', callback)
 
 
     def _bindSocket(self, channel_name, event, callback):
@@ -229,7 +229,7 @@ class CandleBar:
 
         self.period = period
         self.last = 0
-        self.timestamp_last = time.time()
+        self.timestamp_last = None
         self.ticks = []
 
         self.ls = []
@@ -239,7 +239,8 @@ class CandleBar:
 
         if timestamp == None:
             timestamp = time.time()
-
+        if self.timestamp_last == None:
+            self.timestamp_last = time.time()
         # execute the following block if
         # - the current trade happens 60s after the last trade OR
         # - the current trade falls in the following 60s window
