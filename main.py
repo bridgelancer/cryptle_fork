@@ -301,16 +301,18 @@ class Strategy:
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
-        self.timelag_required = 10
+        self.timelag_required = 20
 
         self.prev_sell_time = None
         self.prev_tick_price = None
+
+        self.atr_shift = 0.5
 
 
     # @TODO @REFACTOR @HARDCODE
     # One instance of Strategy can only ever use strat_a or strat_b in callbacks
     # Use proper portfolio management to determine amount to buy/sell
-    def trade_strategy_mod(self, tick):
+    def trade_strategy_rf(self, tick):
         tick = json.loads(tick)
         price = tick['price']
         volume = tick['amount']
@@ -329,7 +331,7 @@ class Strategy:
                 prev_tick_price = price
 
             elif time.time() - prev_crossover_time >= 30:
-                if time.time() - prev_sell_time >= 120 or price >= 1.0075 * prev_tick_price:
+                if time.time() - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
                     self.buy(1, '[New strat]', price)
                     prev_crossover_time = None
                     prev_tick_price = None
@@ -359,19 +361,51 @@ class Strategy:
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
-        if self.hasCash() and self.five_min.avg > self.eight_min.avg:
+        if self.hasCash() and not self.hasBalance()  and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= 30:
-                if time.time() - prev_sell_time >= 90:
+            elif time.time() - prev_crossover_time >= self.timelag_required:
+                if time.time() - prev_sell_time >= 120:
                     self.buy(1, '[Old strat]', price)
                     prev_crossover_time = None
 
-        elif self.five_min.avg < self.eight_min.avg:
+        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= 5:
+            elif time.time() - prev_crossover_time >= self.timelag_required:
                 self.sell(1, '[Old strat]', price)
+                prev_crossover_time = None
+                prev_sell_time = time.time()
+        else:
+            prev_crossover_time = None
+
+        self.prev_crossover_time = prev_crossover_time
+        self.prev_sell_time = prev_sell_time
+
+    def trade_strategy_atr(self, tick):
+        tick = json.loads(tick)
+        price = tick['price']
+        volume = tick['amount']
+        timestamp = float(tick['timestamp'])
+
+        self.five_min.update(price, volume, timestamp)
+        self.eight_min.update(price, volume, timestamp)
+
+        prev_crossover_time = self.prev_crossover_time
+        prev_sell_time = self.prev_sell_time
+
+        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg and self.five_min.avg < price - self.atr_shift * self.five_min.atr(5):
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= self.timelag_required:
+                    self.buy(1, '[ATR strat]', price)
+                    prev_crossover_time = None
+
+        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg or min(self.five_min.avg, self.eight_min.avg) > price + self.atr_shift * self.five_min.atr(5):
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= self.timelag_required:
+                self.sell(1, '[ATR strat]', price)
                 prev_crossover_time = None
                 prev_sell_time = time.time()
         else:
@@ -422,12 +456,16 @@ def main():
     bs = BitstampFeed()
     port1 = Portfolio(100)
     port2 = Portfolio(100)
+    port3 = Portfolio(100)
     eth_strat_new = Strategy('ethusd', port1)
     eth_strat_old = Strategy('ethusd', port2)
+    eth_strat_rf  = Strategy('ethusd', port3)
 
     bs.onTrade('ethusd', lambda x: logger.debug('Recieved new tick'))
-    bs.onTrade('ethusd', eth_strat_new.trade_strategy_mod)
+    bs.onTrade('ethusd', eth_strat_new.trade_strategy_atr)
     bs.onTrade('ethusd', eth_strat_old.trade_strategy_original)
+    bs.onTrade('ethusd', eth_strat_rf.trade_strategy_rf)
+
 
     while True:
         time.sleep(1)
