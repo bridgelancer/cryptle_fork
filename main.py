@@ -12,18 +12,19 @@ import requests as req
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
-fh = logging.FileHandler('cryptle.log')
+fh = logging.FileHandler('cryptle.log', mode='w')
 fh.setLevel(logging.DEBUG)
 
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
 
-formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H-%M-%S')
+formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 
 logger.addHandler(fh)
 logger.addHandler(ch)
+
 
 
 class BitstampREST:
@@ -131,6 +132,8 @@ class BitstampREST:
                 digestmod=hashlib.sha256
         ).hexdigest().upper()
         return signature
+
+
 
 class BitstampFeed:
 
@@ -278,11 +281,12 @@ class CandleBar:
             print(self._bars[-1])
             if not len(self._bars) == 0:
                 logger.debug(self._bars[-1])
-                
+
         self.ticks.append([price, timestamp])
 
     def prune(self): #discard the inital entries after 100 periods
         self._bars = self._bars[-self._max_lookback:]
+
 
 
 class Portfolio:
@@ -292,6 +296,7 @@ class Portfolio:
 
     def update(self, amount): #use to recalculate your liquidity AFTER A TRADE IS REALIZED
         self.amount = amount #current portfolio capital  #This need to be changed if we use this program to trade more than one currency
+
 
 
 class Strategy:
@@ -306,7 +311,7 @@ class Strategy:
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
         self.timelag_required = 10
-    
+
     def update_candle(self, tick):
         tick = json.loads(tick)
         price = tick['price']
