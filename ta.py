@@ -93,11 +93,11 @@ class CandleBar:
         self.last = price  # update the current tick prcie
 
         # @HARDCODE
-        self.compute_atr(5)
+        self.computeAtr(5)
         self.prune(self.lookback)
 
 
-    def compute_atr(self, mins):
+    def computeAtr(self, mins):
         if (len(self._bars) <= mins and len(self._bars) > 0):
             self.ls.append(self._bars[-1][2] - self._bars[-1][3])
             self.atr_var = sum(self.ls) / len(self.ls)
@@ -108,7 +108,7 @@ class CandleBar:
             self.atr_val = (self.atr_val * (mins - 1) + TR) / mins
 
 
-    def get_atr(self):
+    def getAtr(self):
 
         #@HARDCODE
         if (len(self._bars) >= 5):

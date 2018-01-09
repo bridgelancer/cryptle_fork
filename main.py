@@ -243,7 +243,7 @@ class ATRStrat(Strategy):
         prev_sell_time = self.prev_sell_time
 
         try:
-            atr = self.bar.get_atr()
+            atr = self.bar.getAtr()
             belowatr = self.five_min.avg < price - self.lower_atr * atr
             aboveatr = min(self.five_min.avg, self.eight_min.avg) > price + self.upper_atr * atr
         except RuntimeWarning:
