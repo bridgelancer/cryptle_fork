@@ -6,30 +6,30 @@ BEGIN {
     na = 0;
 }
 
-/INFO/ && /Old/ {
+/INFO/ && /Old/ && (/Buy/ || /Sell/) {
     no += 1;
     old[no] = $0;
 }
 
-/INFO/ && /RF/ {
+/INFO/ && /RF/ && (/Buy/ || /Sell/) {
     nr += 1;
     rf[nr] = $0;
 }
 
-/INFO/ && /ATR/ {
+/INFO/ && /ATR/ && (/Buy/ || /Sell/) {
     na += 1;
     atr[na] = $0;
 }
 
-/DEBUG/ && /Old Cash/ {
+/INFO/ && /Old Cash/ {
     co = $7;
 }
 
-/DEBUG/ && /RF Cash/ {
+/INFO/ && /RF Cash/ {
     cr = $7;
 }
 
-/DEBUG/ && /ATR Cash/ {
+/INFO/ && /ATR Cash/ {
     ca = $7;
 }
 
