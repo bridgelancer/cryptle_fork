@@ -53,7 +53,7 @@ class CandleBar:
     # _bars: List of (open, close, high, low, nth minute bar)
     # This class is for storing the min-by-min bars the minute before the current tick
     # default bar size is 1 minute
-    def __init__(self, period=60):
+    def __init__(self, period=60, atr_lookback=5):
         self._bars = []
 
         self.period = period
@@ -62,6 +62,7 @@ class CandleBar:
 
         self.ls = []
         self.atr_val = 0
+        self.atr_lookback = atr_lookback
 
         self.barmin = None
         self.barmax = None
@@ -93,25 +94,24 @@ class CandleBar:
         self.last = price  # update the current tick prcie
 
         # @HARDCODE
-        self.computeAtr(5)
+        self.computeAtr()
         self.prune(self.lookback)
 
 
-    def computeAtr(self, mins):
-        if (len(self._bars) <= mins and len(self._bars) > 0):
+    def computeAtr(self):
+        if (len(self._bars) <= self.atr_lookback and len(self._bars) > 0):
             self.ls.append(self._bars[-1][2] - self._bars[-1][3])
             self.atr_var = sum(self.ls) / len(self.ls)
 
-        elif(len(self._bars) > mins):
+        elif(len(self._bars) > self.atr_lookback):
             self.ls.clear()
             TR = self._bars[-1][2] - self._bars[-1][3]
-            self.atr_val = (self.atr_val * (mins - 1) + TR) / mins
+            self.atr_val = (self.atr_val * (self.atr_lookback- 1) + TR) / self.atr_lookback
 
 
     def getAtr(self):
 
-        #@HARDCODE
-        if (len(self._bars) >= 5):
+        if (len(self._bars) >= self.atr_lookback):
             return self.atr_val
         else:
             raise RuntimeWarning("ATR not yet available")
