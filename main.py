@@ -9,10 +9,10 @@ import sys
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-
 formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
 ch.setFormatter(formatter)
 
 logger.addHandler(ch)
@@ -277,12 +277,12 @@ def main(pair='ethusd'):
     bs.onTrade(pair, atr)
 
     while True:
-        logger.debug('Old Cash: ' + str(port1.cash))
-        logger.debug('Old Balance: ' + str(port1.balance))
-        logger.debug('RF Cash: ' + str(port2.cash))
-        logger.debug('RF Balance: ' + str(port2.balance))
-        logger.debug('ATR Cash: ' + str(port3.cash))
-        logger.debug('ATR Balance: ' + str(port3.balance))
+        logger.info('Old Cash: ' + str(port1.cash))
+        logger.info('Old Balance: ' + str(port1.balance))
+        logger.info('RF Cash: ' + str(port2.cash))
+        logger.info('RF Balance: ' + str(port2.balance))
+        logger.info('ATR Cash: ' + str(port3.cash))
+        logger.info('ATR Balance: ' + str(port3.balance))
         time.sleep(30)
 
 
@@ -290,9 +290,11 @@ if __name__ == '__main__':
     print('Hello crypto!')
     try:
         pair = sys.argv[1]
+
         fh = logging.FileHandler(pair + '.log')
         fh.setFormatter(formatter)
         logger.addHandler(fh)
+
         main(pair)
     except:
         main()
