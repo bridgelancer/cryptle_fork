@@ -179,13 +179,23 @@ class BitstampFeed:
 
 
     def onTrade(self, pair, callback):
+        assert isinstance(pair, str)
         assert callable(callback)
-        self._bindSocket('live_trades_' + pair, 'trade', callback)
+
+        if pair == 'btcusd':
+            self._bindSocket('live_trades', 'trade', callback)
+        else:
+            self._bindSocket('live_trades_' + pair, 'trade', callback)
 
 
     def onOrderCreate(self, pair, callback):
+        assert isinstance(pair, str)
         assert callable(callback)
-        self._bindSocket('live_orders_' + pair, 'order_created', callback)
+
+        if pair == 'btcusd':
+            self._bindSocket('live_orders', 'order_created', callback)
+        else:
+            self._bindSocket('live_orders_' + pair, 'order_created', callback)
 
 
     def _bindSocket(self, channel_name, event, callback):
