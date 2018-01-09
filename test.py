@@ -6,13 +6,13 @@ import logging
 import time
 import sys
 
-logger = logging.getLogger('Cryptle')
+logger = logging.getLogger('Test')
 logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
 
 ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
+ch.setLevel(logging.DEBUG)
 ch.setFormatter(formatter)
 
 fh = logging.FileHandler('test.log', mode='w')
@@ -45,6 +45,24 @@ def testFunctor():
     strat(jsonstr)
 
 
+def testBitstampFeed():
+    feed = BitstampFeed()
+
+    feed.onTrade('btcusd', lambda x: logger.debug('Recieved BTC tick'))
+    feed.onTrade('xrpusd', lambda x: logger.debug('Recieved XRP tick'))
+    feed.onTrade('ethusd', lambda x: logger.debug('Recieved ETH tick'))
+
+    time.sleep(10)
+
+
+def testBitstampREST():
+    bs = BitstampREST()
+    logger.debug(bs.getTicker('btcusd'))
+
+
 if __name__ == '__main__':
     testBuySell()
     testFunctor()
+    testBitstampFeed()
+    testBitstampREST()
+
