@@ -70,9 +70,21 @@ def testBitstampREST():
     logger.debug(bs.getTicker('btcusd'))
 
 
+def testATR():
+    feed = BitstampFeed()
+    port = Portfolio(10000)
+
+    atr = ATRStrat('ethusd', port)
+
+    ticks = []
+    for tick in ticks:
+        atr(tick)
+
+
 if __name__ == '__main__':
     testBuySell()
     testFunctor()
     testBitstampFeed()
     testBitstampREST()
+    testATRBuy()
 
