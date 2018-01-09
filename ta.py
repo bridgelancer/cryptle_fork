@@ -5,7 +5,7 @@ class MovingWindow:
 
     # window is the number of seconds in the lookback window
     # Ticker (optional) is meta-info about what series is being tracked
-    def __init__(self, window, ticker=None):
+    def __init__(self, window):
         self._ticks = []
 
         self.avg = 0
@@ -13,11 +13,6 @@ class MovingWindow:
         self.dollar_volume = 0
 
         self.window = window
-        self.ticker = ticker
-
-
-    def __str__(self):
-        return self.ticker
 
 
     def update(self, price, volume, timestamp):
