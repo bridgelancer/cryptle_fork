@@ -5,6 +5,7 @@ from strategy import *
 import logging
 import time
 import sys
+import csv
 
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
@@ -34,6 +35,25 @@ class TestStrat(Strategy):
         price, volume, timestamp = self.unpackTick(tick)
         self.buy(1, price, 'Testing Buy')
         self.sell(1, price, 'Testing Sell')
+
+def readCSV(filename):
+    ifile = open(filename, "rU")
+    reader = csv.reader(ifile, delimiter = "\n")
+
+    rownum = 0
+    ls = []
+
+    for row in reader:
+        ls.append(row)
+        rownum += 1
+    ifile.close()
+    return ls
+
+def loadCSV(ls, TestStrat):
+    strat = TestStrat
+    for item in ls:
+        tick = ''.join(item)
+        strat(tick)
 
 
 def testBuySell():
@@ -82,9 +102,9 @@ def testATR():
 
 
 if __name__ == '__main__':
-    testBuySell()
-    testFunctor()
-    testBitstampFeed()
-    testBitstampREST()
-    testATRBuy()
+    port = Portfolio(10000)
+    atr = TestStrat('ethusd', port)
+
+    ls = readCSV('btc_sample')
+    loadCSV(ls, atr)
 
