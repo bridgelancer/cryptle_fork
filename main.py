@@ -7,7 +7,7 @@ import sys
 
 
 logger = logging.getLogger('Cryptle')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
 
@@ -20,12 +20,13 @@ logger.addHandler(ch)
 
 class Portfolio:
 
-    def __init__(self, starting_cash, starting_balance=None):
-        self.cash = starting_cash
-        if starting_balance is None:
+    def __init__(self, cash, balance=None):
+        self.cash = cash
+
+        if balance is None:
             self.balance = {}
         else:
-            self.balance = starting_balance
+            self.balance = balance
 
 
     def deposit(self, pair, amount):
@@ -57,6 +58,7 @@ class Strategy:
     def __init__(self, pair, portfolio):
         self.pair = pair
         self.portfolio = portfolio
+        self.equity = 0
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
@@ -78,24 +80,31 @@ class Strategy:
 
 
     # Give message a default value
-    def buy(self, amount, message, price):
+    def buy(self, amount, price, message=''):
         assert isinstance(amount, int)
         assert isinstance(message, str)
         assert price > 0
 
-        logger.info('Buy  ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+        logger.info('Buy  ' + amount + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
         self.portfolio.deposit(self.pair, amount)
-        self.portfolio.cash -= price
+        self.portfolio.cash -= amount * price
+        self.equity += amount * price
 
 
-    def sell(self, amount, message, price):
+    def sell(self, amount, price, message=''):
         assert isinstance(amount, int)
         assert isinstance(message, str)
         assert price > 0
 
-        logger.info('Sell ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+        logger.info('Sell '  + amount + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
         self.portfolio.withdraw(self.pair, amount)
-        self.portfolio.cash += price
+        self.portfolio.cash += amount * price
+        self.equity -= amount * price
+
+
+    def sellAll(self, price, message=''):
+        amount = self.portfolio.balance[self.pair]
+        self.sell(amount, price, message)
 
 
     @staticmethod
@@ -108,6 +117,8 @@ class Strategy:
 
 
 
+# @DEPRECATED
+# Hasn't been updated to use the new Strategy/Portfolio API
 class OldStrat(Strategy):
 
     def __init__(self, pair, portfolio):
@@ -133,14 +144,14 @@ class OldStrat(Strategy):
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
                 if time.time() - prev_sell_time >= 120:
-                    self.buy(1, '[Old strat]', price)
+                    self.buy(1, price, '[Old strat]')
                     prev_crossover_time = None
 
         elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
-                self.sell(1, '[Old strat]', price)
+                self.sell(1, price, '[Old strat]')
                 prev_crossover_time = None
                 prev_sell_time = time.time()
         else:
@@ -170,7 +181,6 @@ class RFStrat(Strategy):
         prev_sell_time = self.prev_sell_time
 
         # @HARDCODE Buy/Sell message
-        # @HARDCODE Volume of buy/sell
         if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
@@ -178,17 +188,23 @@ class RFStrat(Strategy):
 
             elif time.time() - prev_crossover_time >= 30:
                 if time.time() - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
-                    self.buy(1, '[RF strat]', price)
+
+                    amount = self.equity_at_risk * self.equity
+                    self.buy(amount, price, '[RF strat]')
+
                     prev_crossover_time = None
                     prev_tick_price = None
 
         elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
+
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
+
             elif time.time() - prev_crossover_time >= 5:
-                self.sell(1, '[RF strat]', price)
+                self.sellAll(price, '[RF strat]')
                 prev_crossover_time = None
                 prev_sell_time = time.time()
+
         else:
             prev_crossover_time = None
 
@@ -234,17 +250,24 @@ class ATRStrat(Strategy):
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
+
             elif time.time() - prev_crossover_time >= self.timelag_required:
-                    self.buy(1, '[ATR strat]', price)
-                    prev_crossover_time = None
+
+                amount = self.equity_at_risk * self.equity
+                self.buy(amount, price, '[ATR strat]')
+
+                prev_crossover_time = None
 
         elif self.hasBalance() and (downtrend or aboveatr):
+
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
+
             elif time.time() - prev_crossover_time >= self.timelag_required:
-                self.sell(1, '[ATR strat]', price)
+                self.sellAll(price, '[ATR strat]')
                 prev_crossover_time = None
                 prev_sell_time = time.time()
+
         else:
             prev_crossover_time = None
 
@@ -278,18 +301,14 @@ def main(pair='ethusd'):
     port3 = Portfolio(10000)
 
     # Add a few more strat instances and tweak their parameters to test run
-    old  = OldStrat(pair, port1)
     rf   = RFStrat(pair, port2)
     atr  = ATRStrat(pair, port3)
 
     bs.onTrade(pair, lambda x: logger.debug('Recieved new tick'))
-    bs.onTrade(pair, old)
     bs.onTrade(pair, rf)
     bs.onTrade(pair, atr)
 
     while True:
-        logger.info('Old Cash: ' + str(port1.cash))
-        logger.info('Old Balance: ' + str(port1.balance))
         logger.info('RF Cash: ' + str(port2.cash))
         logger.info('RF Balance: ' + str(port2.balance))
         logger.info('ATR Cash: ' + str(port3.cash))
