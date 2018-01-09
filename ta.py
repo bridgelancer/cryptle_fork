@@ -97,10 +97,10 @@ class CandleBar:
 
 
     def computeAtr(self):
-        if (len(self._bars) <= self.atr_lookback and len(self._bars) > 0):
+        if (len(self._bars) <= self.atr_lookback):
             self.ls.append(self._bars[-1][2] - self._bars[-1][3])
             self.atr_val = sum(self.ls) / len(self.ls)
-        elif(len(self._bars) > mins):
+        elif(len(self._bars) > self.atr_lookback):
             self.ls.clear()
             TR = self._bars[-1][2] - self._bars[-1][3]
             self.atr_val = (self.atr_val * (self.atr_lookback- 1) + TR) / self.atr_lookback

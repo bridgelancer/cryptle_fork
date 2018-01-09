@@ -134,19 +134,19 @@ class OldStrat(Strategy):
         # @HARDCODE Volume of buy/sell
         if self.hasCash() and not self.hasBalance()  and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
-                prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= self.timelag_required:
-                if time.time() - prev_sell_time >= 120:
+                prev_crossover_time = timestamp
+            elif timestamp - prev_crossover_time >= self.timelag_required:
+                if timestamp - prev_sell_time >= 120:
                     self.buy(1, price, '[Old strat]')
                     prev_crossover_time = None
 
         elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
             if prev_crossover_time is None:
-                prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= self.timelag_required:
+                prev_crossover_time = timestamp
+            elif timestamp - prev_crossover_time >= self.timelag_required:
                 self.sell(1, price, '[Old strat]')
                 prev_crossover_time = None
-                prev_sell_time = time.time()
+                prev_sell_time = timestamp
         else:
             prev_crossover_time = None
 
@@ -175,7 +175,7 @@ class RFStrat(Strategy):
 
         if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
-                prev_crossover_time = time.time()
+                prev_crossover_time = timestamp
                 prev_tick_price = price
 
             elif timestamp - prev_crossover_time >= 30:
@@ -190,13 +190,13 @@ class RFStrat(Strategy):
         elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
 
             if prev_crossover_time is None:
-                prev_crossover_time = time.time()
+                prev_crossover_time = timestamp
 
-            elif time.time() - prev_crossover_time >= 5:
+            elif timestamp - prev_crossover_time >= 5:
                 self.sellAll(price, '[RF strat]')
 
                 prev_crossover_time = None
-                prev_sell_time = time.time()
+                prev_sell_time = timestamp
 
         else:
             prev_crossover_time = None
@@ -241,9 +241,9 @@ class ATRStrat(Strategy):
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
             if prev_crossover_time is None:
-                prev_crossover_time = time.time()
+                prev_crossover_time = timestamp
 
-            elif time.time() - prev_crossover_time >= self.timelag_required:
+            elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity / price
                 self.buy(amount, price, '[ATR strat]')
@@ -253,12 +253,12 @@ class ATRStrat(Strategy):
         elif self.hasBalance() and (downtrend or aboveatr):
 
             if prev_crossover_time is None:
-                prev_crossover_time = time.time()
+                prev_crossover_time = timestamp
 
-            elif time.time() - prev_crossover_time >= self.timelag_required:
+            elif timestamp - prev_crossover_time >= self.timelag_required:
                 self.sellAll(price, '[ATR strat]')
                 prev_crossover_time = None
-                prev_sell_time = time.time()
+                prev_sell_time = timestamp
 
         else:
             prev_crossover_time = None

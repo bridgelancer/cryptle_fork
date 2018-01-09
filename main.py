@@ -17,6 +17,19 @@ ch.setFormatter(formatter)
 
 logger.addHandler(ch)
 
+def readcsv(filename):	
+    ifile = open(filename, "rU")
+    reader = csv.reader(ifile, delimiter="\n")
+
+    rownum = 0	
+    ls = []
+
+    for row in reader:
+        a.append (row)
+        rownum += 1
+    
+    ifile.close()
+    return ls
 
 def main(pair='ethusd'):
     bs = BitstampFeed()
@@ -32,14 +45,18 @@ def main(pair='ethusd'):
     atr  = ATRStrat(pair, port3)
 
     bs.onTrade(pair, lambda x: logger.debug('Recieved new tick'))
-    bs.onTrade(pair, rf)
+    bs.onTrade(pair, atr)
 
     while True:
         logger.info('RF Cash: ' + str(port2.cash))
         logger.info('RF Balance: ' + str(port2.balance))
         logger.info('ATR Cash: ' + str(port3.cash))
         logger.info('ATR Balance: ' + str(port3.balance))
-        time.sleep(30)
+
+        logger.info('ATR val: ' + str(atr.bar.atr_val))
+        logger.info('ls: ' + str(atr.bar.ls))
+        logger.info('_bars: ' + str(atr.bar._bars))
+        time.sleep(60)
 
 
 if __name__ == '__main__':
