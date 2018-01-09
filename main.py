@@ -20,13 +20,15 @@ logger.addHandler(ch)
 
 class Portfolio:
 
-    def __init__(self, cash, balance=None):
+    def __init__(self, cash, balance=None, balance_value=0):
         self.cash = cash
+        self.balance_value = 0
 
         if balance is None:
             self.balance = {}
         else:
             self.balance = balance
+            self.balance_value = balance_value
 
 
     def deposit(self, pair, amount):
@@ -51,14 +53,16 @@ class Portfolio:
         self.balance = {}
 
 
+    def equity(self):
+        return self.cash + self.balance_value
+
+
 
 class Strategy:
 
-    # @TODO @CONSIDER Should a portfolio be passed to
     def __init__(self, pair, portfolio):
         self.pair = pair
         self.portfolio = portfolio
-        self.equity = 0
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
@@ -79,7 +83,10 @@ class Strategy:
         return self.portfolio.cash > 0
 
 
-    # Give message a default value
+    def equity(self):
+        return self.portfolio.equity()
+
+
     def buy(self, amount, price, message=''):
         assert isinstance(amount, int)
         assert isinstance(message, str)
@@ -88,7 +95,7 @@ class Strategy:
         logger.info('Buy  ' + amount + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
         self.portfolio.deposit(self.pair, amount)
         self.portfolio.cash -= amount * price
-        self.equity += amount * price
+        self.portfolio.balance_value += amount * price
 
 
     def sell(self, amount, price, message=''):
@@ -99,7 +106,7 @@ class Strategy:
         logger.info('Sell '  + amount + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += amount * price
-        self.equity -= amount * price
+        self.portfolio.balance_value -= amount * price
 
 
     def sellAll(self, price, message=''):
@@ -186,10 +193,10 @@ class RFStrat(Strategy):
                 prev_crossover_time = time.time()
                 prev_tick_price = price
 
-            elif time.time() - prev_crossover_time >= 30:
-                if time.time() - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
+            elif timestamp - prev_crossover_time >= 30:
+                if timestamp - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
 
-                    amount = self.equity_at_risk * self.equity
+                    amount = self.equity_at_risk * self.equity() / price
                     self.buy(amount, price, '[RF strat]')
 
                     prev_crossover_time = None
@@ -202,6 +209,7 @@ class RFStrat(Strategy):
 
             elif time.time() - prev_crossover_time >= 5:
                 self.sellAll(price, '[RF strat]')
+
                 prev_crossover_time = None
                 prev_sell_time = time.time()
 
@@ -253,7 +261,7 @@ class ATRStrat(Strategy):
 
             elif time.time() - prev_crossover_time >= self.timelag_required:
 
-                amount = self.equity_at_risk * self.equity
+                amount = self.equity_at_risk * self.equity / price
                 self.buy(amount, price, '[ATR strat]')
 
                 prev_crossover_time = None
@@ -283,14 +291,6 @@ class TestStrat(Strategy):
         self.buy(1, 'Testing Buy', price)
         self.sell(1, 'Testing Sell', price)
 
-
-
-def update_candle(bar, tick):
-    tick = json.loads(tick)
-    price = tick['price']
-    timestamp = float(tick['timestamp'])
-
-    bar.update(price, timestamp)
 
 
 def main(pair='ethusd'):
