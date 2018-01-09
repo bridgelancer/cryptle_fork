@@ -101,6 +101,7 @@ class CandleBar:
         if (len(self._bars) <= mins and len(self._bars) > 0):
             self.ls.append(self._bars[-1][2] - self._bars[-1][3])
             self.atr_var = sum(self.ls) / len(self.ls)
+
         elif(len(self._bars) > mins):
             self.ls.clear()
             TR = self._bars[-1][2] - self._bars[-1][3]
