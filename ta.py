@@ -86,12 +86,13 @@ class CandleBar:
         if self.timestamp_last == None:
             self.barmin = self.barmax = self.baropen = self.barclose = price
             self.timestamp_last = timestamp
+
         elif int(timestamp / self.period) != int(self.timestamp_last / self.period):
             self._bars.append([self.baropen, self.barclose, self.barmax, self.barmin, int(timestamp/self.period) + 1])
-            logger.debug(self._bars[-1])
-            self.timestamp_last = timestamp
 
             self.barmin = self.barmax = self.baropen = self.barclose = price
+            self.timestamp_last = timestamp
+
         elif int(timestamp / self.period) == int(self.timestamp_last / self.period):
             self.barmin = min(self.barmin, price)
             self.barmax = max(self.barmax, price)
