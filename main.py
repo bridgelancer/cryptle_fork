@@ -24,6 +24,8 @@ def main(pair='ethusd'):
     port1 = Portfolio(10000)
     port2 = Portfolio(10000)
     port3 = Portfolio(10000)
+    port4 = Portfolio(10000)
+    port5 = Portfolio(10000)
 
     # Add a few more strat instances and tweak their parameters to test run
     rf   = RFStrat(pair, port2)
@@ -31,7 +33,6 @@ def main(pair='ethusd'):
 
     bs.onTrade(pair, lambda x: logger.debug('Recieved new tick'))
     bs.onTrade(pair, rf)
-    bs.onTrade(pair, atr)
 
     while True:
         logger.info('RF Cash: ' + str(port2.cash))
