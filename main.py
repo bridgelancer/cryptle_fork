@@ -223,64 +223,65 @@ class CandleBar:
         self._bars = []
 
         self.period = period
+        self.lookback = 100
         self.last = 0
-        self.timestamp_last = None
-        self.ticks = []
 
         self.ls = []
         self.atr_val = 0
+        
+        self.barmin = None
+        self.barmax = None
+        self.baropen = None
+        self.barclose = None
+        self.timestamp_last = None
 
     def update(self, price, timestamp=None):
-
+        
         if timestamp == None:
             timestamp = time.time()
-        if self.timestamp_last == None:
-            self.timestamp_last = time.time()
         # execute the following block if
         # - the current trade happens 60s after the last trade OR
         # - the current trade falls in the following 60s window
-        if int(timestamp / 60) != int(self.timestamp_last / 60):
+        if self.timestamp_last == None:
+            self.barmin = self.barmax = self.baropen = self.barclose = price
+        elif int(timestamp / self.period) != int(self.timestamp_last / self.period):
+            self._bars.append([self.baropen, self.barclose, self.barmax, self.barmin, int(timestamp/self.period) + 1])
+            logger.debug(self._bars[-1])
 
-            barmin = min(item[0] for item in self.ticks)
-            barmax = max(item[0] for item in self.ticks)
-            baropen = self.ticks[0][0]
-            barclose = self.ticks[-1][0]
-            self.last = price  # update the current tick prcie
+            self.barmin = self.barmax = self.baropen = self.barclose = price
+        elif int(timestamp / self.period) == int(self.timestamp_last / self.period):
+            self.barmin = min(self.barmin, price)
+            self.barmax = max(self.barmax, price)
+            self.barclose = price
 
-            self._bars.append([baropen, barclose, barmax, barmin, int(self.timestamp_last/self.period) + 1])
+        self.last = price  # update the current tick prcie
+        self.timestamp_last = timestamp
 
-            self.ticks.clear()
-            self.timestamp_last = timestamp
+        # @HARDCODE
+        self.compute_atr(5)
+        self.prune(self.lookback)
 
-            if not len(self._bars) == 0:
-                logger.debug(self._bars[-1])
 
-            # @HARDCODE
-            self.compute_atr(1)
-
-        self.ticks.append([price, timestamp])
-
-    def compute_atr(self, period):
-
-        if (len(self._bars) <= period):
+    def compute_atr(self, mins):
+        if (len(self._bars) <= mins and len(self._bars) > 0):
             self.ls.append(self._bars[-1][2] - self._bars[-1][3])
             self.atr_var = sum(self.ls) / len(self.ls)
-        # @HARDCODE
-        elif(len(self._bars) > 1):
+        elif(len(self._bars) > mins):
             self.ls.clear()
             TR = self._bars[-1][2] - self._bars[-1][3]
-            self.atr_val = (self.atr_val * (period - 1) + TR) / period
+            self.atr_val = (self.atr_val * (mins - 1) + TR) / mins
 
     def get_atr(self):
 
-        #@HARDCOD
+        #@HARDCODE
         if (len(self._bars) >= 5):
             return self.atr_val
         else:
             raise RuntimeWarning("ATR not yet available")
 
-    def prune(self, lookback): #discard the inital entries after 100 periods
-        self._bars = self._bars[-lookback:]
+    def prune(self, lookback): #discard the inital bars after 100 periods of bar data
+        if len(self._bars) != 0:
+            self._bars = self._bars[-min(len(self._bars), lookback):]
 
 
 
