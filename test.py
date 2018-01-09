@@ -55,6 +55,12 @@ def loadCSV(ls, TestStrat):
         tick = ''.join(item)
         strat(tick)
 
+def testLoadCSV():
+    port = Portfolio(10000)
+    test = TestStrat('ethusd', port)
+
+    ls = readCSV('btc_sample')
+    loadCSV(ls, test)       
 
 def testBuySell():
     port = Portfolio(1000)
@@ -102,9 +108,5 @@ def testATR():
 
 
 if __name__ == '__main__':
-    port = Portfolio(10000)
-    atr = TestStrat('ethusd', port)
-
-    ls = readCSV('btc_sample')
-    loadCSV(ls, atr)
+    testLoadCSV()
 
