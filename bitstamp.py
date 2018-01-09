@@ -116,6 +116,8 @@ class BitstampREST:
         assert isinstance(endpoint, str)
         assert isinstance(params, dict) or params is None
 
+        res = req.post(self.url + endpoint, params)
+
         handleConnectionErrors(res)
         parsed_res = json.loads(res.text)
         return parsed_res
