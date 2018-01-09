@@ -49,11 +49,11 @@ def readCSV(filename):
     ifile.close()
     return ls
 
-def loadCSV(ls, TestStrat):
-    strat = TestStrat
+def loadCSV(ls, Strat):
+    strat = Strat
     for item in ls:
         tick = ''.join(item)
-        strat(tick)
+        Strat(tick)
 
 def testLoadCSV():
     port = Portfolio(10000)
@@ -100,13 +100,14 @@ def testATR():
     feed = BitstampFeed()
     port = Portfolio(10000)
 
-    atr = ATRStrat('ethusd', port)
+    atr = ATRStrat('btcusd', port)
+    ls = readCSV('btc_sample')
 
-    ticks = []
-    for tick in ticks:
+    for item in ls:
+        tick = ''.join(item)
         atr(tick)
-
+        
 
 if __name__ == '__main__':
-    testLoadCSV()
+    testATR()
 
