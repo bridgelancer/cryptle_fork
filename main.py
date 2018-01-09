@@ -41,17 +41,20 @@ class BitstampREST:
         return self._get('/order_book/' + pair)
 
 
-    def getBalance(self):
-        assert self.secret is not None
+    def getBalance(self, pair=''):
+        if pair != '':
+            pair += '/'
+
         params = self._authParams()
-        return self._post('/balance/', params=params)
+        return self._post('/balance/' + pair, params=params)
 
 
     def getOrderStatus(self, order_id):
         assert isinstance(order_id, int)
+
         params = self._authParams()
         params['id'] = order_id
-        return self._post('/order_status', params=params)
+        return self._post('/order_status/', params=params)
 
 
     def limitBuy(self, pair, amount, price):
@@ -62,7 +65,7 @@ class BitstampREST:
         params = self._authParams()
         params['amount'] = amount
         params['price'] = price
-        return self._post('/buy/' + pair, params=params)
+        return self._post('/buy/' + pair + '/', params=params)
 
 
     def limitSell(self, pair, amount, price):
@@ -73,7 +76,7 @@ class BitstampREST:
         params = self._authParams()
         params['amount'] = amount
         params['price'] = price
-        return self._post('/sell/' + pair, params=params)
+        return self._post('/sell/' + pair + '/', params=params)
 
 
     def marketBuy(self, pair, amount):
@@ -82,7 +85,7 @@ class BitstampREST:
 
         params = self._authParams()
         params['amount'] = amount
-        return self._post('/buy/market/' + pair, params=params)
+        return self._post('/buy/market/' + pair + '/', params=params)
 
 
     def marketSell(self, pair, amount):
@@ -91,14 +94,15 @@ class BitstampREST:
 
         params = self._authParams()
         params['amount'] = amount
-        return self._post('/sell/market/' + pair, params=params)
+        return self._post('/sell/market/' + pair + '/', params=params)
 
 
     def cancnelOrder(self, order_id):
         assert isinstance(order_id, int)
+
         params = self._authParams()
         params['id'] = price
-        return self._post('/order_status', params=params)
+        return self._post('/order_status/', params=parms)
 
 
     def _get(self, endpoint, params=None):
@@ -110,11 +114,14 @@ class BitstampREST:
 
         if c == 400:
             logger.error('400 Bad Request Error')
+            logger.error(res.text)
             raise ConnectionError('Server 400 Bad Request Error')
         elif c == 404:
             logger.error('404 Page Not Found')
+            logger.error(res.text)
             raise ConnectionError('Server 404 Page Not Found')
         elif c != 200:
+            logger.error(res.text)
             raise ConnectionError('Server returned error ' + str(c))
 
         parsed_res = json.loads(res.text)
@@ -130,16 +137,20 @@ class BitstampREST:
 
         if c == 400:
             logger.error('400 Bad Request Error')
+            logger.error(res.text)
             raise ConnectionError('Server 400 Bad Request Error')
         elif c == 401:
             logger.error('401 Unauthorized Error')
+            logger.error(res.text)
             raise ConnectionError('Server 401 Unauthorized Error')
         elif c == 403:
             logger.error('403 Bad Request Error')
+            logger.error(res.text)
             raise ConnectionError('Server 403 Forbidden')
         elif c == 404:
             logger.error('404 Page Not Found')
         elif c != 200:
+            logger.error(res.text)
             raise ConnectionError('Server returned error ' + str(c))
 
         parsed_res = json.loads(res.text)
