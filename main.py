@@ -22,6 +22,29 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
+def handleConnectionErrors(res):
+    c = res.status_code
+
+    if c == 400:
+        logger.error('400 Bad Request Error')
+        logger.error(res.text)
+        raise ConnectionError('Server 400 Bad Request Error')
+    elif c == 401:
+        logger.error('401 Unauthorized Error')
+        logger.error(res.text)
+        raise ConnectionError('Server 401 Unauthorized Error')
+    elif c == 403:
+        logger.error('403 Bad Request Error')
+        logger.error(res.text)
+        raise ConnectionError('Server 403 Forbidden')
+    elif c == 404:
+        logger.error('404 Page Not Found')
+    elif c != 200:
+        logger.error(res.text)
+        raise ConnectionError('Server returned error ' + str(c))
+
+
+
 class BitstampREST:
 
     def __init__(self, key=None, secret=None, customer_id=None):
@@ -107,23 +130,11 @@ class BitstampREST:
 
     def _get(self, endpoint, params=None):
         assert isinstance(endpoint, str)
-        assert params is None or isinstance(params, dict)
+        assert isinstance(params, dict) or params is None
 
         res = req.get(self.url + endpoint, params)
-        c = res.status_code
 
-        if c == 400:
-            logger.error('400 Bad Request Error')
-            logger.error(res.text)
-            raise ConnectionError('Server 400 Bad Request Error')
-        elif c == 404:
-            logger.error('404 Page Not Found')
-            logger.error(res.text)
-            raise ConnectionError('Server 404 Page Not Found')
-        elif c != 200:
-            logger.error(res.text)
-            raise ConnectionError('Server returned error ' + str(c))
-
+        handleConnectionErrors(res)
         parsed_res = json.loads(res.text)
         return parsed_res
 
@@ -133,26 +144,8 @@ class BitstampREST:
         assert isinstance(params, dict)
 
         res = req.post(self.url + endpoint, params)
-        c = res.status_code
 
-        if c == 400:
-            logger.error('400 Bad Request Error')
-            logger.error(res.text)
-            raise ConnectionError('Server 400 Bad Request Error')
-        elif c == 401:
-            logger.error('401 Unauthorized Error')
-            logger.error(res.text)
-            raise ConnectionError('Server 401 Unauthorized Error')
-        elif c == 403:
-            logger.error('403 Bad Request Error')
-            logger.error(res.text)
-            raise ConnectionError('Server 403 Forbidden')
-        elif c == 404:
-            logger.error('404 Page Not Found')
-        elif c != 200:
-            logger.error(res.text)
-            raise ConnectionError('Server returned error ' + str(c))
-
+        handleConnectionErrors(res)
         parsed_res = json.loads(res.text)
         return parsed_res
 
