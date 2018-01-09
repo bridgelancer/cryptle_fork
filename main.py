@@ -187,7 +187,6 @@ class RFStrat(Strategy):
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
-        # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
@@ -254,7 +253,6 @@ class ATRStrat(Strategy):
         downtrend = self.five_min.avg < self.eight_min.avg
 
         # @HARDCODE Buy/Sell message
-        # @HARDCODE Volume of buy/sell
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
