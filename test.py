@@ -36,6 +36,7 @@ class TestStrat(Strategy):
         self.buy(1, price, 'Testing Buy')
         self.sell(1, price, 'Testing Sell')
 
+# Return a list ls, containing json ticks in entries
 def readCSV(filename):
     ifile = open(filename, "rU")
     reader = csv.reader(ifile, delimiter = "\n")
@@ -49,6 +50,7 @@ def readCSV(filename):
     ifile.close()
     return ls
 
+# Parse the list ls into a Strategy class, tick by tick
 def loadCSV(ls, Strat):
     strat = Strat
     for item in ls:
@@ -96,18 +98,16 @@ def testBitstampREST():
     logger.debug(bs.getTicker('btcusd'))
 
 
-def testATR():
+def testStrategy():
     feed = BitstampFeed()
     port = Portfolio(10000)
 
     atr = ATRStrat('btcusd', port)
-    ls = readCSV('btc_sample')
 
-    for item in ls:
-        tick = ''.join(item)
-        atr(tick)
+    ls = readCSV('btc_sample')
+    loadCSV(ls, atr)
         
 
 if __name__ == '__main__':
-    testATR()
+    testStrategy()
 
