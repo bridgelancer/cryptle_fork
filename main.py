@@ -92,7 +92,7 @@ class Strategy:
         assert isinstance(message, str)
         assert price > 0
 
-        logger.info('Buy  ' + amount + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+        logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
         self.portfolio.deposit(self.pair, amount)
         self.portfolio.cash -= amount * price
         self.portfolio.balance_value += amount * price
@@ -103,7 +103,7 @@ class Strategy:
         assert isinstance(message, str)
         assert price > 0
 
-        logger.info('Sell '  + amount + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+        logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += amount * price
         self.portfolio.balance_value -= amount * price
@@ -286,8 +286,8 @@ class TestStrat(Strategy):
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
-        self.buy(1, 'Testing Buy', price)
-        self.sell(1, 'Testing Sell', price)
+        self.buy(1, price, 'Testing Buy')
+        self.sell(1, price, 'Testing Sell')
 
 
 
