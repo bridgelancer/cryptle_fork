@@ -1,24 +1,28 @@
-import time
-
-
 class MovingWindow:
 
     # window is the number of seconds in the lookback window
     # Ticker (optional) is meta-info about what series is being tracked
-    def __init__(self, window):
+    def __init__(self, period):
         self._ticks = []
-
         self.avg = 0
         self.volume = 0
         self.dollar_volume = 0
 
-        self.window = window
+        self.period = period
 
 
     def update(self, price, volume, timestamp):
+
+        # @THROW @HANDLE
+        try:
+            assert timestamp > self._ticks[0][2]
+        except (AssertionError, IndexError):
+            return
+
         self.last = price
-        self.volume = self.volume + volume
-        self.dollar_volume = self.dollar_volume + price * volume
+
+        self.volume += volume
+        self.dollar_volume += price * volume
         self.avg = self.dollar_volume / self.volume
 
         self._ticks.append((price, volume, timestamp))
@@ -27,13 +31,14 @@ class MovingWindow:
 
     def clear(self):
         now = self._ticks[-1][2]
-        lookback = now - self.window
+        lookback = now - self.period
 
         while True:
-            if self._ticks[0][2] < lookback:
+            if self._ticks[0][2] <= lookback:
                 tick = self._ticks.pop(0)
-                self.volume = self.volume - tick[1]
-                self.dollar_volume = self.dollar_volume - tick[0] * tick[1]
+
+                self.volume -= tick[1]
+                self.dollar_volume -= tick[0] * tick[1]
                 self.avg = self.dollar_volume / self.volume
             else:
                 break
@@ -71,9 +76,6 @@ class CandleBar:
 
 
     def update(self, price, timestamp):
-
-        if timestamp == None:
-            timestamp = time.time()
 
         if self.timestamp_last == None:
             self.barmin = self.barmax = self.baropen = self.barclose = price
