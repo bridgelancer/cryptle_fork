@@ -16,8 +16,10 @@ class MovingWindow:
         # @THROW @HANDLE
         try:
             assert timestamp > self._ticks[0][2]
-        except (AssertionError, IndexError):
+        except AssertionError:
             return
+        except IndexError:
+            pass
 
         self.last = price
 
