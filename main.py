@@ -464,6 +464,50 @@ class Strat(Strategy):
 
 
 
+class RFStrat(Strategy):
+
+    def __init__(self, pair, portfolio):
+        super().__init__(pair, portfolio)
+        self.five_min = MovingWindow(300, pair)
+        self.eight_min = MovingWindow(480, pair)
+
+
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+
+        self.five_min.update(price, volume, timestamp)
+        self.eight_min.update(price, volume, timestamp)
+
+        prev_tick_price = self.prev_tick_price
+        prev_crossover_time = self.prev_crossover_time
+        prev_sell_time = self.prev_sell_time
+
+        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg:
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+                prev_tick_price = price
+
+            elif time.time() - prev_crossover_time >= 30:
+                if time.time() - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
+                    self.buy(1, '[RF strat]', price)
+                    prev_crossover_time = None
+                    prev_tick_price = None
+
+        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
+            if prev_crossover_time is None:
+                prev_crossover_time = time.time()
+            elif time.time() - prev_crossover_time >= 5:
+                self.sell(1, '[RF strat]', price)
+                prev_crossover_time = None
+                prev_sell_time = time.time()
+        else:
+            prev_crossover_time = None
+
+        self.prev_crossover_time = prev_crossover_time
+        self.prev_sell_time = prev_sell_time
+
+
+
 class ATRStrat(Strategy):
 
     def __init__(self, pair, portfolio):
@@ -514,56 +558,13 @@ class ATRStrat(Strategy):
 
 
 
-class RFStrat(Strategy):
-
-    def __init__(self, pair, portfolio):
-        super().__init__(pair, portfolio)
-        self.five_min = MovingWindow(300, pair)
-        self.eight_min = MovingWindow(480, pair)
-
-
-    def __call__(self, tick):
-        price, volume, timestamp = self.unpackTick(tick)
-
-        self.five_min.update(price, volume, timestamp)
-        self.eight_min.update(price, volume, timestamp)
-
-        prev_tick_price = self.prev_tick_price
-        prev_crossover_time = self.prev_crossover_time
-        prev_sell_time = self.prev_sell_time
-
-        if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg:
-            if prev_crossover_time is None:
-                prev_crossover_time = time.time()
-                prev_tick_price = price
-
-            elif time.time() - prev_crossover_time >= 30:
-                if time.time() - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
-                    self.buy(1, '[RF strat]', price)
-                    prev_crossover_time = None
-                    prev_tick_price = None
-
-        elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
-            if prev_crossover_time is None:
-                prev_crossover_time = time.time()
-            elif time.time() - prev_crossover_time >= 5:
-                self.sell(1, '[RF strat]', price)
-                prev_crossover_time = None
-                prev_sell_time = time.time()
-        else:
-            prev_crossover_time = None
-
-        self.prev_crossover_time = prev_crossover_time
-        self.prev_sell_time = prev_sell_time
-
-
-
 class TestStrat(Strategy):
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
         self.buy(1, 'Testing Buy', price)
         self.sell(1, 'Testing Sell', price)
+
 
 
 def update_candle(bar, tick):
@@ -577,9 +578,9 @@ def update_candle(bar, tick):
 def main(pair='ethusd'):
     bs = BitstampFeed()
 
-    port1 = Portfolio(100)
-    port2 = Portfolio(100)
-    port3 = Portfolio(100)
+    port1 = Portfolio(10000)
+    port2 = Portfolio(10000)
+    port3 = Portfolio(10000)
 
     old  = Strat(pair, port1)
     rf   = RFStrat(pair, port2)
