@@ -1,0 +1,46 @@
+#!/usr/bin/awk -f
+
+BEGIN {
+    no = 0;
+    nr = 0;
+    na = 0;
+}
+
+/INFO/ && /Old/ {
+    no += 1;
+    old[no] = $0;
+}
+
+/INFO/ && /RF/ {
+    nr += 1;
+    rf[nr] = $0;
+}
+
+/INFO/ && /ATR/ {
+    na += 1;
+    atr[na] = $0;
+}
+
+/DEBUG/ && /Old Cash/ {
+    co = $7;
+}
+
+/DEBUG/ && /RF Cash/ {
+    cr = $7;
+}
+
+/DEBUG/ && /ATR Cash/ {
+    ca = $7;
+}
+
+END {
+    print "========================"
+    print "No. of Old trades: " no;
+    print "No. of RF  trades: " nr;
+    print "No. of ATR trades: " na;
+    print ""
+    print "Closing cash: " co;
+    print "Closing cash: " cr;
+    print "Closing cash: " ca;
+    print "========================"
+}
