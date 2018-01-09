@@ -6,7 +6,7 @@ class MovingWindow:
     # window is the number of seconds in the lookback window
     # Ticker (optional) is meta-info about what series is being tracked
     def __init__(self, window, ticker=None):
-        self._ticks = [] # @OPTIMIZE use NumPy arrays
+        self._ticks = []
 
         self.avg = 0
         self.volume = 0
@@ -20,11 +20,7 @@ class MovingWindow:
         return self.ticker
 
 
-    def update(self, price, volume, timestamp=None):
-
-        if timestamp == None:
-            timestamp = time.time()
-
+    def update(self, price, volume, timestamp):
         self.last = price
         self.volume = self.volume + volume
         self.dollar_volume = self.dollar_volume + price * volume
@@ -32,6 +28,7 @@ class MovingWindow:
 
         self._ticks.append((price, volume, timestamp))
         self.clear()
+
 
     def clear(self):
         now = time.time()
@@ -57,6 +54,7 @@ class MovingWindow:
 
 
 class CandleBar:
+
     # _bars: List of (open, close, high, low, nth minute bar)
     # This class is for storing the min-by-min bars the minute before the current tick
     # default bar size is 1 minute
@@ -76,13 +74,12 @@ class CandleBar:
         self.barclose = None
         self.timestamp_last = None
 
-    def update(self, price, timestamp=None):
+
+    def update(self, price, timestamp):
 
         if timestamp == None:
             timestamp = time.time()
-        # execute the following block if
-        # - the current trade happens 60s after the last trade OR
-        # - the current trade falls in the following 60s window
+
         if self.timestamp_last == None:
             self.barmin = self.barmax = self.baropen = self.barclose = price
             self.timestamp_last = timestamp
@@ -114,6 +111,7 @@ class CandleBar:
             TR = self._bars[-1][2] - self._bars[-1][3]
             self.atr_val = (self.atr_val * (mins - 1) + TR) / mins
 
+
     def get_atr(self):
 
         #@HARDCODE
@@ -121,6 +119,7 @@ class CandleBar:
             return self.atr_val
         else:
             raise RuntimeWarning("ATR not yet available")
+
 
     def prune(self, lookback): #discard the inital bars after 100 periods of bar data
         if len(self._bars) != 0:
