@@ -116,8 +116,8 @@ class OldStrat(Strategy):
 
     def __init__(self, pair, portfolio):
         super().__init__(pair, portfolio)
-        self.five_min = MovingWindow(300, pair)
-        self.eight_min = MovingWindow(480, pair)
+        self.five_min = MovingWindow(300)
+        self.eight_min = MovingWindow(480)
 
 
     def __call__(self, tick):
@@ -157,10 +157,10 @@ class OldStrat(Strategy):
 
 class RFStrat(Strategy):
 
-    def __init__(self, pair, portfolio):
+    def __init__(self, pair, portfolio, period=60, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
-        self.five_min = MovingWindow(300)
-        self.eight_min = MovingWindow(480)
+        self.five_min = MovingWindow(period * scope1)
+        self.eight_min = MovingWindow(period * scope2)
 
 
     def __call__(self, tick):
@@ -208,11 +208,11 @@ class RFStrat(Strategy):
 
 class ATRStrat(Strategy):
 
-    def __init__(self, pair, portfolio):
+    def __init__(self, pair, portfolio, period=60, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
-        self.five_min = MovingWindow(300)
-        self.eight_min = MovingWindow(480)
-        self.bar = CandleBar(60)
+        self.five_min = MovingWindow(period * scope1)
+        self.eight_min = MovingWindow(period * scope2)
+        self.bar = CandleBar(period)
 
         self.upper_atr = 0.5
         self.lower_atr = 0.35
