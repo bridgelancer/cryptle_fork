@@ -32,25 +32,33 @@ class BitstampREST:
 
 
     def getTicker(self, pair):
+        assert isinstance(pair, str)
         return self._get('/ticker/' + pair)
 
 
     def getOrderbook(self, pair):
+        assert isinstance(pair, str)
         return self._get('/order_book/' + pair)
 
 
     def getBalance(self):
+        assert self.secret is not None
         params = self._authParams()
         return self._post('/balance/', params=params)
 
 
     def getOrderStatus(self, order_id):
+        assert isinstance(order_id, int)
         params = self._authParams()
         params['id'] = order_id
         return self._post('/order_status', params=params)
 
 
     def limitBuy(self, pair, amount, price):
+        assert isinstance(pair, str)
+        assert amount > 0
+        assert price > 0
+
         params = self._authParams()
         params['amount'] = amount
         params['price'] = price
@@ -58,6 +66,10 @@ class BitstampREST:
 
 
     def limitSell(self, pair, amount, price):
+        assert isinstance(pair, str)
+        assert amount > 0
+        assert price > 0
+
         params = self._authParams()
         params['amount'] = amount
         params['price'] = price
@@ -65,30 +77,44 @@ class BitstampREST:
 
 
     def marketBuy(self, pair, amount):
+        assert isinstance(pair, str)
+        assert amount > 0
+
         params = self._authParams()
         params['amount'] = amount
         return self._post('/buy/market/' + pair, params=params)
 
 
     def marketSell(self, pair, amount):
+        assert isinstance(pair, str)
+        assert amount > 0
+
         params = self._authParams()
         params['amount'] = amount
         return self._post('/sell/market/' + pair, params=params)
 
 
     def cancnelOrder(self, order_id):
+        assert isinstance(order_id, int)
         params = self._authParams()
         params['id'] = price
         return self._post('/order_status', params=params)
 
 
     def _get(self, endpoint, params=None):
+        assert isinstance(endpoint, str)
         assert params is None or isinstance(params, dict)
 
         res = req.get(self.url + endpoint, params)
         c = res.status_code
 
-        if c != 200:
+        if c == 400:
+            logger.error('400 Bad Request Error')
+            raise ConnectionError('Server 400 Bad Request Error')
+        elif c == 404:
+            logger.error('404 Page Not Found')
+            raise ConnectionError('Server 404 Page Not Found')
+        elif c != 200:
             raise ConnectionError('Server returned error ' + str(c))
 
         parsed_res = json.loads(res.text)
@@ -96,12 +122,24 @@ class BitstampREST:
 
 
     def _post(self, endpoint, params):
+        assert isinstance(endpoint, str)
         assert isinstance(params, dict)
 
         res = req.post(self.url + endpoint, params)
         c = res.status_code
 
-        if c != 200:
+        if c == 400:
+            logger.error('400 Bad Request Error')
+            raise ConnectionError('Server 400 Bad Request Error')
+        elif c == 401:
+            logger.error('401 Unauthorized Error')
+            raise ConnectionError('Server 401 Unauthorized Error')
+        elif c == 403:
+            logger.error('403 Bad Request Error')
+            raise ConnectionError('Server 403 Forbidden')
+        elif c == 404:
+            logger.error('404 Page Not Found')
+        elif c != 200:
             raise ConnectionError('Server returned error ' + str(c))
 
         parsed_res = json.loads(res.text)
@@ -294,7 +332,6 @@ class Portfolio:
             self.balance = {}
         else:
             self.balance = starting_balance
-
 
 
     def deposit(self, pair, amount):
