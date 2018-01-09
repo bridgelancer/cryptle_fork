@@ -85,6 +85,7 @@ class CandleBar:
 
             self.barmin = self.barmax = self.baropen = self.barclose = price
             self.timestamp_last = timestamp
+            self.computeAtr()
 
         elif int(timestamp / self.period) == int(self.timestamp_last / self.period):
             self.barmin = min(self.barmin, price)
@@ -92,18 +93,14 @@ class CandleBar:
             self.barclose = price
 
         self.last = price  # update the current tick prcie
-
-        # @HARDCODE
-        self.computeAtr()
         self.prune(self.lookback)
 
 
     def computeAtr(self):
         if (len(self._bars) <= self.atr_lookback and len(self._bars) > 0):
             self.ls.append(self._bars[-1][2] - self._bars[-1][3])
-            self.atr_var = sum(self.ls) / len(self.ls)
-
-        elif(len(self._bars) > self.atr_lookback):
+            self.atr_val = sum(self.ls) / len(self.ls)
+        elif(len(self._bars) > mins):
             self.ls.clear()
             TR = self._bars[-1][2] - self._bars[-1][3]
             self.atr_val = (self.atr_val * (self.atr_lookback- 1) + TR) / self.atr_lookback
