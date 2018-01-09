@@ -30,6 +30,21 @@ class TestStrat(Strategy):
         self.sell(1, price, 'Testing Sell')
 
 
+def testBuySell():
+    port = Portfolio(1000)
+    strat = Strategy('ethusd', port)
+    strat.buy(1, 1)
+    strat.sell(1, 1)
+
+
+def testFunctor():
+    port = Portfolio(1000)
+    strat = TestStrat('ethusd', port)
+
+    jsonstr = '{"price": 100, "amount": 1, "timestamp": 15411121919}'
+    strat(jsonstr)
+
+
 if __name__ == '__main__':
     testBuySell()
     testFunctor()
