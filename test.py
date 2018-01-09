@@ -2,6 +2,7 @@ from ta import *
 from bitstamp import *
 from strategy import *
 
+import math
 import logging
 import time
 import sys
@@ -57,12 +58,14 @@ def loadCSV(ls, Strat):
         tick = ''.join(item)
         Strat(tick)
 
+
 def testLoadCSV():
     port = Portfolio(10000)
     test = TestStrat('ethusd', port)
 
     ls = readCSV('btc_sample')
-    loadCSV(ls, test)       
+    loadCSV(ls, test)
+
 
 def testBuySell():
     port = Portfolio(1000)
@@ -88,7 +91,7 @@ def testBitstampFeed():
     feed.onTrade('ltcusd', lambda x: logger.debug('Recieved ETH tick'))
     feed.onTrade('bchusd', lambda x: logger.debug('Recieved ETH tick'))
 
-    time.sleep(10)
+    time.sleep(5)
     feed.pusher.disconnect()
     logger.debug('Disconnected from Bitstamp WebSockets')
 
@@ -106,8 +109,65 @@ def testStrategy():
 
     ls = readCSV('btc_sample')
     loadCSV(ls, atr)
-        
+
+    for item in ls:
+        tick = ''.join(item)
+        atr(tick)
+
+
+def testMA():
+    line = [(i, 1, i) for i in range(15)]
+    quad = [(i, i+1, i) for i in range(15)]
+    sine = [(math.sin(i), 1, i) for i in range(15)]
+
+    thre_line = MovingWindow(3)
+    thre_quad = MovingWindow(3)
+    thre_sine = MovingWindow(3)
+
+    five_line = MovingWindow(5)
+    five_quad = MovingWindow(5)
+    five_sine = MovingWindow(5)
+
+    five_ma = []
+    thre_ma = []
+
+    for tick in line:
+        thre_line.update(tick[0], tick[1], tick[2])
+        five_line.update(tick[0], tick[1], tick[2])
+        thre_ma.append(thre_line.avg)
+        five_ma.append(five_line.avg)
+
+    logger.debug(str(thre_ma[3]) + str(thre_ma[8]) + str(thre_ma[13]))
+    logger.debug(str(five_ma[3]) + str(five_ma[8]) + str(five_ma[13]))
+
+    thre_ma = []
+    five_ma = []
+
+    for tick in quad:
+        thre_quad.update(tick[0], tick[1], tick[2])
+        five_quad.update(tick[0], tick[1], tick[2])
+        thre_ma.append(thre_quad.avg)
+        five_ma.append(five_quad.avg)
+
+    logger.debug(str(thre_ma[3]) + str(thre_ma[8]) + str(thre_ma[13]))
+    logger.debug(str(five_ma[3]) + str(five_ma[8]) + str(five_ma[13]))
+
+    thre_ma = []
+    five_ma = []
+
+    for tick in sine:
+        five_sine.update(tick[0], tick[1], tick[2])
+        thre_sine.update(tick[0], tick[1], tick[2])
+        thre_ma.append(thre_sine.avg)
+        five_ma.append(five_sine.avg)
+
+    logger.debug(str(thre_ma[3]) + str(thre_ma[8]) + str(thre_ma[13]))
+    logger.debug(str(five_ma[3]) + str(five_ma[8]) + str(five_ma[13]))
+
 
 if __name__ == '__main__':
-    testStrategy()
+    testFunctor()
+    testBitstampFeed()
+    testBitstampREST()
+    testMA()
 
