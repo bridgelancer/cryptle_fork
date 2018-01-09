@@ -17,19 +17,6 @@ ch.setFormatter(formatter)
 
 logger.addHandler(ch)
 
-def readcsv(filename):	
-    ifile = open(filename, "rU")
-    reader = csv.reader(ifile, delimiter="\n")
-
-    rownum = 0	
-    ls = []
-
-    for row in reader:
-        a.append (row)
-        rownum += 1
-    
-    ifile.close()
-    return ls
 
 def main(pair='ethusd'):
     bs = BitstampFeed()
@@ -42,21 +29,42 @@ def main(pair='ethusd'):
 
     # Add a few more strat instances and tweak their parameters to test run
     rf   = RFStrat(pair, port2)
-    atr  = ATRStrat(pair, port3)
+    atr1  = ATRStrat(pair, port3, 60)
+    atr2  = ATRStrat(pair, port4, 180)
 
-    bs.onTrade(pair, lambda x: logger.debug('Recieved new tick'))
-    bs.onTrade(pair, atr)
+    atr3  = ATRStrat(pair, port3, 60)
+    atr4  = ATRStrat(pair, port4, 180)
+
+    atr3.timelag_required = 10
+    atr4.timelag_required = 10
+
+    bs.onTrade(pair, rf)
+    bs.onTrade(pair, atr1)
+    bs.onTrade(pair, atr2)
+    bs.onTrade(pair, atr3)
+    bs.onTrade(pair, atr4)
 
     while True:
-        logger.info('RF Cash: ' + str(port2.cash))
-        logger.info('RF Balance: ' + str(port2.balance))
-        logger.info('ATR Cash: ' + str(port3.cash))
-        logger.info('ATR Balance: ' + str(port3.balance))
+        logger.info('RF Cash: '      + str(port1.cash))
+        logger.info('RF Balance: '   + str(port1.balance))
+        logger.info('ATR1 Cash: '    + str(port2.cash))
+        logger.info('ATR1 Balance: ' + str(port2.balance))
+        logger.info('ATR2 Cash: '    + str(port3.cash))
+        logger.info('ATR2 Balance: ' + str(port3.balance))
+        logger.info('ATR4 Cash: '    + str(port4.cash))
+        logger.info('ATR3 Balance: ' + str(port4.balance))
+        logger.info('ATR4 Cash: '    + str(port5.cash))
+        logger.info('ATR4 Balance: ' + str(port5.balance))
 
-        logger.info('ATR val: ' + str(atr.bar.atr_val))
-        logger.info('ls: ' + str(atr.bar.ls))
-        logger.info('_bars: ' + str(atr.bar._bars))
-        time.sleep(60)
+        try:
+            logger.info('ATR1 : ' + str(atr1.bar.getAtr()))
+            logger.info('ATR2 : ' + str(atr2.bar.getAtr()))
+            logger.info('ATR3 : ' + str(atr3.bar.getAtr()))
+            logger.info('ATR4 : ' + str(atr4.bar.getAtr()))
+        except:
+            pass
+
+        time.sleep(120)
 
 
 if __name__ == '__main__':
