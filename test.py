@@ -130,44 +130,56 @@ def testMA():
 
     five_ma = []
     thre_ma = []
-
     for tick in line:
         thre_line.update(tick[0], tick[1], tick[2])
         five_line.update(tick[0], tick[1], tick[2])
         thre_ma.append(thre_line.avg)
         five_ma.append(five_line.avg)
 
-    logger.debug(str(thre_ma[3]) + str(thre_ma[8]) + str(thre_ma[13]))
-    logger.debug(str(five_ma[3]) + str(five_ma[8]) + str(five_ma[13]))
+    logger.debug(str(thre_ma[3]) + ' ' + str(thre_ma[8]) + ' ' + str(thre_ma[13]))
+    logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
+    assert thre_ma[3] == 2
+    assert five_ma[13] == 11
 
     thre_ma = []
     five_ma = []
-
     for tick in quad:
         thre_quad.update(tick[0], tick[1], tick[2])
         five_quad.update(tick[0], tick[1], tick[2])
         thre_ma.append(thre_quad.avg)
         five_ma.append(five_quad.avg)
 
-    logger.debug(str(thre_ma[3]) + str(thre_ma[8]) + str(thre_ma[13]))
-    logger.debug(str(five_ma[3]) + str(five_ma[8]) + str(five_ma[13]))
+    logger.debug(str(thre_ma[3]) + ' ' + str(thre_ma[8]) + ' ' + str(thre_ma[13]))
+    logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
 
     thre_ma = []
     five_ma = []
-
     for tick in sine:
         five_sine.update(tick[0], tick[1], tick[2])
         thre_sine.update(tick[0], tick[1], tick[2])
         thre_ma.append(thre_sine.avg)
         five_ma.append(five_sine.avg)
 
-    logger.debug(str(thre_ma[3]) + str(thre_ma[8]) + str(thre_ma[13]))
-    logger.debug(str(five_ma[3]) + str(five_ma[8]) + str(five_ma[13]))
+    logger.debug(str(thre_ma[3]) + ' ' + str(thre_ma[8]) + ' ' + str(thre_ma[13]))
+    logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
+
+def testEquity():
+    port  = Portfolio(1000)
+    strat = Strategy('ethusd', port)
+
+    strat.buy(2, 100)
+    logger.debug(strat.equity_at_risk * strat.equity())
+    logger.debug(strat.equity())
+    logger.debug(strat.portfolio.cash)
+
+    assert strat.equity() == 1000
+    assert strat.portfolio.cash == 800
 
 
 if __name__ == '__main__':
     testFunctor()
-    testBitstampFeed()
+    #testBitstampFeed()
     testBitstampREST()
     testMA()
+    testEquity()
 
