@@ -17,7 +17,6 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
-fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 
 logger.addHandler(ch)
@@ -445,7 +444,6 @@ class ATRStrat(Strategy):
         downtrend = self.five_min.avg < self.eight_min.avg
 
         if self.hasCash() and not self.hasBalance() and uptrend and self.five_min.avg < price - bound:
-            logger.debug('ATRStrat gonna buy')
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
@@ -453,7 +451,6 @@ class ATRStrat(Strategy):
                     prev_crossover_time = None
 
         elif self.hasBalance() and (downtrend or min(self.five_min.avg, self.eight_min.avg) > price+ bound):
-            logger.debug('ATRStrat gonna sell')
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
@@ -559,6 +556,7 @@ if __name__ == '__main__':
     try:
         pair = sys.argv[1]
         fh = logging.FileHandler(pair + '.csv')
+        fh.setFormatter(formatter)
         logger.addHandler(fh)
         main(pair)
     except:
