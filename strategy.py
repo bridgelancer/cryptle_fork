@@ -75,7 +75,7 @@ class Strategy:
 
 
     def buy(self, amount, price, message=''):
-        assert isinstance(amount, int)
+        assert isinstance(amount, int) or isinstance(amount, float)
         assert isinstance(message, str)
         assert price > 0
 
@@ -86,7 +86,7 @@ class Strategy:
 
 
     def sell(self, amount, price, message=''):
-        assert isinstance(amount, int)
+        assert isinstance(amount, int) or isinstance(amount, float)
         assert isinstance(message, str)
         assert price > 0
 
@@ -245,7 +245,7 @@ class ATRStrat(Strategy):
 
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
-                amount = self.equity_at_risk * self.equity / price
+                amount = self.equity_at_risk * self.equity() / price
                 self.buy(amount, price, '[ATR strat]')
 
                 prev_crossover_time = None

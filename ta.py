@@ -26,7 +26,7 @@ class MovingWindow:
 
 
     def clear(self):
-        now = time.time()
+        now = self._ticks[-1][2]
         lookback = now - self.window
 
         while True:
