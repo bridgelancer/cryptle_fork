@@ -6,7 +6,7 @@ import logging
 import time
 import sys
 
-logger = logging.getLogger('Test')
+logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
@@ -21,6 +21,12 @@ fh.setFormatter(formatter)
 
 logger.addHandler(ch)
 logger.addHandler(fh)
+
+bslog = logging.getLogger('Bitstamp')
+bslog.setLevel(logging.DEBUG)
+bslog.addHandler(ch)
+bslog.addHandler(fh)
+
 
 class TestStrat(Strategy):
 
@@ -51,8 +57,12 @@ def testBitstampFeed():
     feed.onTrade('btcusd', lambda x: logger.debug('Recieved BTC tick'))
     feed.onTrade('xrpusd', lambda x: logger.debug('Recieved XRP tick'))
     feed.onTrade('ethusd', lambda x: logger.debug('Recieved ETH tick'))
+    feed.onTrade('ltcusd', lambda x: logger.debug('Recieved ETH tick'))
+    feed.onTrade('bchusd', lambda x: logger.debug('Recieved ETH tick'))
 
     time.sleep(10)
+    feed.pusher.disconnect()
+    logger.debug('Disconnected from Bitstamp WebSockets')
 
 
 def testBitstampREST():
