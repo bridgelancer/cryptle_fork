@@ -221,8 +221,8 @@ class ATRStrat(Strategy):
 
         try:
             atr = self.bar.get_atr()
-            belowatr = self.five_min.avg < prive - self.lower_atr * atr
-            aboveatr = min(self.five_min.avg, self.eight_min.avg) > prive + self.upper_atr * atr
+            belowatr = self.five_min.avg < price - self.lower_atr * atr
+            aboveatr = min(self.five_min.avg, self.eight_min.avg) > price + self.upper_atr * atr
         except RuntimeWarning:
             return
 
