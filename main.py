@@ -244,9 +244,11 @@ class CandleBar:
         # - the current trade falls in the following 60s window
         if self.timestamp_last == None:
             self.barmin = self.barmax = self.baropen = self.barclose = price
+            self.timestamp_last = timestamp
         elif int(timestamp / self.period) != int(self.timestamp_last / self.period):
             self._bars.append([self.baropen, self.barclose, self.barmax, self.barmin, int(timestamp/self.period) + 1])
             logger.debug(self._bars[-1])
+            self.timestamp_last = timestamp
 
             self.barmin = self.barmax = self.baropen = self.barclose = price
         elif int(timestamp / self.period) == int(self.timestamp_last / self.period):
@@ -255,7 +257,6 @@ class CandleBar:
             self.barclose = price
 
         self.last = price  # update the current tick prcie
-        self.timestamp_last = timestamp
 
         # @HARDCODE
         self.compute_atr(5)
