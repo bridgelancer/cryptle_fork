@@ -7,7 +7,7 @@ import sys
 
 
 logger = logging.getLogger('Cryptle')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
 
@@ -319,7 +319,8 @@ if __name__ == '__main__':
     try:
         pair = sys.argv[1]
 
-        fh = logging.FileHandler(pair + '.log')
+        fh = logging.FileHandler(pair + '.log', mode='w')
+        fh.setLevel(logging.DEBUG)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
 
