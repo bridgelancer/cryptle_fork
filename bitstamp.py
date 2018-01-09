@@ -8,6 +8,11 @@ import pysher
 import requests as req
 
 
+logger = logging.getLogger('Bitstamp')
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
+
+
 class BitstampREST:
 
     def __init__(self, key=None, secret=None, customer_id=None):
