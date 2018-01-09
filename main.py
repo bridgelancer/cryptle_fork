@@ -200,7 +200,9 @@ class ATRStrat(Strategy):
         self.five_min = MovingWindow(300, pair)
         self.eight_min = MovingWindow(480, pair)
         self.bar = CandleBar(60)
-        self.atr_shift = 0.5
+
+        self.upper_atr = 0.5
+        self.lower_atr = 0.35
 
 
     def __call__(self, tick):
@@ -214,21 +216,23 @@ class ATRStrat(Strategy):
         prev_sell_time = self.prev_sell_time
 
         try:
-            bound = self.atr_shift * self.bar.get_atr()
+            atr = self.bar.get_atr()
+            belowatr = self.five_min.avg < prive - self.lower_atr * atr
+            aboveatr = min(self.five_min.avg, self.eight_min.avg) > prive + self.upper_atr * atr
         except RuntimeWarning:
             return
 
         uptrend = self.five_min.avg > self.eight_min.avg
         downtrend = self.five_min.avg < self.eight_min.avg
 
-        if self.hasCash() and not self.hasBalance() and uptrend and self.five_min.avg < price - bound:
+        if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
                     self.buy(1, '[ATR strat]', price)
                     prev_crossover_time = None
 
-        elif self.hasBalance() and (downtrend or min(self.five_min.avg, self.eight_min.avg) > price+ bound):
+        elif self.hasBalance() and (downtrend or aboveatr):
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
             elif time.time() - prev_crossover_time >= self.timelag_required:
