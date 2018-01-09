@@ -166,8 +166,8 @@ class RFStrat(Strategy):
 
     def __init__(self, pair, portfolio):
         super().__init__(pair, portfolio)
-        self.five_min = MovingWindow(300, pair)
-        self.eight_min = MovingWindow(480, pair)
+        self.five_min = MovingWindow(300)
+        self.eight_min = MovingWindow(480)
 
 
     def __call__(self, tick):
@@ -217,8 +217,8 @@ class ATRStrat(Strategy):
 
     def __init__(self, pair, portfolio):
         super().__init__(pair, portfolio)
-        self.five_min = MovingWindow(300, pair)
-        self.eight_min = MovingWindow(480, pair)
+        self.five_min = MovingWindow(300)
+        self.eight_min = MovingWindow(480)
         self.bar = CandleBar(60)
 
         self.upper_atr = 0.5
