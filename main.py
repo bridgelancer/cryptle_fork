@@ -18,7 +18,6 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
-
 class Portfolio:
 
     def __init__(self, starting_cash, starting_balance=None):
@@ -109,7 +108,7 @@ class Strategy:
 
 
 
-class Strat(Strategy):
+class OldStrat(Strategy):
 
     def __init__(self, pair, portfolio):
         super().__init__(pair, portfolio)
@@ -126,6 +125,9 @@ class Strat(Strategy):
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
+        # @HARDCODE Timelag required
+        # @HARDCODE Buy/Sell message
+        # @HARDCODE Volume of buy/sell
         if self.hasCash() and not self.hasBalance()  and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
@@ -167,6 +169,8 @@ class RFStrat(Strategy):
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
+        # @HARDCODE Buy/Sell message
+        # @HARDCODE Volume of buy/sell
         if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
@@ -225,6 +229,8 @@ class ATRStrat(Strategy):
         uptrend = self.five_min.avg > self.eight_min.avg
         downtrend = self.five_min.avg < self.eight_min.avg
 
+        # @HARDCODE Buy/Sell message
+        # @HARDCODE Volume of buy/sell
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
             if prev_crossover_time is None:
                 prev_crossover_time = time.time()
@@ -271,7 +277,8 @@ def main(pair='ethusd'):
     port2 = Portfolio(10000)
     port3 = Portfolio(10000)
 
-    old  = Strat(pair, port1)
+    # Add a few more strat instances and tweak their parameters to test run
+    old  = OldStrat(pair, port1)
     rf   = RFStrat(pair, port2)
     atr  = ATRStrat(pair, port3)
 
