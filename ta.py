@@ -38,7 +38,6 @@ class MovingWindow:
             else:
                 break
 
-
     def high(self):
         return max(self._ticks)
 
