@@ -88,7 +88,13 @@ class BitstampREST:
         params = self._authParams()
         params['amount'] = amount
         params['price'] = price
-        return self._post('/buy/' + pair + '/', params=params)
+
+        res = self._post('/buy/' + pair + '/', params=params)
+
+        if res['status'] == 'error':
+            raise RuntimeWarning('Limit buy ' + pair + ' failed')
+
+        return res
 
 
     def limitSell(self, pair, amount, price):
@@ -99,7 +105,13 @@ class BitstampREST:
         params = self._authParams()
         params['amount'] = amount
         params['price'] = price
-        return self._post('/sell/' + pair + '/', params=params)
+
+        res = self._post('/sell/' + pair + '/', params=params)
+
+        if res['status'] == 'error':
+            raise RuntimeWarning('Limit sell ' + pair + ' failed')
+
+        return res
 
 
     def marketBuy(self, pair, amount):
@@ -108,7 +120,13 @@ class BitstampREST:
 
         params = self._authParams()
         params['amount'] = amount
-        return self._post('/buy/market/' + pair + '/', params=params)
+
+        res = self._post('/buy/market/' + pair + '/', params=params)
+
+        if res['status'] == 'error':
+            raise RuntimeWarning('Market buy ' + pair + ' failed')
+
+        return res
 
 
     def marketSell(self, pair, amount):
@@ -117,8 +135,13 @@ class BitstampREST:
 
         params = self._authParams()
         params['amount'] = amount
-        return self._post('/sell/market/' + pair + '/', params=params)
 
+        res = self._post('/sell/market/' + pair + '/', params=params)
+
+        if res['status'] == 'error':
+            raise RuntimeWarning('Market sell ' + pair + ' failed')
+
+        return res
 
     def cancnelOrder(self, order_id):
         assert isinstance(order_id, int)
