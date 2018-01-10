@@ -28,18 +28,18 @@ def main(pair='ethusd'):
     port5 = Portfolio(10000)
 
     # Add a few more strat instances and tweak their parameters to test run
-    rf   = RFStrat(pair, port2)
-    atr1  = ATRStrat(pair, port3, 60)
-    atr2  = ATRStrat(pair, port4, 180)
+    rf   = RFStrat(pair, port1)
+    atr1  = ATRStrat(pair, port2, 60)
+    atr2  = ATRStrat(pair, port3, 180)
 
-    atr3  = ATRStrat(pair, port3, 60)
-    atr4  = ATRStrat(pair, port4, 180)
+    atr3  = ATRStrat(pair, port4, 60)
+    atr4  = ATRStrat(pair, port5, 180)
 
     atr3.timelag_required = 10
     atr4.timelag_required = 10
 
     bs.onTrade(pair, rf)
-    bs.onTrade(pair, atr1)
+    bs.onTrade(pair, atr1, )
     bs.onTrade(pair, atr2)
     bs.onTrade(pair, atr3)
     bs.onTrade(pair, atr4)
@@ -51,7 +51,7 @@ def main(pair='ethusd'):
         logger.info('ATR1 Balance: ' + str(port2.balance))
         logger.info('ATR2 Cash: '    + str(port3.cash))
         logger.info('ATR2 Balance: ' + str(port3.balance))
-        logger.info('ATR4 Cash: '    + str(port4.cash))
+        logger.info('ATR3 Cash: '    + str(port4.cash))
         logger.info('ATR3 Balance: ' + str(port4.balance))
         logger.info('ATR4 Cash: '    + str(port5.cash))
         logger.info('ATR4 Balance: ' + str(port5.balance))
