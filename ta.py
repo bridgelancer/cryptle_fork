@@ -59,7 +59,7 @@ class CandleBar:
     # _bars: List of (open, close, high, low, nth minute bar)
     # This class is for storing the min-by-min bars the minute before the current tick
     # default bar size is 1 minute
-    def __init__(self, period=60, scope=3, atr_lookback=5):
+    def __init__(self, period=60, scope=5, atr_lookback=5):
         self._bars = []
         self._WMAs = []
 
@@ -77,7 +77,7 @@ class CandleBar:
         self.baropen = None
         self.barclose = None
         self.timestamp_last = None
-        self.WMA = None
+        self.WMA = 0
 
 
     def update(self, price, timestamp):

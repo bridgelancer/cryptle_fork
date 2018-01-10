@@ -43,21 +43,22 @@ def main(pair='ethusd'):
     # Add a few more strat instances and tweak their parameters to test run
     rf   = RFStrat(pair, port2)
     atr  = ATRStrat(pair, port3)
+    sma  = SMAStrat(pair, port4)
 
     bs.onTrade(pair, lambda x: logger.debug('Recieved new tick'))
     bs.onTrade(pair, atr)
+    bs.onTrade(pair, sma)
 
     while True:
         logger.info('RF Cash: ' + str(port2.cash))
         logger.info('RF Balance: ' + str(port2.balance))
         logger.info('ATR Cash: ' + str(port3.cash))
         logger.info('ATR Balance: ' + str(port3.balance))
+        logger.info('SMA Cash:' + str(port4.cash))
+        logger.info('SMA Balance:' + str(port4.balance))
 
         logger.info('ATR val: ' + str(atr.bar.atr_val))
-        logger.info('ls: ' + str(atr.bar.ls))
-        logger.info('_bars: ' + str(atr.bar._bars))
-        
-        logger.error('5 WMA: ' + str(atr.bar.WMA))
+
         time.sleep(60)
 
 
