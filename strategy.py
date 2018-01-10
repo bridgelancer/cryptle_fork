@@ -175,11 +175,15 @@ class RFStrat(Strategy):
         prev_sell_time = self.prev_sell_time
 
         if self.hasCash() and not self.hasBalance() and self.five_min.avg > self.eight_min.avg:
+            logger.debug('RF identified uptrend')
+
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
                 prev_tick_price = price
 
             elif timestamp - prev_crossover_time >= 30:
+                logger.debug('RF identified last crossover was 30 secs ago')
+
                 if timestamp - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
 
                     amount = self.equity_at_risk * self.equity() / price
@@ -189,6 +193,7 @@ class RFStrat(Strategy):
                     prev_tick_price = None
 
         elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
+            logger.debug('RF identified downtrend')
 
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
@@ -242,6 +247,7 @@ class ATRStrat(Strategy):
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
+            logger.debug('ATR identified uptrend and below ATR band')
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
@@ -253,6 +259,7 @@ class ATRStrat(Strategy):
                 prev_crossover_time = None
 
         elif self.hasBalance() and (downtrend or aboveatr):
+            logger.debug('ATR identified downtrend and above ATR band')
 
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
