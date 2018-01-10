@@ -7,7 +7,7 @@ import sys
 
 
 logger = logging.getLogger('Cryptle')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.NOTSET)
 
 formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
 
@@ -29,17 +29,17 @@ def main(pair='ethusd'):
 
     # Add a few more strat instances and tweak their parameters to test run
     rf   = RFStrat(pair, port1)
-    atr1  = ATRStrat(pair, port2, 60)
-    atr2  = ATRStrat(pair, port3, 180)
+    atr1  = ATRStrat(pair, port2, message='[ATR1]', period=60)
+    atr2  = ATRStrat(pair, port3, message='[ATR2]', period=180)
 
-    atr3  = ATRStrat(pair, port4, 60)
-    atr4  = ATRStrat(pair, port5, 180)
-
+    atr3  = ATRStrat(pair, port4, message='[ATR3]', period=60)
+    atr4  = ATRStrat(pair, port5, message='[ATR4]', period=180)
     atr3.timelag_required = 10
     atr4.timelag_required = 10
 
+    bs.onTrade(pair, lambda x: logger.log(0, x))
     bs.onTrade(pair, rf)
-    bs.onTrade(pair, atr1, )
+    bs.onTrade(pair, atr1)
     bs.onTrade(pair, atr2)
     bs.onTrade(pair, atr3)
     bs.onTrade(pair, atr4)
@@ -57,14 +57,16 @@ def main(pair='ethusd'):
         logger.info('ATR4 Balance: ' + str(port5.balance))
 
         try:
-            logger.info('ATR1 : ' + str(atr1.bar.getAtr()))
-            logger.info('ATR2 : ' + str(atr2.bar.getAtr()))
-            logger.info('ATR3 : ' + str(atr3.bar.getAtr()))
-            logger.info('ATR4 : ' + str(atr4.bar.getAtr()))
+            logger.debug('ATR1/3 : ' + str(atr1.bar.getAtr()))
+            logger.debug('ATR2/4: ' + str(atr2.bar.getAtr()))
+            logger.debug('5 min RF MA' + str(rf.five_min.avg))
+            logger.debug('8 min RF MA' + str(rf.eight_min.avg))
+            logger.debug('5 min ATR MA' + str(atr1.five_min.avg))
+            logger.debug('8 min ATR MA' + str(atr1.eight_min.avg))
         except:
             pass
 
-        time.sleep(120)
+        time.sleep(60)
 
 
 if __name__ == '__main__':
@@ -73,7 +75,7 @@ if __name__ == '__main__':
         pair = sys.argv[1]
 
         fh = logging.FileHandler(pair + '.log', mode='w')
-        fh.setLevel(logging.DEBUG)
+        fh.setLevel(logging.NOSET)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
 
