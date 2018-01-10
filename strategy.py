@@ -275,9 +275,11 @@ class ATRStrat(Strategy):
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
 
-class SMAStrat(Strategy):
 
-    def __init__(self, pair, portfolio, message='[ATR]', period=60, scope1=5, scope2=8):
+
+class WMAStrat(Strategy):
+
+    def __init__(self, pair, portfolio, message='[WMA]', period=60, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
         self.five_min_bar = CandleBar(period, scope1) # not yet implemented
         self.eight_min_bar = CandleBar(period, scope2) # not yet implemented
@@ -285,10 +287,6 @@ class SMAStrat(Strategy):
 
         self.upper_atr = 0.5
         self.lower_atr = 0.35
-
-
-    def __call__(self, tick):
-        price, volume, timestamp = self.unpackTick(tick)
 
         self.five_min_bar.update(price, timestamp)
         self.eight_min_bar.update(price, timestamp)
@@ -308,7 +306,7 @@ class SMAStrat(Strategy):
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
-            logger.debug('ATR identified uptrend and below ATR band')
+            logger.debug('WMA identified uptrend and below WMA band')
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
@@ -320,7 +318,7 @@ class SMAStrat(Strategy):
                 prev_crossover_time = None
 
         elif self.hasBalance() and (downtrend or aboveatr):
-            logger.debug('ATR identified downtrend and above ATR band')
+            logger.debug('WMA identified downtrend and above WMA band')
 
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
@@ -335,4 +333,42 @@ class SMAStrat(Strategy):
 
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
+
+
+
+class VWMAStrat(Strategy):
+
+    def __init__(self, pair, portfolio, message='', period=60, ma1=5, ma2=10):
+        super().__init(pair, portfolio)
+        self.message = message
+
+        self.ma1 = MovingWindow(period * ma1)
+        self.ma2 = MovingWindow(period * ma2)
+        self.entered = False
+
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+
+        self.ma1.update(price, volume, timestamp)
+        self.ma2.update(price, volume, timestamp)
+
+        uptrend = False
+
+        if self.ma1.avg > self.ma2.avg:
+            uptrend = True
+
+        if self.last_cross_time == None and self.last_:
+            last_cross_time = timestamp
+            return
+
+        confirm_up = uptrend and
+        confirm_down = downtrend and
+
+        if not self.entered and self.hasCash() and confirm_up:
+            self.buy(amount, price, self.message)
+            last_cross = None
+
+        elif self.entered and confirm_down:
+            self.sell(amount, price, self.message)
+            last_cross = None
 
