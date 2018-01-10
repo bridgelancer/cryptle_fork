@@ -56,6 +56,8 @@ def main(pair='ethusd'):
         logger.info('ATR val: ' + str(atr.bar.atr_val))
         logger.info('ls: ' + str(atr.bar.ls))
         logger.info('_bars: ' + str(atr.bar._bars))
+        
+        logger.error('5 WMA: ' + str(atr.bar.WMA))
         time.sleep(60)
 
 
