@@ -7,7 +7,7 @@ import sys
 
 
 logger = logging.getLogger('Cryptle')
-logger.setLevel(logging.NOTSET)
+logger.setLevel(1)
 
 formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
 
@@ -19,15 +19,17 @@ logger.addHandler(ch)
 
 
 def main(pair='ethusd'):
+    print("Initialising BitstampFeed")
     bs = BitstampFeed()
 
+    print("Initialising portfolios")
     port1 = Portfolio(10000)
     port2 = Portfolio(10000)
     port3 = Portfolio(10000)
     port4 = Portfolio(10000)
     port5 = Portfolio(10000)
 
-    # Add a few more strat instances and tweak their parameters to test run
+    print("Initialising strategies")
     rf   = RFStrat(pair, port1)
     atr1  = ATRStrat(pair, port2, message='[ATR1]', period=60)
     atr2  = ATRStrat(pair, port3, message='[ATR2]', period=180)
@@ -37,6 +39,7 @@ def main(pair='ethusd'):
     atr3.timelag_required = 10
     atr4.timelag_required = 10
 
+    print("Setting up callbacks")
     bs.onTrade(pair, lambda x: logger.log(0, x))
     bs.onTrade(pair, rf)
     bs.onTrade(pair, atr1)
@@ -44,6 +47,7 @@ def main(pair='ethusd'):
     bs.onTrade(pair, atr3)
     bs.onTrade(pair, atr4)
 
+    print("Reporting...")
     while True:
         logger.info('RF Cash: '      + str(port1.cash))
         logger.info('RF Balance: '   + str(port1.balance))
@@ -70,15 +74,15 @@ def main(pair='ethusd'):
 
 
 if __name__ == '__main__':
-    print('Hello crypto!')
     try:
         pair = sys.argv[1]
 
         fh = logging.FileHandler(pair + '.log', mode='w')
-        fh.setLevel(logging.NOSET)
+        fh.setLevel(1)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
 
+        print('Hello crypto!')
         main(pair)
     except:
         main()
