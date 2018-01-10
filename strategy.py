@@ -157,10 +157,11 @@ class OldStrat(Strategy):
 
 class RFStrat(Strategy):
 
-    def __init__(self, pair, portfolio, period=60, scope1=5, scope2=8):
+    def __init__(self, pair, portfolio, message='[RF]', period=60, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
         self.five_min = MovingWindow(period * scope1)
         self.eight_min = MovingWindow(period * scope2)
+        self.message = message
 
 
     def __call__(self, tick):
@@ -182,7 +183,7 @@ class RFStrat(Strategy):
                 if timestamp - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
 
                     amount = self.equity_at_risk * self.equity() / price
-                    self.buy(amount, price, '[RF strat]')
+                    self.buy(amount, price, self.message)
 
                     prev_crossover_time = None
                     prev_tick_price = None
@@ -193,7 +194,7 @@ class RFStrat(Strategy):
                 prev_crossover_time = timestamp
 
             elif timestamp - prev_crossover_time >= 5:
-                self.sellAll(price, '[RF strat]')
+                self.sellAll(price, self.message)
 
                 prev_crossover_time = None
                 prev_sell_time = timestamp
@@ -208,11 +209,12 @@ class RFStrat(Strategy):
 
 class ATRStrat(Strategy):
 
-    def __init__(self, pair, portfolio, period=60, scope1=5, scope2=8):
+    def __init__(self, pair, portfolio, message='[ATR]', period=60, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
         self.five_min = MovingWindow(period * scope1)
         self.eight_min = MovingWindow(period * scope2)
         self.bar = CandleBar(period)
+        self.message = message
 
         self.upper_atr = 0.5
         self.lower_atr = 0.35
@@ -246,7 +248,7 @@ class ATRStrat(Strategy):
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity() / price
-                self.buy(amount, price, '[ATR strat]')
+                self.buy(amount, price, self.message)
 
                 prev_crossover_time = None
 
@@ -256,7 +258,7 @@ class ATRStrat(Strategy):
                 prev_crossover_time = timestamp
 
             elif timestamp - prev_crossover_time >= self.timelag_required:
-                self.sellAll(price, '[ATR strat]')
+                self.sellAll(price, self.message)
                 prev_crossover_time = None
                 prev_sell_time = timestamp
 
