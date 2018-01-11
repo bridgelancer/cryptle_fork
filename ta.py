@@ -59,12 +59,14 @@ class CandleBar:
     # _bars: List of (open, close, high, low, nth minute bar)
     # This class is for storing the min-by-min bars the minute before the current tick
     # default bar size is 1 minute
-    def __init__(self, period=60, atr_lookback=5):
+    def __init__(self, period=60, scope=5, atr_lookback=5):
         self._bars = []
+        self._WMAs = []
 
         self.period = period
         self.lookback = 100
         self.last = 0
+        self.scope = scope
 
         self.ls = []
         self.atr_val = 0
@@ -75,6 +77,7 @@ class CandleBar:
         self.baropen = None
         self.barclose = None
         self.timestamp_last = None
+        self.WMA = 0
 
 
     def update(self, price, timestamp):
@@ -89,6 +92,7 @@ class CandleBar:
             self.barmin = self.barmax = self.baropen = self.barclose = price
             self.timestamp_last = timestamp
             self.computeAtr()
+            self.computeWMA()
 
         elif int(timestamp / self.period) == int(self.timestamp_last / self.period):
             self.barmin = min(self.barmin, price)
@@ -120,4 +124,34 @@ class CandleBar:
     def prune(self, lookback): #discard the inital bars after 100 periods of bar data
         if len(self._bars) != 0:
             self._bars = self._bars[-min(len(self._bars), lookback):]
+
+
+    def computeWMA(self,open_p = True):
+
+        if len(self._bars) < (self.scope-1):
+            pass
+        
+        else:
+            price_list = []
+            bar_list = self._bars[-(self.scope - 1):]
+
+            if open_p == True:
+                price_list = [x[0] for x in bar_list]
+                price_list.append(self.baropen)
+            elif open_p == False:
+                price_list = [x[1] for x in bar_list]
+                price_list.append(self.barclose)
+
+            sequence = range(1,(self.scope + 1))
+            self.price_list_test = price_list
+            weight = list(map(lambda x: x/sum(sequence), sequence))
+            self.WMA = sum(p * w for p,w in zip(price_list, weight))
+            self._WMAs.append(self.WMA)
+
+
+
+                
+
+
+
 

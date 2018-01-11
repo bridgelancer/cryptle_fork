@@ -105,14 +105,14 @@ def testStrategy():
     feed = BitstampFeed()
     port = Portfolio(10000)
 
-    atr = ATRStrat('btcusd', port)
+    sma = SMAStrat('btcusd', port)
 
     ls = readCSV('btc_sample')
-    loadCSV(ls, atr)
+    loadCSV(ls, sma)
 
     for item in ls:
         tick = ''.join(item)
-        atr(tick)
+        sma(tick)
 
 
 def testMA():
@@ -177,9 +177,5 @@ def testEquity():
 
 
 if __name__ == '__main__':
-    testFunctor()
     #testBitstampFeed()
-    testBitstampREST()
-    testMA()
-    testEquity()
-
+    testStrategy()

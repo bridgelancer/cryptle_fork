@@ -275,3 +275,64 @@ class ATRStrat(Strategy):
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
 
+class SMAStrat(Strategy):
+
+    def __init__(self, pair, portfolio, message='[ATR]', period=60, scope1=5, scope2=8):
+        super().__init__(pair, portfolio)
+        self.five_min_bar = CandleBar(period, scope1) # not yet implemented
+        self.eight_min_bar = CandleBar(period, scope2) # not yet implemented
+        self.message = message
+
+        self.upper_atr = 0.5
+        self.lower_atr = 0.35
+
+
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+
+        self.five_min_bar.update(price, timestamp)
+        self.eight_min_bar.update(price, timestamp)
+
+        prev_crossover_time = self.prev_crossover_time
+        prev_sell_time = self.prev_sell_time
+
+        try:
+            atr = self.five_min_bar.getAtr()
+            belowatr = self.five_min_bar.WMA < price - self.lower_atr * atr
+            aboveatr = min(self.five_min_bar.WMA, self.eight_min_bar.WMA) > price + self.upper_atr * atr
+        except RuntimeWarning:
+            return
+
+        uptrend = self.five_min_bar.WMA > self.eight_min_bar.WMA
+        downtrend = self.five_min_bar.WMA < self.eight_min_bar.WMA
+
+        # @HARDCODE Buy/Sell message
+        if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
+            logger.debug('ATR identified uptrend and below ATR band')
+            if prev_crossover_time is None:
+                prev_crossover_time = timestamp
+
+            elif timestamp - prev_crossover_time >= self.timelag_required:
+
+                amount = self.equity_at_risk * self.equity() / price
+                self.buy(amount, price, self.message)
+
+                prev_crossover_time = None
+
+        elif self.hasBalance() and (downtrend or aboveatr):
+            logger.debug('ATR identified downtrend and above ATR band')
+
+            if prev_crossover_time is None:
+                prev_crossover_time = timestamp
+
+            elif timestamp - prev_crossover_time >= self.timelag_required:
+                self.sellAll(price, self.message)
+                prev_crossover_time = None
+                prev_sell_time = timestamp
+
+        else:
+            prev_crossover_time = None
+
+        self.prev_crossover_time = prev_crossover_time
+        self.prev_sell_time = prev_sell_time
+
