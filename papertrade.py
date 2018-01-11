@@ -34,25 +34,47 @@ def papertrade():
     bs = BitstampFeed()
 
     logger.debug("Initialising portfolio")
-    port = Portfolio(10000)
+    port1 = Portfolio(10000)
+    port2 = Portfolio(10000)
 
     logger.debug("Initialising strategies")
-    atreth  = ATRStrat('ethusd', port, message='', period=180)
-    atrbtc  = ATRStrat('btcusd', port, message='', period=180)
-    atrxrp  = ATRStrat('xrpusd', port, message='', period=180)
-    atrbch  = ATRStrat('bchusd', port, message='', period=180)
+    atreth  = ATRStrat('ethusd', port1, message='[VWMA]', period=180)
+    atrbtc  = ATRStrat('btcusd', port1, message='[VWMA]', period=180)
+    atrxrp  = ATRStrat('xrpusd', port1, message='[VWMA]', period=180)
+    atrbch  = ATRStrat('bchusd', port1, message='[VWMA]', period=180)
+
+    wmaeth  = WMAStrat('ethusd', port2, message='[WMA]', period=180)
+    wmabtc  = WMAStrat('btcusd', port2, message='[WMA]', period=180)
+    wmaxrp  = WMAStrat('xrpusd', port2, message='[WMA]', period=180)
+    wmabch  = WMAStrat('bchusd', port2, message='[WMA]', period=180)
+
+    atreth.equity_at_risk = 0.25
+    atrbtc.equity_at_risk = 0.25
+    atrxrp.equity_at_risk = 0.25
+    atrbch.equity_at_risk = 0.25
+
+    wmaeth.equity_at_risk = 0.25
+    wmabtc.equity_at_risk = 0.25
+    wmaxrp.equity_at_risk = 0.25
+    wmabch.equity_at_risk = 0.25
 
     logger.debug("Setting up callbacks")
     bs.onTrade('ethusd', atreth)
     bs.onTrade('btcusd', atrbtc)
     bs.onTrade('xrpusd', atrxrp)
     bs.onTrade('bchusd', atrbch)
+    bs.onTrade('ethusd', wmaeth)
+    bs.onTrade('btcusd', wmabtc)
+    bs.onTrade('xrpusd', wmaxrp)
+    bs.onTrade('bchusd', wmabch)
 
     logger.debug("Reporting...")
     while True:
-        logger.info('Cash:   %.2f' % port.cash)
-        logger.info('Assets: %s' % str(port.balance))
-        logger.info('Equity: %.2f' % port.equity())
+        logger.info('VWMA ATR Cash:   %.2f' % port1.cash)
+        logger.info('VWMA ATR Assets: %s' % str(port1.balance))
+
+        logger.info('WMA Cash:   %.2f' % port1.cash)
+        logger.info('WMA Assets: %s' % str(port1.balance))
 
         logger.log(logging.TA, 'ETH ATR: %.2f' % atreth.bar.atr_val)
         logger.log(logging.TA, 'ETH MA:  %.2f' % atreth.five_min.avg)
