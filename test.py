@@ -66,6 +66,7 @@ def testLoadCSV():
     ls = readCSV('btc_sample')
     loadCSV(ls, test)
 
+
 def testParseTick(pair):
     ls = readCSV('tick_btc_json.log')
 
@@ -86,6 +87,7 @@ def testParseTick(pair):
             result.append(tick)
 
     return result
+
 
 def testBuySell():
     port = Portfolio(1000)
@@ -155,6 +157,20 @@ def testWMAStrategy(pair):
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
 
+
+def testEquity():
+    port  = Portfolio(1000)
+    strat = Strategy('ethusd', port)
+
+    strat.buy(2, price=100)
+    logger.debug(strat.equity_at_risk * strat.equity())
+    logger.debug(strat.equity())
+    logger.debug(strat.portfolio.cash)
+
+    assert strat.equity() == 1000
+    assert strat.portfolio.cash == 800
+
+
 def testMA():
     line = [(i, 1, i) for i in range(15)]
     quad = [(i, i+1, i) for i in range(15)]
@@ -203,20 +219,26 @@ def testMA():
     logger.debug(str(thre_ma[3]) + ' ' + str(thre_ma[8]) + ' ' + str(thre_ma[13]))
     logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
 
-def testEquity():
-    port  = Portfolio(1000)
-    strat = Strategy('ethusd', port)
 
-    strat.buy(2, price=100)
-    logger.debug(strat.equity_at_risk * strat.equity())
-    logger.debug(strat.equity())
-    logger.debug(strat.portfolio.cash)
+def testWMA():
+    const = [(3, i) for i in range(1, 100)]
+    lin = [(i, i) for i in  range(1, 100)]
+    quad  = [(i**2, i) for i in range(1, 100)]
 
-    assert strat.equity() == 1000
-    assert strat.portfolio.cash == 800
+    candle = CandleBar(1)   # 1 second bar
+    wma = WMA(candle, 5)    # 5 bar look ac
+
+    for tick in const:
+        candle.update(tick[0], tick[1])
+
+    assert wma.wma == 3
+
+    for tick in lin:
+        candle.update(tick[0], tick[1])
+
+    assert wma.wma - (293 / 3) < 1e-5
+
 
 if __name__ == '__main__':
-    #testBitstampFeed()
-    pair = sys.argv[1]
-    testWMAStrategy(pair)
-    testWMAModStrategy(pair)
+    testMA():
+    testWMA()
