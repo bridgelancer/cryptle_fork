@@ -1,14 +1,14 @@
-class MovingWindow:
+class ContinuousVWMA:
 
     # window is the number of seconds in the lookback window
     # Ticker (optional) is meta-info about what series is being tracked
-    def __init__(self, period):
+    def __init__(self, lookback):
         self.ticks = []
         self.avg = 0
         self.volume = 0
         self.dollar_volume = 0
 
-        self.period = period
+        self.lookback = lookback
 
 
     def update(self, price, volume, timestamp):
@@ -28,15 +28,15 @@ class MovingWindow:
         self.avg = self.dollar_volume / self.volume
 
         self.ticks.append((price, volume, timestamp))
-        self.clear()
+        self.prune()
 
 
-    def clear(self):
+    def prune(self):
         now = self.ticks[-1][2]
-        lookback = now - self.period
+        epoch = now - self.lookback
 
         while True:
-            if self.ticks[0][2] <= lookback:
+            if self.ticks[0][2] <= epoch:
                 tick = self.ticks.pop(0)
 
                 self.volume -= tick[1]
@@ -58,72 +58,47 @@ class CandleBar:
 
     # bars: List of (open, close, high, low, nth minute bar)
     # This class is for storing the min-by-min bars the minute before the current tick
-    # default bar size is 1 minute
-    def __init__(self, period, scope, atr_lookback=5):
+    def __init__(self, period):
         self.bars = []
-        self.WMAs = []
-
+        self.metrics = []
         self.period = period
+        self.last_timestamp = None
+
         self.lookback = 100
         self.last = 0
-        self.scope = scope
 
-        self.ls = []
-        self.atr_val = 0
-        self.atr_lookback = atr_lookback
-
-        self.barmin = None
-        self.barmax = None
-        self.baropen = None
-        self.barclose = None
-        self.timestamp_last = None
-        self.WMA = 0
+    def __getitem__(self, item):
+        return self.bars[item]
 
 
     def update(self, price, timestamp):
 
-        if self.timestamp_last == None:
+        if self.last_timestamp == None:
             self.barmin = self.barmax = self.baropen = self.barclose = price
-            self.timestamp_last = timestamp
+            self.last_timestamp = timestamp
 
-        elif int(timestamp / self.period) != int(self.timestamp_last / self.period):
-            self.bars.append([self.baropen, self.barclose, self.barmax, self.barmin, int(timestamp/self.period) + 1])
+        elif int(timestamp / self.period) != int(self.last_timestamp / self.period):
+            self.bars.append([self.baropen, self.barclose, self.barmax, self.barmin, int(timestamp/self.period)])
 
             self.barmin = self.barmax = self.baropen = self.barclose = price
-            self.timestamp_last = timestamp
-            self.computeAtr()
-            self.computeWMA()
+            self.last_timestamp = timestamp
 
-        elif int(timestamp / self.period) == int(self.timestamp_last / self.period):
+            for metric in metrics:
+                metric.update()
+
+        elif int(timestamp / self.period) == int(self.last_timestamp / self.period):
             self.barmin = min(self.barmin, price)
             self.barmax = max(self.barmax, price)
             self.barclose = price
 
-        self.last = price  # update the current tick prcie
-        self.prune(self.lookback)
+        self.last = price
 
 
-    def computeAtr(self):
-        if (len(self.bars) <= self.atr_lookback):
-            self.ls.append(self.bars[-1][2] - self.bars[-1][3])
-            self.atr_val = sum(self.ls) / len(self.ls)
-        elif(len(self.bars) > self.atr_lookback):
-            self.ls.clear()
-            TR = self.bars[-1][2] - self.bars[-1][3]
-            self.atr_val = (self.atr_val * (self.atr_lookback- 1) + TR) / self.atr_lookback
-
-
-    def getAtr(self):
-
-        if (len(self.bars) >= self.atr_lookback):
-            return self.atr_val
-        else:
-            raise RuntimeWarning("ATR not yet available")
-
-
-    def prune(self, lookback): #discard the inital bars after 100 periods of bar data
-        if len(self.bars) != 0:
-            self.bars = self.bars[-min(len(self.bars), lookback):]
+    def prune(self, size):
+        try:
+            self.bars = self.bars[-size:]
+        except IndexError:
+            raise ("Empty CandleBar cannot be pruned!")
 
 
     def computeWMA(self,open_p = True):
@@ -147,4 +122,40 @@ class CandleBar:
             weight = list(map(lambda x: x/sum(sequence), sequence))
             self.WMA = sum(p * w for p,w in zip(price_list, weight))
             self.WMAs.append(self.WMA)
+
+
+
+class ATR():
+
+    def __init__(self, candle, lookback):
+        self.candle = candle
+        self.lookback = lookback
+        self.init = []
+        self.atr = 0
+
+        candle.metrics.append(self)
+
+    def update(self):
+        if (len(self.init) < self.lookback):
+            self.init.append(self.bars[-1][2] - self.bars[-1][3])
+            self.atr = sum(self.init) / len(self.init)
+        else:
+            t1 = self.candle[-1][2] - self.candle[-1][3]
+            t2 = abs(self.candle[-1][2] - self.candle[-2][1])
+            t3 = abs(self.candle[-1][3] - self.candle[-2][1])
+            tr = max(t1, t2, t3)
+            self.atr = (self.atr * (self.lookback - 1) + tr) / self.lookback
+
+
+
+class SMA():
+
+    def __init__(self, candle, lookback):
+
+
+
+class WMA():
+
+    def __init__(self, candle, lookback):
+
 
