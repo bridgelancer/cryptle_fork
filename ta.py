@@ -71,6 +71,10 @@ class CandleBar:
         return self.bars[item]
 
 
+    def __len__(self):
+        return len(self.bars)
+
+
     def update(self, price, timestamp):
 
         if self.last_timestamp == None:
@@ -83,7 +87,7 @@ class CandleBar:
             self.barmin = self.barmax = self.baropen = self.barclose = price
             self.last_timestamp = timestamp
 
-            for metric in metrics:
+            for metric in self.metrics:
                 metric.update()
 
         elif int(timestamp / self.period) == int(self.last_timestamp / self.period):
@@ -101,29 +105,6 @@ class CandleBar:
             raise ("Empty CandleBar cannot be pruned!")
 
 
-    def computeWMA(self,open_p = True):
-
-        if len(self.bars) < (self.scope-1):
-            pass
-
-        else:
-            price_list = []
-            bar_list = self.bars[-(self.scope - 1):]
-
-            if open_p == True:
-                price_list = [x[0] for x in bar_list]
-                price_list.append(self.baropen)
-            elif open_p == False:
-                price_list = [x[1] for x in bar_list]
-                price_list.append(self.barclose)
-
-            sequence = range(1,(self.scope + 1))
-            self.price_list_test = price_list
-            weight = list(map(lambda x: x/sum(sequence), sequence))
-            self.WMA = sum(p * w for p,w in zip(price_list, weight))
-            self.WMAs.append(self.WMA)
-
-
 
 class ATR():
 
@@ -134,6 +115,7 @@ class ATR():
         self.atr = 0
 
         candle.metrics.append(self)
+
 
     def update(self):
         if (len(self.init) < self.lookback):
@@ -151,11 +133,45 @@ class ATR():
 class SMA():
 
     def __init__(self, candle, lookback):
+        self.candle = candle
+        self.lookback = lookback
+        self.sma = 0
+
+        candle.metrics.append(self)
+
+
+    def update(self):
+        self.sma = 0
 
 
 
 class WMA():
 
     def __init__(self, candle, lookback):
+        self.candle = candle
+        self.lookback = lookback
+        self.wma= 0
+        self.weight = [x / (lookback * (lookback + 1) / 2) for x in range(1, lookback + 1)]
 
+        candle.metrics.append(self)
+
+
+    def update(self, open_p = True):
+
+        if len(self.candle) < (self.lookback-1):
+            pass
+
+        else:
+            price_list = []
+            bar_list = self.candle[-(self.lookback- 1):]
+
+            if open_p == True:
+                price_list = [x[0] for x in bar_list]
+                price_list.append(self.candle.baropen)
+            elif open_p == False:
+                price_list = [x[1] for x in bar_list]
+                price_list.append(self.candle.barclose)
+
+            self.price_list_test = price_list
+            self.wma = sum(p * w for p,w in zip(price_list, self.weight))
 
