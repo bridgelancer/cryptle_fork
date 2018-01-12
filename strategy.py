@@ -1,35 +1,46 @@
 from ta import *
+from exchange import *
+from datetime import datetime
 
 import json
 import logging
-import datetime
+
 logger = logging.getLogger('Cryptle')
+
+
+# @HARDCODE @REGRESSION @TEMPORARY
+def appendTimestamp(msg, t):
+    return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M;%S"))
 
 
 class Portfolio:
 
-    def __init__(self, cash, balance=None, balance_value=0):
+    def __init__(self, cash, balance=None, balance_value=None):
         self.cash = cash
-        self.balance_value = 0
 
         if balance is None:
             self.balance = {}
+            self.balance_value = {}
         else:
             self.balance = balance
             self.balance_value = balance_value
 
 
-    def deposit(self, pair, amount):
+    def deposit(self, pair, amount, price=0):
+
         try:
             self.balance[pair] += amount
+            self.balance_value[pair] += amount * price
         except KeyError:
             self.balance[pair] = amount
+            self.balance_value[pair] = amount * price
 
 
     def withdraw(self, pair, amount):
         try:
+            self.balance_value[pair] *= (self.balance[pair] - amount)/ self.balance_value[pair]
             self.balance[pair] -= amount
-        except KeyError:
+        except (KeyError, ZeroDivisionError):
             raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
 
 
@@ -42,15 +53,21 @@ class Portfolio:
 
 
     def equity(self):
-        return self.cash + self.balance_value
+        asset = sum(self.balance_value.values())
+        return self.cash + asset
 
 
 
 class Strategy:
 
-    def __init__(self, pair, portfolio):
+    # @HARDCODE Remove the exchange default
+    # There will be regressions, so fix the, before removing the default
+    def __init__(self, pair, portfolio, exchange=None):
         self.pair = pair
         self.portfolio = portfolio
+
+        if (exchange == None):
+            self.exchange = PaperExchange()
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
@@ -74,31 +91,73 @@ class Strategy:
         return self.portfolio.equity()
 
 
-    def buy(self, amount, price, timestamp, message=''):
+    def buy(self, amount, message='', price=0):
         assert isinstance(amount, int) or isinstance(amount, float)
         assert isinstance(message, str)
-        assert price > 0
+        assert price >= 0
 
-        logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message + ' Then:' + str(datetime.datetime.fromtimestamp(timestamp)))
-        self.portfolio.deposit(self.pair, amount)
+        logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+
+        self.portfolio.deposit(self.pair, amount, price)
         self.portfolio.cash -= amount * price
-        self.portfolio.balance_value += amount * price
+
+        if price:
+            return self.limitBuy(amount, price, message)
+        else:
+            return self.marketbuy(amount, message)
 
 
-    def sell(self, amount, price, timestamp, message=''):
+    def sell(self, amount, message='', price=0):
         assert isinstance(amount, int) or isinstance(amount, float)
         assert isinstance(message, str)
-        assert price > 0
+        assert price >= 0
 
-        logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message + ' Then:'+ str(datetime.datetime.fromtimestamp(timestamp)))
+        logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += amount * price
-        self.portfolio.balance_value -= amount * price
+
+        if price:
+            return self.limitBuy(amount, price, message)
+        else:
+            return self.marketbuy(amount, message)
 
 
-    def sellAll(self, price, timestamp, message=''):
-        amount = self.portfolio.balance[self.pair]
-        self.sell(amount, price, timestamp, message)
+    # @Inconsistent interface
+    # @Deprecated
+    # Fix the interface and it's dependent usage
+    def sellAll(self, message='', price=0):
+        return self.sell(self.portfolio.balance[self.pair], message, price)
+
+
+    def marketBuy(self, amount, message=''):
+        assert isinstance(amount, int) or isinstance(amount, float)
+        assert isinstance(message, str)
+
+        return self.exchange.marketBuy(self.pair, amount)
+
+
+    def marketSell(self, amount, message=''):
+        assert isinstance(amount, int) or isinstance(amount, float)
+        assert isinstance(message, str)
+
+        return self.exchange.marketSell(self.pair, amount)
+
+
+    def limitBuy(self, amount, price, message=''):
+        assert isinstance(amount, int) or isinstance(amount, float)
+        assert isinstance(message, str)
+        assert price > 0
+
+        return self.exchange.limitBuy(self.pair, amount, price)
+
+
+    def limitBuy(self, amount, price, message=''):
+        assert isinstance(amount, int) or isinstance(amount, float)
+        assert isinstance(message, str)
+        assert price > 0
+
+        return self.exchange.limitSell(self.pair, amount, price)
 
 
     @staticmethod
@@ -144,7 +203,7 @@ class OldStrat(Strategy):
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
             elif timestamp - prev_crossover_time >= self.timelag_required:
-                self.sell(1, price, '[Old strat]')
+                self.sell(1, '[Old strat]', price)
                 prev_crossover_time = None
                 prev_sell_time = timestamp
         else:
@@ -187,7 +246,7 @@ class RFStrat(Strategy):
                 if timestamp - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
 
                     amount = self.equity_at_risk * self.equity() / price
-                    self.buy(amount, price, self.message)
+                    self.buy(amount, self.message, price)
 
                     prev_crossover_time = None
                     prev_tick_price = None
@@ -199,7 +258,7 @@ class RFStrat(Strategy):
                 prev_crossover_time = timestamp
 
             elif timestamp - prev_crossover_time >= 5:
-                self.sellAll(price, self.message)
+                self.sellAll(self.message, price)
 
                 prev_crossover_time = None
                 prev_sell_time = timestamp
@@ -218,7 +277,7 @@ class ATRStrat(Strategy):
         super().__init__(pair, portfolio)
         self.five_min = MovingWindow(period * scope1)
         self.eight_min = MovingWindow(period * scope2)
-        self.bar = CandleBar(period)
+        self.bar = CandleBar(period, scope1)
         self.message = message
 
         self.upper_atr = 0.5
@@ -254,7 +313,7 @@ class ATRStrat(Strategy):
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity() / price
-                self.buy(amount, price, self.message)
+                self.buy(amount, self.message, price)
 
                 prev_crossover_time = None
 
@@ -275,9 +334,11 @@ class ATRStrat(Strategy):
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
 
+
+
 class WMAStrat(Strategy):
 
-    def __init__(self, pair, portfolio, message='[ATR]', period=180, scope1=5, scope2=8):
+    def __init__(self, pair, portfolio, message='[WMA]', period=60, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
         self.five_min_bar = CandleBar(period, scope1) # not yet implemented
         self.eight_min_bar = CandleBar(period, scope2) # not yet implemented
@@ -285,7 +346,6 @@ class WMAStrat(Strategy):
 
         self.upper_atr = 0.35
         self.lower_atr = 0.35
-
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
@@ -308,25 +368,25 @@ class WMAStrat(Strategy):
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
-            #logger.debug('ATR identified uptrend and below ATR band')
+            #logger.debug('WMA identified uptrend and below WMA band')
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity() / price
-                self.buy(amount, price, timestamp, self.message)
+                self.buy(amount, appendTimestamp(self.message, timestamp), price)
 
                 prev_crossover_time = None
 
-        elif self.hasBalance() and (downtrend):
-            #logger.debug('ATR identified downtrend and above ATR band')
+        elif self.hasBalance() and (downtrend or aboveatr):
+            #logger.debug('WMA identified downtrend and above WMA band')
 
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
             elif timestamp - prev_crossover_time >= self.timelag_required:
-                self.sellAll(price, timestamp, self.message)
+                self.sellAll(appendTimestamp(self.message, timestamp), price)
                 prev_crossover_time = None
                 prev_sell_time = timestamp
 
@@ -399,7 +459,7 @@ class WMAModStrat(Strategy):
                     prev_crossover_time = timestamp
 
                 elif timestamp - prev_crossover_time >= self.timelag_required:
-                    self.sellAll(price, timestamp, self.message)
+                    self.sellAll(appendTimestamp(self.message, timestamp), price)
                     prev_crossover_time = None
                     prev_sell_time = timestamp
                     entry_time = None
@@ -423,8 +483,7 @@ class WMADiscreteStrat(Strategy):
         self.upper_atr = 0.35
         self.lower_atr = 0.35
         self.can_sell = False
-        self.entry_time = None
-
+        self.entry_time= None
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
@@ -456,7 +515,7 @@ class WMADiscreteStrat(Strategy):
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity() / price
-                self.buy(amount, price, timestamp, self.message)
+                self.buy(amount, appendTimestamp(self.message, timestamp), price)
 
                 prev_crossover_time = None
 
@@ -475,7 +534,7 @@ class WMADiscreteStrat(Strategy):
                     prev_crossover_time = timestamp
 
                 elif timestamp - prev_crossover_time >= self.timelag_required:
-                    self.sellAll(price, timestamp, self.message)
+                    self.sellAll(appendTimestamp(self.message, timestamp), price)
                     prev_crossover_time = None
                     prev_sell_time = timestamp
                     entry_time = None
@@ -487,3 +546,58 @@ class WMADiscreteStrat(Strategy):
         self.prev_sell_time = prev_sell_time
         self.entry_time = entry_time
         self.can_sell = can_sell
+
+
+
+class VWMAStrat(Strategy):
+
+    def __init__(self, pair, portfolio, message='', period=60, shorttrend=5, longtrend=10):
+        super().__init(pair, portfolio)
+        self.message = message
+
+        self.shorttrend = MovingWindow(period * ma1)
+        self.longtrend = MovingWindow(period * ma2)
+        self.entered = False
+        self.prev_trend = True
+
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+
+        self.shorttrend.update(price, volume, timestamp)
+        self.longtrend.update(price, volume, timestamp)
+
+        if self.prev_cross_time == None:
+            self.prev_cross_time = timestamp
+            return
+
+        trend = self.shorttrend.avg > self.longtrend.avg
+
+        # Checks if there has been a crossing of VWMA
+        if self.prev_trend != trend:
+            # Set new cross time and latest trend direction (True for up, False for down)
+            self.prev_cross_time = timestamp
+            self.prev_trend = trend
+
+            if trend: trend_str = 'upwards'
+            else: trend_str = 'downwards'
+
+            logger.debug('VWMA identified crossing ' + trend_str)
+            return
+
+        # Filter out temporary breakouts in either direction
+        elif timestamp < self.prev_cross_time + self.timelag_required:
+            return
+
+        # Confirm there has been a trend, set more readable variables
+        else:
+            confirm_up = trend
+            confirm_down = not trend
+
+
+        if not self.entered and self.hasCash() and confirm_up:
+            self.buy(amount, self.message, price)
+            self.entered = True
+
+        elif self.entered and confirm_down:
+            self.sell(amount, self.message, price)
+            self.entered = False
