@@ -34,8 +34,9 @@ class TestStrat(Strategy):
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
-        self.buy(1, price, 'Testing Buy')
-        self.sell(1, price, 'Testing Sell')
+        self.buy(1, 'Testing Buy', price)
+        self.sell(1, 'Testing Sell', price)
+
 
 # Return a list ls, containing json ticks in entries
 def readCSV(filename):
@@ -91,7 +92,7 @@ def testBitstampFeed():
     feed.onTrade('ltcusd', lambda x: logger.debug('Recieved ETH tick'))
     feed.onTrade('bchusd', lambda x: logger.debug('Recieved ETH tick'))
 
-    time.sleep(5)
+    time.sleep(3)
     feed.pusher.disconnect()
     logger.debug('Disconnected from Bitstamp WebSockets')
 
@@ -115,18 +116,31 @@ def testStrategy():
         sma(tick)
 
 
-def testMA():
+def testEquity():
+    port  = Portfolio(1000)
+    strat = Strategy('ethusd', port)
+
+    strat.buy(2, price=100)
+    logger.debug(strat.equity_at_risk * strat.equity())
+    logger.debug(strat.equity())
+    logger.debug(strat.portfolio.cash)
+
+    assert strat.equity() == 1000
+    assert strat.portfolio.cash == 800
+
+
+def testCVWMA():
     line = [(i, 1, i) for i in range(15)]
     quad = [(i, i+1, i) for i in range(15)]
     sine = [(math.sin(i), 1, i) for i in range(15)]
 
-    thre_line = MovingWindow(3)
-    thre_quad = MovingWindow(3)
-    thre_sine = MovingWindow(3)
+    thre_line = ContinuousVWMA(3)
+    thre_quad = ContinuousVWMA(3)
+    thre_sine = ContinuousVWMA(3)
 
-    five_line = MovingWindow(5)
-    five_quad = MovingWindow(5)
-    five_sine = MovingWindow(5)
+    five_line = ContinuousVWMA(5)
+    five_quad = ContinuousVWMA(5)
+    five_sine = ContinuousVWMA(5)
 
     five_ma = []
     thre_ma = []
@@ -164,19 +178,6 @@ def testMA():
     logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
 
 
-def testEquity():
-    port  = Portfolio(1000)
-    strat = Strategy('ethusd', port)
-
-    strat.buy(2, price=100)
-    logger.debug(strat.equity_at_risk * strat.equity())
-    logger.debug(strat.equity())
-    logger.debug(strat.portfolio.cash)
-
-    assert strat.equity() == 1000
-    assert strat.portfolio.cash == 800
-
-
 def testWMA():
     const = [(3, i) for i in range(1, 100)]
     lin = [(i, i) for i in  range(1, 100)]
@@ -197,4 +198,8 @@ def testWMA():
 
 
 if __name__ == '__main__':
+    testBuySell()
+    testFunctor()
+    testEquity()
+    testCVWMA()
     testWMA()
