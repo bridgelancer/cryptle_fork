@@ -2,6 +2,7 @@ from ta import *
 
 import json
 import logging
+import datetime
 logger = logging.getLogger('Cryptle')
 
 
@@ -53,8 +54,7 @@ class Strategy:
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
-        self.timelag_required = 20
-
+        self.timelag_required = 30
         self.prev_sell_time = 0
         self.prev_tick_price = 0
 
@@ -74,31 +74,31 @@ class Strategy:
         return self.portfolio.equity()
 
 
-    def buy(self, amount, price, message=''):
+    def buy(self, amount, price, timestamp, message=''):
         assert isinstance(amount, int) or isinstance(amount, float)
         assert isinstance(message, str)
         assert price > 0
 
-        logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+        logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message + ' Then:' + str(datetime.datetime.fromtimestamp(timestamp)))
         self.portfolio.deposit(self.pair, amount)
         self.portfolio.cash -= amount * price
         self.portfolio.balance_value += amount * price
 
 
-    def sell(self, amount, price, message=''):
+    def sell(self, amount, price, timestamp, message=''):
         assert isinstance(amount, int) or isinstance(amount, float)
         assert isinstance(message, str)
         assert price > 0
 
-        logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+        logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message + ' Then:'+ str(datetime.datetime.fromtimestamp(timestamp)))
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += amount * price
         self.portfolio.balance_value -= amount * price
 
 
-    def sellAll(self, price, message=''):
+    def sellAll(self, price, timestamp, message=''):
         amount = self.portfolio.balance[self.pair]
-        self.sell(amount, price, message)
+        self.sell(amount, price, timestamp, message)
 
 
     @staticmethod
@@ -308,25 +308,25 @@ class WMAStrat(Strategy):
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
-            logger.debug('ATR identified uptrend and below ATR band')
+            #logger.debug('ATR identified uptrend and below ATR band')
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity() / price
-                self.buy(amount, price, self.message)
+                self.buy(amount, price, timestamp, self.message)
 
                 prev_crossover_time = None
 
         elif self.hasBalance() and (downtrend or aboveatr):
-            logger.debug('ATR identified downtrend and above ATR band')
+            #logger.debug('ATR identified downtrend and above ATR band')
 
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
             elif timestamp - prev_crossover_time >= self.timelag_required:
-                self.sellAll(price, self.message)
+                self.sellAll(price, timestamp, self.message)
                 prev_crossover_time = None
                 prev_sell_time = timestamp
 
@@ -336,3 +336,90 @@ class WMAStrat(Strategy):
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
 
+class WMAModStrat(Strategy):
+
+    def __init__(self, pair, portfolio, message='[ATR]', period=60, scope1=5, scope2=8):
+        super().__init__(pair, portfolio)
+        self.five_min_bar = CandleBar(period, scope1) # not yet implemented
+        self.eight_min_bar = CandleBar(period, scope2) # not yet implemented
+        self.message = message
+
+        self.upper_atr = 0.35
+        self.lower_atr = 0.35
+        self.can_sell = False
+        self.entry_time = None
+
+
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+
+        self.five_min_bar.update(price, timestamp)
+        self.eight_min_bar.update(price, timestamp)
+
+        prev_crossover_time = self.prev_crossover_time
+        prev_sell_time = self.prev_sell_time
+        entry_time = self.entry_time
+        can_sell = self.can_sell
+
+        try:
+            atr = self.five_min_bar.getAtr()
+            belowatr = self.five_min_bar.WMA < price - self.lower_atr * atr
+            aboveatr = min(self.five_min_bar.WMA, self.eight_min_bar.WMA) > price + self.upper_atr * atr
+        except RuntimeWarning:
+            return
+
+        uptrend = self.five_min_bar.WMA > self.eight_min_bar.WMA
+        downtrend = self.five_min_bar.WMA < self.eight_min_bar.WMA
+
+        # @HARDCODE Buy/Sell message
+        if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
+            #logger.debug('ATR identified uptrend and below ATR band')
+            if prev_crossover_time is None:
+                prev_crossover_time = timestamp
+
+            elif timestamp - prev_crossover_time >= self.timelag_required:
+
+                amount = self.equity_at_risk * self.equity() / price
+                self.buy(amount, price, timestamp, self.message)
+
+                prev_crossover_time = None
+
+                if uptrend:
+                    can_sell = True
+                elif downtrend:
+                    can_sell = False
+                entry_time = timestamp
+
+        elif self.hasBalance() and not aboveatr:
+            if not can_sell and uptrend:
+                can_sell = True
+            elif can_sell and downtrend:
+                # logger.debug('ATR identified downtrend')
+                if prev_crossover_time is None:
+                    prev_crossover_time = timestamp
+
+                elif timestamp - prev_crossover_time >= self.timelag_required:
+                    self.sellAll(price, timestamp, self.message)
+                    prev_crossover_time = None
+                    prev_sell_time = timestamp
+                    entry_time = None
+
+        elif self.hasBalance() and aboveatr:
+            # logger.debug('ATR identified above ATR band')
+            if prev_crossover_time is None:
+                    prev_crossover_time = timestamp
+
+            elif timestamp - prev_crossover_time >= self.timelag_required:
+                self.sellAll(price, timestamp, self.message)
+                prev_crossover_time = None
+                prev_sell_time = timestamp
+                entry_time = None
+                can_sell = False
+
+        else:
+            prev_crossover_time = None
+
+        self.prev_crossover_time = prev_crossover_time
+        self.prev_sell_time = prev_sell_time
+        self.entry_time = entry_time
+        self.can_sell = can_sell

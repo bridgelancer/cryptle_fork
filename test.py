@@ -121,7 +121,19 @@ def testBitstampREST():
     logger.debug(bs.getTicker('btcusd'))
 
 
-def testStrategy(pair):
+def testWMAModStrategy(pair):
+    feed = BitstampFeed()
+    port = Portfolio(10000)
+    wmaeth  = WMAModStrat('ethusd', port, message='[WMA Mod]', period=180)
+
+    ls = testParseTick(pair)
+    loadCSV(ls, wmaeth)
+
+    for item in ls:
+        tick = ''.join(item)
+        wmaeth(tick)
+
+def testWMAStrategy(pair):
     feed = BitstampFeed()
     port = Portfolio(10000)
     wmaeth  = WMAStrat('ethusd', port, message='[WMA]', period=180)
@@ -132,7 +144,6 @@ def testStrategy(pair):
     for item in ls:
         tick = ''.join(item)
         wmaeth(tick)
-
 
 def testMA():
     line = [(i, 1, i) for i in range(15)]
@@ -199,7 +210,7 @@ if __name__ == '__main__':
     #testBitstampFeed()
     pair = 'ethusd'
     result = testParseTick(pair)
-    testStrategy('ethusd')
+    testWMAModStrategy('ethusd')
 
 
 
