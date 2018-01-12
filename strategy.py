@@ -395,11 +395,11 @@ class WMAStrat(Strategy):
 class VWMAStrat(Strategy):
 
     def __init__(self, pair, portfolio, message='', period=60, shorttrend=5, longtrend=10):
-        super().__init(pair, portfolio)
+        super().__init__(pair, portfolio)
         self.message = message
 
-        self.shorttrend = MovingWindow(period * ma1)
-        self.longtrend = MovingWindow(period * ma2)
+        self.shorttrend = ContinuousVWMA(period * shorttrend)
+        self.longtrend = ContinuousVWMA(period * longtrend)
         self.entered = False
         self.prev_trend = True
 
@@ -409,8 +409,8 @@ class VWMAStrat(Strategy):
         self.shorttrend.update(price, volume, timestamp)
         self.longtrend.update(price, volume, timestamp)
 
-        if self.prev_cross_time == None:
-            self.prev_cross_time = timestamp
+        if self.prev_crossover_time == None:
+            self.prev_crossover_time = timestamp
             return
 
         trend = self.shorttrend.avg > self.longtrend.avg
@@ -418,7 +418,7 @@ class VWMAStrat(Strategy):
         # Checks if there has been a crossing of VWMA
         if self.prev_trend != trend:
             # Set new cross time and latest trend direction (True for up, False for down)
-            self.prev_cross_time = timestamp
+            self.prev_crossover_time = timestamp
             self.prev_trend = trend
 
             if trend: trend_str = 'upwards'
@@ -428,7 +428,7 @@ class VWMAStrat(Strategy):
             return
 
         # Filter out temporary breakouts in either direction
-        elif timestamp < self.prev_cross_time + self.timelag_required:
+        elif timestamp < self.prev_crossover_time + self.timelag_required:
             return
 
         # Confirm there has been a trend, set more readable variables
