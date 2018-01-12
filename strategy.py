@@ -1,4 +1,5 @@
 from ta import *
+from exchange import *
 
 import json
 import logging
@@ -52,9 +53,12 @@ class Portfolio:
 
 class Strategy:
 
-    def __init__(self, pair, portfolio):
+    def __init__(self, pair, portfolio, exchange=None):
         self.pair = pair
         self.portfolio = portfolio
+
+        if (exchange == None):
+            self.exchange = PaperExchange()
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
@@ -79,31 +83,73 @@ class Strategy:
         return self.portfolio.equity()
 
 
-    def buy(self, amount, price, message=''):
+    def buy(self, amount, message='', price=0):
         assert isinstance(amount, int) or isinstance(amount, float)
         assert isinstance(message, str)
-        assert price > 0
+        assert price >= 0
 
         logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+
         self.portfolio.deposit(self.pair, amount, price)
         self.portfolio.cash -= amount * price
-        self.portfolio.balance_value += amount * price
+
+        if price:
+            return self.limitBuy(amount, price, message)
+        else:
+            return self.marketbuy(amount, message)
 
 
-    def sell(self, amount, price, message=''):
+    def sell(self, amount, message='', price=0):
+        assert isinstance(amount, int) or isinstance(amount, float)
+        assert isinstance(message, str)
+        assert price >= 0
+
+        logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+
+        self.portfolio.withdraw(self.pair, amount)
+        self.portfolio.cash += amount * price
+
+        if price:
+            return self.limitBuy(amount, price, message)
+        else:
+            return self.marketbuy(amount, message)
+
+
+    # @Inconsistent interface
+    # @Deprecated
+    # Fix the interface and it's dependent usage
+    def sellAll(self, price=0, message=''):
+        return self.sell(self.portfolio.balance[self.pair], message, price)
+
+
+    def marketBuy(self, amount, message=''):
+        assert isinstance(amount, int) or isinstance(amount, float)
+        assert isinstance(message, str)
+
+        return self.exchange.marketBuy(self.pair, amount)
+
+
+    def marketSell(self, amount, message=''):
+        assert isinstance(amount, int) or isinstance(amount, float)
+        assert isinstance(message, str)
+
+        return self.exchange.marketSell(self.pair, amount)
+
+
+    def limitBuy(self, amount, price, message=''):
         assert isinstance(amount, int) or isinstance(amount, float)
         assert isinstance(message, str)
         assert price > 0
 
-        logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
-        self.portfolio.withdraw(self.pair, amount)
-        self.portfolio.cash += amount * price
-        self.portfolio.balance_value -= amount * price
+        return self.exchange.limitBuy(self.pair, amount, price)
 
 
-    def sellAll(self, price, message=''):
-        amount = self.portfolio.balance[self.pair]
-        self.sell(amount, price, message)
+    def limitBuy(self, amount, price, message=''):
+        assert isinstance(amount, int) or isinstance(amount, float)
+        assert isinstance(message, str)
+        assert price > 0
+
+        return self.exchange.limitSell(self.pair, amount, price)
 
 
     @staticmethod
@@ -149,7 +195,7 @@ class OldStrat(Strategy):
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
             elif timestamp - prev_crossover_time >= self.timelag_required:
-                self.sell(1, price, '[Old strat]')
+                self.sell(1, '[Old strat]', price)
                 prev_crossover_time = None
                 prev_sell_time = timestamp
         else:
@@ -192,7 +238,7 @@ class RFStrat(Strategy):
                 if timestamp - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
 
                     amount = self.equity_at_risk * self.equity() / price
-                    self.buy(amount, price, self.message)
+                    self.buy(amount, self.message, price)
 
                     prev_crossover_time = None
                     prev_tick_price = None
@@ -209,7 +255,7 @@ class RFStrat(Strategy):
                 prev_crossover_time = None
                 prev_sell_time = timestamp
 
-        elpse:
+        else:
             prev_crossover_time = None
 
         self.prev_crossover_time = prev_crossover_time
@@ -259,7 +305,7 @@ class ATRStrat(Strategy):
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity() / price
-                self.buy(amount, price, self.message)
+                self.buy(amount, self.message, price)
 
                 prev_crossover_time = None
 
@@ -321,7 +367,7 @@ class WMAStrat(Strategy):
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity() / price
-                self.buy(amount, price, self.message)
+                self.buy(amount, self.message, price)
 
                 prev_crossover_time = None
 
@@ -390,10 +436,10 @@ class VWMAStrat(Strategy):
 
 
         if not self.entered and self.hasCash() and confirm_up:
-            self.buy(amount, price, self.message)
+            self.buy(amount, self.message, price)
             self.entered = True
 
         elif self.entered and confirm_down:
-            self.sell(amount, price, self.message)
+            self.sell(amount, self.message, price)
             self.entered = False
 
