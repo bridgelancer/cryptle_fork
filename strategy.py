@@ -7,28 +7,32 @@ logger = logging.getLogger('Cryptle')
 
 class Portfolio:
 
-    def __init__(self, cash, balance=None, balance_value=0):
+    def __init__(self, cash, balance=None, balance_value=None):
         self.cash = cash
-        self.balance_value = 0
 
         if balance is None:
             self.balance = {}
+            self.balance_value = {}
         else:
             self.balance = balance
             self.balance_value = balance_value
 
 
-    def deposit(self, pair, amount):
+    def deposit(self, pair, amount, price=0):
+
         try:
             self.balance[pair] += amount
+            self.balance_value[pair] += amount * price
         except KeyError:
             self.balance[pair] = amount
+            self.balance_value[pair] = amount * price
 
 
     def withdraw(self, pair, amount):
         try:
+            self.balance_value[pair] *= (self.balance[pair] - amount)/ self.balance_value[pair]
             self.balance[pair] -= amount
-        except KeyError:
+        except (KeyError, ZeroDivisionError):
             raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
 
 
@@ -41,7 +45,8 @@ class Portfolio:
 
 
     def equity(self):
-        return self.cash + self.balance_value
+        asset = sum(self.balance_value.values())
+        return self.cash + asset
 
 
 
@@ -80,7 +85,7 @@ class Strategy:
         assert price > 0
 
         logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
-        self.portfolio.deposit(self.pair, amount)
+        self.portfolio.deposit(self.pair, amount, price)
         self.portfolio.cash -= amount * price
         self.portfolio.balance_value += amount * price
 
