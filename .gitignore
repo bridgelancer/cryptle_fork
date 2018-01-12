@@ -1,5 +1,9 @@
 *.log
 *.csv
+*.txt
+
+log/
+sample/
 
 __pycache__/
 .DS_Store/
