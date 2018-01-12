@@ -66,6 +66,26 @@ def testLoadCSV():
     ls = readCSV('btc_sample')
     loadCSV(ls, test)
 
+def testParseTick(pair):
+    ls = readCSV('tick_btc_json.log')
+
+    result = []
+
+    for tick in ls:
+        tick = ''.join(tick)
+        parsed_tick = json.loads(tick)
+        price = parsed_tick['price']
+
+        if pair == 'ethusd' and  900 < price < 1700:
+            result.append(tick)
+        elif pair == 'xrpusd' and  price < 3:
+            result.append(tick)
+        elif pair == 'btcusd' and price > 9000:
+            result.append(tick)
+        elif pair == 'bchusd' and  2000 < price < 3000:
+            result.append(tick)
+
+    return result
 
 def testBuySell():
     port = Portfolio(1000)
@@ -101,18 +121,17 @@ def testBitstampREST():
     logger.debug(bs.getTicker('btcusd'))
 
 
-def testStrategy():
+def testStrategy(pair):
     feed = BitstampFeed()
     port = Portfolio(10000)
+    wmaeth  = WMAStrat('ethusd', port, message='[WMA]', period=180)
 
-    sma = SMAStrat('btcusd', port)
-
-    ls = readCSV('btc_sample')
-    loadCSV(ls, sma)
+    ls = testParseTick(pair)
+    loadCSV(ls, wmaeth)
 
     for item in ls:
         tick = ''.join(item)
-        sma(tick)
+        wmaeth(tick)
 
 
 def testMA():
@@ -178,4 +197,13 @@ def testEquity():
 
 if __name__ == '__main__':
     #testBitstampFeed()
-    testStrategy()
+    pair = 'ethusd'
+    result = testParseTick(pair)
+    testStrategy('ethusd')
+
+
+
+
+    
+
+

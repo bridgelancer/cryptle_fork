@@ -275,7 +275,7 @@ class ATRStrat(Strategy):
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
 
-class SMAStrat(Strategy):
+class WMAStrat(Strategy):
 
     def __init__(self, pair, portfolio, message='[ATR]', period=60, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
