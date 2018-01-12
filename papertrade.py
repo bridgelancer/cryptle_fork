@@ -74,10 +74,10 @@ def papertrade():
         logger.info('Five min WMA_mod Cash:   %.2f' % port1.cash)
         logger.info('Five min WMA_mod Assets: %s' % str(port1.balance))
 
-        logger.info('Three min WMA_mod Cash:   %.2f' % port1.cash)
-        logger.info('Three min WMA_mod Assets: %s' % str(port1.balance))
+        logger.info('Three min WMA_mod Cash:   %.2f' % port2.cash)
+        logger.info('Three min WMA_mod Assets: %s' % str(port2.balance))
 
-        time.sleep(60)
+        time.sleep(120)
 
 
 if __name__ == '__main__':
