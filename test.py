@@ -132,10 +132,6 @@ def testWMAModStrategy(pair):
     ls = testParseTick(pair)
     loadCSV(ls, wmaeth)
 
-    for item in ls:
-        tick = ''.join(item)
-        wmaeth(tick)
-
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
 
@@ -149,10 +145,6 @@ def testWMAStrategy(pair):
 
     ls = testParseTick(pair)
     loadCSV(ls, wmaeth)
-
-    for item in ls:
-        tick = ''.join(item)
-        wmaeth(tick)
 
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
