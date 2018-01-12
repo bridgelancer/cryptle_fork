@@ -53,6 +53,8 @@ class Portfolio:
 
 class Strategy:
 
+    # @HARDCODE Remove the exchange default
+    # There will be regressions, so fix the, before removing the default
     def __init__(self, pair, portfolio, exchange=None):
         self.pair = pair
         self.portfolio = portfolio
@@ -269,7 +271,7 @@ class ATRStrat(Strategy):
         super().__init__(pair, portfolio)
         self.five_min = MovingWindow(period * scope1)
         self.eight_min = MovingWindow(period * scope2)
-        self.bar = CandleBar(period)
+        self.bar = CandleBar(period, scope1)
         self.message = message
 
         self.upper_atr = 0.5
