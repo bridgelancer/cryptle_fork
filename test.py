@@ -123,8 +123,9 @@ def testBitstampREST():
 
 def testWMAModStrategy(pair):
     feed = BitstampFeed()
-    port = Portfolio(10000)
-    wmaeth  = WMAModStrat('ethusd', port, message='[WMA Mod]', period=180)
+    port = Portfolio(2500)
+    wmaeth  = WMAModStrat(str(pair), port, message='[WMA Mod]', period=180)
+    wmaeth.equity_at_risk = 1.0
 
     ls = testParseTick(pair)
     loadCSV(ls, wmaeth)
@@ -132,11 +133,17 @@ def testWMAModStrategy(pair):
     for item in ls:
         tick = ''.join(item)
         wmaeth(tick)
+    
+    logger.info('WMA Cash:   %.2f' % port.cash)
+    logger.info('WMA Assets: %s' % str(port.balance))
+
 
 def testWMAStrategy(pair):
     feed = BitstampFeed()
-    port = Portfolio(10000)
-    wmaeth  = WMAStrat('ethusd', port, message='[WMA]', period=180)
+    port = Portfolio(2500)
+
+    wmaeth  = WMAStrat(str(pair) , port, message='[WMA]', period=180)
+    wmaeth.equity_at_risk = 1.0
 
     ls = testParseTick(pair)
     loadCSV(ls, wmaeth)
@@ -144,6 +151,9 @@ def testWMAStrategy(pair):
     for item in ls:
         tick = ''.join(item)
         wmaeth(tick)
+    
+    logger.info('WMA Cash:   %.2f' % port.cash)
+    logger.info('WMA Assets: %s' % str(port.balance))
 
 def testMA():
     line = [(i, 1, i) for i in range(15)]
@@ -205,12 +215,11 @@ def testEquity():
     assert strat.equity() == 1000
     assert strat.portfolio.cash == 800
 
-
 if __name__ == '__main__':
     #testBitstampFeed()
-    pair = 'ethusd'
-    result = testParseTick(pair)
-    testWMAModStrategy('ethusd')
+    pair = sys.argv[1]
+    testWMAStrategy(pair)
+    testWMAModStrategy(pair)
 
 
 

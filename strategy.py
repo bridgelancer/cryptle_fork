@@ -283,7 +283,7 @@ class WMAStrat(Strategy):
         self.eight_min_bar = CandleBar(period, scope2) # not yet implemented
         self.message = message
 
-        self.upper_atr = 0.5
+        self.upper_atr = 0.35
         self.lower_atr = 0.35
 
 
@@ -319,7 +319,7 @@ class WMAStrat(Strategy):
 
                 prev_crossover_time = None
 
-        elif self.hasBalance() and (downtrend or aboveatr):
+        elif self.hasBalance() and (downtrend):
             #logger.debug('ATR identified downtrend and above ATR band')
 
             if prev_crossover_time is None:
@@ -372,7 +372,7 @@ class WMAModStrat(Strategy):
         downtrend = self.five_min_bar.WMA < self.eight_min_bar.WMA
 
         # @HARDCODE Buy/Sell message
-        if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
+        if self.hasCash() and not self.hasBalance() and belowatr:
             #logger.debug('ATR identified uptrend and below ATR band')
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
@@ -390,7 +390,7 @@ class WMAModStrat(Strategy):
                     can_sell = False
                 entry_time = timestamp
 
-        elif self.hasBalance() and not aboveatr:
+        elif self.hasBalance():
             if not can_sell and uptrend:
                 can_sell = True
             elif can_sell and downtrend:
@@ -403,18 +403,6 @@ class WMAModStrat(Strategy):
                     prev_crossover_time = None
                     prev_sell_time = timestamp
                     entry_time = None
-
-        elif self.hasBalance() and aboveatr:
-            # logger.debug('ATR identified above ATR band')
-            if prev_crossover_time is None:
-                    prev_crossover_time = timestamp
-
-            elif timestamp - prev_crossover_time >= self.timelag_required:
-                self.sellAll(price, timestamp, self.message)
-                prev_crossover_time = None
-                prev_sell_time = timestamp
-                entry_time = None
-                can_sell = False
 
         else:
             prev_crossover_time = None
