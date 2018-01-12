@@ -338,11 +338,7 @@ class ATRStrat(Strategy):
 
 class WMAStrat(Strategy):
 
-<<<<<<< bc63e4066e83c3f061acc9118cdd8b614321be4c
-    def __init__(self, pair, portfolio, message='[WMA]', period=60, scope1=5, scope2=8):
-=======
     def __init__(self, pair, portfolio, message='[WMA]', period=180, scope1=5, scope2=8):
->>>>>>> Fix premature trading issues of WMA and WMAMod Strategies
         super().__init__(pair, portfolio)
         self.five_period_bar = CandleBar(period, scope1) # not yet implemented
         self.eight_period_bar = CandleBar(period, scope2) # not yet implemented
@@ -443,7 +439,7 @@ class WMAModStrat(Strategy):
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity() / price
-                self.buy(amount, price, timestamp, self.message)
+                self.buy(amount, appendTimestamp(self.message, timestamp), price)
 
                 prev_crossover_time = None
 
