@@ -1,6 +1,7 @@
 *.log
 *.csv
-
+*.xlsx
+*.log_parsed
 __pycache__/
 .DS_Store/
 .vscode/
