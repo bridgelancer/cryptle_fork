@@ -402,6 +402,7 @@ class VWMAStrat(Strategy):
         self.longtrend = ContinuousVWMA(period * longtrend)
         self.entered = False
         self.prev_trend = True
+        self.amount = 0
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
@@ -438,10 +439,11 @@ class VWMAStrat(Strategy):
 
 
         if not self.entered and self.hasCash() and confirm_up:
-            self.buy(amount, self.message, price)
+            self.amount = self.equity_at_risk * self.equity() / price
+            self.buy(self.amount, self.message, price)
             self.entered = True
 
         elif self.entered and confirm_down:
-            self.sell(amount, self.message, price)
+            self.sell(self.amount, self.message, price)
             self.entered = False
 
