@@ -90,8 +90,8 @@ def testParseTick(pair):
 def testBuySell():
     port = Portfolio(1000)
     strat = Strategy('ethusd', port)
-    strat.buy(1, 1)
-    strat.sell(1, 1)
+    strat.buy(1, price=1)
+    strat.sell(1, price=1)
 
 
 def testFunctor():
@@ -133,7 +133,7 @@ def testWMAModStrategy(pair):
     for item in ls:
         tick = ''.join(item)
         wmaeth(tick)
-    
+
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
 
@@ -151,7 +151,7 @@ def testWMAStrategy(pair):
     for item in ls:
         tick = ''.join(item)
         wmaeth(tick)
-    
+
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
 
@@ -207,7 +207,7 @@ def testEquity():
     port  = Portfolio(1000)
     strat = Strategy('ethusd', port)
 
-    strat.buy(2, 100)
+    strat.buy(2, price=100)
     logger.debug(strat.equity_at_risk * strat.equity())
     logger.debug(strat.equity())
     logger.debug(strat.portfolio.cash)
@@ -220,10 +220,3 @@ if __name__ == '__main__':
     pair = sys.argv[1]
     testWMAStrategy(pair)
     testWMAModStrategy(pair)
-
-
-
-
-    
-
-
