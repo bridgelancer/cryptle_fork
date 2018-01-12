@@ -141,7 +141,7 @@ class SMA():
 
 
     def update(self):
-        self.sma = sum(self.candle[-self.lookback:]) / lookback
+        self.sma = sum([x[0] for x in self.candle[-self.lookback:]]) / self.lookback
 
 
 
