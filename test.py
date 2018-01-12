@@ -70,8 +70,8 @@ def testLoadCSV():
 def testBuySell():
     port = Portfolio(1000)
     strat = Strategy('ethusd', port)
-    strat.buy(1, 1)
-    strat.sell(1, 1)
+    strat.buy(1, price=1)
+    strat.sell(1, price=1)
 
 
 def testFunctor():
@@ -105,7 +105,7 @@ def testStrategy():
     feed = BitstampFeed()
     port = Portfolio(10000)
 
-    sma = SMAStrat('btcusd', port)
+    sma = WMAStrat('btcusd', port)
 
     ls = readCSV('btc_sample')
     loadCSV(ls, sma)
@@ -167,7 +167,7 @@ def testEquity():
     port  = Portfolio(1000)
     strat = Strategy('ethusd', port)
 
-    strat.buy(2, 100)
+    strat.buy(2, price=100)
     logger.debug(strat.equity_at_risk * strat.equity())
     logger.debug(strat.equity())
     logger.debug(strat.portfolio.cash)
@@ -178,4 +178,6 @@ def testEquity():
 
 if __name__ == '__main__':
     #testBitstampFeed()
-    testStrategy()
+    #testStrategy()
+    testEquity()
+    testBuySell()
