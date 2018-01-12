@@ -10,7 +10,7 @@ logger = logging.getLogger('Cryptle')
 
 # @HARDCODE @REGRESSION @TEMPORARY
 def appendTimestamp(msg, t):
-    return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M;%S"))
+    return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M:%S"))
 
 
 class Portfolio:
@@ -403,8 +403,8 @@ class WMAModStrat(Strategy):
         self.eight_period_bar = CandleBar(period, scope2)
         self.message = message
 
-        self.upper_atr = 0.35
-        self.lower_atr = 0.35
+        self.upper_atr = 0.5
+        self.lower_atr = 0.5
         self.can_sell = False
         self.entry_time = None
 
@@ -452,7 +452,7 @@ class WMAModStrat(Strategy):
         elif self.hasBalance():
             if not can_sell and uptrend:
                 can_sell = True
-            elif can_sell and downtrend:
+            elif (can_sell and downtrend) or (not can_sell and aboveatr):
                 # logger.debug('ATR identified downtrend')
                 if prev_crossover_time is None:
                     prev_crossover_time = timestamp
