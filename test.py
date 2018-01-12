@@ -124,7 +124,7 @@ def testBitstampREST():
 def testWMAModStrategy(pair):
     feed = BitstampFeed()
     port = Portfolio(2500)
-    wmaeth  = WMAModStrat(str(pair), port, message='[WMA Mod]', period=180)
+    wmaeth  = WMAModStrat(str(pair), port, message='[WMA Mod]', period=300)
     wmaeth.equity_at_risk = 1.0
 
     ls = testParseTick(pair)
@@ -142,7 +142,7 @@ def testWMAStrategy(pair):
     feed = BitstampFeed()
     port = Portfolio(2500)
 
-    wmaeth  = WMAStrat(str(pair) , port, message='[WMA]', period=180)
+    wmaeth  = WMAStrat(str(pair) , port, message='[WMA]', period=300)
     wmaeth.equity_at_risk = 1.0
 
     ls = testParseTick(pair)
