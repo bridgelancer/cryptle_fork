@@ -146,5 +146,18 @@ class CandleBar:
             self.price_list_test = price_list
             weight = list(map(lambda x: x/sum(sequence), sequence))
             self.WMA = sum(p * w for p,w in zip(price_list, weight))
-            self.WMAs.append(self.WMA)
+            self._WMAs.append(self.WMA)
+    
+    def getWMA(self):
+        if (len(self._bars) >= self.atr_lookback):
+            return self.WMA
+        else:
+            raise RuntimeWarning("Weighted average not yet available")
+
+
+
+                
+
+
+
 

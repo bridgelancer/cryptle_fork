@@ -38,55 +38,44 @@ def papertrade():
     port2 = Portfolio(10000)
 
     logger.debug("Initialising strategies")
-    atreth  = ATRStrat('ethusd', port1, message='[VWMA]', period=180)
-    atrbtc  = ATRStrat('btcusd', port1, message='[VWMA]', period=180)
-    atrxrp  = ATRStrat('xrpusd', port1, message='[VWMA]', period=180)
-    atrbch  = ATRStrat('bchusd', port1, message='[VWMA]', period=180)
+    wmaeth_5m  = WMAModStrat('ethusd', port1, message='[5m]', period=300)
+    wmabtc_5m  = WMAModStrat('btcusd', port1, message='[5m]', period=300)
+    wmaxrp_5m  = WMAModStrat('xrpusd', port1, message='[5m]', period=300)
+    wmabch_5m  = WMAModStrat('bchusd', port1, message='[5m]', period=300)
 
-    wmaeth  = WMAStrat('ethusd', port2, message='[WMA]', period=180)
-    wmabtc  = WMAStrat('btcusd', port2, message='[WMA]', period=180)
-    wmaxrp  = WMAStrat('xrpusd', port2, message='[WMA]', period=180)
-    wmabch  = WMAStrat('bchusd', port2, message='[WMA]', period=180)
+    wmaeth_3m  = WMAModStrat('ethusd', port2, message='[3m]', period=180)
+    wmabtc_3m  = WMAModStrat('btcusd', port2, message='[3m]', period=180)
+    wmaxrp_3m  = WMAModStrat('xrpusd', port2, message='[3m]', period=180)
+    wmabch_3m  = WMAModStrat('bchusd', port2, message='[3m]', period=180)
 
-    atreth.equity_at_risk = 0.25
-    atrbtc.equity_at_risk = 0.25
-    atrxrp.equity_at_risk = 0.25
-    atrbch.equity_at_risk = 0.25
+    wmaeth_5m.equity_at_risk = 0.25
+    wmabtc_5m.equity_at_risk = 0.25
+    wmaxrp_5m.equity_at_risk = 0.25
+    wmabch_5m.equity_at_risk = 0.25
 
-    wmaeth.equity_at_risk = 0.25
-    wmabtc.equity_at_risk = 0.25
-    wmaxrp.equity_at_risk = 0.25
-    wmabch.equity_at_risk = 0.25
+    wmaeth_3m.equity_at_risk = 0.25
+    wmabtc_3m.equity_at_risk = 0.25
+    wmaxrp_3m.equity_at_risk = 0.25
+    wmabch_3m.equity_at_risk = 0.25
 
     logger.debug("Setting up callbacks")
-    bs.onTrade('ethusd', atreth)
-    bs.onTrade('btcusd', atrbtc)
-    bs.onTrade('xrpusd', atrxrp)
-    bs.onTrade('bchusd', atrbch)
-    bs.onTrade('ethusd', wmaeth)
-    bs.onTrade('btcusd', wmabtc)
-    bs.onTrade('xrpusd', wmaxrp)
-    bs.onTrade('bchusd', wmabch)
+    bs.onTrade('ethusd', wmaeth_5m)
+    bs.onTrade('btcusd', wmabtc_5m)
+    bs.onTrade('xrpusd', wmaxrp_5m)
+    bs.onTrade('bchusd', wmabch_5m)
+
+    bs.onTrade('ethusd', wmaeth_3m)
+    bs.onTrade('btcusd', wmabtc_3m)
+    bs.onTrade('xrpusd', wmaxrp_3m)
+    bs.onTrade('bchusd', wmabch_3m)
 
     logger.debug("Reporting...")
     while True:
-        logger.info('VWMA ATR Cash:   %.2f' % port1.cash)
-        logger.info('VWMA ATR Assets: %s' % str(port1.balance))
+        logger.info('Five min WMA_mod Cash:   %.2f' % port1.cash)
+        logger.info('Five min WMA_mod Assets: %s' % str(port1.balance))
 
-        logger.info('WMA Cash:   %.2f' % port1.cash)
-        logger.info('WMA Assets: %s' % str(port1.balance))
-
-        logger.log(logging.TA, 'ETH ATR: %.2f' % atreth.bar.atr_val)
-        logger.log(logging.TA, 'ETH MA:  %.2f' % atreth.five_min.avg)
-
-        logger.log(logging.TA, 'BTC ATR: %.2f' % atrbtc.bar.atr_val)
-        logger.log(logging.TA, 'BTC MA:  %.2f' % atrbtc.five_min.avg)
-
-        logger.log(logging.TA, 'XRP ATR: %.2f' % atrxrp.bar.atr_val)
-        logger.log(logging.TA, 'XRP MA:  %.2f' % atrxrp.five_min.avg)
-
-        logger.log(logging.TA, 'BCH ATR: %.2f' % atrbch.bar.atr_val)
-        logger.log(logging.TA, 'BCH MA:  %.2f' % atrbch.five_min.avg)
+        logger.info('Three min WMA_mod Cash:   %.2f' % port1.cash)
+        logger.info('Three min WMA_mod Assets: %s' % str(port1.balance))
 
         time.sleep(60)
 

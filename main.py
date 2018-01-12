@@ -30,14 +30,13 @@ def main(pair='ethusd'):
     port5 = Portfolio(10000)
 
     print("Initialising strategies")
-    rf   = RFStrat(pair, port1)
     atr1  = ATRStrat(pair, port2, message='[ATR1]', period=60)
     atr2  = ATRStrat(pair, port3, message='[ATR2]', period=180)
 
     atr3  = ATRStrat(pair, port4, message='[ATR3]', period=60)
     atr4  = ATRStrat(pair, port5, message='[ATR4]', period=180)
-    atr3.timelag_required = 10
-    atr4.timelag_required = 10
+    atr3.timelag_required = 30
+    atr4.timelag_required = 30
 
     print("Setting up callbacks")
     bs.onTrade(pair, lambda x: logger.log(0, x))
