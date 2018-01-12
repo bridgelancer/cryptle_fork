@@ -17,19 +17,6 @@ ch.setFormatter(formatter)
 
 logger.addHandler(ch)
 
-def readcsv(filename):	
-    ifile = open(filename, "rU")
-    reader = csv.reader(ifile, delimiter="\n")
-
-    rownum = 0	
-    ls = []
-
-    for row in reader:
-        a.append (row)
-        rownum += 1
-    
-    ifile.close()
-    return ls
 
 def main(pair='ethusd'):
     bs = BitstampFeed()
