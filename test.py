@@ -203,6 +203,16 @@ def testWMA():
     assert wma.wma - (293 / 3) < 1e-5
 
 
+def testVWMAStrat():
+    port = Portfolio(1000)
+    vwma = VWMAStrat('bchusd', port, '[VWMA]', period=30)
+
+    bs = BitstampFeed()
+    bs.onTrade('bchusd', vwma)
+
+    time.sleep(600)
+
+
 if __name__ == '__main__':
     testBuySell()
     testFunctor()
@@ -210,3 +220,6 @@ if __name__ == '__main__':
     testCVWMA()
     testSMA()
     testWMA()
+
+    testVWMAStrat()
+
