@@ -204,7 +204,7 @@ class RFStrat(Strategy):
                 prev_crossover_time = None
                 prev_sell_time = timestamp
 
-        else:
+        elpse:
             prev_crossover_time = None
 
         self.prev_crossover_time = prev_crossover_time
@@ -288,6 +288,9 @@ class WMAStrat(Strategy):
         self.upper_atr = 0.5
         self.lower_atr = 0.35
 
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+
         self.five_min_bar.update(price, timestamp)
         self.eight_min_bar.update(price, timestamp)
 
@@ -338,37 +341,54 @@ class WMAStrat(Strategy):
 
 class VWMAStrat(Strategy):
 
-    def __init__(self, pair, portfolio, message='', period=60, ma1=5, ma2=10):
+    def __init__(self, pair, portfolio, message='', period=60, shorttrend=5, longtrend=10):
         super().__init(pair, portfolio)
         self.message = message
 
-        self.ma1 = MovingWindow(period * ma1)
-        self.ma2 = MovingWindow(period * ma2)
+        self.shorttrend = MovingWindow(period * ma1)
+        self.longtrend = MovingWindow(period * ma2)
         self.entered = False
+        self.prev_trend = True
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
 
-        self.ma1.update(price, volume, timestamp)
-        self.ma2.update(price, volume, timestamp)
+        self.shorttrend.update(price, volume, timestamp)
+        self.longtrend.update(price, volume, timestamp)
 
-        uptrend = False
-
-        if self.ma1.avg > self.ma2.avg:
-            uptrend = True
-
-        if self.last_cross_time == None and self.last_:
-            last_cross_time = timestamp
+        if self.prev_cross_time == None:
+            self.prev_cross_time = timestamp
             return
 
-        confirm_up = uptrend and
-        confirm_down = downtrend and
+        trend = self.shorttrend.avg > self.longtrend.avg
+
+        # Checks if there has been a crossing of VWMA
+        if self.prev_trend != trend:
+            # Set new cross time and latest trend direction (True for up, False for down)
+            self.prev_cross_time = timestamp
+            self.prev_trend = trend
+
+            if trend: trend_str = 'upwards'
+            else: trend_str = 'downwards'
+
+            logger.debug('VWMA identified crossing ' + trend_str)
+            return
+
+        # Filter out temporary breakouts in either direction
+        elif timestamp < self.prev_cross_time + self.timelag_required:
+            return
+
+        # Confirm there has been a trend, set more readable variables
+        else:
+            confirm_up = trend
+            confirm_down = not trend
+
 
         if not self.entered and self.hasCash() and confirm_up:
             self.buy(amount, price, self.message)
-            last_cross = None
+            self.entered = True
 
         elif self.entered and confirm_down:
             self.sell(amount, price, self.message)
-            last_cross = None
+            self.entered = False
 
