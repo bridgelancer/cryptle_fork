@@ -163,6 +163,7 @@ def testMA():
     logger.debug(str(thre_ma[3]) + ' ' + str(thre_ma[8]) + ' ' + str(thre_ma[13]))
     logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
 
+
 def testEquity():
     port  = Portfolio(1000)
     strat = Strategy('ethusd', port)
@@ -176,8 +177,24 @@ def testEquity():
     assert strat.portfolio.cash == 800
 
 
+def testWMA():
+    const = [(3, i) for i in range(1, 100)]
+    lin = [(i, i) for i in  range(1, 100)]
+    quad  = [(i**2, i) for i in range(1, 100)]
+
+    candle = CandleBar(1)   # 1 second bar
+    wma = WMA(candle, 5)    # 5 bar look ac
+
+    for tick in const:
+        candle.update(tick[0], tick[1])
+
+    assert wma.wma == 3
+
+    for tick in lin:
+        candle.update(tick[0], tick[1])
+
+    assert wma.wma - (293 / 3) < 1e-5
+
+
 if __name__ == '__main__':
-    #testBitstampFeed()
-    #testStrategy()
-    testEquity()
-    testBuySell()
+    testWMA()
