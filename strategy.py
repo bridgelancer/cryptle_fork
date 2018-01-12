@@ -338,10 +338,14 @@ class ATRStrat(Strategy):
 
 class WMAStrat(Strategy):
 
+<<<<<<< bc63e4066e83c3f061acc9118cdd8b614321be4c
     def __init__(self, pair, portfolio, message='[WMA]', period=60, scope1=5, scope2=8):
+=======
+    def __init__(self, pair, portfolio, message='[WMA]', period=180, scope1=5, scope2=8):
+>>>>>>> Fix premature trading issues of WMA and WMAMod Strategies
         super().__init__(pair, portfolio)
-        self.five_min_bar = CandleBar(period, scope1) # not yet implemented
-        self.eight_min_bar = CandleBar(period, scope2) # not yet implemented
+        self.five_period_bar = CandleBar(period, scope1) # not yet implemented
+        self.eight_period_bar = CandleBar(period, scope2) # not yet implemented
         self.message = message
 
         self.upper_atr = 0.35
@@ -350,21 +354,20 @@ class WMAStrat(Strategy):
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
 
-        self.five_min_bar.update(price, timestamp)
-        self.eight_min_bar.update(price, timestamp)
+        self.five_period_bar.update(price, timestamp)
+        self.eight_period_bar.update(price, timestamp)
 
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
         try:
-            atr = self.five_min_bar.getAtr()
-            belowatr = self.five_min_bar.WMA < price - self.lower_atr * atr
-            aboveatr = min(self.five_min_bar.WMA, self.eight_min_bar.WMA) > price + self.upper_atr * atr
+            atr = self.five_period_bar.getAtr()
+            belowatr = self.five_period_bar.WMA < price - self.lower_atr * atr
+            aboveatr = min(self.five_period_bar.WMA, self.eight_period_bar.WMA) > price + self.upper_atr * atr
+            uptrend = self.five_period_bar.WMA > self.eight_period_bar.WMA
+            downtrend = self.five_period_bar.WMA < self.eight_period_bar.WMA
         except RuntimeWarning:
             return
-
-        uptrend = self.five_min_bar.WMA > self.eight_min_bar.WMA
-        downtrend = self.five_min_bar.WMA < self.eight_min_bar.WMA
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
@@ -398,10 +401,10 @@ class WMAStrat(Strategy):
 
 class WMAModStrat(Strategy):
 
-    def __init__(self, pair, portfolio, message='[ATR]', period=180, scope1=5, scope2=8):
+    def __init__(self, pair, portfolio, message='[WMA Mod]', period=180, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
-        self.five_min_bar = CandleBar(period, scope1)
-        self.eight_min_bar = CandleBar(period, scope2)
+        self.five_period_bar = CandleBar(period, scope1)
+        self.eight_period_bar = CandleBar(period, scope2)
         self.message = message
 
         self.upper_atr = 0.35
@@ -413,8 +416,8 @@ class WMAModStrat(Strategy):
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
 
-        self.five_min_bar.update(price, timestamp)
-        self.eight_min_bar.update(price, timestamp)
+        self.five_period_bar.update(price, timestamp)
+        self.eight_period_bar.update(price, timestamp)
 
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
@@ -422,14 +425,14 @@ class WMAModStrat(Strategy):
         can_sell = self.can_sell
 
         try:
-            atr = self.five_min_bar.getAtr()
-            belowatr = self.five_min_bar.WMA < price - self.lower_atr * atr
-            aboveatr = min(self.five_min_bar.WMA, self.eight_min_bar.WMA) > price + self.upper_atr * atr
+            atr = self.five_period_bar.getAtr()
+            belowatr = self.five_period_bar.WMA < price - self.lower_atr * atr
+            aboveatr = min(self.five_period_bar.WMA, self.eight_period_bar.WMA) > price + self.upper_atr * atr
         except RuntimeWarning:
             return
 
-        uptrend = self.five_min_bar.WMA > self.eight_min_bar.WMA
-        downtrend = self.five_min_bar.WMA < self.eight_min_bar.WMA
+        uptrend = self.five_period_bar.WMA > self.eight_period_bar.WMA
+        downtrend = self.five_period_bar.WMA < self.eight_period_bar.WMA
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and belowatr:
@@ -474,10 +477,10 @@ class WMAModStrat(Strategy):
 
 class WMADiscreteStrat(Strategy):
 
-    def __init__(self, pair, portfolio, message='[ATR]', period=60, scope1=5, scope2=8):
+    def __init__(self, pair, portfolio, message='[WMA Discrete]', period=60, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
-        self.five_min_bar = CandleBar(period, scope1) # not yet implemented
-        self.eight_min_bar = CandleBar(period, scope2) # not yet implemented
+        self.five_period_bar = CandleBar(period, scope1) # not yet implemented
+        self.eight_period_bar = CandleBar(period, scope2) # not yet implemented
         self.message = message
 
         self.upper_atr = 0.35
@@ -488,8 +491,8 @@ class WMADiscreteStrat(Strategy):
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
 
-        self.five_min_bar.update(price, timestamp)
-        self.eight_min_bar.update(price, timestamp)
+        self.five_period_bar.update(price, timestamp)
+        self.eight_period_bar.update(price, timestamp)
 
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
@@ -497,14 +500,13 @@ class WMADiscreteStrat(Strategy):
         can_sell = self.can_sell
 
         try:
-            atr = self.five_min_bar.getAtr()
-            belowatr = self.five_min_bar.WMA < price - self.lower_atr * atr
-            aboveatr = min(self.five_min_bar.WMA, self.eight_min_bar.WMA) > price + self.upper_atr * atr
+            atr = self.five_period_bar.getAtr()
+            belowatr = self.five_period_bar.WMA < price - self.lower_atr * atr
+            aboveatr = min(self.five_period_bar.WMA, self.eight_period_bar.WMA) > price + self.upper_atr * atr
+            uptrend = self.five_period_bar.getWMA() > self.eight_period_bar.getWMA()
+            downtrend = self.five_period_bar.getWMA() < self.eight_period_bar.getWMA()
         except RuntimeWarning:
             return
-
-        uptrend = self.five_min_bar.WMA > self.eight_min_bar.WMA
-        downtrend = self.five_min_bar.WMA < self.eight_min_bar.WMA
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and belowatr:
