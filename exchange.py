@@ -93,7 +93,7 @@ class Bitstamp:
 
         res = self._post('/buy/' + pair + '/', params=params)
 
-        self.handleBitstampErrors(res, 'Limit buy ' + pair + ' failed')
+        self.handleBitstampErrors(res, 'Limit buy ' + pair.upper() + ' failed')
         return res
 
 
@@ -108,7 +108,7 @@ class Bitstamp:
 
         res = self._post('/sell/' + pair + '/', params=params)
 
-        self.handleBitstampErrors(res, 'Limit sell ' + pair + ' failed')
+        self.handleBitstampErrors(res, 'Limit sell ' + pair.upper() + ' failed')
         return res
 
 
@@ -214,6 +214,9 @@ class Bitstamp:
 
     @staticmethod
     def handleBitstampErrors(res, message):
+        if 'status' not in res:
+            return
+
         if res['status'] == 'error':
-            raise RuntimeWarning(message)
+            log.error(message + ': ' + str(res['reason']))
 
