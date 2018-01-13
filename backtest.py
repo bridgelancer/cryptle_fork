@@ -59,7 +59,7 @@ def testLoadCSV():
 
 
 def testParseTick(pair):
-    ls = readCSV('tick_01121712.log')
+    ls = readCSV('tick_01131036Full.log')
 
     result = []
 
@@ -147,16 +147,19 @@ def testSnoopingLoopN(pair):
     strats = []
     ports = []
 
-    lags = range(100, 502, 100)
-    snooping = range(60, 1860, 60)
+    # Currently at least run 2*2 strats needed
+    lags = range(350, 502, 150)
+    snooping = range(180, 1860, 120)
     y = [x/1000 for x in lags]
+
 
     for lag in lags:
         for period in snooping:
             ports.append(Portfolio(1000))
 
-            strat = WMAModStrat(str(pair), ports[snooping.index(period)], '[WMA {} min bar {}% time lag]'.format(period, y[lags.index(lag)]*100), period)
-            strat.timelag_required = period * y[lags.index(lag)]
+            strat = WMAModStrat(str(pair), ports[snooping.index(period)], '[WMA {} min bar {}% ATR]'.format(period, y[lags.index(lag)]*100), period)
+            strat.upper_atr = y[lags.index(lag)]
+            strat.lower_atr = y[lags.index(lag)]
             strats.append(strat)
 
         S.append([x for x in strats])
@@ -174,9 +177,11 @@ def testSnoopingLoopN(pair):
 
     for ports in P:
         for port in ports:
-            logger.info('Port' + str((ports.index(port) + 1)*60) + ' ' + str(0.1+ 0.1*P.index(ports)) + ' cash: %.2f' % port.cash)
-            logger.info("Port" + str((ports.index(port) + 1)*60) + ' ' + str(0.1 + 0.1*P.index(ports)) + ' balance : %s' % str(port.balance))
-
+            if (len(snooping) or len(y) != 0)
+                logger.info('Port' + str(snooping[0] + (snooping[1]-snooping[0])*ports.index(port)) + ' %.2f cash: %.2f' % (y[0] + ((y[1]-y[0])*(P.index(ports))), port.cash))
+                logger.info("Port" + str(snooping[0] + (snooping[1]-snooping[0])*ports.index(port)) + ' %.2f  balance : %s' % (y[0]+ ((y[1]-y[0])*P.index(ports)), str(port.balance)))
+            else:
+                logger.info("Please loop at least two configs per factor")
 
 if __name__ == '__main__':
     pair = sys.argv[1]
