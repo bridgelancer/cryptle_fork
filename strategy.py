@@ -1,14 +1,34 @@
 from ta import *
 from exchange import *
 
+import inspect
 import json
 import logging
 logger = logging.getLogger('Cryptle')
 
 
+def checkType(param, *types):
+    valid_type = False
+
+    for t in types:
+        valid_type |= isinstance(param, t)
+
+    if not valid_type:
+        caller = inspect.stack()[1][3]
+        passed = type(param).__name__
+        expect = types[0].__name__
+
+        fmt = "{} was passed to {} where {} is expected"
+        msg = fmt.format(passed, caller, expect)
+
+        raise TypeError(msg)
+
+
 class Portfolio:
 
     def __init__(self, cash, balance=None, balance_value=None):
+        checkType(cash, int, float)
+
         self.cash = cash
 
         if balance is None:
@@ -20,6 +40,9 @@ class Portfolio:
 
 
     def deposit(self, pair, amount, price=0):
+        checkType(pair, str)
+        checkType(amount, int, float)
+        checkType(price, int, float)
 
         try:
             self.balance[pair] += amount
@@ -30,6 +53,9 @@ class Portfolio:
 
 
     def withdraw(self, pair, amount):
+        checkType(pair, str)
+        checkType(amount, int, float)
+
         try:
             self.balance_value[pair] *= (self.balance[pair] - amount)/ self.balance_value[pair]
             self.balance[pair] -= amount
@@ -38,10 +64,11 @@ class Portfolio:
 
 
     def clear(self, pair):
+        checkType(pair, str)
         self.balance[pair] = 0
 
 
-    def clearAll(self, pair):
+    def clearAll(self):
         self.balance = {}
 
 
@@ -56,6 +83,9 @@ class Strategy:
     # @HARDCODE Remove the exchange default
     # There will be regressions, so fix the, before removing the default
     def __init__(self, pair, portfolio, exchange=None):
+        checkType(pair, str)
+        checkType(portfolio, Portfolio)
+
         self.pair = pair
         self.portfolio = portfolio
 
@@ -86,8 +116,10 @@ class Strategy:
 
 
     def buy(self, amount, message='', price=0):
-        assert isinstance(amount, int) or isinstance(amount, float)
-        assert isinstance(message, str)
+        checkType(amount, int, float)
+        checkType(message, str)
+        checkType(price, int, float)
+        assert amount > 0
         assert price >= 0
 
         logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
@@ -102,8 +134,10 @@ class Strategy:
 
 
     def sell(self, amount, message='', price=0):
-        assert isinstance(amount, int) or isinstance(amount, float)
-        assert isinstance(message, str)
+        checkType(amount, int, float)
+        checkType(message, str)
+        checkType(price, int, float)
+        assert amount > 0
         assert price >= 0
 
         logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
