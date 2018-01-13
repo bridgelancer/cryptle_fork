@@ -71,9 +71,13 @@ def papertrade():
     bs.onTrade('xrpusd', wmaxrp_3m)
     bs.onTrade('bchusd', wmabch_3m)
 
-    bs.onTRADE('ethusd', lambda x: logger.log(logging.TICK, x))
+    bs.onTrade('ethusd', lambda x: logger.log(logging.TICK, x))
+    bs.onTrade('btcusd', lambda x: logger.log(logging.TICK, x))
+    bs.onTrade('xrpusd', lambda x: logger.log(logging.TICK, x))
+    bs.onTrade('bchusd', lambda x: logger.log(logging.TICK, x))
 
     logger.debug("Reporting...")
+
     while True:
         logger.info('Five min WMA_mod Cash:   %.2f' % port1.cash)
         logger.info('Five min WMA_mod Assets: %s' % str(port1.balance))

@@ -128,10 +128,12 @@ class Strategy:
         assert amount > 0
         assert price >= 0
 
+        commission = 0.03
+
         logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
 
         self.portfolio.deposit(self.pair, amount, price)
-        self.portfolio.cash -= amount * price
+        self.portfolio.cash -= amount * price * (1 - commission/100)
 
         if price:
             return self.limitBuy(amount, price, message)
@@ -146,10 +148,12 @@ class Strategy:
         assert amount > 0
         assert price >= 0
 
+        commission = 0.03
+
         logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
 
         self.portfolio.withdraw(self.pair, amount)
-        self.portfolio.cash += amount * price
+        self.portfolio.cash += amount * price * (1 - commission/100)
 
         if price:
             return self.limitBuy(amount, price, message)
