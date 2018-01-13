@@ -63,6 +63,7 @@ class Strategy:
     # @HARDCODE Remove the exchange default
     # There will be regressions, so fix the, before removing the default
     def __init__(self, pair, portfolio, exchange=None):
+        self.init_time = time.time()
         self.pair = pair
         self.portfolio = portfolio
 
@@ -353,6 +354,9 @@ class WMAStrat(Strategy):
 
         self.bar.update(price, timestamp)
 
+        if timestamp < self.init_time + scope2 * period:
+            return
+
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
@@ -417,11 +421,13 @@ class WMAModStrat(Strategy):
         price, volume, timestamp = self.unpackTick(tick)
         self.bar.update(price, timestamp)
         
+        if timestamp < self.init_time + scope2 * period:
+            return
 
         prev_crossover_time = self.prev_crossover_time
-        prev_sell_time = self.prev_sell_time
-        entry_time = self.entry_time
-        can_sell = self.can_sell
+        prev_sell_time      = self.prev_sell_time
+        entry_time          = self.entry_time
+        can_sell            = self.can_sell
 
         # @ta should not raise RuntimeWarning
         try:
@@ -476,7 +482,7 @@ class WMAModStrat(Strategy):
         self.entry_time = entry_time
         self.can_sell = can_sell
 
-# To be implemented
+# @To be implemented
 class WMADiscreteStrat(Strategy):
 
     def __init__(self, pair, portfolio, message='[WMA Mod]', period=180, scope1=5, scope2=8):
@@ -498,6 +504,8 @@ class WMADiscreteStrat(Strategy):
         price, volume, timestamp = self.unpackTick(tick)
         self.bar.update(price, timestamp)
         
+        if timestamp < self.init_time + scope2 * period:
+            return
 
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
@@ -515,6 +523,7 @@ class WMADiscreteStrat(Strategy):
 
         uptrend   = self.WMA_5.wma > self.WMA_8.wma
         downtrend = self.WMA_5.wma < self.WMA_8.wma
+
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and belowatr:
