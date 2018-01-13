@@ -232,5 +232,4 @@ def testWMA():
 
 
 if __name__ == '__main__':
-    testMA():
-    testWMA()
+    testWMAStrategy("ethusd")
