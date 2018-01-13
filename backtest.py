@@ -110,12 +110,12 @@ def testSnoopingLoop(pair):
     strats = []
     ports = []
 
-    snooping = range(60, 1800, 60)
-    # Loop throug 5-100; 2-20
+    snooping = range(60, 1860, 60)
+    # Loop throug 60-1800 seconds bar, in 60s interval
     for period in snooping:
         ports.append(Portfolio(1000))
         strats.append(WMAModStrat(str(pair), ports[snooping.index(period)], '[WMA {} min bar]'.format(period), period))
-
+ 
     for strat in strats:
         strat.equity_at_risk = 1.0
 
@@ -126,7 +126,45 @@ def testSnoopingLoop(pair):
         logger.info('Port' + str((ports.index(port) + 1)*60) + ' cash: %.2f' % port.cash)
         logger.info("Port" + str((ports.index(port) + 1)*60) + ' balance : %s' % str(port.balance))
 
+def testSnoopingLoopN(pair):
+    
+    S = []
+    P = []
+
+    strats = []
+    ports = []
+
+    lags = range(100, 502, 100)
+    snooping = range(60, 1860, 60)
+    y = [x/1000 for x in lags]
+
+    for lag in lags:
+        for period in snooping:
+            ports.append(Portfolio(1000))
+
+            strat = WMAModStrat(str(pair), ports[snooping.index(period)], '[WMA {} min bar {}% time lag]'.format(period, y[lags.index(lag)]*100), period)
+            strat.timelag_required = period * y[lags.index(lag)]
+            strats.append(strat)
+        
+        S.append([x for x in strats])
+        P.append([x for x in ports])
+
+        strats.clear()
+        ports.clear()
+    
+    for strats in S:
+        for strat in strats:
+            strat.equity_at_risk = 1.0
+
+            ls = testParseTick(pair)
+            loadCSV(ls, strat)
+
+    for ports in P:
+        for port in ports:
+            logger.info('Port' + str((ports.index(port) + 1)*60) + str(P.index(ports) + 0.1+ 0.02*P.index(ports)) + ' cash: %.2f' % port.cash)
+            logger.info("Port" + str((ports.index(port) + 1)*60) + str(P.index(ports) + 0.1 + 0.02*P.index(ports)) + ' balance : %s' % str(port.balance))
+
 
 if __name__ == '__main__':
     pair = sys.argv[1]
-    testSnoopingLoop(pair)
+    testSnoopingLoopN(pair)
