@@ -97,7 +97,7 @@ class Strategy:
         else:
             self.exchange = exchange
 
-        if isinstance(exchange, PaperExchange):
+        if isinstance(self.exchange, PaperExchange):
             self.is_paper_trade = True
 
         self.prev_crossover_time = None
@@ -198,8 +198,9 @@ class Strategy:
         timestamp = float(tick['timestamp'])
 
         if self.is_paper_trade:
-            exchange.price = price
-            exchange.timestamp = timestamp
+            self.exchange.price = price
+            self.exchange.volume = volume
+            self.exchange.timestamp = timestamp
 
         return price, volume, timestamp
 
