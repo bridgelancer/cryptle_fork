@@ -90,9 +90,7 @@ class Strategy:
     # @HARDCODE Remove the exchange default
     # There will be regressions, so fix the, before removing the default
     def __init__(self, pair, portfolio, exchange=None):
-        checkType(pair, str)
-        checkType(portfolio, Portfolio)
-
+        self.init_time = 0
         self.pair = pair
         self.portfolio = portfolio
 
@@ -386,6 +384,8 @@ class WMAStrat(Strategy):
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
+        if self.init_time == 0:
+            self.init_time = timestamp
 
         self.bar.update(price, timestamp)
 
@@ -455,6 +455,8 @@ class WMAModStrat(Strategy):
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
         self.bar.update(price, timestamp)
+        if self.init_time == 0:
+            self.init_time = timestamp
 
         if timestamp < self.init_time + self.WMA_8.lookback * self.bar.period:
             return
@@ -538,6 +540,8 @@ class WMADiscreteStrat(Strategy):
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
         self.bar.update(price, timestamp)
+        if self.init_time == 0:
+            self.init_time = timestamp
 
         if timestamp < self.init_time + self.WMA_8.lookback * self.bar.period:
             return
