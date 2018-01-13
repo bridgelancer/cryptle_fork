@@ -13,6 +13,11 @@ log = logging.getLogger('Exchange')
 
 class PaperExchange:
 
+    def __init__(self):
+        self.price = 0
+        self.timestamp = 0
+
+
     def marketBuy(self, pair, amount):
         assert isinstance(pair, str)
         assert amount > 0
@@ -27,6 +32,7 @@ class PaperExchange:
 
         log.info('Sell {:>7.2f} {} @${:.2f}'.format(amount, pair.upper(), price))
         return {'price': price, 'amount': amount}
+
 
     def limitBuy(self, pair, amount, price):
         assert isinstance(pair, str)
