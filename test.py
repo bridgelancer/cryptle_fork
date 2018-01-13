@@ -9,13 +9,14 @@ import time
 import sys
 import csv
 
-formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
+fmt = '%(name)8s| %(asctime)s [%(levelname)-5s] %(message)s'
+formatter = logging.Formatter(fmt, '%Y-%m-%d %H:%M:%S')
 
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
-bslog = logging.getLogger('Bitstamp')
-bslog.setLevel(1)
+bslog = logging.getLogger('Exchange')
+bslog.setLevel(4)
 
 fh = logging.FileHandler('test.log', mode='w')
 fh.setLevel(logging.DEBUG)
@@ -80,6 +81,7 @@ def testFunctor():
 
 def testBitstampFeed():
     feed = BitstampFeed()
+    time.sleep(1)
 
     feed.onTrade('btcusd', lambda x: logger.debug('Recieved BTC tick'))
     feed.onTrade('xrpusd', lambda x: logger.debug('Recieved XRP tick'))
@@ -87,9 +89,10 @@ def testBitstampFeed():
     feed.onTrade('ltcusd', lambda x: logger.debug('Recieved ETH tick'))
     feed.onTrade('bchusd', lambda x: logger.debug('Recieved ETH tick'))
 
-    time.sleep(3)
-    feed.pusher.disconnect()
-    logger.debug('Disconnected from Bitstamp WebSockets')
+    time.sleep(5)
+
+    #feed.pusher.disconnect()
+    #logger.debug('Disconnected from Bitstamp WebSockets')
 
 
 def testBitstampREST():
@@ -203,19 +206,11 @@ def testWMA():
     assert wma.wma - (293 / 3) < 1e-5
 
 
-def testVWMAStrat():
-    port = Portfolio(1000)
-    vwma = VWMAStrat('bchusd', port, '[VWMA]', period=30)
-
-    bs = BitstampFeed()
-    bs.onTrade('bchusd', vwma)
-
-    time.sleep(600)
-
-
 if __name__ == '__main__':
     testBuySell()
     testFunctor()
+    testBitstampFeed()
+    testBitstampREST()
     testEquity()
     testCVWMA()
     testSMA()
