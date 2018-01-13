@@ -123,8 +123,8 @@ def testSnoopingLoop(pair):
         loadCSV(ls, strat)
     
     for port in ports:
-        logger.info('Port' + str(ports.index(port)) + ' cash: %.2f' % port.cash)
-        logger.info("Port" + str(ports.index(port)) + ' balance : %s' % str(port.balance))
+        logger.info('Port' + str((ports.index(port) + 1)*60) + ' cash: %.2f' % port.cash)
+        logger.info("Port" + str((ports.index(port) + 1)*60) + ' balance : %s' % str(port.balance))
 
 
 if __name__ == '__main__':
