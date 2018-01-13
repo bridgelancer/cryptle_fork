@@ -156,4 +156,4 @@ def testWMA():
 
 if __name__ == '__main__':
     pair = sys.argv[1]
-    testWMAStrategy(pair)
+    testWMAModStrategy(pair)
