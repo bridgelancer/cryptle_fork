@@ -8,8 +8,10 @@ import sys
 # Set new log levels
 logging.TRADE = 5
 logging.TA = 9
+logging.TICK = 7
 
 logging.addLevelName(logging.TRADE, 'TRADE')
+logging.addLevelName(logging.TICK, "TICK")
 logging.addLevelName(logging.TA, 'TA')
 
 logger = logging.getLogger('Cryptle')
@@ -68,6 +70,8 @@ def papertrade():
     bs.onTrade('btcusd', wmabtc_3m)
     bs.onTrade('xrpusd', wmaxrp_3m)
     bs.onTrade('bchusd', wmabch_3m)
+
+    bs.onTRADE('ethusd', lambda x: logger.log(logging.TICK, x))
 
     logger.debug("Reporting...")
     while True:
