@@ -1,6 +1,6 @@
 from ta import *
 from exchange import *
-from bitstamp import *
+from datafeed import *
 from strategy import *
 
 import math
@@ -63,7 +63,7 @@ def testBitstampFeed():
 
 
 def testBitstampREST():
-    bs = BitstampREST()
+    bs = Bitstamp()
     logger.debug(bs.getTicker('btcusd'))
 
 
