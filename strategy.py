@@ -209,8 +209,8 @@ class OldStrat(Strategy):
 
     def __init__(self, pair, portfolio):
         super().__init__(pair, portfolio)
-        self.five_min = MovingWindow(300)
-        self.eight_min = MovingWindow(480)
+        self.five_min = ContinuousVWMA(300)
+        self.eight_min = ContinuousVWMA(480)
 
 
     def __call__(self, tick):
@@ -250,8 +250,8 @@ class RFStrat(Strategy):
 
     def __init__(self, pair, portfolio, message='[RF]', period=60, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
-        self.five_min = MovingWindow(period * scope1)
-        self.eight_min = MovingWindow(period * scope2)
+        self.five_min = ContinuousVWMA(period * scope1)
+        self.eight_min = ContinuousVWMA(period * scope2)
         self.message = message
         self.timelag_required = 30
 
@@ -308,9 +308,10 @@ class ATRStrat(Strategy):
 
     def __init__(self, pair, portfolio, message='[ATR]', period=60, scope1=5, scope2=8):
         super().__init__(pair, portfolio)
-        self.five_min = MovingWindow(period * scope1)
-        self.eight_min = MovingWindow(period * scope2)
+        self.five_min = ContinuousVWMA(period * scope1)
+        self.eight_min = ContinuousVWMA(period * scope2)
         self.bar = CandleBar(period, scope1)
+
         self.message = message
 
         self.upper_atr = 0.5
