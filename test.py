@@ -38,56 +38,6 @@ class TestStrat(Strategy):
         self.sell(1, price, 'Testing Sell')
 
 # Return a list ls, containing json ticks in entries
-def readCSV(filename):
-    ifile = open(filename, "rU")
-    reader = csv.reader(ifile, delimiter = "\n")
-
-    rownum = 0
-    ls = []
-
-    for row in reader:
-        ls.append(row)
-        rownum += 1
-    ifile.close()
-    return ls
-
-# Parse the list ls into a Strategy class, tick by tick
-def loadCSV(ls, Strat):
-    strat = Strat
-    for item in ls:
-        tick = ''.join(item)
-        Strat(tick)
-
-
-def testLoadCSV():
-    port = Portfolio(10000)
-    test = TestStrat('ethusd', port)
-
-    ls = readCSV('btc_sample')
-    loadCSV(ls, test)
-
-
-def testParseTick(pair):
-    ls = readCSV('tick_btc_json.log')
-
-    result = []
-
-    for tick in ls:
-        tick = ''.join(tick)
-        parsed_tick = json.loads(tick)
-        price = parsed_tick['price']
-
-        if pair == 'ethusd' and  900 < price < 1700:
-            result.append(tick)
-        elif pair == 'xrpusd' and  price < 3:
-            result.append(tick)
-        elif pair == 'btcusd' and price > 9000:
-            result.append(tick)
-        elif pair == 'bchusd' and  2000 < price < 3000:
-            result.append(tick)
-
-    return result
-
 
 def testBuySell():
     port = Portfolio(1000)
@@ -121,33 +71,6 @@ def testBitstampFeed():
 def testBitstampREST():
     bs = BitstampREST()
     logger.debug(bs.getTicker('btcusd'))
-
-
-def testWMAModStrategy(pair):
-    feed = BitstampFeed()
-    port = Portfolio(2500)
-    wmaeth  = WMAModStrat(str(pair), port, message='[WMA Mod]', period=300)
-    wmaeth.equity_at_risk = 1.0
-
-    ls = testParseTick(pair)
-    loadCSV(ls, wmaeth)
-
-    logger.info('WMA Cash:   %.2f' % port.cash)
-    logger.info('WMA Assets: %s' % str(port.balance))
-
-
-def testWMAStrategy(pair):
-    feed = BitstampFeed()
-    port = Portfolio(2500)
-
-    wmaeth  = WMAStrat(str(pair) , port, message='[WMA]', period=300)
-    wmaeth.equity_at_risk = 1.0
-
-    ls = testParseTick(pair)
-    loadCSV(ls, wmaeth)
-
-    logger.info('WMA Cash:   %.2f' % port.cash)
-    logger.info('WMA Assets: %s' % str(port.balance))
 
 
 def testEquity():
@@ -232,4 +155,5 @@ def testWMA():
 
 
 if __name__ == '__main__':
-    testWMAStrategy("ethusd")
+    pair = sys.argv[1]
+    testWMAStrategy(pair)
