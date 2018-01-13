@@ -89,10 +89,13 @@ class Strategy:
         self.pair = pair
         self.portfolio = portfolio
 
-        if (exchange == None):
+        if exchange == None:
             self.exchange = PaperExchange()
         else:
             self.exchange = exchange
+
+        if isinstance(exchange, PaperExchange):
+            self.is_paper_trade = True
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
@@ -117,85 +120,84 @@ class Strategy:
         return self.portfolio.equity()
 
 
-    def buy(self, amount, message='', price=0):
+    def marketBuy(self, amount, message=''):
         checkType(amount, int, float)
         checkType(message, str)
-        checkType(price, int, float)
         assert amount > 0
-        assert price >= 0
 
-        logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+        logger.debug('Placing market buy for {:8.5g} {} {:s}'.format(amount, pair.upper(), message))
+        res = self.exchange.marketBuy(self.pair, amount)
+
+        self.cleanupBuy(res)
+
+
+    def marketSell(self, amount, message=''):
+        checkType(amount, int, float)
+        checkType(message, str)
+        assert amount > 0
+
+        logger.debug('Placing market sell for {:8.5g} {} {:s}'.format(amount, pair.upper(), message))
+        res = self.exchange.marketSell(self.pair, amount)
+
+        self.cleanupSell(res)
+
+
+    def limitBuy(self, amount, price, message=''):
+        checkType(amount, int, float)
+        checkType(price, int, float)
+        checkType(message, str)
+        assert amount > 0
+        assert price > 0
+
+        logger.debug('Placing limit buy for {:8.5g} {} @${} {:s}'.format(amount, pair.upper(), price, message))
+        res = self.exchange.limitBuy(self.pair, amount, price)
+
+        self.cleanupBuy(res)
+
+
+    def limitSell(self, amount, price, message=''):
+        checkType(amount, int, float)
+        checkType(price, int, float)
+        checkType(message, str)
+        assert amount > 0
+        assert price > 0
+
+        logger.debug('Placing limit sell for {:8.5g} {} @${} {:s}'.format(amount, pair.upper(), price, message))
+        res = self.exchange.limitSell(self.pair, amount, price)
+
+        self.cleanupSell(res)
+
+
+    def cleanupBuy(self, res):
+        price = res['price']
+        amount = res['amount']
 
         self.portfolio.deposit(self.pair, amount, price)
         self.portfolio.cash -= amount * price
 
-        if price:
-            return self.limitBuy(amount, price, message)
-        else:
-            return self.marketbuy(amount, message)
+        logger.info('Bought {:8.5g} {} @${} {}'.format(amount, pair.upper(), price, message))
 
 
-    def sell(self, amount, message='', price=0):
-        checkType(amount, int, float)
-        checkType(message, str)
-        checkType(price, int, float)
-        assert amount > 0
-        assert price >= 0
-
-        logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
+    def cleanupSell(self, res):
+        price = res['price']
+        amount = res['amount']
 
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += amount * price
 
-        if price:
-            return self.limitBuy(amount, price, message)
-        else:
-            return self.marketbuy(amount, message)
+        logger.info('Sold   {:8.5g} {} @${} {}'.format(amount, pair.upper(), price, message))
 
 
-    # @Inconsistent interface
-    # @Deprecated
-    # Fix the interface and it's dependent usage
-    def sellAll(self, price=0, message=''):
-        return self.sell(self.portfolio.balance[self.pair], message, price)
-
-
-    def marketBuy(self, amount, message=''):
-        assert isinstance(amount, int) or isinstance(amount, float)
-        assert isinstance(message, str)
-
-        return self.exchange.marketBuy(self.pair, amount)
-
-
-    def marketSell(self, amount, message=''):
-        assert isinstance(amount, int) or isinstance(amount, float)
-        assert isinstance(message, str)
-
-        return self.exchange.marketSell(self.pair, amount)
-
-
-    def limitBuy(self, amount, price, message=''):
-        assert isinstance(amount, int) or isinstance(amount, float)
-        assert isinstance(message, str)
-        assert price > 0
-
-        return self.exchange.limitBuy(self.pair, amount, price)
-
-
-    def limitBuy(self, amount, price, message=''):
-        assert isinstance(amount, int) or isinstance(amount, float)
-        assert isinstance(message, str)
-        assert price > 0
-
-        return self.exchange.limitSell(self.pair, amount, price)
-
-
-    @staticmethod
-    def unpackTick(tick):
+    def unpackTick(self, tick):
         tick = json.loads(tick)
         price = tick['price']
         volume = tick['amount']
         timestamp = float(tick['timestamp'])
+
+        if self.is_paper_trade:
+            exchange.price = price
+            exchange.timestamp = timestamp
+
         return price, volume, timestamp
 
 
