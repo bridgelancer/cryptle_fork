@@ -91,6 +91,8 @@ class Strategy:
 
         if (exchange == None):
             self.exchange = PaperExchange()
+        else:
+            self.exchange = exchange
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
