@@ -2,6 +2,7 @@ from ta import *
 from exchange import *
 from datetime import datetime
 
+import inspect
 import json
 import logging
 
@@ -13,9 +14,28 @@ def appendTimestamp(msg, t):
     return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M:%S"))
 
 
+def checkType(param, *types):
+    valid_type = False
+
+    for t in types:
+        valid_type |= isinstance(param, t)
+
+    if not valid_type:
+        caller = inspect.stack()[1][3]
+        passed = type(param).__name__
+        expect = types[0].__name__
+
+        fmt = "{} was passed to {} where {} is expected"
+        msg = fmt.format(passed, caller, expect)
+
+        raise TypeError(msg)
+
+
 class Portfolio:
 
     def __init__(self, cash, balance=None, balance_value=None):
+        checkType(cash, int, float)
+
         self.cash = cash
 
         if balance is None:
@@ -27,6 +47,9 @@ class Portfolio:
 
 
     def deposit(self, pair, amount, price=0):
+        checkType(pair, str)
+        checkType(amount, int, float)
+        checkType(price, int, float)
 
         try:
             self.balance[pair] += amount
@@ -37,6 +60,9 @@ class Portfolio:
 
 
     def withdraw(self, pair, amount):
+        checkType(pair, str)
+        checkType(amount, int, float)
+
         try:
             self.balance_value[pair] *= (self.balance[pair] - amount)/ self.balance_value[pair]
             self.balance[pair] -= amount
@@ -45,10 +71,11 @@ class Portfolio:
 
 
     def clear(self, pair):
+        checkType(pair, str)
         self.balance[pair] = 0
 
 
-    def clearAll(self, pair):
+    def clearAll(self):
         self.balance = {}
 
 
@@ -63,12 +90,16 @@ class Strategy:
     # @HARDCODE Remove the exchange default
     # There will be regressions, so fix the, before removing the default
     def __init__(self, pair, portfolio, exchange=None):
-        self.init_time = time.time()
+        checkType(pair, str)
+        checkType(portfolio, Portfolio)
+
         self.pair = pair
         self.portfolio = portfolio
 
         if (exchange == None):
             self.exchange = PaperExchange()
+        else:
+            self.exchange = exchange
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
@@ -93,8 +124,10 @@ class Strategy:
 
 
     def buy(self, amount, message='', price=0):
-        assert isinstance(amount, int) or isinstance(amount, float)
-        assert isinstance(message, str)
+        checkType(amount, int, float)
+        checkType(message, str)
+        checkType(price, int, float)
+        assert amount > 0
         assert price >= 0
 
         logger.info('Buy  ' + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
@@ -109,8 +142,10 @@ class Strategy:
 
 
     def sell(self, amount, message='', price=0):
-        assert isinstance(amount, int) or isinstance(amount, float)
-        assert isinstance(message, str)
+        checkType(amount, int, float)
+        checkType(message, str)
+        checkType(price, int, float)
+        assert amount > 0
         assert price >= 0
 
         logger.info('Sell '  + str(amount) + ' ' + self.pair.upper() + ' @' + str(price) + ' ' + message)
@@ -420,7 +455,7 @@ class WMAModStrat(Strategy):
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
         self.bar.update(price, timestamp)
-        
+
         if timestamp < self.init_time + self.WMA_8.lookback * self.bar.period:
             return
 
@@ -503,7 +538,7 @@ class WMADiscreteStrat(Strategy):
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
         self.bar.update(price, timestamp)
-        
+
         if timestamp < self.init_time + self.WMA_8.lookback * self.bar.period:
             return
 
@@ -570,13 +605,14 @@ class WMADiscreteStrat(Strategy):
 class VWMAStrat(Strategy):
 
     def __init__(self, pair, portfolio, message='', period=60, shorttrend=5, longtrend=10):
-        super().__init(pair, portfolio)
+        super().__init__(pair, portfolio)
         self.message = message
 
-        self.shorttrend = MovingWindow(period * ma1)
-        self.longtrend = MovingWindow(period * ma2)
+        self.shorttrend = ContinuousVWMA(period * shorttrend)
+        self.longtrend = ContinuousVWMA(period * longtrend)
         self.entered = False
         self.prev_trend = True
+        self.amount = 0
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
@@ -584,8 +620,8 @@ class VWMAStrat(Strategy):
         self.shorttrend.update(price, volume, timestamp)
         self.longtrend.update(price, volume, timestamp)
 
-        if self.prev_cross_time == None:
-            self.prev_cross_time = timestamp
+        if self.prev_crossover_time == None:
+            self.prev_crossover_time = timestamp
             return
 
         trend = self.shorttrend.avg > self.longtrend.avg
@@ -593,7 +629,7 @@ class VWMAStrat(Strategy):
         # Checks if there has been a crossing of VWMA
         if self.prev_trend != trend:
             # Set new cross time and latest trend direction (True for up, False for down)
-            self.prev_cross_time = timestamp
+            self.prev_crossover_time = timestamp
             self.prev_trend = trend
 
             if trend: trend_str = 'upwards'
@@ -603,7 +639,7 @@ class VWMAStrat(Strategy):
             return
 
         # Filter out temporary breakouts in either direction
-        elif timestamp < self.prev_cross_time + self.timelag_required:
+        elif timestamp < self.prev_crossover_time + self.timelag_required:
             return
 
         # Confirm there has been a trend, set more readable variables
@@ -613,9 +649,10 @@ class VWMAStrat(Strategy):
 
 
         if not self.entered and self.hasCash() and confirm_up:
-            self.buy(amount, self.message, price)
+            self.amount = self.equity_at_risk * self.equity() / price
+            self.buy(self.amount, self.message, price)
             self.entered = True
 
         elif self.entered and confirm_down:
-            self.sell(amount, self.message, price)
+            self.sell(self.amount, self.message, price)
             self.entered = False

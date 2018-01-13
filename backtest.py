@@ -80,6 +80,16 @@ def testParseTick(pair):
     return result
 
 
+def testVWMAStrat():
+    port = Portfolio(1000)
+    vwma = VWMAStrat('bchusd', port, '[VWMA]', period=30)
+
+    bs = BitstampFeed()
+    bs.onTrade('bchusd', vwma)
+
+    time.sleep(60)
+
+
 def testWMAModStrategy(pair):
     feed = BitstampFeed()
     port = Portfolio(2500)
@@ -115,22 +125,22 @@ def testSnoopingLoop(pair):
     for period in snooping:
         ports.append(Portfolio(1000))
         strats.append(WMAModStrat(str(pair), ports[snooping.index(period)], '[WMA {} min bar]'.format(period), period))
- 
+
     for strat in strats:
         strat.equity_at_risk = 1.0
 
         ls = testParseTick(pair)
         loadCSV(ls, strat)
-    
+
     for port in ports:
         logger.info('Port' + str((ports.index(port) + 1)*60) + ' cash: %.2f' % port.cash)
         logger.info("Port" + str((ports.index(port) + 1)*60) + ' balance : %s' % str(port.balance))
 
 # Enable snooping in two factor mode
-# Caution: This function may run in extended period of time. 
+# Caution: This function may run in extended period of time.
 # The typical run time for an one day tick data feeding into 100 strategies is 1 minute.
 def testSnoopingLoopN(pair):
-    
+
     S = []
     P = []
 
@@ -148,13 +158,13 @@ def testSnoopingLoopN(pair):
             strat = WMAModStrat(str(pair), ports[snooping.index(period)], '[WMA {} min bar {}% time lag]'.format(period, y[lags.index(lag)]*100), period)
             strat.timelag_required = period * y[lags.index(lag)]
             strats.append(strat)
-        
+
         S.append([x for x in strats])
         P.append([x for x in ports])
 
         strats.clear()
         ports.clear()
-    
+
     for strats in S:
         for strat in strats:
             strat.equity_at_risk = 1.0

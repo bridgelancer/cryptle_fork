@@ -1,4 +1,5 @@
 from ta import *
+from exchange import *
 from bitstamp import *
 from strategy import *
 
@@ -8,36 +9,29 @@ import time
 import sys
 import csv
 
+formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
+
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
-formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
-
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(formatter)
+bslog = logging.getLogger('Bitstamp')
+bslog.setLevel(1)
 
 fh = logging.FileHandler('test.log', mode='w')
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 
-logger.addHandler(ch)
-logger.addHandler(fh)
-
-bslog = logging.getLogger('Bitstamp')
-bslog.setLevel(logging.DEBUG)
-bslog.addHandler(ch)
 bslog.addHandler(fh)
+logger.addHandler(fh)
 
 
 class TestStrat(Strategy):
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
-        self.buy(1, price, 'Testing Buy')
-        self.sell(1, price, 'Testing Sell')
+        self.buy(1, 'Testing Buy', price)
+        self.sell(1, 'Testing Sell', price)
 
-# Return a list ls, containing json ticks in entries
 
 def testBuySell():
     port = Portfolio(1000)
@@ -63,7 +57,7 @@ def testBitstampFeed():
     feed.onTrade('ltcusd', lambda x: logger.debug('Recieved ETH tick'))
     feed.onTrade('bchusd', lambda x: logger.debug('Recieved ETH tick'))
 
-    time.sleep(5)
+    time.sleep(3)
     feed.pusher.disconnect()
     logger.debug('Disconnected from Bitstamp WebSockets')
 
@@ -86,18 +80,27 @@ def testEquity():
     assert strat.portfolio.cash == 800
 
 
-def testMA():
+def testEquity():
+    port  = Portfolio(1000)
+    strat = Strategy('ethusd', port)
+    strat.buy(2, price=100)
+
+    assert strat.equity() == 1000
+    assert strat.portfolio.cash == 800
+
+
+def testCVWMA():
     line = [(i, 1, i) for i in range(15)]
     quad = [(i, i+1, i) for i in range(15)]
     sine = [(math.sin(i), 1, i) for i in range(15)]
 
-    thre_line = MovingWindow(3)
-    thre_quad = MovingWindow(3)
-    thre_sine = MovingWindow(3)
+    thre_line = ContinuousVWMA(3)
+    thre_quad = ContinuousVWMA(3)
+    thre_sine = ContinuousVWMA(3)
 
-    five_line = MovingWindow(5)
-    five_quad = MovingWindow(5)
-    five_sine = MovingWindow(5)
+    five_line = ContinuousVWMA(5)
+    five_quad = ContinuousVWMA(5)
+    five_sine = ContinuousVWMA(5)
 
     five_ma = []
     thre_ma = []
@@ -107,13 +110,11 @@ def testMA():
         thre_ma.append(thre_line.avg)
         five_ma.append(five_line.avg)
 
-    logger.debug(str(thre_ma[3]) + ' ' + str(thre_ma[8]) + ' ' + str(thre_ma[13]))
-    logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
     assert thre_ma[3] == 2
     assert five_ma[13] == 11
+    thre_ma.clear()
+    five_ma.clear()
 
-    thre_ma = []
-    five_ma = []
     for tick in quad:
         thre_quad.update(tick[0], tick[1], tick[2])
         five_quad.update(tick[0], tick[1], tick[2])
@@ -122,9 +123,9 @@ def testMA():
 
     logger.debug(str(thre_ma[3]) + ' ' + str(thre_ma[8]) + ' ' + str(thre_ma[13]))
     logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
+    thre_ma.clear()
+    five_ma.clear()
 
-    thre_ma = []
-    five_ma = []
     for tick in sine:
         five_sine.update(tick[0], tick[1], tick[2])
         thre_sine.update(tick[0], tick[1], tick[2])
@@ -135,10 +136,27 @@ def testMA():
     logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
 
 
+const = [(3, i) for i in range(1, 100)]
+lin = [(i, i) for i in  range(1, 100)]
+quad  = [(i**2, i) for i in range(1, 100)]
+
+
+def testSMA():
+    candle = CandleBar(1)
+    sma = SMA(candle, 3)
+
+    for tick in const:
+        candle.update(tick[0], tick[1])
+        if tick[1] < 5: continue
+        else: assert sma.sma == 3
+
+    for tick in lin:
+        candle.update(tick[0], tick[1])
+        if tick[1] < 5: continue
+        else: assert sma.sma == tick[1] - 2
+
+
 def testWMA():
-    const = [(3, i) for i in range(1, 100)]
-    lin = [(i, i) for i in  range(1, 100)]
-    quad  = [(i**2, i) for i in range(1, 100)]
 
     candle = CandleBar(1)   # 1 second bar
     wma = WMA(candle, 5)    # 5 bar look ac
@@ -154,6 +172,20 @@ def testWMA():
     assert wma.wma - (293 / 3) < 1e-5
 
 
+def testVWMAStrat():
+    port = Portfolio(1000)
+    vwma = VWMAStrat('bchusd', port, '[VWMA]', period=30)
+
+    bs = BitstampFeed()
+    bs.onTrade('bchusd', vwma)
+
+    time.sleep(600)
+
+
 if __name__ == '__main__':
-    pair = sys.argv[1]
-    testWMAModStrategy(pair)
+    testBuySell()
+    testFunctor()
+    testEquity()
+    testCVWMA()
+    testSMA()
+    testWMA()
