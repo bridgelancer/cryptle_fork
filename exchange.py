@@ -22,16 +22,16 @@ class PaperExchange:
         assert isinstance(pair, str)
         assert amount > 0
 
-        log.info('Buy  {:>7.2f} {} @${:.2}'.format(amount, pair.upper(), price))
-        return {'price': price, 'amount': amount}
+        log.info('Buy  {:7.5g} {} @${:.2g}'.format(amount, pair.upper(), self.price))
+        return {'price': self.price, 'amount': amount}
 
 
     def marketSell(self, pair, amount):
         assert isinstance(pair, str)
         assert amount > 0
 
-        log.info('Sell {:>7.2f} {} @${:.2f}'.format(amount, pair.upper(), price))
-        return {'price': price, 'amount': amount}
+        log.info('Sell {:7.5g} {} @${:.2g}'.format(amount, pair.upper(), self.price))
+        return {'price': self.price, 'amount': amount}
 
 
     def limitBuy(self, pair, amount, price):
@@ -39,7 +39,7 @@ class PaperExchange:
         assert amount > 0
         assert price > 0
 
-        log.info('Buy  {:>7.2f} {} @${:.2}'.format(amount, pair.upper(), price))
+        log.info('Buy  {:7.5g} {} @${:.2g}'.format(amount, pair.upper(), price))
         return {'price': price, 'amount': amount}
 
 
@@ -48,7 +48,7 @@ class PaperExchange:
         assert amount > 0
         assert price > 0
 
-        log.info('Sell {:>7.2f} {} @${:.2f}'.format(amount, pair.upper(), price))
+        log.info('Sell {:7.5g} {} @${:.2g}'.format(amount, pair.upper(), price))
         return {'price': price, 'amount': amount}
 
 
