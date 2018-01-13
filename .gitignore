@@ -1,5 +1,7 @@
 *.log
+*.log_parsed
 *.csv
+*.xlsx
 *.txt
 
 log/

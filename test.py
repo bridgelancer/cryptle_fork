@@ -63,18 +63,17 @@ def testBitstampREST():
     logger.debug(bs.getTicker('btcusd'))
 
 
-def testStrategy():
-    feed = BitstampFeed()
-    port = Portfolio(10000)
+def testEquity():
+    port  = Portfolio(1000)
+    strat = Strategy('ethusd', port)
 
-    sma = WMAStrat('btcusd', port)
+    strat.buy(2, price=100)
+    logger.debug(strat.equity_at_risk * strat.equity())
+    logger.debug(strat.equity())
+    logger.debug(strat.portfolio.cash)
 
-    ls = readCSV('btc_sample')
-    loadCSV(ls, sma)
-
-    for item in ls:
-        tick = ''.join(item)
-        sma(tick)
+    assert strat.equity() == 1000
+    assert strat.portfolio.cash == 800
 
 
 def testEquity():

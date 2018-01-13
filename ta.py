@@ -119,7 +119,7 @@ class ATR():
 
     def update(self):
         if (len(self.init) < self.lookback):
-            self.init.append(self.bars[-1][2] - self.bars[-1][3])
+            self.init.append(self.candle[-1][2] - self.candle[-1][3])
             self.atr = sum(self.init) / len(self.init)
         else:
             t1 = self.candle[-1][2] - self.candle[-1][3]

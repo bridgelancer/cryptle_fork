@@ -1,14 +1,11 @@
 #!/usr/bin/awk -f
 
 BEGIN {
-    no = 0;
     nr = 0;
-    na = 0;
-}
-
-/INFO/ && /Old/ && (/Buy/ || /Sell/) {
-    no += 1;
-    old[no] = $0;
+    na1 = 0;
+    na2 = 0;
+    na3 = 0;
+    na4 = 0;
 }
 
 /INFO/ && /RF/ && (/Buy/ || /Sell/) {
@@ -16,31 +13,87 @@ BEGIN {
     rf[nr] = $0;
 }
 
-/INFO/ && /ATR/ && (/Buy/ || /Sell/) {
-    na += 1;
-    atr[na] = $0;
-}
-
-/INFO/ && /Old Cash/ {
-    co = $7;
-}
-
 /INFO/ && /RF Cash/ {
     cr = $7;
 }
 
-/INFO/ && /ATR Cash/ {
-    ca = $7;
+/INFO/ && /ATR1/ && (/Buy/ || /Sell/) {
+    na1 += 1;
+    atr1[na] = $0;
+}
+
+/INFO/ && /ATR1 Cash/ {
+    ca1 = $7;
+}
+
+/INFO/ && /ATR2/ && (/Buy/ || /Sell/) {
+    na2 += 1;
+    atr2[na] = $0;
+}
+
+/INFO/ && /ATR2 Cash/ {
+    ca2 = $7;
+}
+
+/INFO/ && /ATR3/ && (/Buy/ || /Sell/) {
+    na3 += 1;
+    atr3[na] = $0;
+}
+
+/INFO/ && /ATR3 Cash/ {
+    ca3 = $7;
+}
+
+/INFO/ && /ATR4/ && (/Buy/ || /Sell/) {
+    na4 += 1;
+    atr2[na] = $0;
+}
+
+/INFO/ && /ATR4 Cash/ {
+    ca4 = $7;
+}
+
+/RF Balance/ {
+    r = $8;
+}
+
+/ATR1 Balance/ {
+    b1 = $8;
+}
+
+/ATR2 Balance/ {
+    b2 = $8;
+}
+
+/ATR3 Balance/ {
+    b3 = $8;
+}
+
+/ATR4 Balance/ {
+    b4 = $8;
 }
 
 END {
     print "========================"
-    print "No. of Old trades: " no;
-    print "No. of RF  trades: " nr;
-    print "No. of ATR trades: " na;
+    print "No. of RF   trades: " nr;
+    print "No. of ATR1 trades: " na1;
+    print "No. of ATR2 trades: " na2;
+    print "No. of ATR3 trades: " na3;
+    print "No. of ATR4 trades: " na4;
     print ""
-    print "Closing cash: " co;
-    print "Closing cash: " cr;
-    print "Closing cash: " ca;
+    print "RF   cash: " cr;
+    print "RF   bala: " r;
+    print ""
+    print "ATR1 cash: " ca1;
+    print "ATR1 bala: " b1;
+    print ""
+    print "ATR2 cash: " ca2;
+    print "ATR2 bala: " b2;
+    print ""
+    print "ATR3 cash: " ca3;
+    print "ATR3 bala: " b3;
+    print ""
+    print "ATR4 cash: " ca4;
+    print "ATR4 bala: " b4;
     print "========================"
 }
