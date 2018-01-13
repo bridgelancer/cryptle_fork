@@ -354,7 +354,7 @@ class WMAStrat(Strategy):
 
         self.bar.update(price, timestamp)
 
-        if timestamp < self.init_time + scope2 * period:
+        if timestamp < self.init_time + self.WMA_8.lookback * self.bar.period:
             return
 
         prev_crossover_time = self.prev_crossover_time
@@ -421,7 +421,7 @@ class WMAModStrat(Strategy):
         price, volume, timestamp = self.unpackTick(tick)
         self.bar.update(price, timestamp)
         
-        if timestamp < self.init_time + scope2 * period:
+        if timestamp < self.init_time + self.WMA_8.lookback * self.bar.period:
             return
 
         prev_crossover_time = self.prev_crossover_time
@@ -504,7 +504,7 @@ class WMADiscreteStrat(Strategy):
         price, volume, timestamp = self.unpackTick(tick)
         self.bar.update(price, timestamp)
         
-        if timestamp < self.init_time + scope2 * period:
+        if timestamp < self.init_time + self.WMA_8.lookback * self.bar.period:
             return
 
         prev_crossover_time = self.prev_crossover_time
