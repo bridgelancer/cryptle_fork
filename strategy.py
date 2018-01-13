@@ -57,9 +57,11 @@ class Portfolio:
         checkType(amount, int, float)
 
         try:
-            self.balance_value[pair] *= (self.balance[pair] - amount)/ self.balance_value[pair]
+            self.balance_value[pair] *= ((self.balance[pair] - amount) / self.balance[pair])
             self.balance[pair] -= amount
-        except (KeyError, ZeroDivisionError):
+        except ZeroDivisionError:
+            pass
+        except KeyError:
             raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
 
 
@@ -88,6 +90,7 @@ class Strategy:
 
         self.pair = pair
         self.portfolio = portfolio
+        self.is_paper_trade = False
 
         if exchange == None:
             self.exchange = PaperExchange()
@@ -125,10 +128,10 @@ class Strategy:
         checkType(message, str)
         assert amount > 0
 
-        logger.debug('Placing market buy for {:8.5g} {} {:s}'.format(amount, pair.upper(), message))
+        logger.debug('Placing market buy for {:8.5g} {} {:s}'.format(amount, self.pair.upper(), message))
         res = self.exchange.marketBuy(self.pair, amount)
 
-        self.cleanupBuy(res)
+        self.cleanupBuy(res, message)
 
 
     def marketSell(self, amount, message=''):
@@ -136,10 +139,10 @@ class Strategy:
         checkType(message, str)
         assert amount > 0
 
-        logger.debug('Placing market sell for {:8.5g} {} {:s}'.format(amount, pair.upper(), message))
+        logger.debug('Placing market sell for {:8.5g} {} {:s}'.format(amount, self.pair.upper(), message))
         res = self.exchange.marketSell(self.pair, amount)
 
-        self.cleanupSell(res)
+        self.cleanupSell(res, message)
 
 
     def limitBuy(self, amount, price, message=''):
@@ -149,10 +152,10 @@ class Strategy:
         assert amount > 0
         assert price > 0
 
-        logger.debug('Placing limit buy for {:8.5g} {} @${} {:s}'.format(amount, pair.upper(), price, message))
+        logger.debug('Placing limit buy for {:8.5g} {} @${} {:s}'.format(amount, self.pair.upper(), price, message))
         res = self.exchange.limitBuy(self.pair, amount, price)
 
-        self.cleanupBuy(res)
+        self.cleanupBuy(res, message)
 
 
     def limitSell(self, amount, price, message=''):
@@ -162,30 +165,30 @@ class Strategy:
         assert amount > 0
         assert price > 0
 
-        logger.debug('Placing limit sell for {:8.5g} {} @${} {:s}'.format(amount, pair.upper(), price, message))
+        logger.debug('Placing limit sell for {:8.5g} {} @${} {:s}'.format(amount, self.pair.upper(), price, message))
         res = self.exchange.limitSell(self.pair, amount, price)
 
-        self.cleanupSell(res)
+        self.cleanupSell(res, message)
 
 
-    def cleanupBuy(self, res):
+    def cleanupBuy(self, res, message):
         price = res['price']
         amount = res['amount']
 
         self.portfolio.deposit(self.pair, amount, price)
         self.portfolio.cash -= amount * price
 
-        logger.info('Bought {:8.5g} {} @${} {}'.format(amount, pair.upper(), price, message))
+        logger.info('Bought {:8.5g} {} @${} {}'.format(amount, self.pair.upper(), price, message))
 
 
-    def cleanupSell(self, res):
+    def cleanupSell(self, res, message):
         price = res['price']
         amount = res['amount']
 
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += amount * price
 
-        logger.info('Sold   {:8.5g} {} @${} {}'.format(amount, pair.upper(), price, message))
+        logger.info('Sold   {:8.5g} {} @${} {}'.format(amount, self.pair.upper(), price, message))
 
 
     def unpackTick(self, tick):
@@ -202,7 +205,6 @@ class Strategy:
 
 
 # @DEPRECATED
-# Hasn't been updated to use the new Strategy/Portfolio API
 class OldStrat(Strategy):
 
     def __init__(self, pair, portfolio):
@@ -220,22 +222,20 @@ class OldStrat(Strategy):
         prev_crossover_time = self.prev_crossover_time
         prev_sell_time = self.prev_sell_time
 
-        # @HARDCODE Timelag required
-        # @HARDCODE Buy/Sell message
         # @HARDCODE Volume of buy/sell
         if self.hasCash() and not self.hasBalance()  and self.five_min.avg > self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
             elif timestamp - prev_crossover_time >= self.timelag_required:
                 if timestamp - prev_sell_time >= 120:
-                    self.buy(1, price, '[Old strat]')
+                    self.marketbuy(1, '[Old strat]')
                     prev_crossover_time = None
 
         elif self.hasBalance() and self.five_min.avg < self.eight_min.avg:
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
             elif timestamp - prev_crossover_time >= self.timelag_required:
-                self.sell(1, '[Old strat]', price)
+                self.marketSell(1, '[Old strat]', price)
                 prev_crossover_time = None
                 prev_sell_time = timestamp
         else:
@@ -245,7 +245,7 @@ class OldStrat(Strategy):
         self.prev_sell_time = prev_sell_time
 
 
-
+# @DEPRECATED
 class RFStrat(Strategy):
 
     def __init__(self, pair, portfolio, message='[RF]', period=60, scope1=5, scope2=8):
@@ -253,6 +253,7 @@ class RFStrat(Strategy):
         self.five_min = MovingWindow(period * scope1)
         self.eight_min = MovingWindow(period * scope2)
         self.message = message
+        self.timelag_required = 30
 
 
     def __call__(self, tick):
@@ -272,13 +273,13 @@ class RFStrat(Strategy):
                 prev_crossover_time = timestamp
                 prev_tick_price = price
 
-            elif timestamp - prev_crossover_time >= 30:
+            elif timestamp - prev_crossover_time >= self.timelag_required:
                 logger.debug('RF identified last crossover was 30 secs ago')
 
                 if timestamp - prev_sell_time >= 120 or price >= 1.0025 * prev_tick_price:
 
                     amount = self.equity_at_risk * self.equity() / price
-                    self.buy(amount, self.message, price)
+                    self.marketBuy(amount, self.message)
 
                     prev_crossover_time = None
                     prev_tick_price = None
@@ -290,7 +291,7 @@ class RFStrat(Strategy):
                 prev_crossover_time = timestamp
 
             elif timestamp - prev_crossover_time >= 5:
-                self.sellAll(price, self.message)
+                self.marketSell(price, self.message)
 
                 prev_crossover_time = None
                 prev_sell_time = timestamp
@@ -302,7 +303,7 @@ class RFStrat(Strategy):
         self.prev_sell_time = prev_sell_time
 
 
-
+# @DEPRECATED
 class ATRStrat(Strategy):
 
     def __init__(self, pair, portfolio, message='[ATR]', period=60, scope1=5, scope2=8):
@@ -345,7 +346,7 @@ class ATRStrat(Strategy):
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity() / price
-                self.buy(amount, self.message, price)
+                self.marketBuy(amount, self.message)
 
                 prev_crossover_time = None
 
@@ -356,7 +357,7 @@ class ATRStrat(Strategy):
                 prev_crossover_time = timestamp
 
             elif timestamp - prev_crossover_time >= self.timelag_required:
-                self.sellAll(price, self.message)
+                self.marketSell(price, self.message)
                 prev_crossover_time = None
                 prev_sell_time = timestamp
 
@@ -407,7 +408,7 @@ class WMAStrat(Strategy):
             elif timestamp - prev_crossover_time >= self.timelag_required:
 
                 amount = self.equity_at_risk * self.equity() / price
-                self.buy(amount, self.message, price)
+                self.marketBuy(amount, self.message)
 
                 prev_crossover_time = None
 
@@ -418,7 +419,7 @@ class WMAStrat(Strategy):
                 prev_crossover_time = timestamp
 
             elif timestamp - prev_crossover_time >= self.timelag_required:
-                self.sellAll(price, self.message)
+                self.marketSell(price, self.message)
                 prev_crossover_time = None
                 prev_sell_time = timestamp
 
@@ -475,13 +476,12 @@ class VWMAStrat(Strategy):
             confirm_up = trend
             confirm_down = not trend
 
-
         if not self.entered and self.hasCash() and confirm_up:
             self.amount = self.equity_at_risk * self.equity() / price
-            self.buy(self.amount, self.message, price)
+            self.marketBuy(self.amount, self.message)
             self.entered = True
 
         elif self.entered and confirm_down:
-            self.sell(self.amount, self.message, price)
+            self.marketSell(self.amount, self.message)
             self.entered = False
 
