@@ -30,45 +30,8 @@ class TestStrat(Strategy):
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
-        self.buy(1, 'Testing Buy', price)
-        self.sell(1, 'Testing Sell', price)
-
-
-# Return a list ls, containing json ticks in entries
-def readCSV(filename):
-    ifile = open(filename, "rU")
-    reader = csv.reader(ifile, delimiter = "\n")
-
-    rownum = 0
-    ls = []
-
-    for row in reader:
-        ls.append(row)
-        rownum += 1
-    ifile.close()
-    return ls
-
-# Parse the list ls into a Strategy class, tick by tick
-def loadCSV(ls, Strat):
-    strat = Strat
-    for item in ls:
-        tick = ''.join(item)
-        Strat(tick)
-
-
-def testLoadCSV():
-    port = Portfolio(10000)
-    test = TestStrat('ethusd', port)
-
-    ls = readCSV('btc_sample')
-    loadCSV(ls, test)
-
-
-def testBuySell():
-    port = Portfolio(1000)
-    strat = Strategy('ethusd', port)
-    strat.buy(1, price=1)
-    strat.sell(1, price=1)
+        self.marketBuy(1, 'Testing Buy')
+        self.marketSell(1, 'Testing Sell')
 
 
 def testFunctor():
@@ -91,8 +54,8 @@ def testBitstampFeed():
 
     time.sleep(5)
 
-    #feed.pusher.disconnect()
-    #logger.debug('Disconnected from Bitstamp WebSockets')
+    feed.pusher.disconnect()
+    logger.debug('Disconnected from Bitstamp WebSockets')
 
 
 def testBitstampREST():
@@ -115,12 +78,19 @@ def testStrategy():
 
 
 def testEquity():
-    port  = Portfolio(1000)
-    strat = Strategy('ethusd', port)
-    strat.buy(2, price=100)
+    port  = Portfolio(10000)
 
-    assert strat.equity() == 1000
-    assert strat.portfolio.cash == 800
+    port.deposit('ethusd', 10, 1300)
+    assert port.equity() == 23000
+
+    port.withdraw('ethusd', 5)
+    assert port.equity() == 16500
+
+    port.deposit('ethusd', 5, 1000)
+    assert port.equity() == 21500
+
+    port.withdraw('ethusd', 10)
+    assert port.equity() == 10000
 
 
 def testCVWMA():
@@ -207,14 +177,10 @@ def testWMA():
 
 
 if __name__ == '__main__':
-    testBuySell()
     testFunctor()
-    testBitstampFeed()
-    testBitstampREST()
+    #testBitstampFeed()
+    #testBitstampREST()
     testEquity()
     testCVWMA()
     testSMA()
     testWMA()
-
-    testVWMAStrat()
-
