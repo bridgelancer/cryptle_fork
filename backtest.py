@@ -161,8 +161,8 @@ def testSnoopingLoopN(pair):
 
     for ports in P:
         for port in ports:
-            logger.info('Port' + str((ports.index(port) + 1)*60) + str(P.index(ports) + 0.1+ 0.02*P.index(ports)) + ' cash: %.2f' % port.cash)
-            logger.info("Port" + str((ports.index(port) + 1)*60) + str(P.index(ports) + 0.1 + 0.02*P.index(ports)) + ' balance : %s' % str(port.balance))
+            logger.info('Port' + str((ports.index(port) + 1)*60) + ' ' + str(0.1+ 0.1*P.index(ports)) + ' cash: %.2f' % port.cash)
+            logger.info("Port" + str((ports.index(port) + 1)*60) + ' ' + str(0.1 + 0.1*P.index(ports)) + ' balance : %s' % str(port.balance))
 
 
 if __name__ == '__main__':
