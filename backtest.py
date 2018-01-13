@@ -17,7 +17,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(formatter)
 
-fh = logging.FileHandler('test.log', mode='w')
+fh = logging.FileHandler('backtest.log', mode='w')
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 
@@ -106,6 +106,27 @@ def testWMAStrategy(pair):
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
 
+def testSnoopingLoop(pair):
+    strats = []
+    ports = []
+
+    snooping = range(60, 1800, 60)
+    # Loop throug 5-100; 2-20
+    for period in snooping:
+        ports.append(Portfolio(1000))
+        strats.append(WMAModStrat(str(pair), ports[snooping.index(period)], '[WMA {} min bar]'.format(period), period))
+
+    for strat in strats:
+        strat.equity_at_risk = 1.0
+
+        ls = testParseTick(pair)
+        loadCSV(ls, strat)
+    
+    for port in ports:
+        logger.info('Port' + str(ports.index(port)) + ' cash: %.2f' % port.cash)
+        logger.info("Port" + str(ports.index(port)) + ' balance : %s' % str(port.balance))
+
+
 if __name__ == '__main__':
     pair = sys.argv[1]
-    testWMAStrategy(pair)
+    testSnoopingLoop(pair)
