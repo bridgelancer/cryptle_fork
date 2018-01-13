@@ -126,6 +126,9 @@ def testSnoopingLoop(pair):
         logger.info('Port' + str((ports.index(port) + 1)*60) + ' cash: %.2f' % port.cash)
         logger.info("Port" + str((ports.index(port) + 1)*60) + ' balance : %s' % str(port.balance))
 
+# Enable snooping in two factor mode
+# Caution: This function may run in extended period of time. 
+# The typical run time for an one day tick data feeding into 100 strategies is 1 minute.
 def testSnoopingLoopN(pair):
     
     S = []
