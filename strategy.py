@@ -463,7 +463,7 @@ class MACDStrat1(Strategy):
     def __init__(self, pair, portfolio, message='[MACD]', scope1=26, scope2=12, scope3=9):
         super().__init__(pair, portfolio)
         self.MACD = MACD(self, scope1, scope2, scope3)
-        
+
         self.message = message
 
         self.can_sell = False
@@ -484,7 +484,7 @@ class MACDStrat1(Strategy):
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and uptrend:
-            
+
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
@@ -525,45 +525,51 @@ class MACDStrat1(Strategy):
 
 class MACDStrat2(Strategy):
 
-    def __init__(self, pair, portfolio, message='[MACD]', scope1=26, scope2=12, scope3=9):
+    def __init__(self, pair, portfolio, message='[MACD]', period=180, scope1=4, scope2=8, scope3=3):
         super().__init__(pair, portfolio)
         self.message = message
 
-        self.MACD = MACD(self, scope1, scope2, scope3)
+        self.candle = CandleBar(period)
+        self.ema1 = EMA(self.candle, scope1)
+        self.ema2 = EMA(self.candle, scope2)
+        self.MACD = MACD(self.ema1, self.ema2, scope3)
+
         self.entered = False
         self.prev_trend = True
 
 
-    def _call_(self, tick):
+    def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
-        self.update(price, timestamp)
+        self.candle.update(price, timestamp)
 
         if self.prev_crossover_time == None:
-            self.prev_crossover_time == timestamp
+            self.prev_crossover_time = timestamp
             return
 
-        trend = self.MACD.base > self.MACD.ewa
+        trend = self.MACD.macd > self.MACD.ema3
 
         if self.prev_trend != trend:
+
             self.prev_crossover_time = timestamp
             self.prev_trend = trend
 
             if trend: trend_str = 'up'
             else: trend_str = 'down'
 
-            logger.debug('identified crossing' + trend_str)
             return
 
         else:
             confirm_up = trend
             confirm_down = not trend
-        
+
         if not self.entered and self.hasCash() and confirm_up:
-            self.buy(amount, self.message, price)
+            amount = self.equity_at_risk * self.equity() / price
+            self.marketBuy(amount, self.message)
             self.entered = True
 
         elif self.entered and confirm_down:
-            self.sell(amount, self.message, price)
+            amount = self.portfolio.balance[self.pair]
+            self.marketSell(amount, self.message)
             self.entered = False
 
 

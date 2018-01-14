@@ -177,21 +177,19 @@ class WMA():
 
 
 
+class EMA():
 
-
-class EMA_candle():
-
-    def _init_(self, candle, lookback):
+    def __init__(self, candle, lookback):
 
         self.candle = candle
         self.lookback = lookback
         self.ema = 0
         self.weight = 2 / (lookback + 1)
-        
-        candle.metrics.append(self)
-        
 
-    def update(self, open_p):
+        candle.metrics.append(self)
+
+
+    def update(self, open_p=True):
 
         if len(self.candle) < (self.lookback-1):
             pass
@@ -208,7 +206,7 @@ class EMA_candle():
                 price_list.append(self.candle.barclose)
 
             self.price_list_test = price_list
-            
+
             for p in range(len(price_list)):
                 self.ema += ((1-self.weight)**(len(price_list)-1-p))*price_list[p]
 
@@ -220,11 +218,11 @@ class EMA_candle():
 
 
 
-class MACD_candle():
+class MACD():
 
     # ema1 and ema2 needs to use the same candle instance
     def __init__(self, ema1, ema2, lookback):
-        
+
         self.ema1 = ema1
         self.ema2 = ema2
         self.macd = 0
@@ -240,15 +238,15 @@ class MACD_candle():
         self.macd = self.ema1.ema - self.ema2.ema
         self.past.append(self.macd)
 
-        if len(self.past) < (self.lookback -1):
+        if len(self.past) < self.lookback :
             pass
-        
+
         else:
             for p in (range(self.lookback)):
-                self.ema3 += ((1-self.weight)**(len(self.lookback) - 1 - p))*self.past[p]
+                self.ema3 += ((1-self.weight)**(self.lookback - 1 - p))*self.past[p]
 
             norm = 0
-            for p in range(len(self.lookback)):
+            for p in range(self.lookback):
                 norm += (1-self.weight)**(p)
 
             self.ema3 = self.ema3/(norm)
