@@ -6,7 +6,7 @@ import inspect
 import json
 import logging
 
-logging.TA = 6
+logging.TA = 9
 logging.addLevelName(logging.TA, 'TA')
 
 logger = logging.getLogger('Cryptle')
