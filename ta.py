@@ -174,3 +174,84 @@ class WMA():
             self.price_list_test = price_list
             self.wma = sum(p * w for p,w in zip(price_list, self.weight))
 
+
+
+
+
+
+class EMA_candle():
+
+    def _init_(self, candle, lookback):
+
+        self.candle = candle
+        self.lookback = lookback
+        self.ema = 0
+        self.weight = 2 / (lookback + 1)
+        
+        candle.metrics.append(self)
+        
+
+    def update(self, open_p):
+
+        if len(self.candle) < (self.lookback-1):
+            pass
+
+        else:
+            price_list = []
+            bar_list = self.candle[-(self.lookback- 1):]
+
+            if open_p == True:
+                price_list = [x[0] for x in bar_list]
+                price_list.append(self.candle.baropen)
+            elif open_p == False:
+                price_list = [x[1] for x in bar_list]
+                price_list.append(self.candle.barclose)
+
+            self.price_list_test = price_list
+            
+            for p in range(len(price_list)):
+                self.ema += ((1-self.weight)**(len(price_list)-1-p))*price_list[p]
+
+            norm = 0
+            for p in range(len(price_list)):
+                norm += (1-self.weight)**(p)
+
+            self.ema = self.ema/(norm)
+
+
+
+class MACD_candle():
+
+    # ema1 and ema2 needs to use the same candle instance
+    def __init__(self, ema1, ema2, lookback):
+        
+        self.ema1 = ema1
+        self.ema2 = ema2
+        self.macd = 0
+        self.ema3 = 0
+        self.lookback = lookback
+        self.past = []
+        self.weight = 2 / (lookback + 1)
+
+        ema1.candle.metrics.append(self)
+
+    def update(self):
+
+        self.macd = self.ema1.ema - self.ema2.ema
+        self.past.append(self.macd)
+
+        if len(self.past) < (self.lookback -1):
+            pass
+        
+        else:
+            for p in (range(self.lookback)):
+                self.ema3 += ((1-self.weight)**(len(self.lookback) - 1 - p))*self.past[p]
+
+            norm = 0
+            for p in range(len(self.lookback)):
+                norm += (1-self.weight)**(p)
+
+            self.ema3 = self.ema3/(norm)
+
+
+
