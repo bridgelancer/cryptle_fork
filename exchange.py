@@ -13,25 +13,37 @@ log = logging.getLogger('Exchange')
 
 class PaperExchange:
 
-    def __init__(self):
+    def __init__(self, commission=0, slippage=0):
         self.price = 0
         self.timestamp = 0
+        self.commission = commission
+        self.slippage = slippage
 
 
     def marketBuy(self, pair, amount):
         assert isinstance(pair, str)
         assert amount > 0
 
-        log.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
-        return {'price': self.price, 'amount': amount}
+        price = self.price
+        price *= (1 + self.commission)
+        price *= (1 + self.slippage)
+
+        log.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
+        log.info('Paid {:.5g} commission'.format(self.price * self.commission))
+        return {'price': price, 'amount': amount}
 
 
     def marketSell(self, pair, amount):
         assert isinstance(pair, str)
         assert amount > 0
 
+        price = self.price
+        price *= (1 - self.commission)
+        price *= (1 - self.slippage)
+
         log.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
-        return {'price': self.price, 'amount': amount}
+        log.info('Paid {:.5g} commission'.format(self.price * sel.fcommission))
+        return {'price': price, 'amount': amount}
 
 
     def limitBuy(self, pair, amount, price):
@@ -39,7 +51,12 @@ class PaperExchange:
         assert amount > 0
         assert price > 0
 
+        price0 = price
+        price *= (1 + self.commission)
+        price *= (1 + self.slippage)
+
         log.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
+        log.info('Paid {:.5g} commission'.format(price0 * self.commission))
         return {'price': price, 'amount': amount}
 
 
@@ -48,7 +65,12 @@ class PaperExchange:
         assert amount > 0
         assert price > 0
 
+        price0 = price
+        price *= (1 - self.commission)
+        price *= (1 - self.slippage)
+
         log.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
+        log.info('Paid {:.5g} commission'.format(price0 * self.commission))
         return {'price': price, 'amount': amount}
 
 
