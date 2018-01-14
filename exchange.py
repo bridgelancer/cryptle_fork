@@ -30,7 +30,7 @@ class PaperExchange:
 
         log.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
         log.info('Paid {:.5g} commission'.format(self.price * self.commission))
-        return {'price': price, 'amount': amount}
+        return {'price': price, 'amount': amount, 'status': 'success'}
 
 
     def marketSell(self, pair, amount):
@@ -43,7 +43,7 @@ class PaperExchange:
 
         log.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
         log.info('Paid {:.5g} commission'.format(self.price * sel.fcommission))
-        return {'price': price, 'amount': amount}
+        return {'price': price, 'amount': amount, 'status': 'success'}
 
 
     def limitBuy(self, pair, amount, price):
@@ -57,7 +57,7 @@ class PaperExchange:
 
         log.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
         log.info('Paid {:.5g} commission'.format(price0 * self.commission))
-        return {'price': price, 'amount': amount}
+        return {'price': price, 'amount': amount, 'status': 'success'}
 
 
     def limitSell(self, pair, amount, price):
@@ -71,7 +71,7 @@ class PaperExchange:
 
         log.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
         log.info('Paid {:.5g} commission'.format(price0 * self.commission))
-        return {'price': price, 'amount': amount}
+        return {'price': price, 'amount': amount, 'status': 'success'}
 
 
 
@@ -243,6 +243,7 @@ class Bitstamp:
     @staticmethod
     def handleBitstampErrors(res, message):
         if 'status' not in res:
+            res['status'] = 'success'
             return
 
         if res['status'] == 'error':
