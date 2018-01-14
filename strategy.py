@@ -1,7 +1,7 @@
 from ta import *
 from exchange import *
-from datetime import datetime
 
+from datetime import datetime
 import inspect
 import json
 import logging
@@ -313,8 +313,8 @@ class RFStrat(Strategy):
 # @DEPRECATED
 class ATRStrat(Strategy):
 
-    def __init__(self, pair, portfolio, message='[ATR]', period=60, scope1=5, scope2=8):
-        super().__init__(pair, portfolio)
+    def __init__(self, pair, portfolio, exchange=None, message='[ATR]', period=60, scope1=5, scope2=8):
+        super().__init__(pair, portfolio, exchange)
         self.five_min = ContinuousVWMA(period * scope1)
         self.eight_min = ContinuousVWMA(period * scope2)
         self.bar = CandleBar(period, scope1)
@@ -380,8 +380,8 @@ class ATRStrat(Strategy):
 
 class WMAStrat(Strategy):
 
-    def __init__(self, pair, portfolio, message='[WMA]', period=180, scope1=5, scope2=8):
-        super().__init__(pair, portfolio)
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA]', period=180, scope1=5, scope2=8):
+        super().__init__(pair, portfolio, exchange)
         self.bar = CandleBar(period)
         self.ATR_5 = ATR(self.bar, scope1)
         self.WMA_5 = WMA(self.bar, scope1)
@@ -450,8 +450,8 @@ class WMAStrat(Strategy):
 
 class WMAModStrat(Strategy):
 
-    def __init__(self, pair, portfolio, message='[WMA Mod]', period=180, scope1=5, scope2=8):
-        super().__init__(pair, portfolio)
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA Mod]', period=180, scope1=5, scope2=8):
+        super().__init__(pair, portfolio, exchange)
         self.bar = CandleBar(period)
         self.ATR_5 = ATR(self.bar, scope1)
         self.WMA_5 = WMA(self.bar, scope1)
@@ -538,8 +538,8 @@ class WMAModStrat(Strategy):
 # @To be implemented
 class WMADiscreteStrat(Strategy):
 
-    def __init__(self, pair, portfolio, message='[WMA Mod]', period=180, scope1=5, scope2=8):
-        super().__init__(pair, portfolio)
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA Dis]', period=180, scope1=5, scope2=8):
+        super().__init__(pair, portfolio, exchange)
         self.bar = CandleBar(period)
         self.ATR_5 = ATR(self.bar, scope1)
         self.WMA_5 = WMA(self.bar, scope1)
@@ -627,8 +627,8 @@ class WMADiscreteStrat(Strategy):
 
 class VWMAStrat(Strategy):
 
-    def __init__(self, pair, portfolio, message='', period=60, shorttrend=5, longtrend=10):
-        super().__init__(pair, portfolio)
+    def __init__(self, pair, portfolio, exchange=None, message='', period=60, shorttrend=5, longtrend=10):
+        super().__init__(pair, portfolio, exchange)
         self.message = message
 
         self.shorttrend = ContinuousVWMA(period * shorttrend)
