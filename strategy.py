@@ -719,30 +719,29 @@ class WMAForceStrat(Strategy):
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance():
-            if v_sell and (prev_sell_time != None):
+            if v_sell:
                 if uptrend or belowatr or aboveatr:
-                    pass
+                    return
                 elif downtrend:
                     v_sell = False
-                    prev_sell_time = None
 
-            #logger.debug('ATR identified uptrend and below ATR band')
+            elif belowatr:
+                if prev_crossover_time is None:
+                    prev_crossover_time = timestamp
+
+                elif timestamp - prev_crossover_time >= self.timelag_required:
+                    amount = self.equity_at_risk * self.equity() / price
+                    self.marketBuy(amount, appendTimestamp(self.message, timestamp))
+
+                    prev_crossover_time = None
+
+                    if uptrend:
+                        can_sell = True
+                    elif downtrend:
+                        can_sell = False
+                    entry_time = timestamp
             else:
-                if belowatr:
-                    if prev_crossover_time is None:
-                        prev_crossover_time = timestamp
-
-                    elif timestamp - prev_crossover_time >= self.timelag_required:
-                        amount = self.equity_at_risk * self.equity() / price
-                        self.marketBuy(amount, appendTimestamp(self.message, timestamp))
-
-                        prev_crossover_time = None
-
-                        if uptrend:
-                            can_sell = True
-                        elif downtrend:
-                            can_sell = False
-                        entry_time = timestamp
+                prev_crossover_time = None
 
         elif self.hasBalance():
             if  dollar_volume_flag and self.vwma.dollar_volume <= 0:
@@ -753,7 +752,7 @@ class WMAForceStrat(Strategy):
                 prev_crossover_time = None
                 entry_time = None
                 dollar_volume_flag = False
-                prev_sell_time = timestamp
+
                 v_sell = True
 
             elif not can_sell and uptrend:
