@@ -11,6 +11,12 @@ import requests as req
 log = logging.getLogger('Exchange')
 
 
+def truncate(f, dp):
+    fmt = '{:.' + str(dp) + 'f}'
+    s = fmt.format(f)
+    return float(s)
+
+
 class PaperExchange:
 
     def __init__(self, commission=0, slippage=0):
@@ -30,7 +36,7 @@ class PaperExchange:
 
         log.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
         log.info('Paid {:.5g} commission'.format(self.price * self.commission))
-        return {'price': price, 'amount': amount}
+        return {'price': price, 'amount': amount, 'status': 'success'}
 
 
     def marketSell(self, pair, amount):
@@ -42,8 +48,8 @@ class PaperExchange:
         price *= (1 - self.slippage)
 
         log.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
-        log.info('Paid {:.5g} commission'.format(self.price * sel.fcommission))
-        return {'price': price, 'amount': amount}
+        log.info('Paid {:.5g} commission'.format(self.price * self.commission))
+        return {'price': price, 'amount': amount, 'status': 'success'}
 
 
     def limitBuy(self, pair, amount, price):
@@ -57,7 +63,7 @@ class PaperExchange:
 
         log.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
         log.info('Paid {:.5g} commission'.format(price0 * self.commission))
-        return {'price': price, 'amount': amount}
+        return {'price': price, 'amount': amount, 'status': 'success'}
 
 
     def limitSell(self, pair, amount, price):
@@ -71,7 +77,7 @@ class PaperExchange:
 
         log.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
         log.info('Paid {:.5g} commission'.format(price0 * self.commission))
-        return {'price': price, 'amount': amount}
+        return {'price': price, 'amount': amount, 'status': 'success'}
 
 
 
@@ -110,14 +116,40 @@ class Bitstamp:
         return self._post('/order_status/', params=params)
 
 
+    def marketBuy(self, pair, amount):
+        assert isinstance(pair, str)
+        assert amount > 0
+
+        params = self._authParams()
+        params['amount'] = truncate(amount, 8)
+
+        res = self._post('/buy/market/' + pair + '/', params=params)
+
+        self.handleBitstampErrors(res, 'Market buy ' + pair + ' failed')
+        return res
+
+
+    def marketSell(self, pair, amount):
+        assert isinstance(pair, str)
+        assert amount > 0
+
+        params = self._authParams()
+        params['amount'] = truncate(amount, 8)
+
+        res = self._post('/sell/market/' + pair + '/', params=params)
+
+        self.handleBitstampErrors(res, 'Market sell ' + pair + ' failed')
+        return res
+
+
     def limitBuy(self, pair, amount, price):
         assert isinstance(pair, str)
         assert amount > 0
         assert price > 0
 
         params = self._authParams()
-        params['amount'] = amount
-        params['price'] = price
+        params['amount'] = truncate(amount, 8)
+        params['price'] = truncate(price)
 
         res = self._post('/buy/' + pair + '/', params=params)
 
@@ -131,38 +163,12 @@ class Bitstamp:
         assert price > 0
 
         params = self._authParams()
-        params['amount'] = amount
-        params['price'] = price
+        params['amount'] = truncate(amount, 8)
+        params['price'] = truncate(price)
 
         res = self._post('/sell/' + pair + '/', params=params)
 
         self.handleBitstampErrors(res, 'Limit sell ' + pair.upper() + ' failed')
-        return res
-
-
-    def marketBuy(self, pair, amount):
-        assert isinstance(pair, str)
-        assert amount > 0
-
-        params = self._authParams()
-        params['amount'] = amount
-
-        res = self._post('/buy/market/' + pair + '/', params=params)
-
-        self.handleBitstampErrors(res, 'Market buy ' + pair + ' failed')
-        return res
-
-
-    def marketSell(self, pair, amount):
-        assert isinstance(pair, str)
-        assert amount > 0
-
-        params = self._authParams()
-        params['amount'] = amount
-
-        res = self._post('/sell/market/' + pair + '/', params=params)
-
-        self.handleBitstampErrors(res, 'Market sell ' + pair + ' failed')
         return res
 
 
@@ -243,8 +249,11 @@ class Bitstamp:
     @staticmethod
     def handleBitstampErrors(res, message):
         if 'status' not in res:
+            res['status'] = 'success'
             return
 
         if res['status'] == 'error':
             log.error(message + ': ' + str(res['reason']))
+            res['price'] = 0
+            res['amount'] = 0
 
