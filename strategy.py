@@ -156,7 +156,7 @@ class Strategy:
         assert amount > 0
         assert price > 0
 
-        logger.debug('Placing limit buy for {:8.5g} {} @${} {:s}'.format(amount, self.pair.upper(), price, message))
+        logger.debug('Placing limit buy for {:8.5g} {} @${:8.6g} {:s}'.format(amount, self.pair.upper(), price, message))
         res = self.exchange.limitBuy(self.pair, amount, price)
 
         self.cleanupBuy(res, message)
@@ -169,7 +169,7 @@ class Strategy:
         assert amount > 0
         assert price > 0
 
-        logger.debug('Placing limit sell for {:8.5g} {} @${} {:s}'.format(amount, self.pair.upper(), price, message))
+        logger.debug('Placing limit sell for {:8.5g} {} @${:8.6g} {:s}'.format(amount, self.pair.upper(), price, message))
         res = self.exchange.limitSell(self.pair, amount, price)
 
         self.cleanupSell(res, message)
@@ -186,7 +186,7 @@ class Strategy:
         self.portfolio.deposit(self.pair, amount, price)
         self.portfolio.cash -= amount * price
 
-        logger.info('Bought {:8.5g} {} @${} {}'.format(amount, self.pair.upper(), price, message))
+        logger.info('Bought {:8.5g} {} @${:8.6g} {}'.format(amount, self.pair.upper(), price, message))
 
 
     def cleanupSell(self, res, message):
@@ -200,7 +200,7 @@ class Strategy:
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += amount * price
 
-        logger.info('Sold   {:8.5g} {} @${} {}'.format(amount, self.pair.upper(), price, message))
+        logger.info('Sold   {:8.5g} {} @${:8.6g} {}'.format(amount, self.pair.upper(), price, message))
 
 
     def unpackTick(self, tick):
@@ -663,7 +663,7 @@ class WMAModStrat(Strategy):
 # @To be implemented - Now only apply to BCH
 class WMAForceStrat(Strategy):
 
-    def __init__(self, pair, portfolio, exchange=None, message='[WMA Dis]', period=180, scope1=5, scope2=8):
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA Force]', period=180, scope1=5, scope2=8):
         super().__init__(pair, portfolio, exchange)
         self.bar = CandleBar(period)
         self.ATR_5 = ATR(self.bar, scope1)
