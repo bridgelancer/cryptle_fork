@@ -27,10 +27,9 @@ def checkType(param, *types):
     if not valid_type:
         caller = inspect.stack()[1][3]
         passed = type(param).__name__
-        expect = types[0].__name__
 
         fmt = "{} was passed to {}() where {} is expected"
-        msg = fmt.format(passed, caller, expect)
+        msg = fmt.format(passed, caller, types)
 
         raise TypeError(msg)
 
@@ -182,8 +181,8 @@ class Strategy:
             logger.info('Buy failed {} {}'.format(self.pair.upper(), message))
             return
 
-        price = res['price']
-        amount = res['amount']
+        price = float(res['price'])
+        amount = float(res['amount'])
 
         self.portfolio.deposit(self.pair, amount, price)
         self.portfolio.cash -= amount * price
@@ -196,8 +195,8 @@ class Strategy:
             logger.info('Sell failed {} {}'.format(self.pair.upper(), message))
             return
 
-        price = res['price']
-        amount = res['amount']
+        price = float(res['price'])
+        amount = float(res['amount'])
 
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += amount * price
