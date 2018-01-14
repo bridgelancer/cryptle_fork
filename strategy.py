@@ -209,6 +209,7 @@ class Strategy:
         return price, volume, timestamp
 
 
+
 # @DEPRECATED
 class OldStrat(Strategy):
 
@@ -625,23 +626,26 @@ class WMADiscreteStrat(Strategy):
         self.can_sell = can_sell
 
 
+# @In progress
 class VWMAStrat(Strategy):
 
     def __init__(self, pair, portfolio, exchange=None, message='', period=60, shorttrend=5, longtrend=10):
         super().__init__(pair, portfolio, exchange)
         self.message = message
 
-        self.shorttrend = ContinuousVWMA(period * shorttrend)
-        self.longtrend = ContinuousVWMA(period * longtrend)
+        self.vwma= ContinuousVWMA(period * shorttrend)
         self.entered = False
         self.prev_trend = True
         self.amount = 0
 
     def __call__(self, tick):
         price, volume, timestamp = self.unpackTick(tick)
+        # @HARDCODE @CHANAGE INTERFACE
+        tick = json.loads(tick)
 
-        self.shorttrend.update(price, volume, timestamp)
-        self.longtrend.update(price, volume, timestamp)
+        action = -1 * (tick['type'] * 2 - 1)
+
+        self.vwma.update(price, volume, timestamp, action)
 
         if self.prev_crossover_time == None:
             self.prev_crossover_time = timestamp
