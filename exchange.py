@@ -49,11 +49,7 @@ class PaperExchange:
 
         log.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
         log.info('Paid {:.5g} commission'.format(self.price * self.commission))
-<<<<<<< 49e046b1123dcb9dbc2d16fa63628387b3abcccf
         return {'price': price, 'amount': amount, 'status': 'success'}
-=======
-        return {'price': price, 'amount': amount}
->>>>>>> WMAForceStrat currently broken
 
 
     def limitBuy(self, pair, amount, price):
