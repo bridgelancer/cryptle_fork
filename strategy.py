@@ -70,9 +70,7 @@ class Portfolio:
         try:
             self.balance_value[pair] *= ((self.balance[pair] - amount) / self.balance[pair])
             self.balance[pair] -= amount
-        except ZeroDivisionError:
-            pass
-        except KeyError:
+        except (KeyError, ZeroDivisionError):
             raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
 
 
