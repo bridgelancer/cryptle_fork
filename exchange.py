@@ -1,8 +1,8 @@
+import hashlib
+import hmac
+import json
 import logging
 import time
-import json
-import hmac
-import hashlib
 
 import pysher
 import requests as req
@@ -125,7 +125,7 @@ class Bitstamp:
 
         res = self._post('/buy/market/' + pair + '/', params=params)
 
-        self.handleBitstampErrors(res, 'Market buy ' + pair + ' failed')
+        self.handleBitstampErrors(res, 'Market buy {} failed'.format(pair.upper()))
         return res
 
 
@@ -138,7 +138,7 @@ class Bitstamp:
 
         res = self._post('/sell/market/' + pair + '/', params=params)
 
-        self.handleBitstampErrors(res, 'Market sell ' + pair + ' failed')
+        self.handleBitstampErrors(res, 'Market sell {} failed'.format(pair.upper()))
         return res
 
 
@@ -153,7 +153,7 @@ class Bitstamp:
 
         res = self._post('/buy/' + pair + '/', params=params)
 
-        self.handleBitstampErrors(res, 'Limit buy ' + pair.upper() + ' failed')
+        self.handleBitstampErrors(res, 'Limit buy {} failed'.format(pair.upper()))
         return res
 
 
@@ -168,7 +168,7 @@ class Bitstamp:
 
         res = self._post('/sell/' + pair + '/', params=params)
 
-        self.handleBitstampErrors(res, 'Limit sell ' + pair.upper() + ' failed')
+        self.handleBitstampErrors(res, 'Limit sell {} failed'.format(pair.upper()))
         return res
 
 
@@ -184,28 +184,35 @@ class Bitstamp:
         assert isinstance(endpoint, str)
         assert isinstance(params, dict) or params is None
 
-        res = req.post(self.url + endpoint, params)
+        try:
+            res = req.post(self.url + endpoint, params)
+            self.handleConnectionErrors(res)
+        except ConnectionError:
+            return {'status': 'error', 'reason': 'ConnectionError'}
 
-        self.handleConnectionErrors(res)
-        parsed_res = json.loads(res.text)
-        return parsed_res
+        res = json.loads(res.text)
+        return res
 
 
     def _post(self, endpoint, params):
         assert isinstance(endpoint, str)
         assert isinstance(params, dict)
 
-        res = req.post(self.url + endpoint, params)
 
-        self.handleConnectionErrors(res)
-        parsed_res = json.loads(res.text)
-        return parsed_res
+        try:
+            res = req.post(self.url + endpoint, params)
+            self.handleConnectionErrors(res)
+        except ConnectionError:
+            return {'status': 'error', 'reason': 'ConnectionError'}
+
+        res = json.loads(res.text)
+        return res
 
 
     def _authParams(self):
         assert self.secret is not None
 
-        nonce = int(time.time())
+        nonce = int(time.time() * 100)
         params = {}
         params['key'] = self.key
         params['signature'] = self._sign(str(nonce))
@@ -228,22 +235,24 @@ class Bitstamp:
         c = res.status_code
 
         if c == 400:
-            log.error('400 Bad Request Error')
+            log.error('Bitstamp: 400 Bad Request Error')
             log.error(res.text)
-            raise ConnectionError('Server 400 Bad Request Error')
+            raise ConnectionError
         elif c == 401:
-            log.error('401 Unauthorized Error')
+            log.error('Bitstamp: 401 Unauthorized Error')
             log.error(res.text)
-            raise ConnectionError('Server 401 Unauthorized Error')
+            raise ConnectionError
         elif c == 403:
-            log.error('403 Bad Request Error')
+            log.error('Bitstamp: 403 Bad Request Error')
             log.error(res.text)
-            raise ConnectionError('Server 403 Forbidden')
+            raise ConnectionError
         elif c == 404:
-            log.error('404 Page Not Found')
+            log.error('Bitstamp: 404 Page Not Found')
+            raise ConnectionError
         elif c != 200:
+            log.error('Bitstamp: Error {}'.format(c))
             log.error(res.text)
-            raise ConnectionError('Server returned error ' + str(c))
+            raise ConnectionError
 
 
     @staticmethod

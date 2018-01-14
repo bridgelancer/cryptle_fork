@@ -29,7 +29,7 @@ def checkType(param, *types):
         passed = type(param).__name__
         expect = types[0].__name__
 
-        fmt = "{} was passed to {} where {} is expected"
+        fmt = "{} was passed to {}() where {} is expected"
         msg = fmt.format(passed, caller, expect)
 
         raise TypeError(msg)
