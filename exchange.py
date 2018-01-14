@@ -12,7 +12,8 @@ log = logging.getLogger('Exchange')
 
 
 def truncate(f, dp):
-    s = '{:.' + str(dp) + 'f}'.format(f)
+    fmt = '{:.' + str(dp) + 'f}'
+    s = fmt.format(f)
     return float(s)
 
 
@@ -47,7 +48,7 @@ class PaperExchange:
         price *= (1 - self.slippage)
 
         log.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
-        log.info('Paid {:.5g} commission'.format(self.price * sel.fcommission))
+        log.info('Paid {:.5g} commission'.format(self.price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success'}
 
 
@@ -147,7 +148,7 @@ class Bitstamp:
         assert price > 0
 
         params = self._authParams()
-        params['amount'] = truncate(amount)
+        params['amount'] = truncate(amount, 8)
         params['price'] = truncate(price)
 
         res = self._post('/buy/' + pair + '/', params=params)
@@ -162,7 +163,7 @@ class Bitstamp:
         assert price > 0
 
         params = self._authParams()
-        params['amount'] = truncate(amount)
+        params['amount'] = truncate(amount, 8)
         params['price'] = truncate(price)
 
         res = self._post('/sell/' + pair + '/', params=params)
