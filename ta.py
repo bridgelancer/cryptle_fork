@@ -1,7 +1,6 @@
 class ContinuousVWMA:
 
-    # window is the number of seconds in the lookback window
-    # Ticker (optional) is meta-info about what series is being tracked
+    # Lookback is the number of seconds in the lookback window
     def __init__(self, lookback):
         self.ticks = []
         self.avg = 0
@@ -11,11 +10,14 @@ class ContinuousVWMA:
         self.lookback = lookback
 
 
-    def update(self, price, volume, timestamp):
+    # Action: (1) is buy, (-1) is sell
+    def update(self, price, volume, timestamp, action):
 
-        # @THROW @HANDLE
+        self.ticks.append((price, volume, timestamp, action))
+        self.prune()
+
         try:
-            assert timestamp > self.ticks[0][2]
+            assert timestamp >= self.ticks[0][2]
         except AssertionError:
             return
         except IndexError:
@@ -27,16 +29,13 @@ class ContinuousVWMA:
         self.dollar_volume += price * volume
         self.avg = self.dollar_volume / self.volume
 
-        self.ticks.append((price, volume, timestamp))
-        self.prune()
-
 
     def prune(self):
         now = self.ticks[-1][2]
         epoch = now - self.lookback
 
         while True:
-            if self.ticks[0][2] <= epoch:
+            if self.ticks[0][2] < epoch:
                 tick = self.ticks.pop(0)
 
                 self.volume -= tick[1]
