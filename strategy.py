@@ -449,6 +449,116 @@ class WMAStrat(Strategy):
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
 
+
+class MACDStrat1(Strategy):
+
+    def __init__(self, pair, portfolio, message='[MACD]', scope1=26, scope2=12, scope3=9):
+        super().__init__(pair, portfolio)
+        self.MACD = MACD(self, scope1, scope2, scope3)
+        
+        self.message = message
+
+        self.can_sell = False
+        self.entry_time = None
+
+
+    def _call_(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+        self.update(price, timestamp)
+
+        prev_crossover_time = self.prev_crossover_time
+        prev_sell_time = self.prev_sell_time
+        entry_time = self.entry_time
+        can_sell = self.can_sell
+
+        uptrend   = self.MACD.base > self.MACD.ema
+        downtrend = self.MACD.base < self.MACD.ema
+
+        # @HARDCODE Buy/Sell message
+        if self.hasCash() and not self.hasBalance() and uptrend:
+            
+            if prev_crossover_time is None:
+                prev_crossover_time = timestamp
+
+            elif timestamp - prev_crossover_time >= self.timelag_required:
+
+                amount = self.equity_at_risk * self.equity() / price
+                self.buy(amount, appendTimestamp(self.message, timestamp), price)
+
+                prev_crossover_time = None
+
+                if uptrend:
+                    can_sell = True
+                elif downtrend:
+                    can_sell = False
+                entry_time = timestamp
+
+        elif self.hasBalance():
+            if not can_sell and uptrend:
+                can_sell = True
+            elif (can_sell and downtrend):
+                if prev_crossover_time is None:
+                    prev_crossover_time = timestamp
+
+                elif timestamp - prev_crossover_time >= self.timelag_required:
+                    self.sellAll(appendTimestamp(self.message, timestamp), price)
+                    prev_crossover_time = None
+                    prev_sell_time = timestamp
+                    entry_time = None
+
+        else:
+            prev_crossover_time = None
+
+        self.prev_crossover_time = prev_crossover_time
+        self.prev_sell_time = prev_sell_time
+        self.entry_time = entry_time
+        self.can_sell = can_sell
+
+
+class MACDStrat2(Strategy):
+
+    def __init__(self, pair, portfolio, message='[MACD]', scope1=26, scope2=12, scope3=9):
+        super().__init__(pair, portfolio)
+        self.message = message
+
+        self.MACD = MACD(self, scope1, scope2, scope3)
+        self.entered = False
+        self.prev_trend = True
+
+
+    def _call_(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+        self.update(price, timestamp)
+
+        if self.prev_crossover_time == None:
+            self.prev_crossover_time == timestamp
+            return
+
+        trend = self.MACD.base > self.MACD.ewa
+
+        if self.prev_trend != trend:
+            self.prev_crossover_time = timestamp
+            self.prev_trend = trend
+
+            if trend: trend_str = 'up'
+            else: trend_str = 'down'
+
+            logger.debug('identified crossing' + trend_str)
+            return
+
+        else:
+            confirm_up = trend
+            confirm_down = not trend
+        
+        if not self.entered and self.hasCash() and confirm_up:
+            self.buy(amount, self.message, price)
+            self.entered = True
+
+        elif self.entered and confirm_down:
+            self.sell(amount, self.message, price)
+            self.entered = False
+
+
 class WMAModStrat(Strategy):
 
     def __init__(self, pair, portfolio, exchange=None, message='[WMA Mod]', period=180, scope1=5, scope2=8):
