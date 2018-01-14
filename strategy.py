@@ -6,7 +6,11 @@ import inspect
 import json
 import logging
 
+logging.TA = 6
+logging.addLevelName(logging.TA, 'TA')
+
 logger = logging.getLogger('Cryptle')
+logger.ta = lambda x: logger.log(logging.TA, x)
 
 
 # @HARDCODE @REGRESSION @TEMPORARY
@@ -354,7 +358,7 @@ class ATRStrat(Strategy):
             return
 
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
-            logger.debug('ATR identified uptrend and below ATR band')
+            logger.ta('ATR identified uptrend and below ATR band')
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
@@ -366,7 +370,7 @@ class ATRStrat(Strategy):
                 prev_crossover_time = None
 
         elif self.hasBalance() and (downtrend or aboveatr):
-            logger.debug('ATR identified downtrend and above ATR band')
+            logger.ta('ATR identified downtrend and above ATR band')
 
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
@@ -426,7 +430,7 @@ class WMAStrat(Strategy):
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
-            #logger.debug('WMA identified uptrend and below WMA band')
+            logger.ta('WMA identified uptrend and below WMA band')
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
@@ -438,7 +442,7 @@ class WMAStrat(Strategy):
                 prev_crossover_time = None
 
         elif self.hasBalance() and (downtrend or aboveatr):
-            #logger.debug('WMA identified downtrend and above WMA band')
+            logger.ta('WMA identified downtrend and above WMA band')
 
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
@@ -554,7 +558,7 @@ class WMAModStrat(Strategy):
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and belowatr:
-            #logger.debug('ATR identified uptrend and below ATR band')
+            logger.ta('WMAMod identified uptrend and below ATR band')
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
@@ -575,7 +579,7 @@ class WMAModStrat(Strategy):
             if not can_sell and uptrend:
                 can_sell = True
             elif (can_sell and downtrend) or (not can_sell and aboveatr):
-                # logger.debug('ATR identified downtrend')
+                logger.ta('WMAMod identified downtrend')
                 if prev_crossover_time is None:
                     prev_crossover_time = timestamp
 
