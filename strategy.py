@@ -176,6 +176,10 @@ class Strategy:
 
 
     def cleanupBuy(self, res, message):
+        if res['status'] == 'error':
+            logger.info('Buy failed {} {}'.format(self.pair.upper(), message))
+            return
+
         price = res['price']
         amount = res['amount']
 
@@ -186,6 +190,10 @@ class Strategy:
 
 
     def cleanupSell(self, res, message):
+        if res['status'] == 'error':
+            logger.info('Sell failed {} {}'.format(self.pair.upper(), message))
+            return
+
         price = res['price']
         amount = res['amount']
 
