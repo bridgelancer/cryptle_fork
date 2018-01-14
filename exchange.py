@@ -11,6 +11,11 @@ import requests as req
 log = logging.getLogger('Exchange')
 
 
+def truncate(f, dp):
+    s = '{:.' + str(dp) + 'f}'.format(f)
+    return float(s)
+
+
 class PaperExchange:
 
     def __init__(self, commission=0, slippage=0):
@@ -115,7 +120,7 @@ class Bitstamp:
         assert amount > 0
 
         params = self._authParams()
-        params['amount'] = amount
+        params['amount'] = truncate(amount, 8)
 
         res = self._post('/buy/market/' + pair + '/', params=params)
 
@@ -128,7 +133,7 @@ class Bitstamp:
         assert amount > 0
 
         params = self._authParams()
-        params['amount'] = amount
+        params['amount'] = truncate(amount, 8)
 
         res = self._post('/sell/market/' + pair + '/', params=params)
 
@@ -142,8 +147,8 @@ class Bitstamp:
         assert price > 0
 
         params = self._authParams()
-        params['amount'] = amount
-        params['price'] = price
+        params['amount'] = truncate(amount)
+        params['price'] = truncate(price)
 
         res = self._post('/buy/' + pair + '/', params=params)
 
@@ -157,8 +162,8 @@ class Bitstamp:
         assert price > 0
 
         params = self._authParams()
-        params['amount'] = amount
-        params['price'] = price
+        params['amount'] = truncate(amount)
+        params['price'] = truncate(price)
 
         res = self._post('/sell/' + pair + '/', params=params)
 
