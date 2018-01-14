@@ -59,7 +59,7 @@ def testLoadCSV():
 
 
 def testParseTick(pair):
-    ls = readCSV('tick_01131036Full.log')
+    ls = readCSV('bch.log')
 
     result = []
 
@@ -183,6 +183,17 @@ def testSnoopingLoopN(pair):
             else:
                 logger.info("Please loop at least two configs per factor")
 
+def testMACD(pair):
+    port = Portfolio(1000)
+    macd = MACDStrat2(pair, port, message='[MACD]', period=120)
+
+    ticks = testParseTick(pair)
+    loadCSV(ticks, macd)
+
+    logger.info('MACD Cash:   %.2f' % port.cash)
+    logger.info('MACD Asset:  %s'   % str(port.cash))
+
+
 if __name__ == '__main__':
     pair = sys.argv[1]
-    testSnoopingLoopN(pair)
+    testMACD(pair)
