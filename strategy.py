@@ -654,8 +654,79 @@ class WMAForceStrat(Strategy):
         uptrend   = self.WMA_5.wma > self.WMA_8.wma
         downtrend = self.WMA_5.wma < self.WMA_8.wma
 
+        buy_signal = False
+        sell_signal = False
+        v_sell_signal = False
 
         # @HARDCODE Buy/Sell message
+
+        # Buy/Sell singal generation
+        if self.hasCash() and not self.hasBalance():
+            if v_sell:
+                if uptrend or belowatr or aboveatr:
+                    return
+                elif downtrend:
+                    v_sell = False
+            elif belowatr:
+                buy_signal = True
+            else:
+                prev_crossover_time = None
+        elif self.hasBalance():
+            if dollar_volume_flag and self.vwma.dollar_volume <= 0:
+                v_sell_signal = True
+                logger.info("\n VWMA Indicate sell at: " + str(timestamp))
+            elif not can_sell and aboveatr:
+                sell_signal = True
+            elif can_sell and downtrend:
+                sell_signal = True
+            elif not can_sell and uptrend:
+                can_sell = True
+            elif not can_sell and downtrend:
+                return
+
+        else:
+            prev_crossover_time = None
+
+        # Execution of signals
+        if self.hasCash() and not self.hasBalance() and buy_signal:
+            if prev_crossover_time is None:
+                prev_crossover_time = timestamp
+
+            elif timestamp - prev_crossover_time >= self.timelag_required:
+                amount = self.equity_at_risk * self.equity() / price
+                self.marketBuy(amount, appendTimestamp(self.message, timestamp))
+
+                prev_crossover_time = None
+
+                if uptrend:
+                    can_sell = True
+                elif downtrend:
+                    can_sell = False
+
+        elif self.hasBalance() and v_sell_signal:
+            amount = self.portfolio.balance[self.pair]
+            self.marketSell(amount, appendTimestamp(self.message, timestamp))
+
+            prev_crossover_time = None
+            dollar_volume_flag = False
+
+            v_sell = True
+
+        elif self.hasBalance() and sell_signal:
+
+            if prev_crossover_time is None:
+                prev_crossover_time = timestamp
+
+            elif timestamp - prev_crossover_time >= self.timelag_required:
+
+                amount = self.portfolio.balance[self.pair]
+                self.marketSell(amount, appendTimestamp(self.message, timestamp))
+
+                prev_crossover_time = None
+                dollar_volume_flag = False
+
+        # The "unclean, workable" version
+        """
         if self.hasCash() and not self.hasBalance():
             if v_sell:
                 if uptrend or belowatr or aboveatr:
@@ -709,9 +780,9 @@ class WMAForceStrat(Strategy):
                     prev_crossover_time = None
                     entry_time = None
                     dollar_volume_flag = False
-
         else:
             prev_crossover_time = None
+        """
 
         if self.vwma.dollar_volume > 1.75 * (10**5):
             dollar_volume_flag = True
