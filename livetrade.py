@@ -10,7 +10,7 @@ import time
 logging.TICK = 5
 logging.addLevelName(logging.TICK, 'TICK')
 
-fmt = '%(name)10s| %(asctime)s [%(levelname)5s] %(message)s'
+fmt = '%(name)<10s| %(asctime)s [%(levelname)5s] %(message)s'
 formatter = logging.Formatter(fmt, '%Y-%m-%d %H:%M:%S')
 
 ch = logging.StreamHandler()
@@ -21,8 +21,8 @@ fh = logging.FileHandler('livetrade.log', mode='w')
 fh.setLevel(logging.TICK)
 fh.setFormatter(formatter)
 
-log = logging.getLogger('Reporting')
-log.setLevel(logging.DEBUG)
+log = logging.getLogger('Report')
+log.setLevel(logging.TICK)
 log.addHandler(ch)
 log.addHandler(fh)
 
@@ -44,16 +44,16 @@ def livetrade(key, secret, cid):
     exchange = Bitstamp(key, secret, cid)
 
     log.debug('Initialising retrieving balance...')
-    cash = exchange.getBalance()
+    balance = exchange.getBalance()
+    cash = float(cash['usd_available'])
 
     log.debug('Initialising portfolio...')
-    port = Portfolio(float(cash['usd_available']))
+    port = Portfolio(cash)
 
     log.debug('Initialising strategy...')
     wma = WMAModStrat(pair, port, exchange, period=180)
 
     log.debug('Initialising data feed and callbacks...')
-
     bs = BitstampFeed()
     bs.onTrade(pair, wma)
     bs.onTrade(pair, lambda x: log.log(logging.TICK, x))
