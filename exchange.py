@@ -1,8 +1,9 @@
-import logging
-import time
-import json
-import hmac
 import hashlib
+import hmac
+import json
+import logging
+import random
+import time
 
 import pysher
 import requests as req
@@ -205,7 +206,7 @@ class Bitstamp:
     def _authParams(self):
         assert self.secret is not None
 
-        nonce = int(time.time())
+        nonce = int(time.time()) + random.randrange(2147483648)
         params = {}
         params['key'] = self.key
         params['signature'] = self._sign(str(nonce))
@@ -238,12 +239,11 @@ class Bitstamp:
         elif c == 403:
             log.error('403 Bad Request Error')
             log.error(res.text)
-            raise ConnectionError('Server 403 Forbidden')
         elif c == 404:
             log.error('404 Page Not Found')
+            raise ConnectionError('Server 404 Page Not Found')
         elif c != 200:
             log.error(res.text)
-            raise ConnectionError('Server returned error ' + str(c))
 
 
     @staticmethod
