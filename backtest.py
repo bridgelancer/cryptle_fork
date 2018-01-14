@@ -17,7 +17,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(formatter)
 
-fh = logging.FileHandler('backtest.log', mode='w')
+fh = logging.FileHandler('Force.log', mode='w')
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 
@@ -82,7 +82,7 @@ def testParseTick(pair):
 
 def testVWMAStrat():
     port = Portfolio(1000)
-    vwma = VWMAStrat('bchusd', port, '[VWMA]', period=30)
+    vwma = VWMAStrat('bchusd', port, message='[VWMA]', period=30)
 
     bs = BitstampFeed()
     bs.onTrade('bchusd', vwma)
@@ -94,6 +94,18 @@ def testWMAModStrategy(pair):
     feed = BitstampFeed()
     port = Portfolio(2500)
     wmaeth  = WMAModStrat(str(pair), port, message='[WMA Mod]', period=180)
+    wmaeth.equity_at_risk = 1.0
+
+    ls = testParseTick(pair)
+    loadCSV(ls, wmaeth)
+
+    logger.info('WMA Cash:   %.2f' % port.cash)
+    logger.info('WMA Assets: %s' % str(port.balance))
+
+def testWMAForceStrategy(pair):
+    feed = BitstampFeed()
+    port = Portfolio(2500)
+    wmaeth  = WMAForceStrat(str(pair), port, message='[WMA Force]', period=180)
     wmaeth.equity_at_risk = 1.0
 
     ls = testParseTick(pair)
@@ -157,7 +169,7 @@ def testSnoopingLoopN(pair):
         for period in snooping:
             ports.append(Portfolio(1000))
 
-            strat = WMAModStrat(str(pair), ports[snooping.index(period)], '[WMA {} min bar {}% ATR]'.format(period, y[lags.index(lag)]*100), period)
+            strat = WMAModStrat(str(pair), ports[snooping.index(period)], message='[WMA {} min bar {}% ATR]'.format(period, y[lags.index(lag)]*100), period=period)
             strat.upper_atr = y[lags.index(lag)]
             strat.lower_atr = y[lags.index(lag)]
             strats.append(strat)
@@ -196,4 +208,4 @@ def testMACD(pair):
 
 if __name__ == '__main__':
     pair = sys.argv[1]
-    testMACD(pair)
+    testWMAForceStrategy(pair)
