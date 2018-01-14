@@ -10,7 +10,7 @@ import time
 logging.TICK = 5
 logging.addLevelName(logging.TICK, 'TICK')
 
-fmt = '%(name)<10s| %(asctime)s [%(levelname)5s] %(message)s'
+fmt = '%(name)-10s| %(asctime)s [%(levelname)5s] %(message)s'
 formatter = logging.Formatter(fmt, '%Y-%m-%d %H:%M:%S')
 
 ch = logging.StreamHandler()
@@ -45,7 +45,7 @@ def livetrade(key, secret, cid):
 
     log.debug('Initialising retrieving balance...')
     balance = exchange.getBalance()
-    cash = float(cash['usd_available'])
+    cash = float(balance['usd_available'])
 
     log.debug('Initialising portfolio...')
     port = Portfolio(cash)
