@@ -1,4 +1,4 @@
-from datefeed import *
+from datafeed import *
 from strategy import *
 
 import logging
