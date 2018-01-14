@@ -2,7 +2,6 @@ import hashlib
 import hmac
 import json
 import logging
-import random
 import time
 
 import pysher
@@ -206,7 +205,7 @@ class Bitstamp:
     def _authParams(self):
         assert self.secret is not None
 
-        nonce = int(time.time()) + random.randrange(2147483648)
+        nonce = int(time.time() * 100)
         params = {}
         params['key'] = self.key
         params['signature'] = self._sign(str(nonce))
