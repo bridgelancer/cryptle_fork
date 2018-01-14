@@ -25,8 +25,8 @@ class ContinuousVWMA:
 
         self.last = price
 
-        self.volume += volume
-        self.dollar_volume += price * volume
+        self.volume += volume * action
+        self.dollar_volume += price * volume * action
         self.avg = self.dollar_volume / self.volume
 
 
@@ -38,8 +38,8 @@ class ContinuousVWMA:
             if self.ticks[0][2] < epoch:
                 tick = self.ticks.pop(0)
 
-                self.volume -= tick[1]
-                self.dollar_volume -= tick[0] * tick[1]
+                self.volume -= tick[1] * tick[3]
+                self.dollar_volume -= tick[0] * tick[1] * tick[3]
                 self.avg = self.dollar_volume / self.volume
             else:
                 break
