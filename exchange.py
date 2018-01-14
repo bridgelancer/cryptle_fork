@@ -110,6 +110,32 @@ class Bitstamp:
         return self._post('/order_status/', params=params)
 
 
+    def marketBuy(self, pair, amount):
+        assert isinstance(pair, str)
+        assert amount > 0
+
+        params = self._authParams()
+        params['amount'] = amount
+
+        res = self._post('/buy/market/' + pair + '/', params=params)
+
+        self.handleBitstampErrors(res, 'Market buy ' + pair + ' failed')
+        return res
+
+
+    def marketSell(self, pair, amount):
+        assert isinstance(pair, str)
+        assert amount > 0
+
+        params = self._authParams()
+        params['amount'] = amount
+
+        res = self._post('/sell/market/' + pair + '/', params=params)
+
+        self.handleBitstampErrors(res, 'Market sell ' + pair + ' failed')
+        return res
+
+
     def limitBuy(self, pair, amount, price):
         assert isinstance(pair, str)
         assert amount > 0
@@ -137,32 +163,6 @@ class Bitstamp:
         res = self._post('/sell/' + pair + '/', params=params)
 
         self.handleBitstampErrors(res, 'Limit sell ' + pair.upper() + ' failed')
-        return res
-
-
-    def marketBuy(self, pair, amount):
-        assert isinstance(pair, str)
-        assert amount > 0
-
-        params = self._authParams()
-        params['amount'] = amount
-
-        res = self._post('/buy/market/' + pair + '/', params=params)
-
-        self.handleBitstampErrors(res, 'Market buy ' + pair + ' failed')
-        return res
-
-
-    def marketSell(self, pair, amount):
-        assert isinstance(pair, str)
-        assert amount > 0
-
-        params = self._authParams()
-        params['amount'] = amount
-
-        res = self._post('/sell/market/' + pair + '/', params=params)
-
-        self.handleBitstampErrors(res, 'Market sell ' + pair + ' failed')
         return res
 
 
@@ -247,4 +247,6 @@ class Bitstamp:
 
         if res['status'] == 'error':
             log.error(message + ': ' + str(res['reason']))
+            res['price'] = 0
+            res['amount'] = 0
 
