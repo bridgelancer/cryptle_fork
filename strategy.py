@@ -128,6 +128,14 @@ class Strategy:
         return self.portfolio.equity()
 
 
+    def maxBuy(self, price):
+        return min(self.equity_at_risk * self.equity() / price, self.portfolio.cash)
+
+
+    def maxSell(self):
+        return self.portfolio.balance[self.pair]
+
+
     def marketBuy(self, amount, message=''):
         checkType(amount, int, float)
         checkType(message, str)
