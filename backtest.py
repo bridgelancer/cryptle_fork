@@ -59,7 +59,7 @@ def testLoadCSV():
 
 
 def testParseTick(pair):
-    ls = readCSV('bch.log')
+    ls = readCSV('eth.log')
 
     result = []
 
@@ -197,15 +197,17 @@ def testSnoopingLoopN(pair):
 
 def testMACD(pair):
     port = Portfolio(1000)
-    macd = MACDStrat2(pair, port, message='[MACD]', period=120)
+    macd = MACDStrat2(pair, port, message='[MACD]', period=180)
+    macd.equity_at_risk = 1
 
     ticks = testParseTick(pair)
     loadCSV(ticks, macd)
 
+    logger.info('MACD Equity: %.2f' % port.equity())
     logger.info('MACD Cash:   %.2f' % port.cash)
     logger.info('MACD Asset:  %s'   % str(port.cash))
 
 
 if __name__ == '__main__':
     pair = sys.argv[1]
-    testWMAForceStrategy(pair)
+    testMACD(pair)

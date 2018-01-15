@@ -183,38 +183,34 @@ class EMA():
 
         self.candle = candle
         self.lookback = lookback
-        self.ema = 0
-        self.weight = 2 / (lookback + 1)
+        self.ema = None
+        self.weight =  2 / (lookback + 1)
 
         candle.metrics.append(self)
 
 
     def update(self, open_p=True):
-
-        if len(self.candle) < (self.lookback-1):
-            pass
-
+        
+        if open_p:
+            price = self.candle[-1][0]
         else:
-            price_list = []
-            bar_list = self.candle[-(self.lookback- 1):]
+            price = self.candle[-1][1]
 
-            if open_p == True:
-                price_list = [x[0] for x in bar_list]
-                price_list.append(self.candle.baropen)
-            elif open_p == False:
-                price_list = [x[1] for x in bar_list]
-                price_list.append(self.candle.barclose)
+        if self.ema == None:
+            self.ema = price
+            return
 
-            self.price_list_test = price_list
+        self.ema = self.weight*price + (1-self.weight)*self.ema
 
-            for p in range(len(price_list)):
-                self.ema += ((1-self.weight)**(len(price_list)-1-p))*price_list[p]
 
-            norm = 0
-            for p in range(len(price_list)):
-                norm += (1-self.weight)**(p)
+            # for p in range(len(price_list)):
+            #     self.ema += ((1-self.weight)**(len(price_list)-1-p))*price_list[p]
 
-            self.ema = self.ema/(norm)
+            # norm = 0
+            # for p in range(len(price_list)):
+            #     norm += (1-self.weight)**(p)
+
+            # self.ema = self.ema/norm
 
 
 
@@ -226,7 +222,7 @@ class MACD():
         self.ema1 = ema1
         self.ema2 = ema2
         self.macd = 0
-        self.ema3 = 0
+        self.ema3 = None
         self.lookback = lookback
         self.past = []
         self.weight = 2 / (lookback + 1)
@@ -237,19 +233,14 @@ class MACD():
 
         self.macd = self.ema1.ema - self.ema2.ema
         self.past.append(self.macd)
+        
+        price = self.past[-1]
 
-        if len(self.past) < self.lookback :
-            pass
-
-        else:
-            for p in (range(self.lookback)):
-                self.ema3 += ((1-self.weight)**(self.lookback - 1 - p))*self.past[p]
-
-            norm = 0
-            for p in range(self.lookback):
-                norm += (1-self.weight)**(p)
-
-            self.ema3 = self.ema3/(norm)
-
+        if self.ema3 == None:
+            self.ema3 = price
+            return
+            
+        self.ema3 = self.weight*price + (1-self.weight)*self.ema3
+        
 
 
