@@ -41,15 +41,15 @@ def papertrade():
     port2 = Portfolio(10000)
 
     logger.debug("Initialising strategies")
-    wmaeth_5m  = WMAModStrat('ethusd', port1, message='[5m]', period=300)
-    wmabtc_5m  = WMAModStrat('btcusd', port1, message='[5m]', period=300)
-    wmaxrp_5m  = WMAModStrat('xrpusd', port1, message='[5m]', period=300)
-    wmabch_5m  = WMAModStrat('bchusd', port1, message='[5m]', period=300)
+    wmaeth_5m  = WMAForceStrat('ethusd', port1, message='[5m]', period=300)
+    wmabtc_5m  = WMAForceStrat('btcusd', port1, message='[5m]', period=300)
+    wmaxrp_5m  = WMAForceStrat('xrpusd', port1, message='[5m]', period=300)
+    wmabch_5m  = WMAForceStrat('bchusd', port1, message='[5m]', period=300)
 
-    wmaeth_3m  = WMAModStrat('ethusd', port2, message='[3m]', period=180)
-    wmabtc_3m  = WMAModStrat('btcusd', port2, message='[3m]', period=180)
-    wmaxrp_3m  = WMAModStrat('xrpusd', port2, message='[3m]', period=180)
-    wmabch_3m  = WMAModStrat('bchusd', port2, message='[3m]', period=180)
+    wmaeth_3m  = WMAForceStrat('ethusd', port2, message='[3m]', period=180)
+    wmabtc_3m  = WMAForceStrat('btcusd', port2, message='[3m]', period=180)
+    wmaxrp_3m  = WMAForceStrat('xrpusd', port2, message='[3m]', period=180)
+    wmabch_3m  = WMAForceStrat('bchusd', port2, message='[3m]', period=180)
 
     wmaeth_5m.equity_at_risk = 0.25
     wmabtc_5m.equity_at_risk = 0.25

@@ -670,6 +670,7 @@ class WMAForceStrat(Strategy):
                 buy_signal = True
             else:
                 prev_crossover_time = None
+
         elif self.hasBalance():
             if dollar_volume_flag and self.vwma.dollar_volume <= 0:
                 v_sell_signal = True
@@ -724,65 +725,7 @@ class WMAForceStrat(Strategy):
                 prev_crossover_time = None
                 dollar_volume_flag = False
 
-        # The "unclean, workable" version
-        """
-        if self.hasCash() and not self.hasBalance():
-            if v_sell:
-                if uptrend or belowatr or aboveatr:
-                    return
-                elif downtrend:
-                    v_sell = False
-
-            elif belowatr:
-                if prev_crossover_time is None:
-                    prev_crossover_time = timestamp
-
-                elif timestamp - prev_crossover_time >= self.timelag_required:
-                    amount = self.equity_at_risk * self.equity() / price
-                    self.marketBuy(amount, appendTimestamp(self.message, timestamp))
-
-                    prev_crossover_time = None
-
-                    if uptrend:
-                        can_sell = True
-                    elif downtrend:
-                        can_sell = False
-                    entry_time = timestamp
-            else:
-                prev_crossover_time = None
-
-        elif self.hasBalance():
-            if  dollar_volume_flag and self.vwma.dollar_volume <= 0:
-                logger.info("VWMA Indicate sell at: " + str(timestamp) + "\n")
-                amount = self.portfolio.balance[self.pair]
-                self.marketSell(amount, appendTimestamp(self.message, timestamp))
-
-                prev_crossover_time = None
-                entry_time = None
-                dollar_volume_flag = False
-
-                v_sell = True
-
-            elif not can_sell and uptrend:
-                can_sell = True
-
-            elif (can_sell and downtrend) or (not can_sell and aboveatr):
-                # logger.debug('ATR identified downtrend')
-                if prev_crossover_time is None:
-                    prev_crossover_time = timestamp
-
-                elif timestamp - prev_crossover_time >= self.timelag_required:
-
-                    amount = self.portfolio.balance[self.pair]
-                    self.marketSell(amount, appendTimestamp(self.message, timestamp))
-
-                    prev_crossover_time = None
-                    entry_time = None
-                    dollar_volume_flag = False
-        else:
-            prev_crossover_time = None
-        """
-
+        ####### Hardcoded for BCH volume
         if self.vwma.dollar_volume > 1.75 * (10**5):
             dollar_volume_flag = True
         elif self.vwma.dollar_volume < 0:
