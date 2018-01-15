@@ -472,39 +472,37 @@ class MACDStrat2(Strategy):
         self.MACD = MACD(self.ema1, self.ema2, scope3)
 
         self.entered = False
-        self.prev_trend = True
+        self.prev_trend = False
 
 
     def __call__(self, tick):
+
         price, volume, timestamp = self.unpackTick(tick)
         self.candle.update(price, timestamp)
 
-        if self.prev_crossover_time == None:
-            self.prev_crossover_time = timestamp
+        try:
+            trend = self.MACD.macd > (self.MACD.ema3 + price*0.00001)
+        except TypeError:
             return
 
-        trend = self.MACD.macd > self.MACD.ema3
+        confirm_down = False
+        confirm_up = False
 
-        if self.prev_trend != trend:
-
-            self.prev_crossover_time = timestamp
-            self.prev_trend = trend
-
-            if trend: trend_str = 'up'
-            else: trend_str = 'down'
-
+        if self.prev_trend == trend:
             return
-
+            
         else:
+            self.prev_trend = trend
             confirm_up = trend
             confirm_down = not trend
+            logger.info('Crossed')
 
-        if not self.entered and self.hasCash() and confirm_up:
+        if not self.entered and self.hasCash() and confirm_up and not self.hasBalance():
             amount = self.equity_at_risk * self.equity() / price
             self.marketBuy(amount, self.message)
             self.entered = True
 
-        elif self.entered and confirm_down:
+        elif self.entered and confirm_down and self.hasBalance():
             amount = self.portfolio.balance[self.pair]
             self.marketSell(amount, self.message)
             self.entered = False

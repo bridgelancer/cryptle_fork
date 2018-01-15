@@ -159,6 +159,22 @@ def testSMA():
         else: assert sma.sma == tick[1] - 2
 
 
+def testEMA():
+    candle = CandleBar(1)
+    ema = EMA(candle, 3)
+
+    for tick in const:
+        candle.update(tick[0], tick[1])
+        print(ema.ema)
+
+    print("\n")
+
+    for tick in lin:
+        candle.update(tick[0], tick[1])
+        print(ema.ema)
+
+
+
 def testWMA():
 
     candle = CandleBar(1)   # 1 second bar
@@ -176,10 +192,4 @@ def testWMA():
 
 
 if __name__ == '__main__':
-    testFunctor()
-    #testBitstampFeed()
-    #testBitstampREST()
-    testEquity()
-    testCVWMA()
-    testSMA()
-    testWMA()
+    testEMA()
