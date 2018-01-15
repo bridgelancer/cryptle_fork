@@ -133,7 +133,7 @@ class Strategy:
         checkType(message, str)
         assert amount > 0
 
-        logger.debug('Placing market buy for {:8.5g} {} {:s}'.format(amount, self.pair.upper(), message))
+        logger.debug('Placing market buy for {:.6g} {} {:s}'.format(amount, self.pair.upper(), message))
         res = self.exchange.marketBuy(self.pair, amount)
 
         self.cleanupBuy(res, message)
@@ -144,7 +144,7 @@ class Strategy:
         checkType(message, str)
         assert amount > 0
 
-        logger.debug('Placing market sell for {:8.5g} {} {:s}'.format(amount, self.pair.upper(), message))
+        logger.debug('Placing market sell for {:.6g} {} {:s}'.format(amount, self.pair.upper(), message))
         res = self.exchange.marketSell(self.pair, amount)
 
         self.cleanupSell(res, message)
@@ -157,7 +157,7 @@ class Strategy:
         assert amount > 0
         assert price > 0
 
-        logger.debug('Placing limit buy for {:8.5g} {} @${:8.6g} {:s}'.format(amount, self.pair.upper(), price, message))
+        logger.debug('Placing limit buy for {:.6g} {} @${:.6g} {:s}'.format(amount, self.pair.upper(), price, message))
         res = self.exchange.limitBuy(self.pair, amount, price)
 
         self.cleanupBuy(res, message)
@@ -170,7 +170,7 @@ class Strategy:
         assert amount > 0
         assert price > 0
 
-        logger.debug('Placing limit sell for {:8.5g} {} @${:8.6g} {:s}'.format(amount, self.pair.upper(), price, message))
+        logger.debug('Placing limit sell for {:.6g} {} @${:.6g} {:s}'.format(amount, self.pair.upper(), price, message))
         res = self.exchange.limitSell(self.pair, amount, price)
 
         self.cleanupSell(res, message)
@@ -178,7 +178,7 @@ class Strategy:
 
     def cleanupBuy(self, res, message):
         if res['status'] == 'error':
-            logger.info('Buy failed {} {}'.format(self.pair.upper(), message))
+            logger.error('Buy failed {} {}'.format(self.pair.upper(), message))
             return
 
         price = float(res['price'])
@@ -187,12 +187,12 @@ class Strategy:
         self.portfolio.deposit(self.pair, amount, price)
         self.portfolio.cash -= amount * price
 
-        logger.info('Bought {:8.5g} {} @${:8.6g} {}'.format(amount, self.pair.upper(), price, message))
+        logger.info('Bought {:.6g} {} @${:<.6g} {}'.format(amount, self.pair.upper(), price, message))
 
 
     def cleanupSell(self, res, message):
         if res['status'] == 'error':
-            logger.info('Sell failed {} {}'.format(self.pair.upper(), message))
+            logger.error('Sell failed {} {}'.format(self.pair.upper(), message))
             return
 
         price = float(res['price'])
@@ -201,7 +201,7 @@ class Strategy:
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += amount * price
 
-        logger.info('Sold   {:8.5g} {} @${:8.6g} {}'.format(amount, self.pair.upper(), price, message))
+        logger.info('Sold   {:8.7g} {} @${:.6g} {}'.format(amount, self.pair.upper(), price, message))
 
 
     def unpackTick(self, tick):
@@ -674,7 +674,7 @@ class WMAForceStrat(Strategy):
         elif self.hasBalance():
             if dollar_volume_flag and self.vwma.dollar_volume <= 0:
                 v_sell_signal = True
-                logger.info("\n VWMA Indicate sell at: " + str(timestamp))
+                logger.info("VWMA Indicate sell at: " + str(timestamp))
             elif not can_sell and aboveatr:
                 sell_signal = True
             elif can_sell and downtrend:
@@ -746,7 +746,7 @@ class VWMAStrat(Strategy):
         super().__init__(pair, portfolio, exchange)
         self.message = message
 
-        self.vwma= ContinuousVWMA(period * shorttrend)
+        self.vwma = ContinuousVWMA(period * shorttrend)
         self.entered = False
         self.prev_trend = True
         self.amount = 0
