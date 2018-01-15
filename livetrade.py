@@ -38,12 +38,11 @@ exlog.addHandler(fh)
 
 
 def livetrade(key, secret, cid):
-    pair = 'bchusd'
-
 
     log.debug('Initialising REST parameters...')
 
     exchange = Bitstamp(key, secret, cid)
+    pair = 'bchusd'
 
 
     log.debug('Retrieving balance...')
@@ -57,14 +56,18 @@ def livetrade(key, secret, cid):
     pair_available = pair[:3] + '_available'
     cash = float(full_balance['usd_available'])
     balance = {pair: float(full_balance[pair_available])}
-
     balance_value = {pair: balance[pair] * float(pair_value['last'])}
-    port = Portfolio(cash, balance, balance_value)
+
+    if balance[pair] != 0:
+        port = Portfolio(cash, balance, balance_value)
+    else:
+        port = Portfolio(cash)
 
 
     log.debug('Initialising strategy...')
 
-    wma = WMAModStrat(pair, port, exchange, period=180)
+    wma = WMAForceStrat(pair, port, exchange=exchange, period=180)
+    wma.equity_at_risk = 0.8
 
 
     log.debug('Initialising data feed and callbacks...')
@@ -75,9 +78,9 @@ def livetrade(key, secret, cid):
 
 
     while True:
+        log.info('Equity:  {}'.format(port.equity()))
         log.info('Cash:    {}'.format(port.cash))
         log.info('Balance: {}'.format(port.balance))
-        log.info('Equity:  {}'.format(port.equity()))
 
         time.sleep(60)
 
