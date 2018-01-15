@@ -28,12 +28,12 @@ log.addHandler(ch)
 log.addHandler(fh)
 
 crlog = logging.getLogger('Cryptle')
-crlog.setLevel(logging.INFO)
+crlog.setLevel(logging.DEBUG)
 crlog.addHandler(ch)
 crlog.addHandler(fh)
 
 exlog = logging.getLogger('Exchange')
-exlog.setLevel(logging.INFO)
+exlog.setLevel(logging.DEBUG)
 exlog.addHandler(ch)
 exlog.addHandler(fh)
 
@@ -73,8 +73,8 @@ def livetrade(key, secret, cid):
     log.debug('Initialising data feed and callbacks...')
 
     bs = BitstampFeed()
-    bs.onTrade(pair, wma)
     bs.onTrade(pair, log.tick)
+    bs.onTrade(pair, wma)
 
 
     log.debug('Reporting started')
