@@ -1,5 +1,5 @@
-from exchange import *
 from datafeed import *
+from exchange import *
 from strategy import *
 
 import logging
@@ -23,23 +23,23 @@ fh.setFormatter(formatter)
 
 log = logging.getLogger('Report')
 log.setLevel(logging.TICK)
+log.tick = lambda x: log.log(logging.TICK, x)
 log.addHandler(ch)
 log.addHandler(fh)
 
 crlog = logging.getLogger('Cryptle')
-crlog.setLevel(logging.DEBUG)
+crlog.setLevel(logging.INFO)
 crlog.addHandler(ch)
 crlog.addHandler(fh)
 
 exlog = logging.getLogger('Exchange')
-exlog.setLevel(logging.DEBUG)
+exlog.setLevel(logging.INFO)
 exlog.addHandler(ch)
 exlog.addHandler(fh)
 
 
 def livetrade(key, secret, cid):
-
-    log.debug('Initialising REST parameters...')
+    log.debug('Initialising REST private parameters...')
 
     exchange = Bitstamp(key, secret, cid)
     pair = 'bchusd'
@@ -74,9 +74,10 @@ def livetrade(key, secret, cid):
 
     bs = BitstampFeed()
     bs.onTrade(pair, wma)
-    bs.onTrade(pair, lambda x: log.log(logging.TICK, x))
+    bs.onTrade(pair, log.tick)
 
 
+    log.debug('Reporting started')
     while True:
         log.info('Equity:  {}'.format(port.equity()))
         log.info('Cash:    {}'.format(port.cash))
