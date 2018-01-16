@@ -135,7 +135,20 @@ class Bitstamp:
 
         params = self._authParams()
         params['id'] = order_id
-        return self._post('/order_status/', params=params)
+
+        res = self._post('/order_status/', params=params)
+        self.handleBitstampErrors(res, 'Open order query failed')
+        return res
+
+
+    def getOpenOrders(self, pair='all/'):
+        checkType(pair, str)
+
+        params = self._authParams()
+
+        res = self_post('/open_orders/' + pair, params=params)
+        self.handleBitstampErrors(res, 'Open orders query failed')
+        return res
 
 
     def marketBuy(self, pair, amount):
@@ -205,7 +218,12 @@ class Bitstamp:
 
         params = self._authParams()
         params['id'] = price
-        return self._post('/order_status/', params=parms)
+        return self._post('/cancel_order/', params=parms)
+
+
+    def cancnelAllOrder(self):
+        params = self._authParams()
+        return self._post('/cancel_all_orders/', params=parms)
 
 
     def _get(self, endpoint, params=None):
