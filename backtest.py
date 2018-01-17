@@ -59,7 +59,7 @@ def testLoadCSV():
 
 
 def testParseTick(pair):
-    ls = readCSV('papertrade0115p.log')
+    ls = readCSV('tick_01121712.log')
 
     result = []
 
@@ -74,7 +74,7 @@ def testParseTick(pair):
             result.append(tick)
         elif pair == 'btcusd' and price > 9000:
             result.append(tick)
-        elif pair == 'bchusd' and  1700 < price < 3000:
+        elif pair == 'bchusd' and  1600 < price < 3000:
             result.append(tick)
 
     return result
@@ -117,6 +117,19 @@ def testWMAForceStrategy(pair):
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
 
+def testWMAForceBollingerStrategy(pair):
+    feed = BitstampFeed()
+    port = Portfolio(1000)
+    paper = PaperExchange(0.0012)
+    wmaeth  = WMAForceBollingerStrat(str(pair), port, exchange=paper, message='[WMA Bollinger]', period=180)
+    wmaeth.equity_at_risk = 1.0
+
+    ls = testParseTick(pair)
+    loadCSV(ls, wmaeth)
+
+    logger.info('WMA Equity:   %.2f' % port.equity())
+    logger.info('WMA Cash:   %.2f' % port.cash)
+    logger.info('WMA Assets: %s' % str(port.balance))
 
 def testWMAStrategy(pair):
     feed = BitstampFeed()
@@ -216,5 +229,5 @@ def testMACD(pair):
 
 if __name__ == '__main__':
     pair = sys.argv[1]
-    testMACD(pair)
     testWMAForceStrategy(pair)
+    testWMAForceBollingerStrategy(pair)
