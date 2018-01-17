@@ -17,6 +17,22 @@ def truncate(f, dp):
     return float(s)
 
 
+def checkType(param, *types):
+    valid_type = False
+
+    for t in types:
+        valid_type |= isinstance(param, t)
+
+    if not valid_type:
+        caller = inspect.stack()[1][3]
+        passed = type(param).__name__
+
+        fmt = "{} was passed to {}() where {} is expected"
+        msg = fmt.format(passed, caller, types)
+
+        raise TypeError(msg)
+
+
 class PaperExchange:
 
     def __init__(self, commission=0, slippage=0):
@@ -27,7 +43,8 @@ class PaperExchange:
 
 
     def marketBuy(self, pair, amount):
-        assert isinstance(pair, str)
+        checkType(pair, str)
+        checkType(amount, int, float)
         assert amount > 0
 
         price = self.price
@@ -40,7 +57,8 @@ class PaperExchange:
 
 
     def marketSell(self, pair, amount):
-        assert isinstance(pair, str)
+        checkType(pair, str)
+        checkType(amount, int, float)
         assert amount > 0
 
         price = self.price
@@ -53,7 +71,9 @@ class PaperExchange:
 
 
     def limitBuy(self, pair, amount, price):
-        assert isinstance(pair, str)
+        checkType(pair, str)
+        checkType(amount, int, float)
+        checkType(price, int, float)
         assert amount > 0
         assert price > 0
 
@@ -67,7 +87,9 @@ class PaperExchange:
 
 
     def limitSell(self, pair, amount, price):
-        assert isinstance(pair, str)
+        checkType(pair, str)
+        checkType(amount, int, float)
+        checkType(price, int, float)
         assert amount > 0
         assert price > 0
 
@@ -91,12 +113,12 @@ class Bitstamp:
 
 
     def getTicker(self, pair):
-        assert isinstance(pair, str)
+        checkType(pair, str)
         return self._get('/ticker/' + pair)
 
 
     def getOrderbook(self, pair):
-        assert isinstance(pair, str)
+        checkType(pair, str)
         return self._get('/order_book/' + pair)
 
 
@@ -109,15 +131,29 @@ class Bitstamp:
 
 
     def getOrderStatus(self, order_id):
-        assert isinstance(order_id, int)
+        checkType(order_id, int)
 
         params = self._authParams()
         params['id'] = order_id
-        return self._post('/order_status/', params=params)
+
+        res = self._post('/order_status/', params=params)
+        self.handleBitstampErrors(res, 'Open order query failed')
+        return res
+
+
+    def getOpenOrders(self, pair='all/'):
+        checkType(pair, str)
+
+        params = self._authParams()
+
+        res = self_post('/open_orders/' + pair, params=params)
+        self.handleBitstampErrors(res, 'Open orders query failed')
+        return res
 
 
     def marketBuy(self, pair, amount):
-        assert isinstance(pair, str)
+        checkType(pair, str)
+        checkType(amount, int, float)
         assert amount > 0
 
         params = self._authParams()
@@ -130,7 +166,8 @@ class Bitstamp:
 
 
     def marketSell(self, pair, amount):
-        assert isinstance(pair, str)
+        checkType(pair, str)
+        checkType(amount, int, float)
         assert amount > 0
 
         params = self._authParams()
@@ -143,7 +180,9 @@ class Bitstamp:
 
 
     def limitBuy(self, pair, amount, price):
-        assert isinstance(pair, str)
+        checkType(pair, str)
+        checkType(amount, int, float)
+        checkType(price, int, float)
         assert amount > 0
         assert price > 0
 
@@ -158,7 +197,9 @@ class Bitstamp:
 
 
     def limitSell(self, pair, amount, price):
-        assert isinstance(pair, str)
+        checkType(pair, str)
+        checkType(amount, int, float)
+        checkType(price, int, float)
         assert amount > 0
         assert price > 0
 
@@ -173,16 +214,21 @@ class Bitstamp:
 
 
     def cancnelOrder(self, order_id):
-        assert isinstance(order_id, int)
+        checkType(order_id, int)
 
         params = self._authParams()
         params['id'] = price
-        return self._post('/order_status/', params=parms)
+        return self._post('/cancel_order/', params=parms)
+
+
+    def cancnelAllOrder(self):
+        params = self._authParams()
+        return self._post('/cancel_all_orders/', params=parms)
 
 
     def _get(self, endpoint, params=None):
-        assert isinstance(endpoint, str)
-        assert isinstance(params, dict) or params is None
+        checkType(endpoint, str)
+        checkType(params, dict, type(None))
 
         try:
             res = req.post(self.url + endpoint, params)
@@ -195,9 +241,8 @@ class Bitstamp:
 
 
     def _post(self, endpoint, params):
-        assert isinstance(endpoint, str)
-        assert isinstance(params, dict)
-
+        checkType(endpoint, str)
+        checkType(params, dict)
 
         try:
             res = req.post(self.url + endpoint, params)

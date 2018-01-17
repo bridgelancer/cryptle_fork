@@ -3,7 +3,6 @@ class ContinuousVWMA:
     # Lookback is the number of seconds in the lookback window
     def __init__(self, lookback):
         self.ticks = []
-        self.avg = 0
         self.volume = 0
         self.dollar_volume = 0
 
@@ -27,7 +26,6 @@ class ContinuousVWMA:
 
         self.volume += volume * action
         self.dollar_volume += price * volume * action
-        self.avg = self.dollar_volume / self.volume
 
 
     def prune(self):
@@ -37,10 +35,10 @@ class ContinuousVWMA:
         while True:
             if self.ticks[0][2] < epoch:
                 tick = self.ticks.pop(0)
+                price, volume, ts, action = tick
 
-                self.volume -= tick[1] * tick[3]
-                self.dollar_volume -= tick[0] * tick[1] * tick[3]
-                self.avg = self.dollar_volume / self.volume
+                self.volume -= volume * action
+                self.dollar_volume -= price * volume * action
             else:
                 break
 
