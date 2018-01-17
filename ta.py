@@ -249,6 +249,8 @@ class BollingerBand():
         self.sma = sma
         self.lookback = lookback
         self.width = 0
+        self.upperband = 0
+        self.lowerband = 0
 
         sma.candle.metrics.append(self)
 
@@ -262,3 +264,6 @@ class BollingerBand():
         mean_square = list(map(lambda y: (y - mean) ** 2, ls))
 
         self.width = (sum(mean_square) / lookback) ** 0.5
+        self.upperband = sma.candle[-1][0] + 2 * self.width
+        self.lowerband = sma.candle[-1][0] - 2 * self.width
+        self.band = (self.upperband/self.lowerband - 1) * 100
