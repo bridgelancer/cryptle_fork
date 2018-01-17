@@ -118,7 +118,7 @@ class ATR():
 
     def update(self):
         if (len(self.init) < self.lookback):
-            self.init.append(self.candle[-1][2] - self.candle[-1][3])
+            self.init.append(self.candle[-1][2] - self.candle[-1][3]) # append bar max - bar min
             self.atr = sum(self.init) / len(self.init)
         else:
             t1 = self.candle[-1][2] - self.candle[-1][3]
@@ -190,7 +190,7 @@ class EMA():
 
 
     def update(self, open_p=True):
-        
+
         if open_p:
             price = self.candle[-1][0]
         else:
@@ -233,14 +233,32 @@ class MACD():
 
         self.macd = self.ema1.ema - self.ema2.ema
         self.past.append(self.macd)
-        
+
         price = self.past[-1]
 
         if self.ema3 == None:
             self.ema3 = price
             return
-            
+
         self.ema3 = self.weight*price + (1-self.weight)*self.ema3
-        
 
+class BollingerBand():
 
+    def __init__(self, sma, lookback):
+
+        self.sma = sma
+        self.lookback = lookback
+        self.width = 0
+
+        sma.candle.metrics.append(self)
+
+    def update(self):
+        mean_squared = 0
+        sma = self.sma
+        lookback = self.lookback
+
+        ls = [x[0] for x in sma.candle[-lookback:]]
+        mean = sum(ls) / lookback
+        mean_square = list(map(lambda y: (y - mean) ** 2, ls))
+
+        self.width = (sum(mean_square) / lookback) ** 0.5

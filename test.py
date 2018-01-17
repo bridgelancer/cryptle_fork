@@ -190,6 +190,15 @@ def testWMA():
 
     assert wma.wma - (293 / 3) < 1e-5
 
+def testBollingerBand():
+
+    candle = CandleBar(1)
+    sma_5 = SMA(candle, 5)
+    bb = BollingerBand(sma_5, 5)
+
+    for tick in quad:
+        candle.update(tick[0], tick[1])
+        print (bb.width)
 
 if __name__ == '__main__':
-    testEMA()
+    testBollingerBand()
