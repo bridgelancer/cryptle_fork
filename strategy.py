@@ -460,16 +460,18 @@ class WMAStrat(Strategy):
 
 
 
-class MACDStrat2(Strategy):
+class MACDStrat(Strategy):
 
-    def __init__(self, pair, portfolio, exchange=None, message='[MACD]', period=180, scope1=4, scope2=8, scope3=3):
-        super().__init__(pair, portfolio)
+    def __init__(self, pair, portfolio, threshold, exchange=None, message='[MACD]', period=180, scope1=4,
+            scope2=8, scope3=3):
+        super().__init__(pair, portfolio, exchange)
         self.message = message
 
         self.candle = CandleBar(period)
         self.ema1 = EMA(self.candle, scope1)
         self.ema2 = EMA(self.candle, scope2)
         self.MACD = MACD(self.ema1, self.ema2, scope3)
+        self.threshold = threshold
 
         self.entered = False
         self.prev_trend = False
@@ -481,7 +483,7 @@ class MACDStrat2(Strategy):
         self.candle.update(price, timestamp)
 
         try:
-            uptrend = self.MACD.macd > (self.MACD.ema3 + price*0.000001)
+            uptrend = self.MACD.macd > (self.MACD.ema3 + price*self.threshold)
             downtrend = self.MACD.macd < self.MACD.ema3
         except TypeError:
             return
@@ -489,32 +491,29 @@ class MACDStrat2(Strategy):
         confirm_down = False
         confirm_up = False
 
-        # Check if there is a trend at all
-        if not uptrend and not downtrend:
-            return
-
         # Set the current trend value
         if uptrend:
             trend = 'up'
         elif downtrend:
             trend = 'down'
+        else:
+            self.prev_trend = 'none'
+            return
 
         # Check if the trend has been the same since last tick
         if self.prev_trend == trend:
-            # Do nothing if yes
             return
         else:
-            confirm_crossed = True
-            logger.info('Crossed')
+            logger.info('Crossed ' + self.message)
             self.prev_trend = trend
 
-        if not self.entered and self.hasCash() and confirm_crossed and not self.hasBalance():
+        if not self.entered and self.hasCash() and uptrend and not self.hasBalance():
             amount = min(self.equity_at_risk * self.equity() / price, self.portfolio.cash)
             self.marketBuy(amount, appendTimestamp(self.message, timestamp))
             self.entered = True
             self.confirm_crossed = False
 
-        elif self.entered and confirm_crossed and self.hasBalance():
+        elif self.entered and downtrend and self.hasBalance():
             amount = self.portfolio.balance[self.pair]
             self.marketSell(amount, appendTimestamp(self.message, timestamp))
             self.entered = False
