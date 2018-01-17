@@ -462,8 +462,12 @@ class WMAStrat(Strategy):
 
 class MACDStrat(Strategy):
 
+<<<<<<< 24295ebe18a156ff35a50e33ea4a4fdae3e6b847
     def __init__(self, pair, portfolio, threshold, exchange=None, message='[MACD]', period=180, scope1=4,
             scope2=8, scope3=3):
+=======
+    def __init__(self, pair, portfolio, exchange=None, message='[MACD]', period=180, scope1=4, scope2=8, scope3=3):
+>>>>>>> Implemented Bollinger Band class
         super().__init__(pair, portfolio, exchange)
         self.message = message
 
@@ -504,7 +508,11 @@ class MACDStrat(Strategy):
         if self.prev_trend == trend:
             return
         else:
+<<<<<<< 24295ebe18a156ff35a50e33ea4a4fdae3e6b847
             logger.info('Crossed ' + self.message)
+=======
+            logger.info('Crossed')
+>>>>>>> Implemented Bollinger Band class
             self.prev_trend = trend
 
         if not self.entered and self.hasCash() and uptrend and not self.hasBalance():
@@ -566,21 +574,21 @@ class WMAModStrat(Strategy):
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and belowatr:
             logger.ta('WMAMod identified uptrend and below ATR band')
-            if prev_crossover_time is None:
-                prev_crossover_time = timestamp
+            #if prev_crossover_time is None:
+                #prev_crossover_time = timestamp
 
-            elif timestamp - prev_crossover_time >= self.timelag_required:
+            #elif timestamp - prev_crossover_time >= self.timelag_required:
 
-                amount = self.equity_at_risk * self.equity() / price
-                self.marketBuy(amount, appendTimestamp(self.message, timestamp))
+            amount = self.equity_at_risk * self.equity() / price
+            self.marketBuy(amount, appendTimestamp(self.message, timestamp))
 
-                prev_crossover_time = None
+            prev_crossover_time = None
 
-                if uptrend:
-                    can_sell = True
-                elif downtrend:
-                    can_sell = False
-                entry_time = timestamp
+            if uptrend:
+                can_sell = True
+            elif downtrend:
+                can_sell = False
+            entry_time = timestamp
 
         elif self.hasBalance():
             if not can_sell and uptrend:
@@ -670,6 +678,7 @@ class WMAForceStrat(Strategy):
         # @HARDCODE Buy/Sell message
 
         # Buy/Sell singal generation
+
         if self.hasCash() and not self.hasBalance():
             if v_sell:
                 if uptrend or belowatr or aboveatr:
@@ -736,6 +745,7 @@ class WMAForceStrat(Strategy):
                 dollar_volume_flag = False
 
         ####### Hardcoded for BCH volume
+
         if self.vwma.dollar_volume > 1.75 * (10**5):
             dollar_volume_flag = True
         elif self.vwma.dollar_volume < 0:
