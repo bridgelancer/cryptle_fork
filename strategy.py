@@ -496,9 +496,6 @@ class MACDStrat(Strategy):
         except TypeError:
             return
 
-        confirm_down = False
-        confirm_up = False
-
         # Set the current trend value
         if uptrend:
             trend = 'up'
@@ -624,7 +621,7 @@ class WMAForceStrat(Strategy):
         self.ATR_5 = ATR(self.bar, scope1)
         self.WMA_5 = WMA(self.bar, scope1)
         self.WMA_8 = WMA(self.bar, scope2)
-        self.vwma= ContinuousVWMA(period)
+        self.vwma = ContinuousVWMA(period)
 
         self.message = message
         self.dollar_volume_flag = False
@@ -766,7 +763,7 @@ class WMAForceBollingerStrat(Strategy):
         self.ATR_5 = ATR(self.bar, scope1)
         self.WMA_5 = WMA(self.bar, scope1)
         self.WMA_8 = WMA(self.bar, scope2)
-        self.vwma= ContinuousVWMA(period)
+        self.vwma = ContinuousVWMA(period)
         self.sma_20 = SMA(self.bar, 20)
         self.bollinger = BollingerBand(self.sma_20, 20)
 
@@ -915,7 +912,115 @@ class WMAForceBollingerStrat(Strategy):
         self.v_sell = v_sell
 
 
-# @In progress
+# @In Progress
+# Needs ATR x MA indicators
+class SwissStrat(Strategy):
+    def __init__(self, pair, portfolio, exchange=None, message='[Swiss]', period=180,
+            scope1=4, scope2=8, scope3=3, threshold=0.00001, vwma_lookback=10, sma_lookback=20,
+            bollinger_lookback=20, timelag=0):
+
+        super().__init__(pair, portfolio, exchange)
+
+        self.candle = CandleBar(period)
+        self.ema1 = EMA(self.candle, scope1)
+        self.ema2 = EMA(self.candle, scope2)
+        self.macd = MACD(self.ema1, self.ema2, scope3)
+        self.vwma = ContinuousVWMA(vwma_lookback)
+        self.sma = SMA(self.candle, sma_lookback)
+        self.bollinger = BollingerBand(self.sma, bollinger_lookback)
+
+        self.message = message
+        self.period = period
+        self.threshold = threshold
+        self.timelag = timelag
+
+        self.init_time = 0
+        self.tradable_window = 0
+        self.prev_trend = 'none'
+        self.prev_cross = None
+        self.last_entry = None
+
+
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+
+        tick = json.loads(tick)
+        action = -1 * (tick['type'] * 2 - 1)
+        self.candle.update(price, timestamp)
+        self.vwma.update(price, volume, timestamp, action)
+
+
+        ## First tick initialisation
+        if self.init_time == 0:
+            self.init_time = timestamp
+            return
+
+        if timestamp < self.init_time + self.period * 8:
+            return
+
+        buy_signal = False
+        sell_signal = False
+
+
+        ## Signal generation
+        # Update bollinger tradable timeframe
+        if self.bollinger.band > 2.0: # @Hardcode
+            self.tradable_window = timestamp + 3600 # @Hardcode
+
+        # Bollinger band signal
+        if timestamp < self.tradable_window:
+            bollinger_signal = True
+        else:
+            bollinger_signal = False
+
+        # MACD trend
+        try:
+            if self.macd.macd > (self.macd.ema3 + price * self.threshold):
+                trend = 'up'
+            elif self.macd.macd < (self.macd.ema3 - price * self.threshold):
+                trend = 'down'
+            else:
+                self.prev_trend = 'none'
+                return
+        except TypeError:
+            return
+
+        # MACD Cross signal
+        if self.prev_trend == trend:
+            macd_signal = self.prev_cross + self.timelag < timestamp
+        else:
+            self.prev_trend = trend
+            self.prev_cross = timestamp
+
+        # Dollar volume signal
+        if self.vwma.dollar_volume <= 0:
+            self.dollar_volume_signal = True
+        else:
+            self.dollar_volume_signal = False
+
+        # Buy/sell finalise
+        if self.bollinger_signal and trend == 'up' and macd_signal:
+            buy_signal = True
+
+        if self.bollinger_signal and trend == 'down' or dollar_volume_signal:
+            sell_signal = True
+
+
+        ## Handle signal
+        if not self.entered and self.hasCash() and buy_signal:
+            amount = self.maxBuy()
+            self.marketBuy(amount, appendTimestamp(self.message, timestamp))
+            self.entered = True
+            return
+
+        if self.entered and sell_signal:
+            amount = self.maxSell()
+            self.marketSell(amount, appendTimestamp(self.message, timestamp))
+            self.entered = False
+            return
+
+
+# @In progress @Deprecated?
 class VWMAStrat(Strategy):
 
     def __init__(self, pair, portfolio, exchange=None, message='', period=60, shorttrend=5, longtrend=10):
