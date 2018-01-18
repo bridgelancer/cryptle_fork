@@ -128,11 +128,11 @@ class Strategy:
         return self.portfolio.equity()
 
 
-    def maxBuy(self, price):
-        return min(self.equity_at_risk * self.equity() / price, self.portfolio.cash)
+    def maxBuyAmount(self, price):
+        return min(self.equity_at_risk * self.equity() / price, self.portfolio.cash / price)
 
 
-    def maxSell(self):
+    def maxSellAmount(self):
         return self.portfolio.balance[self.pair]
 
 
@@ -195,7 +195,7 @@ class Strategy:
         self.portfolio.deposit(self.pair, amount, price)
         self.portfolio.cash -= amount * price
 
-        logger.info('Bought {:.6g} {} @${:<.6g} {}'.format(amount, self.pair.upper(), price, message))
+        logger.info('Bought {:.7g} {} @${:<.6g} {}'.format(amount, self.pair.upper(), price, message))
 
 
     def cleanupSell(self, res, message):
@@ -209,7 +209,7 @@ class Strategy:
         self.portfolio.withdraw(self.pair, amount)
         self.portfolio.cash += amount * price
 
-        logger.info('Sold   {:8.7g} {} @${:.6g} {}'.format(amount, self.pair.upper(), price, message))
+        logger.info('Sold   {:.7g} {} @${:<.6g} {}'.format(amount, self.pair.upper(), price, message))
 
 
     def unpackTick(self, tick):
@@ -915,29 +915,33 @@ class WMAForceBollingerStrat(Strategy):
 # @In Progress
 # Needs ATR x MA indicators
 class SwissStrat(Strategy):
-    def __init__(self, pair, portfolio, exchange=None, message='[Swiss]', period=180,
-            scope1=4, scope2=8, scope3=3, threshold=0.00001, vwma_lookback=10, sma_lookback=20,
-            bollinger_lookback=20, timelag=0):
+    def __init__(self, pair, portfolio, exchange=None, message='[Swiss]', period=180, atr_lb=5,
+            ema1_lb=4, ema2_lb=8, macd_lb=3, threshold=0.00001, vwma_lb=10, sma_lb=20,
+            bollinger_lb=20, bollinger_threshold=2.0, bollinger_window=3600, timelag=0):
 
         super().__init__(pair, portfolio, exchange)
 
         self.candle = CandleBar(period)
-        self.ema1 = EMA(self.candle, scope1)
-        self.ema2 = EMA(self.candle, scope2)
-        self.macd = MACD(self.ema1, self.ema2, scope3)
-        self.vwma = ContinuousVWMA(vwma_lookback)
-        self.sma = SMA(self.candle, sma_lookback)
-        self.bollinger = BollingerBand(self.sma, bollinger_lookback)
+        self.atr  = ATR(self.candle, atr_lb)
+        self.ema1 = EMA(self.candle, ema1_lb)
+        self.ema2 = EMA(self.candle, ema2_lb)
+        self.macd = MACD(self.ema1, self.ema2, macd_lb)
+        self.vwma = ContinuousVWMA(vwma_lb)
+        self.sma = SMA(self.candle, sma_lb)
+        self.bollinger = BollingerBand(self.sma, bollinger_lb)
 
         self.message = message
         self.period = period
         self.threshold = threshold
-        self.timelag = timelag
+        self.bollinger_threshold = bollinger_threshold
+        self.bollinger_window = bollinger_window
+        self.upperatr = upperatr
+        self.loweratr = loweratr
 
         self.init_time = 0
         self.tradable_window = 0
-        self.prev_trend = 'none'
         self.prev_cross = None
+        self.prev_dollar_volume = None
         self.entered = None
 
 
@@ -963,9 +967,23 @@ class SwissStrat(Strategy):
 
 
         ## Signal generation
+
+        # ATR/MA signal
+        belowatr = min(self.ema1.ema, self.ema2.ema) < price - self.lower_atr * atr
+        aboveatr = max(self.ema1.ema, self.ema2.ema) > price + self.upper_atr * atr
+
+        # MACD signal
+        try:
+            if self.macd.macd > (self.macd.ema3 + price * self.threshold):
+                macd_signal = True
+            else:
+                macd_signal = False
+        except TypeError:
+            return
+
         # Update bollinger tradable timeframe
-        if self.bollinger.band > 2.0: # @Hardcode
-            self.tradable_window = timestamp + 3600 # @Hardcode
+        if self.bollinger.band > self.bollinger_threshold: # @Hardcode
+            self.tradable_window = timestamp + self.bollinger_window # @Hardcode
 
         # Bollinger band signal
         if timestamp < self.tradable_window:
@@ -973,49 +991,30 @@ class SwissStrat(Strategy):
         else:
             bollinger_signal = False
 
-        # MACD trend
-        try:
-            if self.macd.macd > (self.macd.ema3 + price * self.threshold):
-                trend = 'up'
-            elif self.macd.macd < (self.macd.ema3 - price * self.threshold):
-                trend = 'down'
-            else:
-                self.prev_trend = 'none'
-                return
-        except TypeError:
-            return
-
-        # MACD Cross signal
-        if self.prev_trend == trend:
-            macd_signal = self.prev_cross + self.timelag < timestamp
-        else:
-            macd_signal = False
-            self.prev_trend = trend
-            self.prev_cross = timestamp
-
         # Dollar volume signal
-        if self.vwma.dollar_volume <= 0:
+        self.prev_dollar_volume =
+        if self.vwma.dollar_volume < 0:
             dollar_volume_signal = True
         else:
             dollar_volume_signal = False
 
         # Buy/sell finalise
-        if bollinger_signal and trend == 'up' and macd_signal:
+        if bollinger_signal and macd_signal and belowatr:
             buy_signal = True
 
-        if trend == 'down' or dollar_volume_signal and macd_signal:
+        if dollar_volume_signal or macd_signal and aboveattr:
             sell_signal = True
 
 
         ## Handle signal
         if not self.entered and self.hasCash() and buy_signal:
-            amount = self.maxBuy(price)
+            amount = self.maxBuyAmount(price)
             self.marketBuy(amount, appendTimestamp(self.message, timestamp))
             self.entered = True
             return
 
         if self.entered and sell_signal:
-            amount = self.maxSell()
+            amount = self.maxSellAmount()
             self.marketSell(amount, appendTimestamp(self.message, timestamp))
             self.entered = False
             return
