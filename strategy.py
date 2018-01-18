@@ -938,7 +938,7 @@ class SwissStrat(Strategy):
         self.tradable_window = 0
         self.prev_trend = 'none'
         self.prev_cross = None
-        self.last_entry = None
+        self.entered = None
 
 
     def __call__(self, tick):
@@ -989,26 +989,27 @@ class SwissStrat(Strategy):
         if self.prev_trend == trend:
             macd_signal = self.prev_cross + self.timelag < timestamp
         else:
+            macd_signal = False
             self.prev_trend = trend
             self.prev_cross = timestamp
 
         # Dollar volume signal
         if self.vwma.dollar_volume <= 0:
-            self.dollar_volume_signal = True
+            dollar_volume_signal = True
         else:
-            self.dollar_volume_signal = False
+            dollar_volume_signal = False
 
         # Buy/sell finalise
-        if self.bollinger_signal and trend == 'up' and macd_signal:
+        if bollinger_signal and trend == 'up' and macd_signal:
             buy_signal = True
 
-        if self.bollinger_signal and trend == 'down' or dollar_volume_signal:
+        if trend == 'down' or dollar_volume_signal and macd_signal:
             sell_signal = True
 
 
         ## Handle signal
         if not self.entered and self.hasCash() and buy_signal:
-            amount = self.maxBuy()
+            amount = self.maxBuy(price)
             self.marketBuy(amount, appendTimestamp(self.message, timestamp))
             self.entered = True
             return
