@@ -216,7 +216,7 @@ def testSnoopingLoopN(pair):
 def testMACD(pair):
     port = Portfolio(1000)
     paper = PaperExchange(0.0012)
-    macd = MACDStrat2(pair, port, exchange=paper, message='[MACD]', period=180)
+    macd = MACDStrat(pair, port, exchange=paper, message='[MACD]', period=180)
     macd.equity_at_risk = 1
 
     ticks = testParseTick(pair)
@@ -227,7 +227,24 @@ def testMACD(pair):
     logger.info('MACD Asset:  %s'   % str(port.cash))
 
 
+def testSwiss(pair):
+    port = Portfolio(10000)
+    exchange = PaperExchange(0.0012)
+
+    swiss = SwissStrat(pair, port, exchange=exchange, message='[Swiss]', period=180)
+    swiss.equity_at_risk = 1
+
+    ticks = testParseTick(pair)
+    loadCSV(ticks, swiss)
+
+    logger.info('Swiss Equity: %.2f' % port.equity())
+    logger.info('Swiss Cash:   %.2f' % port.cash)
+    logger.info('Swiss Asset:  %s'   % str(port.balance))
+    logger.info('Swiss Balance_value:  %s'   % str(port.balance_value))
+
+
 if __name__ == '__main__':
     pair = sys.argv[1]
+    testSwiss(pair)
     testWMAForceStrategy(pair)
     testWMAForceBollingerStrategy(pair)
