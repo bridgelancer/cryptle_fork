@@ -5,10 +5,22 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
 
     # Args:
     #   candledata: A filled Candlebar
-    #   title: An optional title for the chart
-    #   volume_bars: If True, plots volume bars
-    #   color_function: A function which, given a row index and price series, returns a candle color.
-    #   technicals: A list of additional data series to add to the chart.  Must be the same length as pricing.
+    #   title:
+    #       An optional title for the chart
+    #
+    #   volume_bars:
+    #       If True, plots volume bars
+    #
+    #   color_function:
+    #       A function which, given a row index and price series, returns a candle color.
+    #
+    #   technicals:
+    #       A list of additional data series to add to the chart.  Must be the same length as pricing.
+    #
+    #   trades:
+    #       A list of tuples in the format (entry_time, exit_time, 1 or -1)
+    #       the entry and exit times should be in unix timestamp
+    #       where 1 is a winning trade and -1 is losing
 
     technicals = technicals or []
     trades = trades or []
@@ -22,6 +34,8 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
     if title:
         ax1.set_title(title)
 
+
+    # Plot the bars and lines through bars
     for i, bar in enumerate(candle):
         op = bar[0]
         cl = bar[1]
@@ -36,26 +50,32 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
         ax1.bar(i, barlen, bottom=bottom, color=color, edgecolor=color, fill=fill, linewidth=1)
         ax1.vlines(i, lo, hi, color=color, linewidth=1)
 
-    time_format = '%H:%M'
-    xlabels = [i * int(len(candle)/7) for i in range(8)]
-
     # Plot buy/sells
     for trade in trades:
+        entry = trade[0]
+        exit  = trade[1]
+        entry_bar = int((entry - candle[0][4] * candle.period) / candle.period)
+        exit_bar  = int((exit  - candle[0][4] * candle.period) / candle.period)
         color = 'g' if trade[2] == 1 else 'r'
-        ax1.axvspan(trade[0], trade[1], facecolor=color, alpha=0.35)
+        ax1.axvspan(entry_bar, exit_bar, facecolor=color, alpha=0.35)
 
     # Plot indicators
     for indicator in technicals:
         ax1.plot(x, indicator)
 
-    dt = [datetime.fromtimestamp(candle[x][4] * candle.period).strftime('%H:%M') for x in xlabels]
 
     # Set X axis tick labels.
+    time_format = '%H:%M'
+
+    xlabels = [i * int(len(candle)/7) for i in range(8)]
+    dt = [datetime.fromtimestamp(candle[x][4] * candle.period).strftime('%H:%M') for x in xlabels]
+
     plt.xticks(xlabels, dt)
+
 
     # Legacy Code, doesn't work
     if volume_bars:
-        volume = candle['volume']
+        volume = [x[5] for x in candle.bars]
         volume_scale = None
         scaled_volume = volume
         if volume.max() > 1000000:
