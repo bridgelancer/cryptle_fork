@@ -1,12 +1,11 @@
 class ContinuousVWMA:
 
-    # Lookback is the number of seconds in the lookback window
-    def __init__(self, lookback):
+    def __init__(self, period):
         self.ticks = []
         self.volume = 0
         self.dollar_volume = 0
 
-        self.lookback = lookback
+        self.period = period
 
 
     # Action: (1) is buy, (-1) is sell
@@ -30,7 +29,7 @@ class ContinuousVWMA:
 
     def prune(self):
         now = self.ticks[-1][2]
-        epoch = now - self.lookback
+        epoch = now - self.period
 
         while True:
             if self.ticks[0][2] < epoch:
@@ -61,7 +60,6 @@ class CandleBar:
         self.period = period
         self.last_timestamp = None
 
-        self.lookback = 100
         self.last = 0
 
     def __getitem__(self, item):
@@ -72,18 +70,30 @@ class CandleBar:
         return len(self.bars)
 
 
-    def update(self, price, timestamp):
+    def update(self, price, timestamp, volume=0):
 
         if self.last_timestamp == None:
             self.barmin = self.barmax = self.baropen = self.barclose = price
+            self.volume = volume
             self.last_timestamp = timestamp
 
         elif int(timestamp / self.period) != int(self.last_timestamp / self.period):
-            self.bars.append([self.baropen, self.barclose, self.barmax, self.barmin, int(timestamp/self.period)])
+            self.bars.append(
+                (
+                    self.baropen,
+                    self.barclose,
+                    self.barmax,
+                    self.barmin,
+                    int(timestamp/self.period),
+                    self.volume
+                )
+            )
 
             self.barmin = self.barmax = self.baropen = self.barclose = price
+            self.volume = volume
             self.last_timestamp = timestamp
 
+            # Update all attached candle chart dependent metrics
             for metric in self.metrics:
                 metric.update()
 
@@ -91,6 +101,7 @@ class CandleBar:
             self.barmin = min(self.barmin, price)
             self.barmax = max(self.barmax, price)
             self.barclose = price
+            self.volume += volume
 
         self.last = price
 
@@ -109,7 +120,7 @@ class ATR():
         self.candle = candle
         self.lookback = lookback
         self.init = []
-        self.atr = 0
+        self.atr = 10000000
 
         candle.metrics.append(self)
 
@@ -174,7 +185,6 @@ class WMA():
 
 
 
-
 class EMA():
 
     def __init__(self, candle, lookback):
@@ -199,16 +209,6 @@ class EMA():
             return
 
         self.ema = self.weight*price + (1-self.weight)*self.ema
-
-
-            # for p in range(len(price_list)):
-            #     self.ema += ((1-self.weight)**(len(price_list)-1-p))*price_list[p]
-
-            # norm = 0
-            # for p in range(len(price_list)):
-            #     norm += (1-self.weight)**(p)
-
-            # self.ema = self.ema/norm
 
 
 
@@ -240,6 +240,8 @@ class MACD():
 
         self.ema3 = self.weight*price + (1-self.weight)*self.ema3
 
+
+
 class BollingerBand():
 
     def __init__(self, sma, lookback):
@@ -265,3 +267,4 @@ class BollingerBand():
         self.upperband = sma.candle[-1][0] + 2 * self.width
         self.lowerband = sma.candle[-1][0] - 2 * self.width
         self.band = (self.upperband/self.lowerband - 1) * 100
+

@@ -1000,8 +1000,8 @@ class SwissStrat(Strategy):
         else:
             bollinger_signal = False
 
-        norm_vol1 = self.vwma1.dollar_volume / self.vwma1.lookback
-        norm_vol2 = self.vwma2.dollar_volume / self.vwma2.lookback
+        norm_vol1 = self.vwma1.dollar_volume / self.vwma1.period
+        norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
 
         # Dollar volume signal
         if norm_vol1 > norm_vol2:
