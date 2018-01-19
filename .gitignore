@@ -1,12 +1,15 @@
 *.log
 *.log_parsed
 *.csv
+*.json
 *.xlsx
 *.txt
 
+livetrade
+my*
+
 log/
 sample/
-
-__pycache__/
 .DS_Store/
 .vscode/
+__pycache__/
