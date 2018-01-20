@@ -61,7 +61,7 @@ def testloadJSON():
 
 
 def testParseTick(pair):
-    ls = readJSON('papertrade0114p.log')
+    ls = readJSON('papertrade0115p.log')
 
     result = []
 
@@ -181,26 +181,31 @@ def testSnoopingLoop(pair):
         logger.info('Port' + str((ports.index(port) + 1)*60) + ' cash: %.2f' % port.cash)
         logger.info("Port" + str((ports.index(port) + 1)*60) + ' balance : %s' % str(port.balance))
 
-# This new function intends to snoop all the necessary parameters for a paritcular strategy on a single run. Needs to be implemented
+# This new function intends to snoop all the necessary parameters for a paritcular strategy on a single run. Already functioning
+# Caution: This function may run in extended period of time.
 def testSnoopingSuite(pair):
+
+    # Datatypes to snoop
     period = range(3, 6, 2) # in minutes
     bband = range (300, 601, 10) # need to divide by 100
     timeframe = range(30, 181, 30)
-    delay = range(0, 91, 30)
-    upperatr = range(20, 81, 15) # need to divide by 100
-    loweratr = range(20, 81, 15) # need to divide by 100
-    bband_period = range (5, 31, 3)
+    delay = range(0, 91, 30) # (0, 91, 30)
+    upperatr = range(50, 51, 15) # need to divide by 100
+    loweratr = range(50, 51, 15) # need to divide by 100
+    bband_period = range (5, 31, 5)
 
+    timeframe_60 = [x*60 for x in timeframe]
     bband_100 = [x/100 for x in bband]
     upperatr_100 = [x/100 for x in upperatr]
     loweratr_100 = [x/100 for x in loweratr]
-    # also snoop type of ma used for bars, bollinger band
+    # @TODO also snoop type of ma used for bars, bollinger band
 
-    configs = itertools.product(period, bband_100, timeframe, delay, upperatr_100, loweratr_100, bband_period)
+    configs = itertools.product(period, bband_100, timeframe_60, delay, upperatr_100, loweratr_100, bband_period)
 
     strats = {}
     ports = {}
 
+    # Generating configs of strategies
     for config in configs:
         period = config[0]
         bband = config[1]
@@ -209,8 +214,6 @@ def testSnoopingSuite(pair):
         upperatr = config[4]
         loweratr = config[5]
         bband_period = config[6]
-
-
 
         ports[config] = Portfolio(1000)
         strat = WMAForceBollingerStrat(str(pair), ports[config], message='[WMA Force Bollinger]', period=period, bband_period=bband_period)
@@ -224,20 +227,23 @@ def testSnoopingSuite(pair):
 
         strats[config] = strat
 
+    counter = 0
+    # load tick data to ls once
     ls = testParseTick(pair)
-    # loop through strategies, and report balance
+    # feed tick data through strategies, and report after finish parsing
     for key in sorted(strats.keys()):
         loadJSON(ls, strats[key])
-        print ('Strategy config %s' % str(key) + 'finished parsing')
+        if counter%100 == 0
+            print ('%i Strategy configs' % counter + ' finished parsing')
+        counter = counter + 1
 
+    # report results
     for key in sorted(ports.keys()):
 
         logger.info('Port' + str(key) + ' cash: %.2f' % ports[key].cash)
         logger.info("Port" + str(key) + ' balance : %s' % str(ports[key].balance))
 
-    # one loop generate configs
-    # another loop execute all the configs
-
+# @ Deprecated @ - for checking testSnoopingSuite
 # Enable snooping in two factor mode
 # Caution: This function may run in extended period of time.
 # The typical run time for an one day tick data feeding into 100 strategies is 1 minute.
