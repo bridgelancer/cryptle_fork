@@ -9,6 +9,10 @@
 *.jpg
 *.jpeg
 
+*.pyc
+*.out
+*.exe
+
 livetrade
 my*
 
