@@ -2,11 +2,13 @@ from ta import *
 from datafeed import *
 from strategy import *
 
+import subprocess
 import math
 import logging
 import time
 import sys
 import csv
+import itertools
 
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
@@ -17,7 +19,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(formatter)
 
-fh = logging.FileHandler('Force.log', mode='w')
+fh = logging.FileHandler('Snooping.log', mode='w')
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 
@@ -29,7 +31,7 @@ bslog.setLevel(logging.DEBUG)
 bslog.addHandler(ch)
 bslog.addHandler(fh)
 
-def readCSV(filename):
+def readJSON(filename):
     ifile = open(filename, "rU")
     reader = csv.reader(ifile, delimiter = "\n")
 
@@ -43,23 +45,23 @@ def readCSV(filename):
     return ls
 
 # Parse the list ls into a Strategy class, tick by tick
-def loadCSV(ls, Strat):
+def loadJSON(ls, Strat):
     strat = Strat
     for item in ls:
         tick = ''.join(item)
         Strat(tick)
 
 
-def testLoadCSV():
+def testloadJSON():
     port = Portfolio(10000)
     test = TestStrat('ethusd', port)
 
-    ls = readCSV('btc_sample')
-    loadCSV(ls, test)
+    ls = readJSON('btc_sample')
+    loadJSON(ls, test)
 
 
 def testParseTick(pair):
-    ls = readCSV('tick_01121712.log')
+    ls = readJSON('papertrade0114p.log')
 
     result = []
 
@@ -97,7 +99,7 @@ def testWMAModStrategy(pair):
     wmaeth.equity_at_risk = 1.0
 
     ls = testParseTick(pair)
-    loadCSV(ls, wmaeth)
+    loadJSON(ls, wmaeth)
 
     logger.info('WMA Equity:   %.2f' % port.equity())
     logger.info('WMA Cash:   %.2f' % port.cash)
@@ -111,11 +113,13 @@ def testWMAForceStrategy(pair):
     wmaeth.equity_at_risk = 1.0
 
     ls = testParseTick(pair)
-    loadCSV(ls, wmaeth)
+    loadJSON(ls, wmaeth)
 
     logger.info('WMA Equity:   %.2f' % port.equity())
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
+
+from plotting import *
 
 def testWMAForceBollingerStrategy(pair):
     feed = BitstampFeed()
@@ -125,11 +129,22 @@ def testWMAForceBollingerStrategy(pair):
     wmaeth.equity_at_risk = 1.0
 
     ls = testParseTick(pair)
-    loadCSV(ls, wmaeth)
+    loadJSON(ls, wmaeth)
 
     logger.info('WMA Equity:   %.2f' % port.equity())
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
+
+    # get back the candle bar
+    # call script from python
+    # put to plot
+    candle = wmaeth.bar
+    res = subprocess.run('./log_parser.sh', stdout=subprocess.PIPE)
+    res = res.stdout.decode('utf-8')
+    res = res.split('\n')
+    res = [s.split(' ') for s in res]
+
+    plotCandles(candle, trades=res)
 
 def testWMAStrategy(pair):
     feed = BitstampFeed()
@@ -140,7 +155,7 @@ def testWMAStrategy(pair):
     wmaeth.equity_at_risk = 1.0
 
     ls = testParseTick(pair)
-    loadCSV(ls, wmaeth)
+    loadJSON(ls, wmaeth)
 
     logger.info('WMA Equity:   %.2f' % port.equity())
     logger.info('WMA Cash:   %.2f' % port.cash)
@@ -160,11 +175,68 @@ def testSnoopingLoop(pair):
         strat.equity_at_risk = 1.0
 
         ls = testParseTick(pair)
-        loadCSV(ls, strat)
+        loadJSON(ls, strat)
 
     for port in ports:
         logger.info('Port' + str((ports.index(port) + 1)*60) + ' cash: %.2f' % port.cash)
         logger.info("Port" + str((ports.index(port) + 1)*60) + ' balance : %s' % str(port.balance))
+
+# This new function intends to snoop all the necessary parameters for a paritcular strategy on a single run. Needs to be implemented
+def testSnoopingSuite(pair):
+    period = range(3, 6, 2) # in minutes
+    bband = range (300, 601, 10) # need to divide by 100
+    timeframe = range(30, 181, 30)
+    delay = range(0, 91, 30)
+    upperatr = range(20, 81, 15) # need to divide by 100
+    loweratr = range(20, 81, 15) # need to divide by 100
+    bband_period = range (5, 31, 3)
+
+    bband_100 = [x/100 for x in bband]
+    upperatr_100 = [x/100 for x in upperatr]
+    loweratr_100 = [x/100 for x in loweratr]
+    # also snoop type of ma used for bars, bollinger band
+
+    configs = itertools.product(period, bband_100, timeframe, delay, upperatr_100, loweratr_100, bband_period)
+
+    strats = {}
+    ports = {}
+
+    for config in configs:
+        period = config[0]
+        bband = config[1]
+        timeframe = config[2]
+        delay = config[3]
+        upperatr = config[4]
+        loweratr = config[5]
+        bband_period = config[6]
+
+
+
+        ports[config] = Portfolio(1000)
+        strat = WMAForceBollingerStrat(str(pair), ports[config], message='[WMA Force Bollinger]', period=period, bband_period=bband_period)
+
+        strat.bband            = bband
+        strat.timelag_required = timeframe
+        strat.timelag_required = delay
+        strat.upper_atr        = upperatr
+        strat.lower_atr        = loweratr
+        strat.equity_at_risk = 1.0
+
+        strats[config] = strat
+
+    ls = testParseTick(pair)
+    # loop through strategies, and report balance
+    for key in sorted(strats.keys()):
+        loadJSON(ls, strats[key])
+        print ('Strategy config %s' % str(key) + 'finished parsing')
+
+    for key in sorted(ports.keys()):
+
+        logger.info('Port' + str(key) + ' cash: %.2f' % ports[key].cash)
+        logger.info("Port" + str(key) + ' balance : %s' % str(ports[key].balance))
+
+    # one loop generate configs
+    # another loop execute all the configs
 
 # Enable snooping in two factor mode
 # Caution: This function may run in extended period of time.
@@ -203,7 +275,7 @@ def testSnoopingLoopN(pair):
             strat.equity_at_risk = 1.0
 
             ls = testParseTick(pair)
-            loadCSV(ls, strat)
+            loadJSON(ls, strat)
 
     for ports in P:
         for port in ports:
@@ -220,7 +292,7 @@ def testMACD(pair):
     macd.equity_at_risk = 1
 
     ticks = testParseTick(pair)
-    loadCSV(ticks, macd)
+    loadJSON(ticks, macd)
 
     logger.info('MACD Equity: %.2f' % port.equity())
     logger.info('MACD Cash:   %.2f' % port.cash)
@@ -235,7 +307,7 @@ def testSwiss(pair):
     swiss.equity_at_risk = 1
 
     ticks = testParseTick(pair)
-    loadCSV(ticks, swiss)
+    loadJSON(ticks, swiss)
 
     logger.info('Swiss Equity: %.2f' % port.equity())
     logger.info('Swiss Cash:   %.2f' % port.cash)
@@ -245,6 +317,4 @@ def testSwiss(pair):
 
 if __name__ == '__main__':
     pair = sys.argv[1]
-    testSwiss(pair)
-    testWMAForceStrategy(pair)
-    testWMAForceBollingerStrategy(pair)
+    testSnoopingSuite(pair)

@@ -15,7 +15,7 @@ logger.ta = lambda x: logger.log(logging.TA, x)
 
 # @HARDCODE @REGRESSION @TEMPORARY
 def appendTimestamp(msg, t):
-    return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M:%S"))
+    return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M%S")
 
 
 def checkType(param, *types):
@@ -754,21 +754,23 @@ class WMAForceStrat(Strategy):
 
 class WMAForceBollingerStrat(Strategy):
 
-    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8):
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, bband_period=20):
         super().__init__(pair, portfolio, exchange)
         self.bar = CandleBar(period)
         self.ATR_5 = ATR(self.bar, scope1)
         self.WMA_5 = WMA(self.bar, scope1)
         self.WMA_8 = WMA(self.bar, scope2)
         self.vwma = ContinuousVWMA(period)
-        self.sma_20 = SMA(self.bar, 20)
-        self.bollinger = BollingerBand(self.sma_20, 20)
+        self.sma_20 = SMA(self.bar, bband_period)
+        self.bollinger = BollingerBand(self.sma_20, bband_period)
 
         self.message = message
         self.dollar_volume_flag = False
 
         self.upper_atr = 0.5
         self.lower_atr = 0.5
+        self.bband = 3.5
+        self.timeframe = 3600
         self.can_sell = False
         self.v_sell = False
         self.entry_time = None
@@ -817,15 +819,14 @@ class WMAForceBollingerStrat(Strategy):
         bollinger_signal = False
 
         # @HARDCODE Buy/Sell message
+        # @TODO should not trade the first signal if we enter the bollinger_signal with an uptrend?
 
         # Buy/Sell singal generation
-
-        if self.bollinger.band > 3.0:
-            logger.ta("Bollinger diff %: " + str(self.bollinger.band) + "at: " + datetime.fromtimestamp(timestamp).strftime("%d %H:%M:%S"))
+        # Band confirmation
+        if self.bollinger.band > self.bband: # currently snooping 3.5%
             bollinger_signal = True
             tradable_window = timestamp
-
-        if timestamp > tradable_window + 3600: #1h trading window (3600s one hour)
+        if timestamp > tradable_window + self.timeframe: # available at 1h trading window (3600s one hour)
             bollinger_signal = False
 
         if self.hasCash() and not self.hasBalance():
@@ -855,7 +856,7 @@ class WMAForceBollingerStrat(Strategy):
         else:
             prev_crossover_time = None
 
-        # Execution of signals
+        # Execution of signals - can only buy if buy_signal and bollinger_signal both exist
         if self.hasCash() and not self.hasBalance() and buy_signal and bollinger_signal:
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
