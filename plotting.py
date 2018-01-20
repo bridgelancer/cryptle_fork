@@ -61,7 +61,7 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
             color = 'g' if trade[1] < trade[3] else 'r'
             ax1.axvspan(entry_bar, exit_bar, facecolor=color, alpha=0.35)
         except IndexError:
-            entry = trade[0]
+            entry = int(trade[0])
             exit_bar  = len(candle)
             entry_bar = int((entry - candle[0][4] * candle.period) / candle.period)
             color = 'g' if trade[1] < candle[-1][0] else 'r'

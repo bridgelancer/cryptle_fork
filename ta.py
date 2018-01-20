@@ -251,6 +251,7 @@ class BollingerBand():
         self.width = 0
         self.upperband = 0
         self.lowerband = 0
+        self.band = 0
 
         sma.candle.metrics.append(self)
 
