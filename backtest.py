@@ -1,6 +1,9 @@
 from ta import *
 from datafeed import *
 from strategy import *
+from plotting import *
+
+import matplotlib.pyplot as plt
 
 import subprocess
 import math
@@ -320,7 +323,11 @@ def testSwiss(pair):
     logger.info('Swiss Asset:  %s'   % str(port.balance))
     logger.info('Swiss Balance_value:  %s'   % str(port.balance_value))
 
+    plotCandles(strat.bar, trades=strat.trades, title='Final equity: ${}'.format(port.equity()))
+
 
 if __name__ == '__main__':
     pair = sys.argv[1]
     testSnoopingSuite(pair)
+
+    plt.show()
