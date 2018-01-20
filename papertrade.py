@@ -41,40 +41,13 @@ def papertrade():
     port2 = Portfolio(10000)
 
     logger.debug("Initialising strategies")
-    wmaeth_5m  = WMAForceStrat('ethusd', port1, message='[5m]', period=300)
-    wmabtc_5m  = WMAForceStrat('btcusd', port1, message='[5m]', period=300)
-    wmaxrp_5m  = WMAForceStrat('xrpusd', port1, message='[5m]', period=300)
-    wmabch_5m  = WMAForceStrat('bchusd', port1, message='[5m]', period=300)
 
-    wmaeth_3m  = WMAForceStrat('ethusd', port2, message='[3m]', period=180)
-    wmabtc_3m  = WMAForceStrat('btcusd', port2, message='[3m]', period=180)
-    wmaxrp_3m  = WMAForceStrat('xrpusd', port2, message='[3m]', period=180)
-    wmabch_3m  = WMAForceStrat('bchusd', port2, message='[3m]', period=180)
-
-    wmaeth_5m.equity_at_risk = 0.25
-    wmabtc_5m.equity_at_risk = 0.25
-    wmaxrp_5m.equity_at_risk = 0.25
-    wmabch_5m.equity_at_risk = 0.25
-
-    wmaeth_3m.equity_at_risk = 0.25
-    wmabtc_3m.equity_at_risk = 0.25
-    wmaxrp_3m.equity_at_risk = 0.25
-    wmabch_3m.equity_at_risk = 0.25
+    wmabch_3m  = WMAForceBollingerStrat('bchusd', port2, message='[3m]', period=180)
+    wmabch_3m.equity_at_risk = 1
 
     logger.debug("Setting up callbacks")
-    bs.onTrade('ethusd', wmaeth_5m)
-    bs.onTrade('btcusd', wmabtc_5m)
-    bs.onTrade('xrpusd', wmaxrp_5m)
-    bs.onTrade('bchusd', wmabch_5m)
-
-    bs.onTrade('ethusd', wmaeth_3m)
-    bs.onTrade('btcusd', wmabtc_3m)
-    bs.onTrade('xrpusd', wmaxrp_3m)
     bs.onTrade('bchusd', wmabch_3m)
 
-    bs.onTrade('ethusd', lambda x: logger.log(logging.TICK, x))
-    bs.onTrade('btcusd', lambda x: logger.log(logging.TICK, x))
-    bs.onTrade('xrpusd', lambda x: logger.log(logging.TICK, x))
     bs.onTrade('bchusd', lambda x: logger.log(logging.TICK, x))
 
     logger.debug("Reporting...")
