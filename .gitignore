@@ -5,6 +5,10 @@
 *.xlsx
 *.txt
 
+*.png
+*.jpg
+*.jpeg
+
 livetrade
 my*
 
