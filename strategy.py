@@ -15,7 +15,7 @@ logger.ta = lambda x: logger.log(logging.TA, x)
 
 # @HARDCODE @REGRESSION @TEMPORARY
 def appendTimestamp(msg, t):
-    return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M%S")
+    return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M%S"))
 
 
 def checkType(param, *types):
@@ -767,6 +767,7 @@ class WMAForceBollingerStrat(Strategy):
         self.message = message
         self.dollar_volume_flag = False
 
+        self.bollinger_signal = False
         self.upper_atr = 0.5
         self.lower_atr = 0.5
         self.bband = 3.5
@@ -800,6 +801,7 @@ class WMAForceBollingerStrat(Strategy):
         dollar_volume_flag = self.dollar_volume_flag
         v_sell = self.v_sell
         tradable_window = self.tradable_window
+        bollinger_signal = self.bollinger_signal
 
         # @ta should not raise RuntimeWarning
         try:
@@ -816,7 +818,6 @@ class WMAForceBollingerStrat(Strategy):
         buy_signal = False
         sell_signal = False
         v_sell_signal = False
-        bollinger_signal = False
 
         # @HARDCODE Buy/Sell message
         # @TODO should not trade the first signal if we enter the bollinger_signal with an uptrend?
@@ -856,7 +857,8 @@ class WMAForceBollingerStrat(Strategy):
         else:
             prev_crossover_time = None
 
-        # Execution of signals - can only buy if buy_signal and bollinger_signal both exist
+        # Execution of signals
+        # Can only buy if buy_signal and bollinger_signal both exist
         if self.hasCash() and not self.hasBalance() and buy_signal and bollinger_signal:
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
@@ -866,12 +868,12 @@ class WMAForceBollingerStrat(Strategy):
                 self.marketBuy(amount, appendTimestamp(self.message, timestamp), timestamp)
 
                 prev_crossover_time = None
-
+                # setting can_sell flag for preventing premature exit
                 if uptrend:
                     can_sell = True
                 elif downtrend:
                     can_sell = False
-
+        # Sell immediately if v_sell signal is present, do not enter the position before next uptrend
         elif self.hasBalance() and v_sell_signal:
             amount = self.portfolio.balance[self.pair]
             self.marketSell(amount, appendTimestamp(self.message, timestamp), timestamp)
@@ -895,12 +897,14 @@ class WMAForceBollingerStrat(Strategy):
                 dollar_volume_flag = False
 
         ####### Hardcoded for BCH volume
-
-        if self.vwma.dollar_volume > 1.75 * (10**5):
+        # Do not trigger take into account of v_sell unless in position
+        if self.hasBalance() and self.vwma.dollar_volume > 1.75 * (10**5): # need a good scheme to snoop dynamically
             dollar_volume_flag = True
         elif self.vwma.dollar_volume < 0:
             dollar_volume_flag = False
 
+
+        self.bollinger_signal = bollinger_signal
         self.tradable_window = tradable_window
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
