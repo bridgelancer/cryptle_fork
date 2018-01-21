@@ -1,16 +1,14 @@
 from ta import *
 from exchange import *
+from loglevel import *
 
 from datetime import datetime
 import inspect
 import json
 import logging
 
-logging.TA = 9
-logging.addLevelName(logging.TA, 'TA')
 
 logger = logging.getLogger('Cryptle')
-logger.ta = lambda x: logger.log(logging.TA, x)
 
 
 # @HARDCODE @REGRESSION @TEMPORARY
