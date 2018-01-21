@@ -136,6 +136,8 @@ def testWMAForceBollingerStrategy(pair):
     # get back the candle bar
     # call script from python
     # put to plot
+    plotCandles(wmaeth.bar, trades=wmaeth.trades, title='Final equity: ${}'.format(port.equity()))
+
 
 def testWMAStrategy(pair):
     feed = BitstampFeed()
@@ -224,8 +226,7 @@ def testSnoopingSuite(pair):
     # feed tick data through strategies, and report after finish parsing
     for key in sorted(strats.keys()):
         loadJSON(ls, strats[key])
-        logger.info('Port' + str(key) + ' cash: %.2f' % strats[key].portfolio.cash)
-        logger.info("Port" + str(key) + ' balance : %s' % strats[key].portfolio.balance)
+        logger.info('Port' + str(key) + ' equity: %.2f' % strats[key].portfolio.equity)
 
         if counter%100 == 0:
             print ('%i Strategy configs' % counter + ' finished parsing')
@@ -234,8 +235,7 @@ def testSnoopingSuite(pair):
     # report results
     for key in sorted(ports.keys()):
 
-        logger.info('Port' + str(key) + ' cash: %.2f' % ports[key].cash)
-        logger.info("Port" + str(key) + ' balance : %s' % str(ports[key].balance))
+        logger.info('Port' + str(key) + ' equity: %.2f' % ports[key].equity)
 
 def testMACD(pair):
     port = Portfolio(1000)
@@ -273,4 +273,4 @@ if __name__ == '__main__':
     pair = sys.argv[1]
     testWMAForceBollingerStrategy(pair)
 
-
+    plt.show()

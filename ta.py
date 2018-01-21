@@ -77,6 +77,8 @@ class CandleBar:
             self.volume = volume
             self.last_timestamp = timestamp
 
+        # append previous n candle bars if no tick arrives between the n candles
+        # the first bar to be appended
         elif int(timestamp / self.period) != int(self.last_timestamp / self.period):
             self.bars.append(
                 (
@@ -88,6 +90,21 @@ class CandleBar:
                     self.volume
                 )
             )
+
+            timestamp_tmp = self.last_timestamp + 60
+            while int(timestamp_tmp / self.period) < int(timestamp / self.period):
+                self.bars.append(
+                    (
+                        self.barclose,
+                        self.barclose,
+                        self.barclose,
+                        self.barclose,
+                        int(timestamp_tmp/self.period), # change to
+                        0
+                    )
+                )
+
+                timestamp_tmp = timestamp_tmp + 60
 
             self.barmin = self.barmax = self.baropen = self.barclose = price
             self.volume = volume

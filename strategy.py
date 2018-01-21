@@ -828,7 +828,7 @@ class WMAForceBollingerStrat(Strategy):
         norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
 
         # Dollar volume signal # hard code threshold for the moment
-        if self.hasBalance() and  norm_vol1 > norm_vol2 * 2:
+        if self.hasBalance() and  norm_vol1 > norm_vol2 * 30:
             self.dollar_volume_flag = True
         else:
             self.dollar_volume_flag = False
@@ -1023,7 +1023,7 @@ class SwissStrat(Strategy):
 
         if self.was_high_dollar_volume and self.vwma1.dollar_volume <= 0:
             v_sell_signal = True
-        
+
         if blowatr and downtrend:
             sell_signal = True
 
