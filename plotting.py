@@ -3,7 +3,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 
 def plotCandles(candle, title=None, technicals=None, trades=None, plot_volume=False, volume_title=None,
-        volume_):
+        volume_scale=None):
     # Args:
     #   candledata:
     #       A filled Candlebar
@@ -82,7 +82,7 @@ def plotCandles(candle, title=None, technicals=None, trades=None, plot_volume=Fa
         if p_and_l > 0.02:
             color = '#044C29'
 
-        # winning trade colors
+        # losing trade colors
         if p_and_l < -0.005:
             color = '#D40D12'
         if p_and_l < -0.01:
@@ -101,18 +101,26 @@ def plotCandles(candle, title=None, technicals=None, trades=None, plot_volume=Fa
     # Plots volume
     if plot_volume:
         volume = [x[5] for x in candle.bars]
-        volume_scale = None
-        scaled_volume = volume
-        if volume.max() > 1000000:
-            volume_scale = 'M'
-            scaled_volume = volume / 1000000
-        elif volume.max() > 1000:
-            volume_scale = 'K'
-            scaled_volume = volume / 1000
-        ax2.bar(x, scaled_volume, color=candle_colors)
-        volume_title = 'Volume'
+
+        if volume_scale == None:
+            if volume.max() > 1000000:
+                volume_scale = 1000000
+            elif volume.max() > 1000:
+                volume_scale = 1000
+
+        if volume_scale >= 1000000:
+            scale = 'M'
+        elif volume_scale >= 1000:
+            scale = 'K'
+        else:
+            scale = ''
+
+        ax2.bar(x, volume, color=candle_colors)
+        volume_title = volume_title or 'Volume'
+
         if volume_scale:
             volume_title = 'Volume (%s)' % volume_scale
+
         ax2.set_title(volume_title)
         ax2.xaxis.grid(False)
 
@@ -121,7 +129,7 @@ def plotCandles(candle, title=None, technicals=None, trades=None, plot_volume=Fa
     time_format = '%m-%d %H:%M'
 
     xlabels = [i * int(len(candle)/7.5) for i in range(8)]
-    dt = [datetime.fromtimestamp(candle[x][4] * candle.period).strftime('%H:%M') for x in xlabels]
+    dt = [datetime.fromtimestamp(candle[x][4] * candle.period).strftime(time_format) for x in xlabels]
     plt.xticks(xlabels, dt)
 
     return fig
