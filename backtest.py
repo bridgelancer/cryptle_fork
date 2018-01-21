@@ -19,14 +19,14 @@ logger.setLevel(logging.DEBUG)
 
 formatter = defaultFormatter()
 
-fh = logging.FileHandler('backtest.log', mode='w')
-fh.setLevel(logging.DEBUG) # Set this to logging.INDEX to log indicator values
+fh = logging.FileHandler('buggy_backtest.log', mode='w')
+fh.setLevel(logging.INDEX)
 fh.setFormatter(formatter)
 
 logger.addHandler(fh)
 
 bslog = logging.getLogger('Bitstamp')
-bslog.setLevel(logging.DEBUG)
+bslog.setLevel(logging.INDEX)
 bslog.addHandler(fh)
 
 def readJSON(filename):
@@ -256,7 +256,7 @@ def testSwiss(pair):
     logger.info('Swiss Asset:  %s'   % str(port.balance))
     logger.info('Swiss Balance_value:  %s'   % str(port.balance_value))
 
-    plotCandles(strat.bar, trades=strat.trades, title='Final equity: ${}'.format(port.equity()))
+    plotCandles(swiss.candle, trades=swiss.trades, title='Final equity: ${}'.format(port.equity()))
 
 
 if __name__ == '__main__':
