@@ -358,7 +358,7 @@ class ATRStrat(Strategy):
             return
 
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
-            logger.ta('ATR identified uptrend and below ATR band')
+            logger.signal('ATR identified uptrend and below ATR band')
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
@@ -370,7 +370,7 @@ class ATRStrat(Strategy):
                 prev_crossover_time = None
 
         elif self.hasBalance() and (downtrend or aboveatr):
-            logger.ta('ATR identified downtrend and above ATR band')
+            logger.signal('ATR identified downtrend and above ATR band')
 
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
@@ -430,7 +430,7 @@ class WMAStrat(Strategy):
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and uptrend and belowatr:
-            logger.ta('WMA identified uptrend and below WMA band')
+            logger.signal('WMA identified uptrend and below WMA band')
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
@@ -442,7 +442,7 @@ class WMAStrat(Strategy):
                 prev_crossover_time = None
 
         elif self.hasBalance() and (downtrend or aboveatr):
-            logger.ta('WMA identified downtrend and above WMA band')
+            logger.signal('WMA identified downtrend and above WMA band')
 
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
@@ -565,7 +565,7 @@ class WMAModStrat(Strategy):
 
         # @HARDCODE Buy/Sell message
         if self.hasCash() and not self.hasBalance() and belowatr:
-            logger.ta('WMAMod identified uptrend and below ATR band')
+            logger.signal('WMAMod identified uptrend and below ATR band')
             #if prev_crossover_time is None:
                 #prev_crossover_time = timestamp
 
@@ -586,7 +586,7 @@ class WMAModStrat(Strategy):
             if not can_sell and uptrend:
                 can_sell = True
             elif (can_sell and downtrend) or (not can_sell and aboveatr):
-                logger.ta('WMAMod identified downtrend')
+                logger.signal('WMAMod identified downtrend')
                 if prev_crossover_time is None:
                     prev_crossover_time = timestamp
 
@@ -685,7 +685,7 @@ class WMAForceStrat(Strategy):
         elif self.hasBalance():
             if dollar_volume_flag and self.vwma.dollar_volume <= 0:
                 v_sell_signal = True
-                logger.ta("VWMA Indicate sell at: " + str(timestamp))
+                logger.signal("VWMA Indicate sell at: " + str(timestamp))
             elif not can_sell and aboveatr:
                 sell_signal = True
             elif can_sell and downtrend:
@@ -842,7 +842,7 @@ class WMAForceBollingerStrat(Strategy):
         elif self.hasBalance():
             if dollar_volume_flag and self.vwma.dollar_volume <= 0:
                 v_sell_signal = True
-                logger.ta("VWMA Indicate sell at: " + str(timestamp))
+                logger.signal("VWMA Indicate sell at: " + str(timestamp))
             elif not can_sell and aboveatr:
                 sell_signal = True
             elif can_sell and downtrend:
