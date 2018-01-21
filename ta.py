@@ -90,17 +90,16 @@ class CandleBar:
                     self.volume
                 )
             )
+            # Update all attached candle dependent metrics for the bar of last tick
+            if (int(timestamp / self.period) == int(self.last_timestamp / self.period) + 1):
+                for metric in self.metrics:
+                    metric.update(price)
+            else:
+                for metric in self.metrics:
+                    metric.update(self.barclose)
 
-            self.barmin = self.barmax = self.baropen = self.barclose = price
-            self.volume = volume
-            self.last_timestamp = timestamp
-            
-            # Update all attached candle chart dependent metrics
-            for metric in self.metrics:
-                metric.update()
-
-
-            timestamp_tmp = self.last_timestamp + 60
+            timestamp_tmp = self.last_timestamp + self.period
+            # append the in between bars if the next tick arrives 1+ bar after the previous one
             while int(timestamp_tmp / self.period) < int(timestamp / self.period):
                 self.bars.append(
                     (
@@ -108,13 +107,23 @@ class CandleBar:
                         self.barclose,
                         self.barclose,
                         self.barclose,
-                        int(timestamp_tmp/self.period), # change to
+                        int(timestamp_tmp/self.period),
                         0
                     )
                 )
-                for metric in self.metrics:
-                    metric.update()
-                timestamp_tmp = timestamp_tmp + 60
+                # Update all attached candle dependent metrics for the subsequent empty bars, if any
+                if (int(timestamp_tmp / self.period) == int(timestamp / self.period) - 1):
+                    for metric in self.metrics:
+                        metric.update(price)
+                else:
+                    for metric in self.metrics:
+                        metric.update(self.barclose)
+                timestamp_tmp = timestamp_tmp + self.period
+
+            self.barmin = self.barmax = self.baropen = self.barclose = price
+            self.volume = volume
+            self.last_timestamp = timestamp
+
 
         elif int(timestamp / self.period) == int(self.last_timestamp / self.period):
             self.barmin = min(self.barmin, price)
@@ -143,7 +152,7 @@ class RSI():
         self.ema_down = None
         self.weight = 2/ (lookback + 1)
         self.rsi = 0
-        
+
         candle.metrics.append(self)
 
 
@@ -155,7 +164,7 @@ class RSI():
         else:
             self.down.append(self.candle[-1][0] - self.candle.baropen)
             self.up.append(0)
-            
+
         if len(self.up) < self.lookback:
             return
         else:
@@ -329,8 +338,9 @@ class BollingerBand():
         mean = sum(ls) / lookback
         mean_square = list(map(lambda y: (y - mean) ** 2, ls))
 
-        self.width = (sum(mean_square) / lookback) ** 0.5
+        self.width = ( sum(mean_square) / lookback ) ** 0.5
+
         self.upperband = sma.candle[-1][0] + 2 * self.width
         self.lowerband = sma.candle[-1][0] - 2 * self.width
-        self.band = (self.upperband/self.lowerband - 1) * 100
+        self.band = ( self.upperband / self.lowerband - 1 ) * 100
 
