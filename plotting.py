@@ -37,10 +37,10 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
 
     # Plot the bars and lines through bars
     for i, bar in enumerate(candle):
-        op = bar[0]
-        cl = bar[1]
-        hi = bar[2]
-        lo = bar[3]
+        op = bar[0] # open
+        cl = bar[1] # close
+        hi = bar[2] # hi
+        lo = bar[3] # low
 
         barlen = abs(op - cl)
         bottom = min(op, cl)
@@ -53,52 +53,57 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
     # Plot buy/sells
     for trade in trades:
         try:
-            entry = trade[0]
-            exit  = trade[2]
+            entry = trade[0] # entry time (buy)
+            exit  = trade[2] # exit time (sell)
+
+            # find the corresponding candle where the buy/sell happened
             entry_bar = int((entry - candle[0][4] * candle.period) / candle.period)
             exit_bar  = int((exit  - candle[0][4] * candle.period) / candle.period)
+
             p_and_l = (trade[3]-trade[1])/trade[1]
 
             if p_and_l > 0.005:
                 color = '#97ED8A'
-                if p_and_l > 0.01:
-                    color = '#45BF55'
-                    if p_and_l > 0.015:
-                        color = '#167F39'
-                        if p_and_l > 0.02:
-                            color = '#044C29'
-            
+            if p_and_l > 0.01:
+                color = '#45BF55'
+            if p_and_l > 0.015:
+                color = '#167F39'
+            if p_and_l > 0.02:
+                color = '#044C29'
+
             if p_and_l < -0.005:
                 color = '#D40D12'
-                if p_and_l < -0.01:
-                    color = '#94090D'
-                    if p_and_l < -0.015:
-                        color = '#5C0002'
-                        if p_and_l < -0.02:
-                            color = '#450003'
-                    
+            if p_and_l < -0.01:
+                color = '#94090D'
+            if p_and_l < -0.015:
+                color = '#5C0002'
+            if p_and_l < -0.02:
+                color = '#450003'
+
             ax1.axvspan(entry_bar, exit_bar, facecolor=color, alpha=0.35)
         except IndexError:
+            # when the strategy terminated without selling (still holding a position)
             entry = int(trade[0])
             exit_bar  = len(candle)
             entry_bar = int((entry - candle[0][4] * candle.period) / candle.period)
             if p_and_l > 0.005:
                 color = '#97ED8A'
-                if p_and_l > 0.01:
-                    color = '#45BF55'
-                    if p_and_l > 0.015:
-                        color = '#167F39'
-                        if p_and_l > 0.02:
-                            color = '#044C29'
-            
+            if p_and_l > 0.01:
+                color = '#45BF55'
+            if p_and_l > 0.015:
+                color = '#167F39'
+            if p_and_l > 0.02:
+                color = '#044C29'
+
             if p_and_l < -0.005:
                 color = '#D40D12'
-                if p_and_l < -0.01:
-                    color = '#94090D'
-                    if p_and_l < -0.015:
-                        color = '#5C0002'
-                        if p_and_l < -0.02:
-                            color = '#450003'
+            if p_and_l < -0.01:
+                color = '#94090D'
+            if p_and_l < -0.015:
+                color = '#5C0002'
+            if p_and_l < -0.02:
+                color = '#450003'
+
             ax1.axvspan(entry_bar, exit_bar, facecolor=color, alpha=0.35)
 
     # Plot indicators
