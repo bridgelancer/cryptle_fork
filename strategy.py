@@ -983,8 +983,9 @@ class SwissStrat(Strategy):
         atr = self.atr.atr
         belowatr = min(self.wma1.wma, self.wma2.wma) < price - self.loweratr * atr
         aboveatr = max(self.wma1.wma, self.wma2.wma) > price + self.upperatr * atr
-        uptrend   = self.WMA_5.wma > self.WMA_8.wma
-        downtrend = self.WMA_5.wma < self.WMA_8.wma
+
+        uptrend   = self.wma1.wma > self.wma2.wma
+        downtrend = self.wma1.wma < self.wma2.wma
 
         # MACD signal
         try:
@@ -1024,7 +1025,7 @@ class SwissStrat(Strategy):
         if self.was_high_dollar_volume and self.vwma1.dollar_volume <= 0:
             v_sell_signal = True
 
-        if blowatr and downtrend:
+        if belowatr and downtrend:
             sell_signal = True
 
 
