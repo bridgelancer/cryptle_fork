@@ -254,7 +254,6 @@ class WMA():
                 price_list = [x[1] for x in bar_list]
                 price_list.append(price)
 
-            print (price_list)
             self.price_list_test = price_list
             self.wma = sum(p * w for p,w in zip(price_list, self.weight))
 
