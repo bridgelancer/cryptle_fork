@@ -758,7 +758,7 @@ class WMAForceBollingerStrat(Strategy):
         self.ATR_5 = ATR(self.bar, scope1)
         self.WMA_5 = WMA(self.bar, scope1)
         self.WMA_8 = WMA(self.bar, scope2)
-        self.vwma1 = ContinuousVWMA(period)
+        self.vwma1 = ContinuousVWMA(period * 3) # @HARDCODE
         self.vwma2 = ContinuousVWMA(period * vwma_lb)
         self.sma_20 = SMA(self.bar, bband_period)
         self.bollinger = BollingerBand(self.sma_20, bband_period)
