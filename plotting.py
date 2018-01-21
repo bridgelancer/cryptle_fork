@@ -3,10 +3,10 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 
 def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=None):
-    # Plots a candlestick chart
-
     # Args:
-    #   candledata: A filled Candlebar
+    #   candledata:
+    #       A filled Candlebar
+    #
     #   title:
     #       An optional title for the chart
     #
@@ -20,9 +20,8 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
     #       A list of additional data series to add to the chart.  Must be the same length as pricing.
     #
     #   trades:
-    #       A list of tuples in the format (entry_time, exit_time, 1 or -1)
+    #       A list of tuples in the format (entry_time, entry_price, exit_time, exit_price)
     #       the entry and exit times should be in unix timestamp
-    #       where 1 is a winning trade and -1 is losing
 
     technicals = technicals or []
     trades = trades or []
@@ -99,3 +98,4 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
         ax2.set_title(volume_title)
         ax2.xaxis.grid(False)
 
+    return fig
