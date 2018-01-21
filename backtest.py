@@ -49,16 +49,7 @@ def loadJSON(ls, Strat):
         tick = ''.join(item)
         Strat(tick)
 
-
-def testloadJSON():
-    port = Portfolio(10000)
-    test = TestStrat('ethusd', port)
-
-    ls = readJSON('btc_sample')
-    loadJSON(ls, test)
-
-
-def testParseTick(pair):
+def parseJSON(pair):
     ls = readJSON('papertrade0114p.log')
 
     result = []
@@ -96,7 +87,7 @@ def testWMAModStrategy(pair):
     wmaeth  = WMAModStrat(str(pair), port, message='[WMA Mod]', period=180)
     wmaeth.equity_at_risk = 1.0
 
-    ls = testParseTick(pair)
+    ls = parseJSON(pair)
     loadJSON(ls, wmaeth)
 
     logger.info('WMA Equity:   %.2f' % port.equity())
@@ -110,7 +101,7 @@ def testWMAForceStrategy(pair):
     wmaeth  = WMAForceStrat(str(pair), port, exchange=paper, message='[WMA Force]', period=180)
     wmaeth.equity_at_risk = 1.0
 
-    ls = testParseTick(pair)
+    ls = parseJSON(pair)
     loadJSON(ls, wmaeth)
 
     logger.info('WMA Equity:   %.2f' % port.equity())
@@ -126,7 +117,7 @@ def testWMAForceBollingerStrategy(pair):
     wmaeth  = WMAForceBollingerStrat(str(pair), port, exchange=paper, message='[WMA Bollinger]', period=180)
     wmaeth.equity_at_risk = 1.0
 
-    ls = testParseTick(pair)
+    ls = parseJSON(pair)
     loadJSON(ls, wmaeth)
 
     logger.info('WMA Equity:   %.2f' % port.equity())
@@ -147,7 +138,7 @@ def testWMAStrategy(pair):
     wmaeth  = WMAStrat(str(pair) , port, exchange=paper, message='[WMA]', period=180)
     wmaeth.equity_at_risk = 1.0
 
-    ls = testParseTick(pair)
+    ls = parseJSON(pair)
     loadJSON(ls, wmaeth)
 
     logger.info('WMA Equity:   %.2f' % port.equity())
@@ -167,7 +158,7 @@ def testSnoopingLoop(pair):
     for strat in strats:
         strat.equity_at_risk = 1.0
 
-        ls = testParseTick(pair)
+        ls = parseJSON(pair)
         loadJSON(ls, strat)
 
     for port in ports:
@@ -222,7 +213,7 @@ def testSnoopingSuite(pair):
 
     counter = 0
     # load tick data to ls once
-    ls = testParseTick(pair)
+    ls = parseJSON(pair)
     # feed tick data through strategies, and report after finish parsing
     for key in sorted(strats.keys()):
         loadJSON(ls, strats[key])
@@ -243,7 +234,7 @@ def testMACD(pair):
     macd = MACDStrat(pair, port, exchange=paper, message='[MACD]', period=180)
     macd.equity_at_risk = 1
 
-    ticks = testParseTick(pair)
+    ticks = parseJSON(pair)
     loadJSON(ticks, macd)
 
     logger.info('MACD Equity: %.2f' % port.equity())
@@ -258,7 +249,7 @@ def testSwiss(pair):
     swiss = SwissStrat(pair, port, exchange=exchange, message='[Swiss]', period=180)
     swiss.equity_at_risk = 1
 
-    ticks = testParseTick(pair)
+    ticks = parseJSON(pair)
     loadJSON(ticks, swiss)
 
     logger.info('Swiss Equity: %.2f' % port.equity())
