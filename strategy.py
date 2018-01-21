@@ -752,13 +752,14 @@ class WMAForceStrat(Strategy):
 
 class WMAForceBollingerStrat(Strategy):
 
-    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, bband_period=20):
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, bband_period=20, vwma_lb = 40):
         super().__init__(pair, portfolio, exchange)
         self.bar = CandleBar(period)
         self.ATR_5 = ATR(self.bar, scope1)
         self.WMA_5 = WMA(self.bar, scope1)
         self.WMA_8 = WMA(self.bar, scope2)
-        self.vwma = ContinuousVWMA(period)
+        self.vwma1 = ContinuousVWMA(period)
+        self.vwma2 = ContinuousVWMA(period * vwma_lb)
         self.sma_20 = SMA(self.bar, bband_period)
         self.bollinger = BollingerBand(self.sma_20, bband_period)
 
@@ -784,7 +785,8 @@ class WMAForceBollingerStrat(Strategy):
         action = -1 * (tick['type'] * 2 - 1)
 
         self.bar.update(price, timestamp)
-        self.vwma.update(price, volume, timestamp, action)
+        self.vwma1.update(price, volume, timestamp, action)
+        self.vwma2.update(price, volume, timestamp, action)
 
         if self.init_time == 0:
             self.init_time = timestamp
@@ -822,6 +824,15 @@ class WMAForceBollingerStrat(Strategy):
 
         # Buy/Sell singal generation
         # Band confirmation
+        norm_vol1 = self.vwma1.dollar_volume / self.vwma1.period
+        norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
+
+        # Dollar volume signal # hard code threshold for the moment
+        if self.hasBalance() and  norm_vol1 > norm_vol2 * 2:
+            self.dollar_volume_flag = True
+        else:
+            self.dollar_volume_flag = False
+
         if self.bollinger.band > self.bband: # currently snooping 3.5%
             bollinger_signal = True
             tradable_window = timestamp
@@ -840,7 +851,7 @@ class WMAForceBollingerStrat(Strategy):
                 prev_crossover_time = None
 
         elif self.hasBalance():
-            if dollar_volume_flag and self.vwma.dollar_volume <= 0:
+            if dollar_volume_flag and self.vwma1.dollar_volume <= 0:
                 v_sell_signal = True
                 logger.signal("VWMA Indicate sell at: " + str(timestamp))
             elif not can_sell and aboveatr:
@@ -896,11 +907,6 @@ class WMAForceBollingerStrat(Strategy):
 
         ####### Hardcoded for BCH volume
         # Do not trigger take into account of v_sell unless in position
-        if self.hasBalance() and self.vwma.dollar_volume > 1.75 * (10**5): # need a good scheme to snoop dynamically
-            dollar_volume_flag = True
-        elif self.vwma.dollar_volume < 0:
-            dollar_volume_flag = False
-
 
         self.bollinger_signal = bollinger_signal
         self.tradable_window = tradable_window
@@ -1004,7 +1010,7 @@ class SwissStrat(Strategy):
         norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
 
         # Dollar volume signal
-        if norm_vol1 > norm_vol2:
+        if norm_vol1 > norm_vol2 * 3:
             self.was_high_dollar_volume = True
         else:
             self.was_high_dollar_volume = False

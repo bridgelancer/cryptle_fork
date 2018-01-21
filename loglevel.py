@@ -20,19 +20,19 @@ logging.addLevelName(logging.TICK, 'TICK')
 
 def signal(self, message, *args, **kargs):
     if self.isEnabledFor(logging.SIGNAL):
-        self._log(logging.SIGNAL, message, args, **kws)
+        self._log(logging.SIGNAL, message, args, **kargs)
 
-def report(self, message, *args, **kws):
+def report(self, message, *args, **kargs):
     if self.isEnabledFor(logging.REPORT):
-        self._log(logging.REPORT, message, args, **kws)
+        self._log(logging.REPORT, message, args, **kargs)
 
 def index(self, message, *args, **kargs):
     if self.isEnabledFor(logging.INDEX):
-        self._log(logging.INDEX, message, args, **kws)
+        self._log(logging.INDEX, message, args, **kargs)
 
 def tick(self, message, *args, **kargs):
     if self.isEnabledFor(logging.TICK):
-        self._log(logging.TICK, message, args, **kws)
+        self._log(logging.TICK, message, args, **kargs)
 
 logging.Logger.signal = signal
 logging.Logger.report = report
