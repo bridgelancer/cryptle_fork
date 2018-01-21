@@ -217,16 +217,15 @@ def testSnoopingSuite(pair):
     # feed tick data through strategies, and report after finish parsing
     for key in sorted(strats.keys()):
         loadJSON(ls, strats[key])
-        logger.info('Port' + str(key) + ' equity: %.2f' % strats[key].portfolio.equity)
+        logger.info('Port' + str(key) + ' equity: %.2f' % strats[key].portfolio.equity())
 
+        counter = counter + 1
         if counter%100 == 0:
             print ('%i Strategy configs' % counter + ' finished parsing')
-        counter = counter + 1
 
-    # report results
-    for key in sorted(ports.keys()):
+        del strats[key]
+        del ports[key]
 
-        logger.info('Port' + str(key) + ' equity: %.2f' % ports[key].equity)
 
 def testMACD(pair):
     port = Portfolio(1000)
