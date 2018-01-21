@@ -59,7 +59,7 @@ def testloadJSON():
 
 
 def testParseTick(pair):
-    ls = readJSON('bch.03.log')
+    ls = readJSON('papertrade0114p.log')
 
     result = []
 
@@ -179,7 +179,7 @@ def testSnoopingSuite(pair):
     # Datatypes to snoop
     period = range(3, 6, 2) # in minutes
     bband = range (300, 601, 10) # need to divide by 100
-    timeframe = range(30, 181, 30)
+    timeframe = range(0, 181, 30)
     delay = range(0, 91, 30) # (0, 91, 30)
     upperatr = range(50, 51, 15) # need to divide by 100
     loweratr = range(50, 51, 15) # need to divide by 100
@@ -210,7 +210,7 @@ def testSnoopingSuite(pair):
         strat = WMAForceBollingerStrat(str(pair), ports[config], message='[WMA Force Bollinger]', period=period, bband_period=bband_period)
 
         strat.bband            = bband
-        strat.timelag_required = timeframe
+        strat.timeframe        = timeframe
         strat.timelag_required = delay
         strat.upper_atr        = upperatr
         strat.lower_atr        = loweratr
