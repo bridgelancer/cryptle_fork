@@ -301,7 +301,7 @@ class MACD():
 
         ema1.candle.metrics.append(self)
 
-    def update(self):
+    def update(self, price):
 
         self.macd = self.ema1.ema - self.ema2.ema
         self.past.append(self.macd)
