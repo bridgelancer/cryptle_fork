@@ -2,6 +2,7 @@ from ta import *
 from datafeed import *
 from strategy import *
 from plotting import *
+from loglevel import *
 
 import matplotlib.pyplot as plt
 
@@ -16,11 +17,10 @@ import itertools
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
-formatter = logging.Formatter('%(name)-10s: %(asctime)s [%(levelname)-8s] %(message)s', '%Y-%m-%d %H:%M:%S')
-
+formatter = defaultFormatter()
 
 fh = logging.FileHandler('backtest.log', mode='w')
-fh.setLevel(logging.DEBUG)
+fh.setLevel(logging.DEBUG) # Set this to logging.INDEX to log indicator values
 fh.setFormatter(formatter)
 
 logger.addHandler(fh)

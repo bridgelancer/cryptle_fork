@@ -1,24 +1,13 @@
 from datafeed import *
 from strategy import *
+from loglevel import *
 
 import logging
 import time
 import sys
 
-# Set new log levels
-logging.TRADE = 5
-logging.TICK = 7
-logging.TA = 9
-
-logging.addLevelName(logging.TRADE, 'TRADE')
-logging.addLevelName(logging.TICK, "TICK")
-logging.addLevelName(logging.TA, 'TA')
-
 logger = logging.getLogger('Cryptle')
-logger.ta = lambda x: logger.log(logging.TA, x)
-logger.setLevel(1)
-
-formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
+formatter = defaultFormatter()
 
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
