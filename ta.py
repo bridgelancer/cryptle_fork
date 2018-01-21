@@ -91,6 +91,15 @@ class CandleBar:
                 )
             )
 
+            self.barmin = self.barmax = self.baropen = self.barclose = price
+            self.volume = volume
+            self.last_timestamp = timestamp
+            
+            # Update all attached candle chart dependent metrics
+            for metric in self.metrics:
+                metric.update()
+
+
             timestamp_tmp = self.last_timestamp + 60
             while int(timestamp_tmp / self.period) < int(timestamp / self.period):
                 self.bars.append(
@@ -103,16 +112,9 @@ class CandleBar:
                         0
                     )
                 )
-
+                for metric in self.metrics:
+                    metric.update()
                 timestamp_tmp = timestamp_tmp + 60
-
-            self.barmin = self.barmax = self.baropen = self.barclose = price
-            self.volume = volume
-            self.last_timestamp = timestamp
-
-            # Update all attached candle chart dependent metrics
-            for metric in self.metrics:
-                metric.update()
 
         elif int(timestamp / self.period) == int(self.last_timestamp / self.period):
             self.barmin = min(self.barmin, price)
@@ -128,6 +130,52 @@ class CandleBar:
             self.bars = self.bars[-size:]
         except IndexError:
             raise ("Empty CandleBar cannot be pruned!")
+
+
+class RSI():
+
+    def __init__(self, candle, lookback):
+        self.candle = candle
+        self.lookback = lookback
+        self.up = []
+        self.down = []
+        self.ema_up = None
+        self.ema_down = None
+        self.weight = 2/ (lookback + 1)
+        self.rsi = 0
+        
+        candle.metrics.append(self)
+
+
+    def update(self):
+
+        if (self.candle.baropen > self.candle[-1][0]):
+            self.up.append(self.candle.baropen - self.candle[-1][0])
+            self.down.append(0)
+        else:
+            self.down.append(self.candle[-1][0] - self.candle.baropen)
+            self.up.append(0)
+            
+        if len(self.up) < self.lookback:
+            return
+        else:
+            pass
+
+        price_up = self.up[-1]
+        price_down = self.down[-1]
+
+        if self.ema_up == None and self.ema_down == None:
+            self.ema_up = price_up
+            self.ema_down = price_down
+            return
+        else:
+            pass
+
+        self.ema_up = self.weight*price_up + (1 - self.weight)*self.ema_up
+        self.ema_down = self.weight*price_down + (1-self.weight)*self.ema_down
+
+        self.rsi = 100 - 100 / (1 +  self.ema_up/self.ema_down)
+
 
 
 
