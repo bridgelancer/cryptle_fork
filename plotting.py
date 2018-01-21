@@ -103,10 +103,12 @@ def plotCandles(candle, title=None, technicals=None, trades=None, plot_volume=Fa
         volume = [x[5] for x in candle.bars]
 
         if volume_scale == None:
-            if volume.max() > 1000000:
+            if max(volume) > 1000000:
                 volume_scale = 1000000
-            elif volume.max() > 1000:
+            elif max(volume) > 1000:
                 volume_scale = 1000
+            else:
+                volume_scale = 1
 
         if volume_scale >= 1000000:
             scale = 'M'
