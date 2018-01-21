@@ -7,6 +7,7 @@ import logging
 # DEBUG    = 10
 # NOTSET   = 0
 
+# Define new log levels
 logging.SIGNAL  = 27
 logging.REPORT  = 25
 logging.INDEX   = 7
@@ -18,6 +19,7 @@ logging.addLevelName(logging.INDEX, 'INDEX')
 logging.addLevelName(logging.TICK, 'TICK')
 
 
+# Add convenience functions to the default Logger and it's children instances
 def signal(self, message, *args, **kargs):
     if self.isEnabledFor(logging.SIGNAL):
         self._log(logging.SIGNAL, message, args, **kargs)
@@ -38,4 +40,11 @@ logging.Logger.signal = signal
 logging.Logger.report = report
 logging.Logger.index  = index
 logging.Logger.tick   = tick
+
+
+# Define a unified formatter for cross module use
+def defaultFormatter():
+    fmt = '%(name)-10s: %(asctime)s [%(levelname)-8s] %(message)s'
+    datefmt = '%Y-%m-%d %H:%M:%S'
+    return logging.Formatter(fmt=fmt, datefmt=datefmt)
 
