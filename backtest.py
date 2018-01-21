@@ -16,7 +16,7 @@ import itertools
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
-formatter = logging.Formatter('%(name)s: %(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S')
+formatter = logging.Formatter('%(name)-10s: %(asctime)s [%(levelname)-8s] %(message)s', '%Y-%m-%d %H:%M:%S')
 
 
 fh = logging.FileHandler('backtest.log', mode='w')
