@@ -199,7 +199,7 @@ class ATR():
         candle.metrics.append(self)
 
 
-    def update(self):
+    def update(self, price):
         if (len(self.init) < self.lookback):
             self.init.append(self.candle[-1][2] - self.candle[-1][3]) # append bar max - bar min
             self.atr = sum(self.init) / len(self.init)
@@ -222,8 +222,8 @@ class SMA():
         candle.metrics.append(self)
 
 
-    def update(self):
-        self.sma = sum([x[0] for x in self.candle[-self.lookback:]]) / self.lookback
+    def update(self, price):
+        self.sma = (price + sum([x[0] for x in self.candle[-(self.lookback - 1):]])) / self.lookback
 
 
 
@@ -238,7 +238,7 @@ class WMA():
         candle.metrics.append(self)
 
 
-    def update(self, open_p = True):
+    def update(self, price, open_p = True):
 
         if len(self.candle) < (self.lookback-1):
             pass
@@ -249,11 +249,12 @@ class WMA():
 
             if open_p == True:
                 price_list = [x[0] for x in bar_list]
-                price_list.append(self.candle.baropen)
+                price_list.append(price)
             elif open_p == False:
                 price_list = [x[1] for x in bar_list]
-                price_list.append(self.candle.barclose)
+                price_list.append(price)
 
+            print (price_list)
             self.price_list_test = price_list
             self.wma = sum(p * w for p,w in zip(price_list, self.weight))
 
@@ -271,18 +272,18 @@ class EMA():
         candle.metrics.append(self)
 
 
-    def update(self, open_p=True):
+    def update(self, price, open_p=True):
 
         if open_p:
-            price = self.candle[-1][0]
+            val = price
         else:
-            price = self.candle[-1][1]
+            val = self.candle[-1][1] # last close should be valid
 
         if self.ema == None:
-            self.ema = price
+            self.ema = val
             return
 
-        self.ema = self.weight*price + (1-self.weight)*self.ema
+        self.ema = self.weight*val + (1-self.weight)*self.ema
 
 
 
@@ -306,13 +307,13 @@ class MACD():
         self.macd = self.ema1.ema - self.ema2.ema
         self.past.append(self.macd)
 
-        price = self.past[-1]
+        val = self.past[-1]
 
         if self.ema3 == None:
-            self.ema3 = price
+            self.ema3 = val
             return
 
-        self.ema3 = self.weight*price + (1-self.weight)*self.ema3
+        self.ema3 = self.weight*val + (1-self.weight)*self.ema3
 
 
 
@@ -329,18 +330,20 @@ class BollingerBand():
 
         sma.candle.metrics.append(self)
 
-    def update(self):
-        mean_squared = 0
+    # the default width is defined by +/- 2 sd
+    def update(self, price):
         sma = self.sma
         lookback = self.lookback
 
-        ls = [x[0] for x in sma.candle[-lookback:]]
+        ls = [x[0] for x in sma.candle[-(lookback - 1):]]
+        ls = ls + [price]
+
         mean = sum(ls) / lookback
         mean_square = list(map(lambda y: (y - mean) ** 2, ls))
 
         self.width = ( sum(mean_square) / lookback ) ** 0.5
 
-        self.upperband = sma.candle[-1][0] + 2 * self.width
-        self.lowerband = sma.candle[-1][0] - 2 * self.width
+        self.upperband = price + 2 * self.width
+        self.lowerband = price - 2 * self.width
         self.band = ( self.upperband / self.lowerband - 1 ) * 100
 
