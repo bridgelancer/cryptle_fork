@@ -57,13 +57,48 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
             exit  = trade[2]
             entry_bar = int((entry - candle[0][4] * candle.period) / candle.period)
             exit_bar  = int((exit  - candle[0][4] * candle.period) / candle.period)
-            color = 'g' if trade[1] < trade[3] else 'r'
+            p_and_l = (trade[3]-trade[1])/trade[1]
+
+            if p_and_l > 0.005:
+                color = '#97ED8A'
+                if p_and_l > 0.01:
+                    color = '#45BF55'
+                    if p_and_l > 0.015:
+                        color = '#167F39'
+                        if p_and_l > 0.02:
+                            color = '#044C29'
+            
+            if p_and_l < -0.005:
+                color = '#D40D12'
+                if p_and_l < -0.01:
+                    color = '#94090D'
+                    if p_and_l < -0.015:
+                        color = '#5C0002'
+                        if p_and_l < -0.02:
+                            color = '#450003'
+                    
             ax1.axvspan(entry_bar, exit_bar, facecolor=color, alpha=0.35)
         except IndexError:
             entry = int(trade[0])
             exit_bar  = len(candle)
             entry_bar = int((entry - candle[0][4] * candle.period) / candle.period)
-            color = 'g' if trade[1] < candle[-1][0] else 'r'
+            if p_and_l > 0.005:
+                color = '#97ED8A'
+                if p_and_l > 0.01:
+                    color = '#45BF55'
+                    if p_and_l > 0.015:
+                        color = '#167F39'
+                        if p_and_l > 0.02:
+                            color = '#044C29'
+            
+            if p_and_l < -0.005:
+                color = '#D40D12'
+                if p_and_l < -0.01:
+                    color = '#94090D'
+                    if p_and_l < -0.015:
+                        color = '#5C0002'
+                        if p_and_l < -0.02:
+                            color = '#450003'
             ax1.axvspan(entry_bar, exit_bar, facecolor=color, alpha=0.35)
 
     # Plot indicators
