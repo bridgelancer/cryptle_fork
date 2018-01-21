@@ -2,7 +2,8 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 
-def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=None):
+def plotCandles(candle, title=None, technicals=None, trades=None, plot_volume=False, volume_title=None,
+        volume_):
     # Args:
     #   candledata:
     #       A filled Candlebar
@@ -10,7 +11,7 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
     #   title:
     #       An optional title for the chart
     #
-    #   volume_bars:
+    #   plot_volume:
     #       If True, plots volume bars
     #
     #   color_function:
@@ -26,7 +27,7 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
     technicals = technicals or []
     trades = trades or []
 
-    if volume_bars:
+    if plot_volume:
         fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, gridspec_kw={'height_ratios': [3,1]})
     else:
         fig, ax1 = plt.subplots(1, 1, figsize=(16,12))
@@ -53,75 +54,52 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
     # Plot buy/sells
     for trade in trades:
         try:
-            entry = trade[0] # entry time (buy)
-            exit  = trade[2] # exit time (sell)
+            entry = int(trade[0]) # entry time (buy)
+            exit  = int(trade[2]) # exit time (sell)
 
             # find the corresponding candle where the buy/sell happened
             entry_bar = int((entry - candle[0][4] * candle.period) / candle.period)
             exit_bar  = int((exit  - candle[0][4] * candle.period) / candle.period)
 
-            p_and_l = (trade[3]-trade[1])/trade[1]
+            p_and_l = (trade[3] - trade[1])/trade[1]
 
-            if p_and_l > 0.005:
-                color = '#97ED8A'
-            if p_and_l > 0.01:
-                color = '#45BF55'
-            if p_and_l > 0.015:
-                color = '#167F39'
-            if p_and_l > 0.02:
-                color = '#044C29'
-
-            if p_and_l < -0.005:
-                color = '#D40D12'
-            if p_and_l < -0.01:
-                color = '#94090D'
-            if p_and_l < -0.015:
-                color = '#5C0002'
-            if p_and_l < -0.02:
-                color = '#450003'
-
-            ax1.axvspan(entry_bar, exit_bar, facecolor=color, alpha=0.35)
         except IndexError:
             # when the strategy terminated without selling (still holding a position)
             entry = int(trade[0])
+
             exit_bar  = len(candle)
             entry_bar = int((entry - candle[0][4] * candle.period) / candle.period)
-            if p_and_l > 0.005:
-                color = '#97ED8A'
-            if p_and_l > 0.01:
-                color = '#45BF55'
-            if p_and_l > 0.015:
-                color = '#167F39'
-            if p_and_l > 0.02:
-                color = '#044C29'
 
-            if p_and_l < -0.005:
-                color = '#D40D12'
-            if p_and_l < -0.01:
-                color = '#94090D'
-            if p_and_l < -0.015:
-                color = '#5C0002'
-            if p_and_l < -0.02:
-                color = '#450003'
+            p_and_l = (candle.last - trade[1])/trade[1]
 
-            ax1.axvspan(entry_bar, exit_bar, facecolor=color, alpha=0.35)
+        # winning trade colors
+        if p_and_l > 0.005:
+            color = '#97ED8A'
+        if p_and_l > 0.01:
+            color = '#45BF55'
+        if p_and_l > 0.015:
+            color = '#167F39'
+        if p_and_l > 0.02:
+            color = '#044C29'
+
+        # winning trade colors
+        if p_and_l < -0.005:
+            color = '#D40D12'
+        if p_and_l < -0.01:
+            color = '#94090D'
+        if p_and_l < -0.015:
+            color = '#5C0002'
+        if p_and_l < -0.02:
+            color = '#450003'
+
+        ax1.axvspan(entry_bar, exit_bar, facecolor=color, alpha=0.35)
 
     # Plot indicators
     for indicator in technicals:
         ax1.plot(x, indicator)
 
-
-    # Set X axis tick labels.
-    time_format = '%H:%M'
-
-    xlabels = [i * int(len(candle)/7.5) for i in range(8)]
-    dt = [datetime.fromtimestamp(candle[x][4] * candle.period).strftime('%H:%M') for x in xlabels]
-
-    plt.xticks(xlabels, dt)
-
-
-    # Legacy Code, doesn't work
-    if volume_bars:
+    # Plots volume
+    if plot_volume:
         volume = [x[5] for x in candle.bars]
         volume_scale = None
         scaled_volume = volume
@@ -137,5 +115,13 @@ def plotCandles(candle, title=None, volume_bars=False, technicals=None, trades=N
             volume_title = 'Volume (%s)' % volume_scale
         ax2.set_title(volume_title)
         ax2.xaxis.grid(False)
+
+
+    # Set X axis tick labels.
+    time_format = '%m-%d %H:%M'
+
+    xlabels = [i * int(len(candle)/7.5) for i in range(8)]
+    dt = [datetime.fromtimestamp(candle[x][4] * candle.period).strftime('%H:%M') for x in xlabels]
+    plt.xticks(xlabels, dt)
 
     return fig
