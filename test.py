@@ -64,19 +64,6 @@ def testBitstampREST():
 
 
 def testEquity():
-    port  = Portfolio(1000)
-    strat = Strategy('ethusd', port)
-
-    strat.buy(2, price=100)
-    logger.debug(strat.equity_at_risk * strat.equity())
-    logger.debug(strat.equity())
-    logger.debug(strat.portfolio.cash)
-
-    assert strat.equity() == 1000
-    assert strat.portfolio.cash == 800
-
-
-def testEquity():
     port  = Portfolio(10000)
 
     port.deposit('ethusd', 10, 1300)
@@ -156,7 +143,7 @@ def testSMA():
     for tick in lin:
         candle.update(tick[0], tick[1])
         if tick[1] < 5: continue
-        else: assert sma.sma == tick[1] - 2
+        else: assert sma.sma == tick[1] - 1
 
 
 def testEMA():
@@ -165,14 +152,11 @@ def testEMA():
 
     for tick in const:
         candle.update(tick[0], tick[1])
-        print(ema.ema)
-
-    print("\n")
+        if tick[1] < 5: continue
+        else: assert ema.ema == 3
 
     for tick in lin:
         candle.update(tick[0], tick[1])
-        print(ema.ema)
-
 
 
 def testWMA():
@@ -182,13 +166,14 @@ def testWMA():
 
     for tick in const:
         candle.update(tick[0], tick[1])
-
-    assert wma.wma == 3
+        if tick[1] < 5: continue
+        else: assert wma.wma == 3.0
 
     for tick in lin:
         candle.update(tick[0], tick[1])
 
     assert wma.wma - (293 / 3) < 1e-5
+
 
 def testBollingerBand():
 
@@ -198,7 +183,12 @@ def testBollingerBand():
 
     for tick in quad:
         candle.update(tick[0], tick[1])
-        print (bb.width)
+
+
 
 if __name__ == '__main__':
+    testSMA()
+    testEMA()
+    testWMA()
     testBollingerBand()
+
