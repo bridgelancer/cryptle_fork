@@ -2,30 +2,45 @@ from ta import *
 from exchange import *
 from datafeed import *
 from strategy import *
+from loglevel import *
 
-import math
 import logging
+import math
 import time
-import sys
-import csv
 
-fmt = '%(name)8s| %(asctime)s [%(levelname)-5s] %(message)s'
-formatter = logging.Formatter(fmt, '%Y-%m-%d %H:%M:%S')
 
-logger = logging.getLogger('Cryptle')
-logger.setLevel(logging.DEBUG)
+fmt = '%(name)8s| %(asctime)s [%(levelname)-8s] %(message)s'
+formatter = logging.Formatter(fmt, '%H:%M:%S')
 
-bslog = logging.getLogger('Exchange')
-bslog.setLevel(4)
+sh = logging.StreamHandler()
+sh.setLevel(logging.REPORT)
+sh.setFormatter(formatter)
 
-fh = logging.FileHandler('test.log', mode='w')
+fh = logging.FileHandler('unittest.log', mode='w')
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 
-bslog.addHandler(fh)
+logger = logging.getLogger('UnitTest')
+logger.setLevel(logging.DEBUG)
+
 logger.addHandler(fh)
+logger.addHandler(sh)
+
+crylog = logging.getLogger('Cryptle')
+crylog.setLevel(logging.INDEX)
+
+crylog.addHandler(fh)
+crylog.addHandler(sh)
+
+def PASS(testname):
+    logger.report('Passed {}'.format(testname))
 
 
+def FAIL(testname):
+    logger.error('Failed {}'.format(testname))
+
+
+# Test cases
 class TestStrat(Strategy):
 
     def __call__(self, tick):
@@ -49,8 +64,8 @@ def testBitstampFeed():
     feed.onTrade('btcusd', lambda x: logger.debug('Recieved BTC tick'))
     feed.onTrade('xrpusd', lambda x: logger.debug('Recieved XRP tick'))
     feed.onTrade('ethusd', lambda x: logger.debug('Recieved ETH tick'))
-    feed.onTrade('ltcusd', lambda x: logger.debug('Recieved ETH tick'))
-    feed.onTrade('bchusd', lambda x: logger.debug('Recieved ETH tick'))
+    feed.onTrade('ltcusd', lambda x: logger.debug('Recieved LTC tick'))
+    feed.onTrade('bchusd', lambda x: logger.debug('Recieved BCH tick'))
 
     time.sleep(5)
 
@@ -187,6 +202,7 @@ def testBollingerBand():
 
 
 if __name__ == '__main__':
+    testEquity()
     testSMA()
     testEMA()
     testWMA()
