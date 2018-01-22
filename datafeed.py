@@ -1,14 +1,29 @@
+import logging
 import time
 import pysher
 
+
 class BitstampFeed:
+    key = 'de504dc5763aeef9ff52'
 
-    def __init__(self):
-        api_key = 'de504dc5763aeef9ff52'
+    def __init__(self, auto_connect=True, log_level=logging.INFO):
+        self.pusher = pysher.Pusher(self.key, log_level=log_level)
 
-        self.pusher = pysher.Pusher(api_key)
+        if auto_connect:
+            self.connect()
+
+
+    def connect(self):
         self.pusher.connect()
-        time.sleep(2)
+        time.sleep(1)
+
+
+    def disconnect(self):
+        self.pusher.disconnect()
+
+
+    def isConnected(self):
+        return self.pusher.connection.is_alive()
 
 
     def onTrade(self, pair, callback):

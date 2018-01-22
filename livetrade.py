@@ -78,7 +78,7 @@ def livetrade(key, secret, cid):
 
 
     log.debug('Reporting started')
-    while True:
+    while bs.isConnected():
         log.info('Equity:  {}'.format(port.equity()))
         log.info('Cash:    {}'.format(port.cash))
         log.info('Balance: {}'.format(port.balance))

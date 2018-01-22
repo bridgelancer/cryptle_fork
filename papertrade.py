@@ -41,7 +41,7 @@ def papertrade():
 
     logger.debug("Reporting...")
 
-    while True:
+    while bs.isConnected():
         logger.info('Five min WMA_mod Cash:   %.2f' % port1.cash)
         logger.info('Five min WMA_mod Assets: %s' % str(port1.balance))
 
