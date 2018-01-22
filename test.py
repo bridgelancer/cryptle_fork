@@ -4,40 +4,58 @@ from datafeed import *
 from strategy import *
 from loglevel import *
 
+from functools import wraps
 import logging
 import math
 import time
 
 
-fmt = '%(name)8s| %(asctime)s [%(levelname)-8s] %(message)s'
+fmt = '%(name)-10s| %(asctime)s [%(levelname)-8s] %(message)s'
 formatter = logging.Formatter(fmt, '%H:%M:%S')
 
 sh = logging.StreamHandler()
 sh.setLevel(logging.REPORT)
 sh.setFormatter(formatter)
 
+logger = logging.getLogger('UnitTest')
+logger.setLevel(logging.DEBUG)
+logger.addHandler(sh)
+
 fh = logging.FileHandler('unittest.log', mode='w')
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 
-logger = logging.getLogger('UnitTest')
-logger.setLevel(logging.DEBUG)
-
-logger.addHandler(fh)
-logger.addHandler(sh)
-
 crylog = logging.getLogger('Cryptle')
 crylog.setLevel(logging.INDEX)
-
 crylog.addHandler(fh)
-crylog.addHandler(sh)
+
+
+# Unit Test helpers
+RESET   = "\033[0m"
+COLOR   = "\033[%dm"
+RED     = COLOR % 31
+GREEN   = COLOR % 32
+YELLOW  = COLOR % 33
 
 def PASS(testname):
-    logger.report('Passed {}'.format(testname))
+    logger.report(GREEN + 'Passed ' + RESET + testname)
 
 
 def FAIL(testname):
-    logger.error('Failed {}'.format(testname))
+    logger.report(RED + 'Failed ' + RESET + testname)
+
+
+def unittest(func):
+    @wraps(func)
+    def func_wrapper(*args, **kargs):
+        try:
+            func(*args, **kargs)
+            PASS(func.__name__)
+        except AssertionError as e:
+            FAIL(func.__name__)
+        except:
+            pass
+    return func_wrapper
 
 
 # Test cases
@@ -78,6 +96,7 @@ def testBitstampREST():
     logger.debug(bs.getTicker('btcusd'))
 
 
+@unittest
 def testEquity():
     port  = Portfolio(10000)
 
@@ -93,7 +112,8 @@ def testEquity():
     port.withdraw('ethusd', 10)
     assert port.equity() == 10000
 
-
+# @Regression
+@unittest
 def testCVWMA():
     line = [(i, 1, i) for i in range(15)]
     quad = [(i, i+1, i) for i in range(15)]
@@ -146,6 +166,7 @@ lin = [(i, i) for i in  range(1, 100)]
 quad  = [(i**2, i) for i in range(1, 100)]
 
 
+@unittest
 def testSMA():
     candle = CandleBar(1)
     sma = SMA(candle, 3)
@@ -161,6 +182,7 @@ def testSMA():
         else: assert sma.sma == tick[1] - 1
 
 
+@unittest
 def testEMA():
     candle = CandleBar(1)
     ema = EMA(candle, 3)
@@ -174,6 +196,7 @@ def testEMA():
         candle.update(tick[0], tick[1])
 
 
+@unittest
 def testWMA():
 
     candle = CandleBar(1)   # 1 second bar
@@ -190,6 +213,7 @@ def testWMA():
     assert wma.wma - (293 / 3) < 1e-5
 
 
+@unittest
 def testBollingerBand():
 
     candle = CandleBar(1)
@@ -198,7 +222,6 @@ def testBollingerBand():
 
     for tick in quad:
         candle.update(tick[0], tick[1])
-
 
 
 if __name__ == '__main__':
