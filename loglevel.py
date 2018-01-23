@@ -20,26 +20,26 @@ logging.addLevelName(logging.TICK, 'TICK')
 
 
 # Add convenience functions to the default Logger and it's children instances
-def report(self, message, *args, **kargs):
+def _report(self, message, *args, **kargs):
     if self.isEnabledFor(logging.REPORT):
         self._log(logging.REPORT, message, args, **kargs)
 
-def signal(self, message, *args, **kargs):
+def _signal(self, message, *args, **kargs):
     if self.isEnabledFor(logging.SIGNAL):
         self._log(logging.SIGNAL, message, args, **kargs)
 
-def index(self, message, *args, **kargs):
+def _index(self, message, *args, **kargs):
     if self.isEnabledFor(logging.INDEX):
         self._log(logging.INDEX, message, args, **kargs)
 
-def tick(self, message, *args, **kargs):
+def _tick(self, message, *args, **kargs):
     if self.isEnabledFor(logging.TICK):
         self._log(logging.TICK, message, args, **kargs)
 
-logging.Logger.report = report
-logging.Logger.signal = signal
-logging.Logger.index  = index
-logging.Logger.tick   = tick
+logging.Logger.report = _report
+logging.Logger.signal = _signal
+logging.Logger.index  = _index
+logging.Logger.tick   = _tick
 
 
 # Define a unified formatter for cross module use
