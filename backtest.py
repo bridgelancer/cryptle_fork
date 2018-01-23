@@ -13,13 +13,14 @@ import time
 import sys
 import csv
 import itertools
+import random
 
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
 formatter = defaultFormatter()
 
-fh = logging.FileHandler('buggy_backtest.log', mode='w')
+fh = logging.FileHandler('backtest.log', mode='w')
 fh.setLevel(logging.INDEX)
 fh.setFormatter(formatter)
 
@@ -50,7 +51,7 @@ def loadJSON(ls, Strat):
         Strat(tick)
 
 def parseJSON(pair):
-    ls = readJSON('papertrade0114p.log')
+    ls = readJSON('papertrade0115p.log')
 
     result = []
 
@@ -178,13 +179,14 @@ def testSnoopingSuite(pair):
     loweratr = range(50, 51, 15) # need to divide by 100
     bband_period = range (5, 31, 5)
 
+    period_60 = [x*60 for x in period]
     timeframe_60 = [x*60 for x in timeframe]
     bband_100 = [x/100 for x in bband]
     upperatr_100 = [x/100 for x in upperatr]
     loweratr_100 = [x/100 for x in loweratr]
     # @TODO also snoop type of ma used for bars, bollinger band
 
-    configs = itertools.product(period, bband_100, timeframe_60, delay, upperatr_100, loweratr_100, bband_period)
+    configs = itertools.product(period_60, bband_100, timeframe_60, delay, upperatr_100, loweratr_100, bband_period)
 
     strats = {}
     ports = {}
@@ -226,6 +228,50 @@ def testSnoopingSuite(pair):
         del strats[key]
         del ports[key]
 
+# generate continuous data - random sampling of all ranges
+def testSnoopingSuiteR(pair, iter):
+
+    strats = {}
+    ports = {}
+
+    # Generating configs of strategies
+    for run in range(0, iter):
+        period = random.randrange(180, 360)
+        bband = random.uniform(3, 6)
+        timeframe = random.uniform(0, 180)
+        delay = random.randrange(0, 90)
+        upperatr = random.uniform(0.4, 0.6)
+        loweratr = random.uniform(0.4, 0.6)
+        bband_period = random.randrange(5, 30)
+
+        config = (period, bband, timeframe, delay, upperatr, loweratr, bband_period)
+
+        ports[config] = Portfolio(1000)
+        strat = WMAForceBollingerStrat(str(pair), ports[config], message='[WMA Force Bollinger]', period=period, bband_period=bband_period)
+
+        strat.bband            = bband
+        strat.timeframe        = timeframe
+        strat.timelag_required = delay
+        strat.upper_atr        = upperatr
+        strat.lower_atr        = loweratr
+        strat.equity_at_risk = 1.0
+
+        strats[config] = strat
+
+    counter = 0
+    # load tick data to ls once
+    ls = parseJSON(pair)
+    # feed tick data through strategies, and report after finish parsing
+    for key in sorted(strats.keys()):
+        loadJSON(ls, strats[key])
+        logger.info('Port' + str(key) + ' equity: %.2f' % strats[key].portfolio.equity())
+
+        counter = counter + 1
+        if counter%100 == 0:
+            print ('%i Strategy configs' % counter + ' finished parsing')
+
+        del strats[key]
+        del ports[key]
 
 def testMACD(pair):
     port = Portfolio(1000)
@@ -261,6 +307,4 @@ def testSwiss(pair):
 
 if __name__ == '__main__':
     pair = sys.argv[1]
-    testWMAForceBollingerStrategy(pair)
-
-    plt.show()
+    testSnoopingSuiteR(pair, 100)
