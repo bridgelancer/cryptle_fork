@@ -296,13 +296,13 @@ def testSnoopingSuite(pair):
         del ports[key]
 
 # generate continuous data - random sampling of all ranges
-def testSnoopingSuiteR(pair, iter):
+def testSnoopingSuiteR(pair, runs):
 
     strats = {}
     ports = {}
 
     # Generating configs of strategies
-    for run in range(0, iter):
+    for run in range(0, runs):
         period = random.randrange(180, 360)
         bband = random.uniform(3, 6)
         timeframe = random.uniform(0, 180)
