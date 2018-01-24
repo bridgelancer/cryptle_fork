@@ -373,6 +373,18 @@ def testSwiss(pair):
     plotCandles(swiss.candle, trades=swiss.trades, title='Final equity: ${}'.format(port.equity()))
 
 
+# @Temporary
+def demoBacktest(dataset, pair):
+    test = Backtest()
+    test.readString(dataset)
+
+    port = Portfolio(10000)
+    start = WMAForceStrat(pair, port)
+
+    test.run(strat)
+    plotCandles(strat.bar)
+
+
 if __name__ == '__main__':
     pair = sys.argv[1]
     testSnoopingSuiteR(pair, 100)
