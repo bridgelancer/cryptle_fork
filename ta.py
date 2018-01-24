@@ -223,7 +223,7 @@ class SMA():
 
 
     def update(self, price):
-        self.sma = (price + sum([x[0] for x in self.candle[-(self.lookback - 1):]])) / self.lookback
+        self.sma = (sum([x[0] for x in self.candle[-self.lookback :]])) / self.lookback
 
 
 
@@ -238,21 +238,19 @@ class WMA():
         candle.metrics.append(self)
 
 
-    def update(self, price, open_p = True):
+    def update(self, open_p = True):
 
         if len(self.candle) < (self.lookback-1):
             pass
 
         else:
             price_list = []
-            bar_list = self.candle[-(self.lookback- 1):]
+            bar_list = self.candle[-self.lookback:]
 
             if open_p == True:
                 price_list = [x[0] for x in bar_list]
-                price_list.append(price)
             elif open_p == False:
-                price_list = [x[1] for x in bar_list]
-                price_list.append(price)
+                price_list = [x[1] for x in bar_list] # this is currently not correct
 
             self.price_list_test = price_list
             self.wma = sum(p * w for p,w in zip(price_list, self.weight))
@@ -271,12 +269,12 @@ class EMA():
         candle.metrics.append(self)
 
 
-    def update(self, price, open_p=True):
+    def update(self, open_p=True):
 
         if open_p:
-            val = price
+            val = self.candle[-1][0]
         else:
-            val = self.candle[-1][1] # last close should be valid
+            val = self.candle[-1][1] # the [-2] is the current bar close (i.e. changing)
 
         if self.ema == None:
             self.ema = val
@@ -330,12 +328,11 @@ class BollingerBand():
         sma.candle.metrics.append(self)
 
     # the default width is defined by +/- 2 sd
-    def update(self, price):
+    def update(self):
         sma = self.sma
         lookback = self.lookback
 
-        ls = [x[0] for x in sma.candle[-(lookback - 1):]]
-        ls = ls + [price]
+        ls = [x[0] for x in sma.candle[-lookback:]]
 
         mean = sum(ls) / lookback
         mean_square = list(map(lambda y: (y - mean) ** 2, ls))
