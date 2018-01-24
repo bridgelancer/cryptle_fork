@@ -87,13 +87,14 @@ class CandleBar:
                 ]
             )
 
+            for metric in self.metrics:
+                metric.update()
+
         # append previous n candle bars if no tick arrives between the n candles
         # the first bar to be appended
         elif int(timestamp / self.period) != int(self.last_timestamp / self.period):
 
             # Update all attached candle dependent metrics for the bar of last tick
-            for metric in self.metrics:
-                metric.update()
 
             timestamp_tmp = self.last_timestamp + self.period
             # append the in between bars if the next tick arrives 1+ bar after the previous one, if there is any
@@ -123,6 +124,9 @@ class CandleBar:
                     volume
                 ]
             )
+
+            for metric in self.metrics:
+                metric.update()
 
             self.last_timestamp = timestamp
 
@@ -202,13 +206,13 @@ class ATR():
 
 
     def update(self):
-        if (len(self.init) < self.lookback):
+        if (len(self.init) < self.lookback + 1):
             self.init.append(self.candle[-1][2] - self.candle[-1][3]) # append bar max - bar min
             self.atr = sum(self.init) / len(self.init)
         else:
-            t1 = self.candle[-1][2] - self.candle[-1][3]
-            t2 = abs(self.candle[-1][2] - self.candle[-2][1])
-            t3 = abs(self.candle[-1][3] - self.candle[-2][1])
+            t1 = self.candle[-2][2] - self.candle[-2][3]
+            t2 = abs(self.candle[-2][2] - self.candle[-3][1])
+            t3 = abs(self.candle[-2][3] - self.candle[-3][1])
             tr = max(t1, t2, t3)
             self.atr = (self.atr * (self.lookback - 1) + tr) / self.lookback
 
@@ -276,7 +280,7 @@ class EMA():
         if open_p:
             val = self.candle[-1][0]
         else:
-            val = self.candle[-1][1] # the [-2] is the current bar close (i.e. changing)
+            val = self.candle[-1][1] # the [-1] is the current bar close (i.e. changing)
 
         if self.ema == None:
             self.ema = val
