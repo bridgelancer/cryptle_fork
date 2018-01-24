@@ -118,7 +118,7 @@ def loadJSON(ls, Strat):
         Strat(tick)
 
 def parseJSON(pair):
-    ls = readJSON('papertrade0115p.log')
+    ls = readJSON('papertrade0114p.log')
 
     result = []
 

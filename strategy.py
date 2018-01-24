@@ -752,7 +752,7 @@ class WMAForceStrat(Strategy):
 
 class WMAForceBollingerStrat(Strategy):
 
-    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, bband_period=20, vwma_lb = 40):
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, , upper_atr = 0.5, lower_atr = 0.5, timeframe = 3600, bband = 3.5, bband_period=20, vol_multipler = 30, vwma_lb = 40):
         super().__init__(pair, portfolio, exchange)
         self.bar = CandleBar(period)
         self.ATR_5 = ATR(self.bar, scope1)
@@ -767,10 +767,11 @@ class WMAForceBollingerStrat(Strategy):
         self.dollar_volume_flag = False
 
         self.bollinger_signal = False
-        self.upper_atr = 0.5
-        self.lower_atr = 0.5
-        self.bband = 3.5
-        self.timeframe = 3600
+        self.upper_atr = upper_atr
+        self.lower_atr = lower_atr
+        self.bband = bband
+        self.timeframe = timeframe
+        self.vol_multipler = vol_multipler
         self.can_sell = False
         self.v_sell = False
         self.entry_time = None
@@ -828,7 +829,7 @@ class WMAForceBollingerStrat(Strategy):
         norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
 
         # Dollar volume signal # hard code threshold for the moment
-        if self.hasBalance() and  norm_vol1 > norm_vol2 * 30:
+        if self.hasBalance() and  norm_vol1 > norm_vol2 * self.vol_multipler:
             self.dollar_volume_flag = True
         else:
             self.dollar_volume_flag = False
