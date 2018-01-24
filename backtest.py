@@ -20,7 +20,7 @@ logger.setLevel(logging.DEBUG)
 
 formatter = defaultFormatter()
 
-fh = logging.FileHandler('backtest.log', mode='w')
+fh = logging.FileHandler('snoopedR_papertrade0115p.log', mode='w')
 fh.setLevel(logging.INDEX)
 fh.setFormatter(formatter)
 
@@ -214,34 +214,14 @@ def testWMAStrategy(pair):
     logger.info('WMA Assets: %s' % str(port.balance))
 
 
-def testSnoopingLoop(pair):
-    strats = []
-    ports = []
-
-    snooping = range(60, 1860, 60)
-    # Loop throug 60-1800 seconds bar, in 60s interval
-    for period in snooping:
-        ports.append(Portfolio(1000))
-        strats.append(WMAModStrat(str(pair), ports[snooping.index(period)], '[WMA {} min bar]'.format(period), period))
-
-    for strat in strats:
-        strat.equity_at_risk = 1.0
-
-        ls = parseJSON(pair)
-        loadJSON(ls, strat)
-
-    for port in ports:
-        logger.info('Port' + str((ports.index(port) + 1)*60) + ' cash: %.2f' % port.cash)
-        logger.info("Port" + str((ports.index(port) + 1)*60) + ' balance : %s' % str(port.balance))
-
 # This new function intends to snoop all the necessary parameters for a paritcular strategy on a single run. Already functioning
 # Caution: This function may run in extended period of time.
 def testSnoopingSuite(pair):
 
     # Datatypes to snoop
-    period = range(3, 6, 2) # in minutes
+    period = range(3, 6, 2) # need to multiply by 60
     bband = range (300, 601, 10) # need to divide by 100
-    timeframe = range(0, 181, 30)
+    timeframe = range(0, 181, 30) # need to multiply by 60
     delay = range(0, 91, 30) # (0, 91, 30)
     upperatr = range(50, 51, 15) # need to divide by 100
     loweratr = range(50, 51, 15) # need to divide by 100
@@ -282,10 +262,11 @@ def testSnoopingSuite(pair):
         strats[config] = strat
 
     counter = 0
-    # load tick data to ls once
+    # load tick data to ls once only
     ls = parseJSON(pair)
-    # feed tick data through strategies, and report after finish parsing
+    # feed tick data through strategies, and report the equity value of portfolio after finish parsing
     for key in sorted(strats.keys()):
+        # the keys for the strats are the strategy config
         loadJSON(ls, strats[key])
         logger.info('Port' + str(key) + ' equity: %.2f' % strats[key].portfolio.equity())
 
@@ -293,7 +274,7 @@ def testSnoopingSuite(pair):
         if counter%100 == 0:
             print ('%i Strategy configs' % counter + ' finished parsing')
 
-        del strats[key]
+        del strats[key] # optimize memory usage
         del ports[key]
 
 # generate continuous data - random sampling of all ranges
@@ -304,14 +285,15 @@ def testSnoopingSuiteR(pair, runs):
 
     # Generating configs of strategies
     for run in range(0, runs):
-        period = random.randrange(180, 360)
-        bband = random.uniform(3, 6)
+        period = random.randrange(60, 240) # only as integer
+        bband = random.uniform(1.5, 4)
         timeframe = random.randrange(0, 7200, 180)
-        delay = random.randrange(0, 90)
-        upperatr = random.uniform(0.4, 0.6)
-        loweratr = random.uniform(0.4, 0.6)
-        bband_period = random.randrange(5, 30)
+        delay = random.randrange(0, 20)
+        upperatr = 0.5
+        loweratr = random.uniform(0.4, 0.5)
+        bband_period = random.randrange(5, 20) # only as intenger
 
+        # Generate tuple of config as the key of strategy and its associated portfolio
         config = (period, bband, timeframe, delay, upperatr, loweratr, bband_period)
 
         ports[config] = Portfolio(1000)
@@ -387,4 +369,5 @@ def demoBacktest(dataset, pair):
 
 if __name__ == '__main__':
     pair = sys.argv[1]
-    testSnoopingSuiteR(pair, 100)
+    iteration = sys.argv[2]
+    testSnoopingSuiteR(pair, int(iteration))
