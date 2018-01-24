@@ -204,12 +204,10 @@ def testWMA():
 
     for tick in const:
         candle.update(tick[0], tick[1])
-        if tick[1] < 5: continue
-        else: assert wma.wma == 3.0
+    assert wma.wma == 3.0
 
     for tick in lin:
         candle.update(tick[0], tick[1])
-
     assert wma.wma - (293 / 3) < 1e-5
 
 
