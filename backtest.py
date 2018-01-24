@@ -162,6 +162,7 @@ def testWMAModStrategy(pair):
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
 
+
 def testWMAForceStrategy(pair):
     feed = BitstampFeed()
     port = Portfolio(1000)
@@ -176,7 +177,6 @@ def testWMAForceStrategy(pair):
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
 
-from plotting import *
 
 def testWMAForceBollingerStrategy(pair):
     feed = BitstampFeed()
@@ -212,6 +212,7 @@ def testWMAStrategy(pair):
     logger.info('WMA Equity:   %.2f' % port.equity())
     logger.info('WMA Cash:   %.2f' % port.cash)
     logger.info('WMA Assets: %s' % str(port.balance))
+
 
 def testSnoopingLoop(pair):
     strats = []
@@ -305,7 +306,7 @@ def testSnoopingSuiteR(pair, runs):
     for run in range(0, runs):
         period = random.randrange(180, 360)
         bband = random.uniform(3, 6)
-        timeframe = random.uniform(0, 180)
+        timeframe = random.randrange(0, 7200, 180)
         delay = random.randrange(0, 90)
         upperatr = random.uniform(0.4, 0.6)
         loweratr = random.uniform(0.4, 0.6)
