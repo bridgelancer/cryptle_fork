@@ -73,63 +73,65 @@ class CandleBar:
     def update(self, price, timestamp, volume=0):
 
         if self.last_timestamp == None:
-            self.barmin = self.barmax = self.baropen = self.barclose = price
             self.volume = volume
             self.last_timestamp = timestamp
+
+            self.bars.append(
+                [
+                    price,
+                    price,
+                    price,
+                    price,
+                    int(timestamp/self.period),
+                    volume
+                ]
+            )
 
         # append previous n candle bars if no tick arrives between the n candles
         # the first bar to be appended
         elif int(timestamp / self.period) != int(self.last_timestamp / self.period):
-            self.bars.append(
-                (
-                    self.baropen,
-                    self.barclose,
-                    self.barmax,
-                    self.barmin,
-                    int(timestamp/self.period),
-                    self.volume
-                )
-            )
+
             # Update all attached candle dependent metrics for the bar of last tick
-            if (int(timestamp / self.period) == int(self.last_timestamp / self.period) + 1):
-                for metric in self.metrics:
-                    metric.update(price)
-            else:
-                for metric in self.metrics:
-                    metric.update(self.barclose)
+            for metric in self.metrics:
+                metric.update()
 
             timestamp_tmp = self.last_timestamp + self.period
-            # append the in between bars if the next tick arrives 1+ bar after the previous one
+            # append the in between bars if the next tick arrives 1+ bar after the previous one, if there is any
             while int(timestamp_tmp / self.period) < int(timestamp / self.period):
                 self.bars.append(
-                    (
-                        self.barclose,
-                        self.barclose,
-                        self.barclose,
-                        self.barclose,
+                    [
+                        self.bars[-1][1], # append the close price of bar of last tick
+                        self.bars[-1][1],
+                        self.bars[-1][1],
+                        self.bars[-1][1],
                         int(timestamp_tmp/self.period),
                         0
-                    )
+                    ]
                 )
-                # Update all attached candle dependent metrics for the subsequent empty bars, if any
-                if (int(timestamp_tmp / self.period) == int(timestamp / self.period) - 1):
-                    for metric in self.metrics:
-                        metric.update(price)
-                else:
-                    for metric in self.metrics:
-                        metric.update(self.barclose)
+                for metric in self.metrics:
+                    metric.update()
                 timestamp_tmp = timestamp_tmp + self.period
 
-            self.barmin = self.barmax = self.baropen = self.barclose = price
-            self.volume = volume
+            # append the new bar that contains the newly arrived tick
+            self.bars.append(
+                [
+                    price,
+                    price,
+                    price,
+                    price,
+                    int(timestamp/self.period),
+                    volume
+                ]
+            )
+
             self.last_timestamp = timestamp
 
 
         elif int(timestamp / self.period) == int(self.last_timestamp / self.period):
-            self.barmin = min(self.barmin, price)
-            self.barmax = max(self.barmax, price)
-            self.barclose = price
-            self.volume += volume
+            self.bars[-1][3] = min(self.bars[-1][3], price)
+            self.bars[-1][2] = max(self.bars[-1][2], price)
+            self.bars[-1][1] = price
+            self.bars[-1][5] += volume
 
         self.last = price
 
@@ -199,7 +201,7 @@ class ATR():
         candle.metrics.append(self)
 
 
-    def update(self, price):
+    def update(self):
         if (len(self.init) < self.lookback):
             self.init.append(self.candle[-1][2] - self.candle[-1][3]) # append bar max - bar min
             self.atr = sum(self.init) / len(self.init)
@@ -222,7 +224,7 @@ class SMA():
         candle.metrics.append(self)
 
 
-    def update(self, price):
+    def update(self):
         self.sma = (sum([x[0] for x in self.candle[-self.lookback :]])) / self.lookback
 
 
@@ -240,7 +242,7 @@ class WMA():
 
     def update(self, open_p = True):
 
-        if len(self.candle) < (self.lookback-1):
+        if len(self.candle) < (self.lookback - 1):
             pass
 
         else:
@@ -339,7 +341,7 @@ class BollingerBand():
 
         self.width = ( sum(mean_square) / lookback ) ** 0.5
 
-        self.upperband = price + 2 * self.width
-        self.lowerband = price - 2 * self.width
+        self.upperband = self.sma.candle.bars[-1][1] + 2 * self.width
+        self.lowerband = self.sma.candle.bars[-1][1] - 2 * self.width
         self.band = ( self.upperband / self.lowerband - 1 ) * 100
 

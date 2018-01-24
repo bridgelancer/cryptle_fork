@@ -20,7 +20,7 @@ logger.setLevel(logging.DEBUG)
 
 formatter = defaultFormatter()
 
-fh = logging.FileHandler('snoopedR_papertrade0115p.log', mode='w')
+fh = logging.FileHandler('backtest.log', mode='w')
 fh.setLevel(logging.INDEX)
 fh.setFormatter(formatter)
 
@@ -361,13 +361,12 @@ def demoBacktest(dataset, pair):
     test.readString(dataset)
 
     port = Portfolio(10000)
-    start = WMAForceStrat(pair, port)
+    strat = WMAForceBollingerStrat(pair, port)
 
     test.run(strat)
     plotCandles(strat.bar)
 
 
 if __name__ == '__main__':
-    pair = sys.argv[1]
-    iteration = sys.argv[2]
-    testSnoopingSuiteR(pair, int(iteration))
+    testWMAForceBollingerStrategy('bchusd')
+    plt.show()
