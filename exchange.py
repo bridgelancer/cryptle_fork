@@ -112,6 +112,11 @@ class Bitstamp:
         self.url = 'https://www.bitstamp.net/api/v2'
 
 
+    def getCash(self):
+        balance = self.getBalance()
+        return balance['usd_available']
+
+
     def getTicker(self, pair):
         checkType(pair, str)
         return self._get('/ticker/' + pair)
