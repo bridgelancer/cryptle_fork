@@ -918,7 +918,7 @@ class WMAForceBollingerStrat(Strategy):
         self.dollar_volume_flag = dollar_volume_flag
         self.v_sell = v_sell
 
-# @To be implemented - Now RSI is not fully validated, not implemented
+# @TODO RSI is validated, strategy partially implemented
 class WMABollingerRSIStrat(Strategy):
 
     def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, upper_atr = 0.5, lower_atr = 0.5, timeframe = 3600, bband = 3.5, bband_period=20, vol_multipler = 30, vwma_lb = 40):
@@ -939,6 +939,7 @@ class WMABollingerRSIStrat(Strategy):
         self.bollinger_signal = False
         self.rsi_bsignal = False
         self.rsi_ssignal = False
+        self.rsi_sell_flag = False
         self.upper_atr = upper_atr
         self.lower_atr = lower_atr
         self.bband = bband
@@ -977,6 +978,7 @@ class WMABollingerRSIStrat(Strategy):
         bollinger_signal = self.bollinger_signal
         rsi_bsignal = self.rsi_bsignal
         rsi_ssignal = self.rsi_ssignal
+        rsi_sell_flag = self.rsi_sell_flag
 
         # @ta should not raise RuntimeWarning
         try:
@@ -1016,13 +1018,24 @@ class WMABollingerRSIStrat(Strategy):
 
         # RSI signal generation
         if self.rsi.rsi > 50:
-            rsi_bsignal = True
-            rsi_ssignal = False
-        elif self.rsi.rsi < 50:
-            rsi_ssignal = True
-            rsi_bsignal = False
-        else:
-            rsi_bsignal = rsi_ssignal = False
+            if rsi_sell_flag:
+                pass
+            elif self.rsi.rsi >80:
+                rsi_bsignal = True
+                rsi_ssignal = False
+                rsi_sell_flag = True
+            else:
+                rsi_bsignal = True
+                rsi_ssignal = False
+
+        if self.rsi.rsi < 60:
+            if rsi_sell_flag:
+                rsi_ssignal = True
+                rsi_bsignal = False
+            if self.rsi.rsi < 50:
+                rsi_ssignal = True
+                rsi_bsignal = False
+                rsi_sell_flag = False
 
         if self.hasCash() and not self.hasBalance():
             if v_sell:
@@ -1094,12 +1107,10 @@ class WMABollingerRSIStrat(Strategy):
         # Do not trigger take into account of v_sell unless in position
 
 
-        logger.signal("RSI:   %.5f   " % (self.rsi.rsi) + str(datetime.fromtimestamp(timestamp).strftime("%D %H:%M:%S")))
-
-
         self.bollinger_signal = bollinger_signal
         self.rsi_bsignal = rsi_bsignal
         self.rsi_ssignal = rsi_ssignal
+        self.rsi_sell_flag = rsi_sell_flag
         self.tradable_window = tradable_window
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time

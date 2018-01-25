@@ -197,7 +197,6 @@ class RSI():
                     self.rsi = 0
                 elif self.ema_up == 0 and self.ema_down == 0:
                     self.rsi = 50
-
             return
         else:
             pass
