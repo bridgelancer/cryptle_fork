@@ -221,24 +221,31 @@ def testBollingerBand():
 
     for tick in quad:
         candle.update(tick[0], tick[1])
+    assert bb.width - 274.36253388 < 1e-5
 
+
+@unittest
 def testRSI():
 
     candle = CandleBar(1)
-    rsi = RSI(candle, 14)
+    candle_quad = CandleBar(1)
+    candle_alt_quad = CandleBar(1)
 
-    # for tick in lin:
-    #     candle.update(tick[0], tick[1])
-    # assert rsi.rsi == 100
+    rsi_lin = RSI(candle, 14)
+    rsi_quad = RSI(candle_quad, 14)
+    rsi_alt_quad = RSI(candle_alt_quad, 14)
 
-    # for tick in quad:
-    #     candle.update(tick[0], tick[1])
-    # assert rsi.rsi == 100
-
-    print (alt_quad)
-    for tick in alt_quad:
+    for tick in lin:
         candle.update(tick[0], tick[1])
-        print ("RSI: %.5f" %rsi.rsi)
+    assert rsi_lin.rsi == 100
+
+    for tick in quad:
+        candle_quad.update(tick[0], tick[1])
+    assert rsi_quad.rsi == 100
+
+    for tick in alt_quad:
+        candle_alt_quad.update(tick[0], tick[1])
+    assert rsi_alt_quad.rsi - 55.48924 < 1e-5
 
 if __name__ == '__main__':
     testEquity()

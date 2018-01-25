@@ -156,16 +156,12 @@ class RSI():
         self.down = []
         self.ema_up = None
         self.ema_down = None
-        self.weight = 1/ (lookback + 1)
+        self.weight = 1 / lookback # MODIFIED to suit our purpose
         self.rsi = 0
 
         candle.metrics.append(self)
 
-        print(self.lookback)
-
-
     def update(self):
-
 
         if len(self.candle.bars) < 2:
             return
@@ -191,10 +187,17 @@ class RSI():
         if self.ema_up == None and self.ema_down == None:
             self.ema_up = sum([x for x in self.up]) / len(self.up)
             self.ema_down = sum([x for x in self.down]) / len(self.down)
-            self.rsi = 100 - 100 / (1 +  self.ema_up/self.ema_down)
 
-            print("ema_up: %.5f" % self.ema_up)
-            print("ema_down: %.5f" % self.ema_down)
+            try:
+                self.rsi = 100 - 100 / (1 +  self.ema_up/self.ema_down)
+            except ZeroDivisionError:
+                if self.ema_down == 0 and self.ema_up != 0:
+                    self.rsi = 100
+                elif self.ema_up == 0 and self.ema_down != 0:
+                    self.rsi = 0
+                elif self.ema_up == 0 and self.ema_down == 0:
+                    self.rsi = 50
+
             return
         else:
             pass
@@ -203,19 +206,16 @@ class RSI():
         self.ema_up = self.weight * price_up + (1 - self.weight) * self.ema_up
         self.ema_down = self.weight * price_down + (1 - self.weight) * self.ema_down
 
-        print("ema_up: %.5f" % self.ema_up)
-        print("ema_down: %.5f" % self.ema_down)
-
         # Handling edge cases and return the RSI index according to formula
-        if self.ema_down == 0 and self.ema_up != 0:
-            self.rsi = 100
-        elif self.ema_up == 0 and self.ema_down != 0:
-            self.rsi = 0
-        elif self.ema_up == 0 and self.ema_down == 0:
-            self.rsi = 50
-        else:
+        try:
             self.rsi = 100 - 100 / (1 +  self.ema_up/self.ema_down)
-
+        except ZeroDivisionError:
+            if self.ema_down == 0 and self.ema_up != 0:
+                self.rsi = 100
+            elif self.ema_up == 0 and self.ema_down != 0:
+                self.rsi = 0
+            elif self.ema_up == 0 and self.ema_down == 0:
+                self.rsi = 50
 
 
 
@@ -305,7 +305,7 @@ class EMA():
         if open_p:
             val = self.candle[-1][0]
         else:
-            val = self.candle[-1][1] # the [-1] is the current bar close (i.e. changing)
+            val = self.candle[-1][1] # the [-1] is the current bar close (i.e. changing, not intended)
 
         if self.ema == None:
             self.ema = val
