@@ -1,7 +1,7 @@
 from _utility import *
 from exchange import *
 
-logger = logging.getLogger(__module__)
+logger = logging.getLogger('Cryptle')
 
 class Portfolio:
 
@@ -46,26 +46,32 @@ class Portfolio:
         self.balance = {}
 
 
-    def equity(self):
+    def getEquity(self):
         asset = sum(self.balance_value.values())
         return self.cash + asset
 
 
-
 class Strategy:
+# Base class of any new strategy, provides wrapper function for buy/sell and portfolio management
+# Realisation classes must define the following functions:
+# - generateSignal()
+# - execute()
 
-    # @HARDCODE Remove the exchange default
-    # There will be regressions, so fix the, before removing the default
-    def __init__(self, pair, portfolio, exchange=None):
-        self.init_time = 0
+    def __init__(self, pair, portfolio=None, equity_at_risk=1, exchange=None):
         self.pair = pair
-        self.portfolio = portfolio
+        self.equity_at_risk = equity_at_risk
+        self.portfolio = portfolio or Portfolio(10000)
         self.exchange = exchange or PaperExchange()
+
+        for k, v in self.indicators.items():
+            self.__dict__[k] = v
 
         self.trades = []
 
 
-    def hasBalance(self):
+    def hasBalance(self, pair=None):
+        pair = pair or self.pair
+
         try:
             return self.portfolio.balance[self.pair] > 0
         except:
@@ -76,16 +82,35 @@ class Strategy:
         return self.portfolio.cash > 0
 
 
-    def equity(self):
-        return self.portfolio.equity()
+    def getEquity(self):
+        return self.portfolio.getEquity()
 
 
-    def maxBuyAmount(self, price):
-        return min(self.equity_at_risk * self.equity() / price, self.portfolio.cash / price)
+    def maxBuyAmount(self, price, pair=None):
+        pair = pair or self.pair
+        return min(self.equity_at_risk * self.getEquity() / price, self.portfolio.cash / price)
 
 
-    def maxSellAmount(self):
+    def maxSellAmount(self, pair=None):
+        pair = pair or self.pair
         return self.portfolio.balance[self.pair]
+
+    # Recieve and process tick data
+    def tick(self, tick):
+        price, volume, timestamp = unpackTick(tick)
+        for k, v in self.indicators.items():
+            v.update(tick)
+
+        self.generateSignal(self, price=price, volume=volume, timestamp=timestamp)
+        self.execute()
+
+    # Recieve and process news data
+    def news(self, string):
+        raise NotImplementedError
+
+    # Recieve and process tweet data
+    def tweet(self, string):
+        raise NotImplementedError
 
 
     def marketBuy(self, amount, message='', timestamp=None):
@@ -96,7 +121,7 @@ class Strategy:
         logger.debug('Placing market buy for {:.6g} {} {:s}'.format(amount, self.pair.upper(), message))
         res = self.exchange.marketBuy(self.pair, amount)
 
-        self.cleanupBuy(res, message, timestamp)
+        self._cleanupBuy(res, message, timestamp)
 
 
     def marketSell(self, amount, message='', timestamp=None):
@@ -107,7 +132,7 @@ class Strategy:
         logger.debug('Placing market sell for {:.6g} {} {:s}'.format(amount, self.pair.upper(), message))
         res = self.exchange.marketSell(self.pair, amount)
 
-        self.cleanupSell(res, message, timestamp)
+        self._cleanupSell(res, message, timestamp)
 
 
     def limitBuy(self, amount, price, message='', timestamp=None):
@@ -120,7 +145,7 @@ class Strategy:
         logger.debug('Placing limit buy for {:.6g} {} @${:.6g} {:s}'.format(amount, self.pair.upper(), price, message))
         res = self.exchange.limitBuy(self.pair, amount, price)
 
-        self.cleanupBuy(res, message, timestamp)
+        self._cleanupBuy(res, message, timestamp)
 
 
     def limitSell(self, amount, price, message='', timestamp=None):
@@ -133,10 +158,10 @@ class Strategy:
         logger.debug('Placing limit sell for {:.6g} {} @${:.6g} {:s}'.format(amount, self.pair.upper(), price, message))
         res = self.exchange.limitSell(self.pair, amount, price)
 
-        self.cleanupSell(res, message,  timestamp)
+        self._cleanupSell(res, message,  timestamp)
 
 
-    def cleanupBuy(self, res, message, timestamp=None):
+    def _cleanupBuy(self, res, message=None, timestamp=None, pair=None):
         if res['status'] == 'error':
             logger.error('Buy failed {} {}'.format(self.pair.upper(), message))
             return
@@ -151,7 +176,7 @@ class Strategy:
         logger.info('Bought {:.7g} {} @${:<.6g} {}'.format(amount, self.pair.upper(), price, message))
 
 
-    def cleanupSell(self, res, message, timestamp=None):
+    def _cleanupSell(self, res, message, timestamp=None):
         if res['status'] == 'error':
             logger.error('Sell failed {} {}'.format(self.pair.upper(), message))
             return
