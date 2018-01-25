@@ -187,22 +187,26 @@ class RSI():
         price_up = self.up[-1]
         price_down = self.down[-1]
 
+        # Initialization of ema_up and ema_down by simple averaging the up/down lists
         if self.ema_up == None and self.ema_down == None:
             self.ema_up = sum([x for x in self.up]) / len(self.up)
             self.ema_down = sum([x for x in self.down]) / len(self.down)
             self.rsi = 100 - 100 / (1 +  self.ema_up/self.ema_down)
-            print(self.ema_up)
-            print(self.ema_down)
+
+            print("ema_up: %.5f" % self.ema_up)
+            print("ema_down: %.5f" % self.ema_down)
             return
         else:
             pass
 
+        # Update ema_up and ema_down according to logistic updating formula
         self.ema_up = self.weight * price_up + (1 - self.weight) * self.ema_up
         self.ema_down = self.weight * price_down + (1 - self.weight) * self.ema_down
 
-        print(self.ema_up)
-        print(self.ema_down)
+        print("ema_up: %.5f" % self.ema_up)
+        print("ema_down: %.5f" % self.ema_down)
 
+        # Handling edge cases and return the RSI index according to formula
         if self.ema_down == 0 and self.ema_up != 0:
             self.rsi = 100
         elif self.ema_up == 0 and self.ema_down != 0:
