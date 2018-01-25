@@ -156,19 +156,27 @@ class RSI():
         self.down = []
         self.ema_up = None
         self.ema_down = None
-        self.weight = 2/ (lookback + 1)
+        self.weight = 1/ (lookback + 1)
         self.rsi = 0
 
         candle.metrics.append(self)
 
+        print(self.lookback)
+
 
     def update(self):
 
-        if (self.candle.[-1][0] > self.candle[-2][0]):
-            self.up.append(self.candle.[-1][0] - self.candle[-2][0])
+
+        if len(self.candle.bars) < 2:
+            return
+        else:
+            pass
+
+        if (self.candle[-1][0] > self.candle[-2][0]):
+            self.up.append(abs(self.candle[-1][0] - self.candle[-2][0]))
             self.down.append(0)
         else:
-            self.down.append(self.candle[-2][0] - self.candle.[-1][0])
+            self.down.append(abs(self.candle[-2][0] - self.candle[-1][0]))
             self.up.append(0)
 
         if len(self.up) < self.lookback:
@@ -180,16 +188,29 @@ class RSI():
         price_down = self.down[-1]
 
         if self.ema_up == None and self.ema_down == None:
-            self.ema_up = price_up
-            self.ema_down = price_down
+            self.ema_up = sum([x for x in self.up]) / len(self.up)
+            self.ema_down = sum([x for x in self.down]) / len(self.down)
+            self.rsi = 100 - 100 / (1 +  self.ema_up/self.ema_down)
+            print(self.ema_up)
+            print(self.ema_down)
             return
         else:
             pass
 
-        self.ema_up = self.weight*price_up + (1 - self.weight)*self.ema_up
-        self.ema_down = self.weight*price_down + (1-self.weight)*self.ema_down
+        self.ema_up = self.weight * price_up + (1 - self.weight) * self.ema_up
+        self.ema_down = self.weight * price_down + (1 - self.weight) * self.ema_down
 
-        self.rsi = 100 - 100 / (1 +  self.ema_up/self.ema_down)
+        print(self.ema_up)
+        print(self.ema_down)
+
+        if self.ema_down == 0 and self.ema_up != 0:
+            self.rsi = 100
+        elif self.ema_up == 0 and self.ema_down != 0:
+            self.rsi = 0
+        elif self.ema_up == 0 and self.ema_down == 0:
+            self.rsi = 50
+        else:
+            self.rsi = 100 - 100 / (1 +  self.ema_up/self.ema_down)
 
 
 

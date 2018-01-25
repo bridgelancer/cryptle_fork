@@ -164,6 +164,7 @@ def testCVWMA():
 const = [(3, i) for i in range(1, 100)]
 lin = [(i, i) for i in  range(1, 100)]
 quad  = [(i**2, i) for i in range(1, 100)]
+alt_quad = [((100+ ((-1) ** i) * (i/4)**2), i) for i in range (1, 33)]
 
 
 @unittest
@@ -221,6 +222,23 @@ def testBollingerBand():
     for tick in quad:
         candle.update(tick[0], tick[1])
 
+def testRSI():
+
+    candle = CandleBar(1)
+    rsi = RSI(candle, 14)
+
+    # for tick in lin:
+    #     candle.update(tick[0], tick[1])
+    # assert rsi.rsi == 100
+
+    # for tick in quad:
+    #     candle.update(tick[0], tick[1])
+    # assert rsi.rsi == 100
+
+    print (alt_quad)
+    for tick in alt_quad:
+        candle.update(tick[0], tick[1])
+        print ("RSI: %.5f" %rsi.rsi)
 
 if __name__ == '__main__':
     testEquity()
@@ -228,4 +246,5 @@ if __name__ == '__main__':
     testEMA()
     testWMA()
     testBollingerBand()
+    testRSI()
 
