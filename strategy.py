@@ -752,7 +752,7 @@ class WMAForceStrat(Strategy):
 
 class WMAForceBollingerStrat(Strategy):
 
-    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, , upper_atr = 0.5, lower_atr = 0.5, timeframe = 3600, bband = 3.5, bband_period=20, vol_multipler = 30, vwma_lb = 40):
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, upper_atr = 0.5, lower_atr = 0.5, timeframe = 3600, bband = 3.5, bband_period=20, vol_multipler = 30, vwma_lb = 40):
         super().__init__(pair, portfolio, exchange)
         self.bar = CandleBar(period)
         self.ATR_5 = ATR(self.bar, scope1)
@@ -918,6 +918,173 @@ class WMAForceBollingerStrat(Strategy):
         self.dollar_volume_flag = dollar_volume_flag
         self.v_sell = v_sell
 
+class WMABollingerRSIStrat(Strategy):
+
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, upper_atr = 0.5, lower_atr = 0.5, timeframe = 3600, bband = 3.5, bband_period=20, vol_multipler = 30, vwma_lb = 40):
+        super().__init__(pair, portfolio, exchange)
+        self.bar = CandleBar(period)
+        self.ATR_5 = ATR(self.bar, scope1)
+        self.WMA_5 = WMA(self.bar, scope1)
+        self.WMA_8 = WMA(self.bar, scope2)
+        self.vwma1 = ContinuousVWMA(period * 3) # @HARDCODE
+        self.vwma2 = ContinuousVWMA(period * vwma_lb)
+        self.sma_20 = SMA(self.bar, bband_period)
+        self.bollinger = BollingerBand(self.sma_20, bband_period)
+
+        self.message = message
+        self.dollar_volume_flag = False
+
+        self.bollinger_signal = False
+        self.upper_atr = upper_atr
+        self.lower_atr = lower_atr
+        self.bband = bband
+        self.timeframe = timeframe
+        self.vol_multipler = vol_multipler
+        self.can_sell = False
+        self.v_sell = False
+        self.entry_time = None
+        self.prev_sell_time = None
+        self.tradable_window = 0
+
+
+    def __call__(self, tick):
+        price, volume, timestamp = self.unpackTick(tick)
+        tick = json.loads(tick)
+
+        action = -1 * (tick['type'] * 2 - 1)
+
+        self.bar.update(price, timestamp)
+        self.vwma1.update(price, volume, timestamp, action)
+        self.vwma2.update(price, volume, timestamp, action)
+
+        if self.init_time == 0:
+            self.init_time = timestamp
+
+        if timestamp < self.init_time + max(self.WMA_8.lookback, 20) * self.bar.period:
+            return
+
+        prev_crossover_time = self.prev_crossover_time
+        prev_sell_time = self.prev_sell_time
+        entry_time = self.entry_time
+        can_sell = self.can_sell
+        dollar_volume_flag = self.dollar_volume_flag
+        v_sell = self.v_sell
+        tradable_window = self.tradable_window
+        bollinger_signal = self.bollinger_signal
+
+        # @ta should not raise RuntimeWarning
+        try:
+            atr = self.ATR_5.atr
+
+            belowatr = max(self.WMA_5.wma, self.WMA_8.wma) < price - self.lower_atr * atr
+            aboveatr = min(self.WMA_5.wma, self.WMA_8.wma) > price + self.upper_atr * atr
+        except RuntimeWarning:
+            return
+
+        uptrend   = self.WMA_5.wma > self.WMA_8.wma
+        downtrend = self.WMA_5.wma < self.WMA_8.wma
+
+        buy_signal = False
+        sell_signal = False
+        v_sell_signal = False
+
+        # @HARDCODE Buy/Sell message
+        # @TODO should not trade the first signal if we enter the bollinger_signal with an uptrend?
+
+        # Buy/Sell singal generation
+        # Band confirmation
+        norm_vol1 = self.vwma1.dollar_volume / self.vwma1.period
+        norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
+
+        # Dollar volume signal # hard code threshold for the moment
+        if self.hasBalance() and  norm_vol1 > norm_vol2 * self.vol_multipler:
+            self.dollar_volume_flag = True
+        else:
+            self.dollar_volume_flag = False
+
+        if self.bollinger.band > self.bband: # currently snooping 3.5%
+            bollinger_signal = True
+            tradable_window = timestamp
+        if timestamp > tradable_window + self.timeframe: # available at 1h trading window (3600s one hour)
+            bollinger_signal = False
+
+        if self.hasCash() and not self.hasBalance():
+            if v_sell:
+                if uptrend or belowatr or aboveatr:
+                    return
+                elif downtrend:
+                    v_sell = False
+            elif belowatr:
+                buy_signal = True
+            else:
+                prev_crossover_time = None
+
+        elif self.hasBalance():
+            if dollar_volume_flag and self.vwma1.dollar_volume <= 0:
+                v_sell_signal = True
+                logger.signal("VWMA Indicate sell at: " + str(timestamp))
+            elif not can_sell and aboveatr:
+                sell_signal = True
+            elif can_sell and downtrend:
+                sell_signal = True
+            elif not can_sell and uptrend:
+                can_sell = True
+            elif not can_sell and downtrend:
+                return
+
+        else:
+            prev_crossover_time = None
+
+        # Execution of signals
+        # Can only buy if buy_signal and bollinger_signal both exist
+        if self.hasCash() and not self.hasBalance() and buy_signal and bollinger_signal:
+            if prev_crossover_time is None:
+                prev_crossover_time = timestamp
+
+            elif timestamp - prev_crossover_time >= self.timelag_required:
+                amount = self.equity_at_risk * self.equity() / price
+                self.marketBuy(amount, appendTimestamp(self.message, timestamp), timestamp)
+
+                prev_crossover_time = None
+                # setting can_sell flag for preventing premature exit
+                if uptrend:
+                    can_sell = True
+                elif downtrend:
+                    can_sell = False
+        # Sell immediately if v_sell signal is present, do not enter the position before next uptrend
+        elif self.hasBalance() and v_sell_signal:
+            amount = self.portfolio.balance[self.pair]
+            self.marketSell(amount, appendTimestamp(self.message, timestamp), timestamp)
+
+            prev_crossover_time = None
+            dollar_volume_flag = False
+
+            v_sell = True
+
+        elif self.hasBalance() and sell_signal:
+
+            if prev_crossover_time is None:
+                prev_crossover_time = timestamp
+
+            elif timestamp - prev_crossover_time >= self.timelag_required:
+
+                amount = self.portfolio.balance[self.pair]
+                self.marketSell(amount, appendTimestamp(self.message, timestamp), timestamp)
+
+                prev_crossover_time = None
+                dollar_volume_flag = False
+
+        ####### Hardcoded for BCH volume
+        # Do not trigger take into account of v_sell unless in position
+
+        self.bollinger_signal = bollinger_signal
+        self.tradable_window = tradable_window
+        self.prev_crossover_time = prev_crossover_time
+        self.prev_sell_time = prev_sell_time
+        self.entry_time = entry_time
+        self.can_sell = can_sell
+        self.dollar_volume_flag = dollar_volume_flag
+        self.v_sell = v_sell
 
 # @In Progress
 # Needs ATR x MA indicators
