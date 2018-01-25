@@ -118,7 +118,7 @@ def loadJSON(ls, Strat):
         Strat(tick)
 
 def parseJSON(pair):
-    ls = readJSON('papertrade0114p.log')
+    ls = readJSON('papertrade0115p.log')
 
     result = []
 
@@ -197,6 +197,24 @@ def testWMAForceBollingerStrategy(pair):
     # put to plot
     plotCandles(wmaeth.bar, trades=wmaeth.trades, title='Final equity: ${}'.format(port.equity()))
 
+def testWMABollingerRSIStrategy(pair):
+    feed = BitstampFeed()
+    port = Portfolio(1000)
+    paper = PaperExchange(0.0012)
+    wmaeth  = WMABollingerRSIStrat(str(pair), port, exchange=paper, message='[WMA Bollinger]', period=240, bband = 3.0, bband_period = 30)
+    wmaeth.equity_at_risk = 1.0
+
+    ls = parseJSON(pair)
+    loadJSON(ls, wmaeth)
+
+    logger.info('WMA Equity:   %.2f' % port.equity())
+    logger.info('WMA Cash:   %.2f' % port.cash)
+    logger.info('WMA Assets: %s' % str(port.balance))
+
+    # get back the candle bar
+    # call script from python
+    # put to plot
+    plotCandles(wmaeth.bar, trades=wmaeth.trades, title='Final equity: ${}'.format(port.equity()))
 
 def testWMAStrategy(pair):
     feed = BitstampFeed()
@@ -368,5 +386,5 @@ def demoBacktest(dataset, pair):
 
 
 if __name__ == '__main__':
-    testWMAForceBollingerStrategy('bchusd')
+    testWMABollingerRSIStrategy('bchusd')
     plt.show()

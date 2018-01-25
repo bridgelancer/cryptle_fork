@@ -99,7 +99,7 @@ class Strategy:
 
         self.prev_crossover_time = None
         self.equity_at_risk = 0.1
-        self.timelag_required = 30
+        self.timelag_required = 10
         self.prev_sell_time = 0
         self.prev_tick_price = 0
 
@@ -607,7 +607,7 @@ class WMAModStrat(Strategy):
         self.entry_time = entry_time
         self.can_sell = can_sell
 
-# @To be implemented - Now only apply to BCH
+
 class WMAForceStrat(Strategy):
 
     def __init__(self, pair, portfolio, exchange=None, message='[WMA Force]', period=180, scope1=5, scope2=8):
@@ -918,6 +918,7 @@ class WMAForceBollingerStrat(Strategy):
         self.dollar_volume_flag = dollar_volume_flag
         self.v_sell = v_sell
 
+# @To be implemented - Now RSI is not fully validated, not implemented
 class WMABollingerRSIStrat(Strategy):
 
     def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, upper_atr = 0.5, lower_atr = 0.5, timeframe = 3600, bband = 3.5, bband_period=20, vol_multipler = 30, vwma_lb = 40):
@@ -930,11 +931,14 @@ class WMABollingerRSIStrat(Strategy):
         self.vwma2 = ContinuousVWMA(period * vwma_lb)
         self.sma_20 = SMA(self.bar, bband_period)
         self.bollinger = BollingerBand(self.sma_20, bband_period)
+        self.rsi = RSI(self.bar, 14) # @HARDCODE
 
         self.message = message
         self.dollar_volume_flag = False
 
         self.bollinger_signal = False
+        self.rsi_bsignal = False
+        self.rsi_ssignal = False
         self.upper_atr = upper_atr
         self.lower_atr = lower_atr
         self.bband = bband
@@ -971,6 +975,8 @@ class WMABollingerRSIStrat(Strategy):
         v_sell = self.v_sell
         tradable_window = self.tradable_window
         bollinger_signal = self.bollinger_signal
+        rsi_bsignal = self.rsi_bsignal
+        rsi_ssignal = self.rsi_ssignal
 
         # @ta should not raise RuntimeWarning
         try:
@@ -1008,6 +1014,16 @@ class WMABollingerRSIStrat(Strategy):
         if timestamp > tradable_window + self.timeframe: # available at 1h trading window (3600s one hour)
             bollinger_signal = False
 
+        # RSI signal generation
+        if self.rsi.rsi > 50:
+            rsi_bsignal = True
+            rsi_ssignal = False
+        elif self.rsi.rsi < 50:
+            rsi_ssignal = True
+            rsi_bsignal = False
+        else:
+            rsi_bsignal = rsi_ssignal = False
+
         if self.hasCash() and not self.hasBalance():
             if v_sell:
                 if uptrend or belowatr or aboveatr:
@@ -1037,7 +1053,7 @@ class WMABollingerRSIStrat(Strategy):
 
         # Execution of signals
         # Can only buy if buy_signal and bollinger_signal both exist
-        if self.hasCash() and not self.hasBalance() and buy_signal and bollinger_signal:
+        if self.hasCash() and not self.hasBalance() and buy_signal and bollinger_signal and rsi_bsignal:
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
 
@@ -1061,7 +1077,7 @@ class WMABollingerRSIStrat(Strategy):
 
             v_sell = True
 
-        elif self.hasBalance() and sell_signal:
+        elif self.hasBalance() and sell_signal and rsi_ssignal:
 
             if prev_crossover_time is None:
                 prev_crossover_time = timestamp
@@ -1078,6 +1094,8 @@ class WMABollingerRSIStrat(Strategy):
         # Do not trigger take into account of v_sell unless in position
 
         self.bollinger_signal = bollinger_signal
+        self.rsi_bsignal = rsi_bsignal
+        self.rsi_ssignal = rsi_ssignal
         self.tradable_window = tradable_window
         self.prev_crossover_time = prev_crossover_time
         self.prev_sell_time = prev_sell_time
