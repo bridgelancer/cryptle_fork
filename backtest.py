@@ -118,7 +118,7 @@ def loadJSON(ls, Strat):
         Strat(tick)
 
 def parseJSON(pair):
-    ls = readJSON('bch.03(1).log')
+    ls = readJSON('papertrade0115p.log')
 
     result = []
 
@@ -237,13 +237,14 @@ def testWMAStrategy(pair):
 def testSnoopingSuite(pair):
 
     # Datatypes to snoop
-    period = range(3, 6, 2) # need to multiply by 60
-    bband = range (300, 601, 10) # need to divide by 100
-    timeframe = range(0, 181, 30) # need to multiply by 60
-    delay = range(0, 91, 30) # (0, 91, 30)
+    period = range(2, 5, 1) # need to multiply by 60
+    bband = range (200, 401, 10) # need to divide by 100
+    timeframe = range(0, 181, 60) # need to multiply by 60
+    delay = range(0, 31, 15) # (0, 91, 30)
     upperatr = range(50, 51, 15) # need to divide by 100
     loweratr = range(50, 51, 15) # need to divide by 100
     bband_period = range (5, 31, 5)
+    vol_multiplier = range (10, 111, 20)
 
     period_60 = [x*60 for x in period]
     timeframe_60 = [x*60 for x in timeframe]
@@ -252,7 +253,7 @@ def testSnoopingSuite(pair):
     loweratr_100 = [x/100 for x in loweratr]
     # @TODO also snoop type of ma used for bars, bollinger band
 
-    configs = itertools.product(period_60, bband_100, timeframe_60, delay, upperatr_100, loweratr_100, bband_period)
+    configs = itertools.product(period_60, bband_100, timeframe_60, delay, upperatr_100, loweratr_100, bband_period, vol_multiplier)
 
     strats = {}
     ports = {}
@@ -266,15 +267,18 @@ def testSnoopingSuite(pair):
         upperatr = config[4]
         loweratr = config[5]
         bband_period = config[6]
+        vol_multiplier = config[7]
 
         ports[config] = Portfolio(1000)
-        strat = WMAForceBollingerStrat(str(pair), ports[config], message='[WMA Force Bollinger]', period=period, bband_period=bband_period)
+        paper = PaperExchange(0.0012)
+        strat = WMAForceBollingerStrat(str(pair), ports[config], exchange=paper, message='[WMA Force Bollinger]', period=period, bband_period=bband_period)
 
         strat.bband            = bband
         strat.timeframe        = timeframe
         strat.timelag_required = delay
         strat.upper_atr        = upperatr
         strat.lower_atr        = loweratr
+        strat.vol_multipler    = vol_multiplier
         strat.equity_at_risk = 1.0
 
         strats[config] = strat
@@ -315,7 +319,8 @@ def testSnoopingSuiteR(pair, runs):
         config = (period, bband, timeframe, delay, upperatr, loweratr, bband_period)
 
         ports[config] = Portfolio(1000)
-        strat = WMAForceBollingerStrat(str(pair), ports[config], message='[WMA Force Bollinger]', period=period, bband_period=bband_period)
+        paper = PaperExchange(0.0012)
+        strat = WMAForceBollingerStrat(str(pair), ports[config], exchange=paper, message='[WMA Force Bollinger]', period=period, bband_period=bband_period)
 
         strat.bband            = bband
         strat.timeframe        = timeframe
@@ -386,5 +391,4 @@ def demoBacktest(dataset, pair):
 
 
 if __name__ == '__main__':
-    testWMABollingerRSIStrategy('bchusd')
-    plt.show()
+    testSnoopingSuite('bchusd')
