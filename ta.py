@@ -164,11 +164,11 @@ class RSI():
 
     def update(self):
 
-        if (self.candle.baropen > self.candle[-1][0]):
-            self.up.append(self.candle.baropen - self.candle[-1][0])
+        if (self.candle.[-1][0] > self.candle[-2][0]):
+            self.up.append(self.candle.[-1][0] - self.candle[-2][0])
             self.down.append(0)
         else:
-            self.down.append(self.candle[-1][0] - self.candle.baropen)
+            self.down.append(self.candle[-2][0] - self.candle.[-1][0])
             self.up.append(0)
 
         if len(self.up) < self.lookback:
