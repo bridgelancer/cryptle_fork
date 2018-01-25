@@ -13,7 +13,7 @@ logger = logging.getLogger('Cryptle')
 
 # @HARDCODE @REGRESSION @TEMPORARY
 def appendTimestamp(msg, t):
-    return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M%S"))
+    return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M:%S"))
 
 
 def checkType(param, *types):
@@ -1092,6 +1092,10 @@ class WMABollingerRSIStrat(Strategy):
 
         ####### Hardcoded for BCH volume
         # Do not trigger take into account of v_sell unless in position
+
+
+        logger.signal("RSI:   %.5f   " % (self.rsi.rsi) + str(datetime.fromtimestamp(timestamp).strftime("%D %H:%M:%S")))
+
 
         self.bollinger_signal = bollinger_signal
         self.rsi_bsignal = rsi_bsignal

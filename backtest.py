@@ -201,7 +201,7 @@ def testWMABollingerRSIStrategy(pair):
     feed = BitstampFeed()
     port = Portfolio(1000)
     paper = PaperExchange(0.0012)
-    wmaeth  = WMABollingerRSIStrat(str(pair), port, exchange=paper, message='[WMA Bollinger]', period=240, bband = 3.0, bband_period = 30)
+    wmaeth  = WMABollingerRSIStrat(str(pair), port, exchange=paper, message='[WMA Bollinger]', period=180, bband = 3.0, bband_period = 30)
     wmaeth.equity_at_risk = 1.0
 
     ls = parseJSON(pair)
