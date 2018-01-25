@@ -921,17 +921,17 @@ class WMAForceBollingerStrat(Strategy):
 # @TODO RSI is validated, strategy partially implemented
 class WMABollingerRSIStrat(Strategy):
 
-    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, upper_atr = 0.5, lower_atr = 0.5, timeframe = 3600, bband = 3.5, bband_period=20, vol_multipler = 30, vwma_lb = 40):
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, upper_atr = 0.5, lower_atr = 0.5, timeframe = 3600, bband = 3.5, bband_period=20, vol_multipler = 30, vwma_la =3, vwma_lb = 40, rsi_la = 14):
         super().__init__(pair, portfolio, exchange)
         self.bar = CandleBar(period)
         self.ATR_5 = ATR(self.bar, scope1)
         self.WMA_5 = WMA(self.bar, scope1)
         self.WMA_8 = WMA(self.bar, scope2)
-        self.vwma1 = ContinuousVWMA(period * 3) # @HARDCODE
+        self.vwma1 = ContinuousVWMA(period * vwma_la)
         self.vwma2 = ContinuousVWMA(period * vwma_lb)
         self.sma_20 = SMA(self.bar, bband_period)
         self.bollinger = BollingerBand(self.sma_20, bband_period)
-        self.rsi = RSI(self.bar, 14) # @HARDCODE
+        self.rsi = RSI(self.bar, rsi_la) # @HARDCODE
 
         self.message = message
         self.dollar_volume_flag = False
