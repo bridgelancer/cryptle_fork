@@ -1,4 +1,4 @@
-from loglevel import *
+from .loglevel import *
 
 import logging
 import csv
