@@ -1,8 +1,9 @@
 from ta import *
-from datafeed import *
 from strategy import *
 from plotting import *
-from loglevel import *
+from cryptle.backtest import *
+from cryptle.datafeed import *
+from cryptle.loglevel import *
 
 import matplotlib.pyplot as plt
 
@@ -29,72 +30,6 @@ logger.addHandler(fh)
 bslog = logging.getLogger('Bitstamp')
 bslog.setLevel(logging.INDEX)
 bslog.addHandler(fh)
-
-
-class Backtest():
-
-    def run(self, strat):
-        for tick in self.ticks:
-            strat(tick)
-
-    # Read file, detect it's data format and automatically parses it
-    def read(self, fname, fileformat=None, fmt=None):
-        raw = self._read(fname)
-        fileformat = fileformat or self._guessFileType(raw[0])
-
-        if fileformat == 'JSON':
-            self.readJSON(fname)
-        elif fileformat == 'CSV':
-            self.readCSV(fname)
-        elif fileformat == 'XML': # Not supported
-            self.readString(fname)
-        else:
-            self.readString(fname)
-
-    # Store ticks as list of strings
-    def readString(self, fname):
-        self.ticks = self._read(fname)
-
-    # Not needed, Strategy now only supports json string
-    def readJSON(self, fname):
-        raw = self._read(fname)
-        self.ticks = self._parseJSON(raw)
-
-    # Not needed, Strategy now only supports json string
-    def readCSV(self, fname, fieldnames=None):
-        fieldnames = fieldnames or ['amount', 'price', 'timestamp']
-        with open(fname) as f:
-            reader = csv.DictReader(f, fieldnames=fieldnames)
-            self.ticks = [row for row in reader]
-
-    @staticmethod
-    def _guessFileType(line):
-        if line[0] == '{' or line[0] == '[':
-            return 'JSON'
-        elif line[0] == '<':
-            return 'XML'
-        elif ',' in line:
-            return 'CSV'
-        else:
-            return None
-
-    @staticmethod
-    def _read(fname):
-        with open(fname) as f:
-            return f.read().splitlines()
-
-    @staticmethod
-    def _parseJSON(strings):
-        return [json.loads(tick) for tick in strings]
-
-    @staticmethod
-    def _parseCSV(strings, fieldnames=None):
-        x = []
-        for s in strings:
-            tx = {}
-            s = s.split('n')
-            for i, c in enumerate(s):
-                tx[fieldnames[i]] = c
 
 
 def readJSON(filename):
