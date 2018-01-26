@@ -73,6 +73,7 @@ class Bitstamp:
         params['amount'] = truncate(amount, 8)
 
         res = self._post('/buy/market/' + pair + '/', params=params)
+        res['timestamp'] = time.now()
 
         self.handleBitstampErrors(res, 'Market buy {} failed'.format(pair.upper()))
         return res
@@ -87,6 +88,7 @@ class Bitstamp:
         params['amount'] = truncate(amount, 8)
 
         res = self._post('/sell/market/' + pair + '/', params=params)
+        res['timestamp'] = time.now()
 
         self.handleBitstampErrors(res, 'Market sell {} failed'.format(pair.upper()))
         return res
@@ -104,6 +106,7 @@ class Bitstamp:
         params['price'] = truncate(price)
 
         res = self._post('/buy/' + pair + '/', params=params)
+        res['timestamp'] = time.now()
 
         self.handleBitstampErrors(res, 'Limit buy {} failed'.format(pair.upper()))
         return res
@@ -121,6 +124,7 @@ class Bitstamp:
         params['price'] = truncate(price)
 
         res = self._post('/sell/' + pair + '/', params=params)
+        res['timestamp'] = time.now()
 
         self.handleBitstampErrors(res, 'Limit sell {} failed'.format(pair.upper()))
         return res
