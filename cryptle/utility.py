@@ -1,5 +1,11 @@
 import inspect
 import json
+from datetime import datetime
+
+
+# @HARDCODE @REGRESSION @TEMPORARY
+def appendTimestamp(msg, t):
+    return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M:%S"))
 
 
 def truncate(f, dp):
