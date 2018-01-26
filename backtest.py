@@ -60,16 +60,7 @@ def parseJSON(pair):
     for tick in ls:
         tick = ''.join(tick)
         parsed_tick = json.loads(tick)
-        price = parsed_tick['price']
-
-        if pair == 'ethusd' and  900 < price < 1400:
-            result.append(tick)
-        elif pair == 'xrpusd' and  price < 3:
-            result.append(tick)
-        elif pair == 'btcusd' and price > 9000:
-            result.append(tick)
-        elif pair == 'bchusd' and  1600 < price < 3000:
-            result.append(tick)
+        result.append(tick)
 
     return result
 
@@ -117,11 +108,11 @@ def testWMAForceBollingerStrategy(pair):
     feed = BitstampFeed()
     port = Portfolio(1000)
     paper = PaperExchange(0.0012)
-    wmaeth  = WMAForceBollingerStrat(str(pair), port, exchange=paper, message='[WMA Bollinger]', period=180)
+    wmaeth  = WMAForceBollingerStrat(pair=str(pair), portfolio=port, exchange=paper, message='[WMA Bollinger]', period=180)
     wmaeth.equity_at_risk = 1.0
 
     ls = parseJSON(pair)
-    loadJSON(ls, wmaeth)
+    loadJSON(ls, wmaeth.tick)
 
     logger.info('WMA Equity:   %.2f' % port.equity())
     logger.info('WMA Cash:   %.2f' % port.cash)
@@ -225,7 +216,7 @@ def testSnoopingSuite(pair):
     for key in sorted(strats.keys()):
         # the keys for the strats are the strategy config
         loadJSON(ls, strats[key])
-        logger.info('Port' + str(key) + ' equity: %.2f' % strats[key].portfolio.equity())
+        logger.info('Port' + str(key) + ' equity: %.2f' % strats[key].portfolio.getEquity())
 
         counter = counter + 1
         if counter%100 == 0:
@@ -315,15 +306,17 @@ def testSwiss(pair):
 
 # @Temporary
 def demoBacktest(dataset, pair):
-    test = Backtest()
-    test.readString(dataset)
-
     port = Portfolio(10000)
-    strat = WMAForceBollingerStrat(pair, port)
+    exchange= PaperExchange(0.0012)
+    strat = WMAForceBollingerStrat(pair=pair, portfolio=port, exchange=exchange)
 
-    test.run(strat)
+    test = Backtest(exchange)
+    test.readJSON(dataset)
+    test.run(strat.tick)
+
     plotCandles(strat.bar)
 
 
 if __name__ == '__main__':
-    testSnoopingSuite('bchusd')
+    demoBacktest('../../../../data/bitstamp/bch.04.log', 'btcusd')
+    plt.show()
