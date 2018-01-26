@@ -1,6 +1,8 @@
 from .loglevel import *
+from .utility  import *
 
 import logging
+import json
 import csv
 
 log = logging.getLogger('Exchange')
@@ -8,9 +10,16 @@ log = logging.getLogger('Exchange')
 
 class Backtest():
 
-    def run(self, strat):
+    def __init__(self, exchange):
+        self.exchange = exchange
+
+    def run(self, exe):
         for tick in self.ticks:
-            strat(tick)
+            price, timestamp, volume, action= unpackTick(tick)
+            self.exchange.price = price
+            self.exchange.volume = volume
+            self.exchange.timestamp = timestamp
+            exe(price, timestamp, volume, action)
 
     # Read file, detect it's data format and automatically parses it
     def read(self, fname, fileformat=None, fmt=None):
