@@ -8,6 +8,22 @@ class ContinuousVWMA:
         self.period = period
 
 
+    def __int__(self):
+        return self.dollar_volume
+
+
+    def __float__(self):
+        return self.dollar_volume
+
+
+    def __lt__(self, other):
+        return self.dollar_volume < other
+
+
+    def __gt__(self, other):
+        return self.dollar_volume > other
+
+
     # Action: (1) is buy, (-1) is sell
     def update(self, price, timestamp, volume, action):
 
