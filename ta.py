@@ -9,7 +9,7 @@ class ContinuousVWMA:
 
 
     # Action: (1) is buy, (-1) is sell
-    def update(self, price, volume, timestamp, action):
+    def update(self, price, timestamp, volume, action):
 
         self.ticks.append((price, volume, timestamp, action))
         self.prune()
@@ -70,7 +70,7 @@ class CandleBar:
         return len(self.bars)
 
 
-    def update(self, price, timestamp, volume=0):
+    def update(self, price, timestamp, volume=0, action=0):
 
         if self.last_timestamp == None:
             self.volume = volume
