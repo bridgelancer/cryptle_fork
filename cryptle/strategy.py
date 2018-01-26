@@ -53,9 +53,13 @@ class Portfolio:
 
 class Strategy:
 # Base class of any new strategy, provides wrapper function for buy/sell and portfolio management
+#
 # Realisation classes must define the following functions:
 # - generateSignal()
 # - execute()
+#
+# Metrics/Indicators that needs to be updated tick by tick needs to go into the indicators dict
+# These will be updated automatically whenever tick() is called
 
     def __init__(self, pair, portfolio=None, equity_at_risk=1, exchange=None):
         self.pair = pair
@@ -69,6 +73,8 @@ class Strategy:
         self.trades = []
 
 
+    # [Portfolio interface]
+    # Wrapper functions of portfolio object, mostly for convenience purpose
     def hasBalance(self, pair=None):
         pair = pair or self.pair
 
@@ -95,7 +101,8 @@ class Strategy:
         pair = pair or self.pair
         return self.portfolio.balance[self.pair]
 
-    # Recieve and process tick data
+
+    # [Data input interface]
     def tick(self, tick):
         price, volume, timestamp = unpackTick(tick)
         for k, v in self.indicators.items():
@@ -104,15 +111,17 @@ class Strategy:
         self.generateSignal(self, price=price, volume=volume, timestamp=timestamp)
         self.execute()
 
-    # Recieve and process news data
+
     def news(self, string):
         raise NotImplementedError
 
-    # Recieve and process tweet data
+
     def tweet(self, string):
         raise NotImplementedError
 
 
+    # [Exchange interface]
+    # Wrapper functions of exchange object for more detailed logging of buy/sell process
     def marketBuy(self, amount, message='', timestamp=None):
         checkType(amount, int, float)
         checkType(message, str)
@@ -161,6 +170,7 @@ class Strategy:
         self._cleanupSell(res, message,  timestamp)
 
 
+    # Reconcile actions made on the exchange with the portfolio
     def _cleanupBuy(self, res, message=None, timestamp=None, pair=None):
         if res['status'] == 'error':
             logger.error('Buy failed {} {}'.format(self.pair.upper(), message))
