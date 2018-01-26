@@ -1,4 +1,5 @@
 import inspect
+import json
 
 def checkType(param, *types):
     valid_type = False
@@ -14,4 +15,14 @@ def checkType(param, *types):
         msg = fmt.format(passed, caller, types)
 
         raise TypeError(msg)
+
+
+def unpackTick(tick):
+    checkType(tick, dict)
+
+    price = tick['price']
+    volume = tick['amount']
+    timestamp = float(tick['timestamp'])
+
+    return price, volume, timestamp
 
