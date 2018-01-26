@@ -1,5 +1,5 @@
-from utility import *
-from exchange import *
+from .utility import *
+from .exchange import *
 
 logger = logging.getLogger('Cryptle')
 
