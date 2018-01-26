@@ -62,6 +62,9 @@ class Strategy:
 # These will be updated automatically whenever tick() is called
 
     def __init__(self, pair=None, portfolio=None, exchange=None, equity_at_risk=1):
+        if exchange is None:
+            raise TypeError('Expected exchange for strategy constructor, None received')
+
         self.pair = pair
         self.exchange = exchange
         self.equity_at_risk = equity_at_risk
@@ -115,11 +118,11 @@ class Strategy:
         self.execute()
 
 
-    def news(self, string):
+    def news(self, string, timestamp):
         raise NotImplementedError
 
 
-    def tweet(self, string):
+    def tweet(self, string, timestamp):
         raise NotImplementedError
 
 
