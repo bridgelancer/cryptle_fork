@@ -1,6 +1,13 @@
 import inspect
 import json
 
+
+def truncate(f, dp):
+    fmt = '{:.' + str(dp) + 'f}'
+    s = fmt.format(f)
+    return float(s)
+
+
 def checkType(param, *types):
     valid_type = False
 
