@@ -1,5 +1,5 @@
 from .utility import *
-from .exchange import *
+import logging
 
 logger = logging.getLogger('Cryptle')
 
@@ -61,11 +61,11 @@ class Strategy:
 # Metrics/Indicators that needs to be updated tick by tick needs to go into the indicators dict
 # These will be updated automatically whenever tick() is called
 
-    def __init__(self, pair, portfolio=None, equity_at_risk=1, exchange=None):
+    def __init__(self, pair=None, portfolio=None, exchange=None, equity_at_risk=1):
         self.pair = pair
+        self.exchange = exchange
         self.equity_at_risk = equity_at_risk
         self.portfolio = portfolio or Portfolio(10000)
-        self.exchange = exchange or PaperExchange()
 
         for k, v in self.indicators.items():
             self.__dict__[k] = v
@@ -92,9 +92,11 @@ class Strategy:
         return self.portfolio.getEquity()
 
 
-    def maxBuyAmount(self, price, pair=None):
+    def maxBuyAmount(self, pair=None):
         pair = pair or self.pair
-        return min(self.equity_at_risk * self.getEquity() / price, self.portfolio.cash / price)
+        max_equi = self.equity_at_risk * self.getEquity() / self.last_price
+        max_cash = self.portfolio.cash / self.last_price
+        return min(max_equi, max_cash)
 
 
     def maxSellAmount(self, pair=None):
@@ -103,12 +105,12 @@ class Strategy:
 
 
     # [Data input interface]
-    def tick(self, tick):
-        price, volume, timestamp = unpackTick(tick)
+    def tick(self, price, timestamp, volume, action):
         for k, v in self.indicators.items():
-            v.update(tick)
+            v.update(price, timestamp, volume, action)
 
-        self.generateSignal(self, price=price, volume=volume, timestamp=timestamp)
+        self.last_price = price
+        self.generateSignal(price, timestamp, volume, action)
         self.execute()
 
 
