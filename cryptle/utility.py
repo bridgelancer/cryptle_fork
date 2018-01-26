@@ -24,12 +24,14 @@ def checkType(param, *types):
         raise TypeError(msg)
 
 
+# Hardcoded for bitstamp
 def unpackTick(tick):
     checkType(tick, dict)
 
     price = tick['price']
     volume = tick['amount']
     timestamp = float(tick['timestamp'])
+    action = 1 - tick['type'] * 2
 
-    return price, volume, timestamp
+    return price, timestamp, volume, action
 
