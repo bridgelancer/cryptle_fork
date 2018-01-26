@@ -4,6 +4,7 @@ import logging
 logger = logging.getLogger('Cryptle')
 
 class Portfolio:
+    '''A proxy data structure for keeping track of balance in an account.'''
 
     def __init__(self, cash, balance=None, balance_value=None):
         checkType(cash, int, float)
@@ -53,14 +54,18 @@ class Portfolio:
 
 
 class Strategy:
-# Base class of any new strategy, provides wrapper function for buy/sell and portfolio management
-#
-# Realisation classes must define the following functions:
-# - generateSignal()
-# - execute()
-#
-# Metrics/Indicators that needs to be updated tick by tick needs to go into the indicators dict
-# These will be updated automatically whenever tick() is called
+    '''Base class of strategies implementation/realisations.
+
+    Provides wrapper function for buy/sell and portfolio management.
+
+    Realisation classes must define the following functions:
+    - generateSignal()
+    - execute()
+
+    Metrics/Indicators that needs to be updated tick by tick has to go into the
+    indicators dict. The update method will be called on the indicators whenever
+    tick() is called
+    '''
 
     def __init__(self, pair=None, portfolio=None, exchange=None, equity_at_risk=1):
         if exchange is None:
