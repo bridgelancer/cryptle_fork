@@ -89,7 +89,7 @@ class WMAForceBollingerStrat(Strategy):
         norm_vol2 = s.vwma2.dollar_volume / s.vwma2.period
 
         # Dollar volume signal # hard code threshold for the moment
-        if s.hasBalance() and  norm_vol1 > norm_vol2 * s.vol_multipler:
+        if s.hasBalance and  norm_vol1 > norm_vol2 * s.vol_multipler:
             s.dollar_volume_flag = True
         else:
             s.dollar_volume_flag = False
@@ -100,7 +100,7 @@ class WMAForceBollingerStrat(Strategy):
         if timestamp > s.tradable_window + s.timeframe: # available at 1h trading window (3600s one hour)
             s.bollinger_signal = False
 
-        if s.hasCash() and not s.hasBalance():
+        if s.hasCash and not s.hasBalance:
             if s.v_sell:
                 if s.uptrend or belowatr or aboveatr:
                     return
@@ -111,7 +111,7 @@ class WMAForceBollingerStrat(Strategy):
             else:
                 s.prev_crossover_time = None
 
-        elif s.hasBalance():
+        elif s.hasBalance:
             if s.dollar_volume_flag and s.vwma1.dollar_volume <= 0:
                 s.v_sell_signal = True
                 logger.signal("VWMA Indicate sell at: " + str(timestamp))
@@ -131,12 +131,12 @@ class WMAForceBollingerStrat(Strategy):
     # Execution of signals
     # Can only buy if buy_signal and bollinger_signal both exist
     def execute(s):
-        if s.hasCash() and not s.hasBalance() and s.buy_signal and s.bollinger_signal:
+        if s.hasCash and not s.hasBalance and s.buy_signal and s.bollinger_signal:
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = s.timestamp # @Hardcode @Fix logic, do not use timestamp here
 
             elif s.timestamp - s.prev_crossover_time >= s.timelag_required:
-                s.marketBuy(s.maxBuyAmount(), appendTimestamp(s.message, s.timestamp))
+                s.marketBuy(s.maxBuyAmount, appendTimestamp(s.message, s.timestamp))
 
                 s.prev_crossover_time = None
                 # setting can_sell flag for preventing premature exit
@@ -146,22 +146,22 @@ class WMAForceBollingerStrat(Strategy):
                     s.can_sell = False
 
         # Sell immediately if v_sell signal is present, do not enter the position before next uptrend
-        elif s.hasBalance() and s.v_sell_signal:
-            s.marketSell(s.maxSellAmount(), appendTimestamp(s.message, s.timestamp))
+        elif s.hasBalance and s.v_sell_signal:
+            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, s.timestamp))
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
 
             s.v_sell = True
 
-        elif s.hasBalance() and s.sell_signal:
+        elif s.hasBalance and s.sell_signal:
 
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = s.timestamp
 
             elif s.timestamp - s.prev_crossover_time >= s.timelag_required:
 
-                s.marketSell(s.maxSellAmount(), appendTimestamp(s.message, s.timestamp))
+                s.marketSell(s.maxSellAmount, appendTimestamp(s.message, s.timestamp))
 
                 s.prev_crossover_time = None
                 s.dollar_volume_flag = False
@@ -188,6 +188,6 @@ if __name__ == '__main__':
 
     plotCandles(
             strat.bar,
-            title='Final equity {} Trades:{}'.format(strat.getEquity(), len(strat.trades)),
+            title='Final equity {} Trades:{}'.format(strat.equity, len(strat.trades)),
             trades=strat.trades)
     plt.show()

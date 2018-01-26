@@ -46,7 +46,8 @@ class Portfolio:
         self.balance = {}
 
 
-    def getEquity(self):
+    @property
+    def equity(self):
         asset = sum(self.balance_value.values())
         return self.cash + asset
 
@@ -76,46 +77,19 @@ class Strategy:
         self.trades = []
 
 
-    # [Portfolio interface]
-    # Wrapper functions of portfolio object, mostly for convenience purpose
-    def hasBalance(self, pair=None):
-        pair = pair or self.pair
-
-        try:
-            return self.portfolio.balance[self.pair] > 0
-        except:
-            return False
-
-
-    def hasCash(self):
-        return self.portfolio.cash > 0
-
-
-    def getEquity(self):
-        return self.portfolio.getEquity()
-
-
-    def maxBuyAmount(self, pair=None):
-        pair = pair or self.pair
-        max_equi = self.equity_at_risk * self.getEquity() / self.last_price
-        max_cash = self.portfolio.cash / self.last_price
-        return min(max_equi, max_cash)
-
-
-    def maxSellAmount(self, pair=None):
-        pair = pair or self.pair
-        return self.portfolio.balance[self.pair]
-
-
     # [Data input interface]
-    def tick(self, price, timestamp, volume, action):
+    # Wrappers for trade logical steps
+    def tick(self, price, timestamp, volume, action, callback=None):
         for k, v in self.indicators.items():
             v.update(price, timestamp, volume, action)
 
         self.last_price = price
         self.timestamp = timestamp
         self.generateSignal(price, timestamp, volume, action)
-        self.execute()
+        self.execute(timestamp)
+
+        if callback:
+            callback(self)
 
 
     def news(self, string, timestamp):
@@ -126,8 +100,40 @@ class Strategy:
         raise NotImplementedError
 
 
+    # [Portfolio interface]
+    # Wrappers of portfolio object, mostly for convenience purpose
+    @property
+    def hasBalance(self):
+        try:
+            return self.portfolio.balance[self.pair] > 0
+        except:
+            return False
+
+
+    @property
+    def hasCash(self):
+        return self.portfolio.cash > 0
+
+
+    @property
+    def equity(self):
+        return self.portfolio.equity
+
+
+    @property
+    def maxBuyAmount(self):
+        max_equi = self.equity_at_risk * self.equity / self.last_price
+        max_cash = self.portfolio.cash / self.last_price
+        return min(max_equi, max_cash)
+
+
+    @property
+    def maxSellAmount(self):
+        return self.portfolio.balance[self.pair]
+
+
     # [Exchange interface]
-    # Wrapper functions of exchange object for more detailed logging of buy/sell process
+    # Wrappers of exchange object for fine grain control/monitor over buy/sell process
     def marketBuy(self, amount, message='', timestamp=None):
         checkType(amount, int, float)
         checkType(message, str)

@@ -40,13 +40,13 @@ class DemoStrat(Strategy):
 
 
     def execute(s):
-        if s.hasCash() and not s.entered and s.buy_signal:
-            s.marketBuy(s.maxBuyAmount())
+        if s.hasCash and not s.entered and s.buy_signal:
+            s.marketBuy(s.maxBuyAmount)
             s.entered = True
             return
 
         if s.entered and s.sell_signal:
-            s.marketSell(s.maxSellAmount())
+            s.marketSell(s.maxSellAmount)
             s.entered = False
             return
 
@@ -62,6 +62,6 @@ if __name__ == '__main__':
     test.readJSON('../../../../data/bitstamp/bch.04.log')
     test.run(strat.tick)
 
-    plotCandles(strat.candle, title='Final equity {} Trades:{}'.format(strat.getEquity(), len(strat.trades)), trades=strat.trades)
+    plotCandles(strat.candle, title='Final equity {} Trades:{}'.format(strat.equity, len(strat.trades)), trades=strat.trades)
     plt.show()
 
