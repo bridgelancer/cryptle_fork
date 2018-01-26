@@ -1,9 +1,10 @@
 from ta import *
-from exchange import *
-from loglevel import *
+from cryptle.backtest import PaperExchange
+from cryptle.strategy import *
+from cryptle.loglevel import *
+from cryptle.utility  import *
 
 from datetime import datetime
-import inspect
 import json
 import logging
 
@@ -14,212 +15,6 @@ logger = logging.getLogger('Cryptle')
 # @HARDCODE @REGRESSION @TEMPORARY
 def appendTimestamp(msg, t):
     return '{} At: {}'.format(msg, datetime.fromtimestamp(t).strftime("%d %H:%M:%S"))
-
-
-def checkType(param, *types):
-    valid_type = False
-
-    for t in types:
-        valid_type |= isinstance(param, t)
-
-    if not valid_type:
-        caller = inspect.stack()[1][3]
-        passed = type(param).__name__
-
-        fmt = "{} was passed to {}() where {} is expected"
-        msg = fmt.format(passed, caller, types)
-
-        raise TypeError(msg)
-
-
-class Portfolio:
-
-    def __init__(self, cash, balance=None, balance_value=None):
-        checkType(cash, int, float)
-
-        self.cash = cash
-
-        self.balance = balance or {}
-        self.balance_value = balance_value or {}
-
-
-    def deposit(self, pair, amount, price=0):
-        checkType(pair, str)
-        checkType(amount, int, float)
-        checkType(price, int, float)
-
-        try:
-            self.balance[pair] += amount
-            self.balance_value[pair] += amount * price
-        except KeyError:
-            self.balance[pair] = amount
-            self.balance_value[pair] = amount * price
-
-
-    def withdraw(self, pair, amount):
-        checkType(pair, str)
-        checkType(amount, int, float)
-
-        try:
-            self.balance_value[pair] *= ((self.balance[pair] - amount) / self.balance[pair])
-            self.balance[pair] -= amount
-        except (KeyError, ZeroDivisionError):
-            raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
-
-
-    def clear(self, pair):
-        checkType(pair, str)
-        self.balance[pair] = 0
-
-
-    def clearAll(self):
-        self.balance = {}
-
-
-    def equity(self):
-        asset = sum(self.balance_value.values())
-        return self.cash + asset
-
-
-
-class Strategy:
-
-    # @HARDCODE Remove the exchange default
-    # There will be regressions, so fix the, before removing the default
-    def __init__(self, pair, portfolio, exchange=None):
-        self.init_time = 0
-        self.pair = pair
-        self.portfolio = portfolio
-        self.is_paper_trade = False
-
-        self.exchange = exchange or PaperExchange()
-
-        if isinstance(self.exchange, PaperExchange):
-            self.is_paper_trade = True
-
-        self.prev_crossover_time = None
-        self.equity_at_risk = 0.1
-        self.timelag_required = 10
-        self.prev_sell_time = 0
-        self.prev_tick_price = 0
-
-        self.trades = []
-
-
-    def hasBalance(self):
-        try:
-            return self.portfolio.balance[self.pair] > 0
-        except:
-            return False
-
-
-    def hasCash(self):
-        return self.portfolio.cash > 0
-
-
-    def equity(self):
-        return self.portfolio.equity()
-
-
-    def maxBuyAmount(self, price):
-        return min(self.equity_at_risk * self.equity() / price, self.portfolio.cash / price)
-
-
-    def maxSellAmount(self):
-        return self.portfolio.balance[self.pair]
-
-
-    def marketBuy(self, amount, message='', timestamp=None):
-        checkType(amount, int, float)
-        checkType(message, str)
-        assert amount > 0
-
-        logger.debug('Placing market buy for {:.6g} {} {:s}'.format(amount, self.pair.upper(), message))
-        res = self.exchange.marketBuy(self.pair, amount)
-
-        self.cleanupBuy(res, message, timestamp)
-
-
-    def marketSell(self, amount, message='', timestamp=None):
-        checkType(amount, int, float)
-        checkType(message, str)
-        assert amount > 0
-
-        logger.debug('Placing market sell for {:.6g} {} {:s}'.format(amount, self.pair.upper(), message))
-        res = self.exchange.marketSell(self.pair, amount)
-
-        self.cleanupSell(res, message, timestamp)
-
-
-    def limitBuy(self, amount, price, message='', timestamp=None):
-        checkType(amount, int, float)
-        checkType(price, int, float)
-        checkType(message, str)
-        assert amount > 0
-        assert price > 0
-
-        logger.debug('Placing limit buy for {:.6g} {} @${:.6g} {:s}'.format(amount, self.pair.upper(), price, message))
-        res = self.exchange.limitBuy(self.pair, amount, price)
-
-        self.cleanupBuy(res, message, timestamp)
-
-
-    def limitSell(self, amount, price, message='', timestamp=None):
-        checkType(amount, int, float)
-        checkType(price, int, float)
-        checkType(message, str)
-        assert amount > 0
-        assert price > 0
-
-        logger.debug('Placing limit sell for {:.6g} {} @${:.6g} {:s}'.format(amount, self.pair.upper(), price, message))
-        res = self.exchange.limitSell(self.pair, amount, price)
-
-        self.cleanupSell(res, message,  timestamp)
-
-
-    def cleanupBuy(self, res, message, timestamp=None):
-        if res['status'] == 'error':
-            logger.error('Buy failed {} {}'.format(self.pair.upper(), message))
-            return
-
-        price = float(res['price'])
-        amount = float(res['amount'])
-
-        self.portfolio.deposit(self.pair, amount, price)
-        self.portfolio.cash -= amount * price
-        self.trades.append([timestamp, price])
-
-        logger.info('Bought {:.7g} {} @${:<.6g} {}'.format(amount, self.pair.upper(), price, message))
-
-
-    def cleanupSell(self, res, message, timestamp=None):
-        if res['status'] == 'error':
-            logger.error('Sell failed {} {}'.format(self.pair.upper(), message))
-            return
-
-        price = float(res['price'])
-        amount = float(res['amount'])
-
-        self.portfolio.withdraw(self.pair, amount)
-        self.portfolio.cash += amount * price
-        self.trades[-1] += [timestamp, price]
-
-        logger.info('Sold   {:.7g} {} @${:<.6g} {}'.format(amount, self.pair.upper(), price, message))
-
-
-    def unpackTick(self, tick):
-        tick = json.loads(tick)
-        price = tick['price']
-        volume = tick['amount']
-        timestamp = float(tick['timestamp'])
-
-        if self.is_paper_trade:
-            self.exchange.price = price
-            self.exchange.volume = volume
-            self.exchange.timestamp = timestamp
-
-        return price, volume, timestamp
-
 
 
 # @DEPRECATED
@@ -636,7 +431,7 @@ class WMAForceStrat(Strategy):
         action = -1 * (tick['type'] * 2 - 1)
 
         self.bar.update(price, timestamp)
-        self.vwma.update(price, volume, timestamp, action)
+        self.vwma.update(price, timestamp, volume, action)
 
         if self.init_time == 0:
             self.init_time = timestamp
@@ -752,20 +547,22 @@ class WMAForceStrat(Strategy):
 
 class WMAForceBollingerStrat(Strategy):
 
-    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, upper_atr = 0.5, lower_atr = 0.5, timeframe = 3600, bband = 3.5, bband_period=20, vol_multipler = 30, vwma_lb = 40):
-        super().__init__(pair, portfolio, exchange)
-        self.bar = CandleBar(period)
-        self.ATR_5 = ATR(self.bar, scope1)
-        self.WMA_5 = WMA(self.bar, scope1)
-        self.WMA_8 = WMA(self.bar, scope2)
-        self.vwma1 = ContinuousVWMA(period * 3) # @HARDCODE
-        self.vwma2 = ContinuousVWMA(period * vwma_lb)
-        self.sma_20 = SMA(self.bar, bband_period)
+    def __init__(self, pair, portfolio, exchange=None, message='[WMA Bollinger]', period=180, scope1=5, scope2=8, upper_atr = 0.5, lower_atr = 0.5, timeframe = 3600, bband = 3.5, bband_period=20, vol_multipler=30, vwma_lb=40):
+        self.indicators = {}
+
+        self.indicators['bar'] = bar = CandleBar(period)
+        self.ATR_5 = ATR(bar, scope1)
+        self.WMA_5 = WMA(bar, scope1)
+        self.WMA_8 = WMA(bar, scope2)
+        self.indicators['vwma1'] = ContinuousVWMA(period * 3) # @HARDCODE
+        self.indicators['vwma2'] = ContinuousVWMA(period * vwma_lb) # @HARDCODE
+        self.sma_20 = SMA(bar, bband_period)
         self.bollinger = BollingerBand(self.sma_20, bband_period)
 
         self.message = message
         self.dollar_volume_flag = False
 
+        self.timelag_required = 15
         self.bollinger_signal = False
         self.upper_atr = upper_atr
         self.lower_atr = lower_atr
@@ -774,35 +571,21 @@ class WMAForceBollingerStrat(Strategy):
         self.vol_multipler = vol_multipler
         self.can_sell = False
         self.v_sell = False
-        self.entry_time = None
-        self.prev_sell_time = None
         self.tradable_window = 0
+        self.init_time = 0
+        self.buy_signal = False
+        self.sell_signal = False
+        self.v_sell_signal = False
 
+        super().__init__(pair, portfolio, exchange)
 
-    def __call__(self, tick):
-        price, volume, timestamp = self.unpackTick(tick)
-        tick = json.loads(tick)
-
-        action = -1 * (tick['type'] * 2 - 1)
-
-        self.bar.update(price, timestamp)
-        self.vwma1.update(price, volume, timestamp, action)
-        self.vwma2.update(price, volume, timestamp, action)
+    def generateSignal(self, price, timestamp, volume, action):
 
         if self.init_time == 0:
             self.init_time = timestamp
 
         if timestamp < self.init_time + max(self.WMA_8.lookback, 20) * self.bar.period:
             return
-
-        prev_crossover_time = self.prev_crossover_time
-        prev_sell_time = self.prev_sell_time
-        entry_time = self.entry_time
-        can_sell = self.can_sell
-        dollar_volume_flag = self.dollar_volume_flag
-        v_sell = self.v_sell
-        tradable_window = self.tradable_window
-        bollinger_signal = self.bollinger_signal
 
         # @ta should not raise RuntimeWarning
         try:
@@ -813,12 +596,12 @@ class WMAForceBollingerStrat(Strategy):
         except RuntimeWarning:
             return
 
-        uptrend   = self.WMA_5.wma > self.WMA_8.wma
-        downtrend = self.WMA_5.wma < self.WMA_8.wma
+        self.uptrend   = self.WMA_5.wma > self.WMA_8.wma
+        self.downtrend = self.WMA_5.wma < self.WMA_8.wma
 
-        buy_signal = False
-        sell_signal = False
-        v_sell_signal = False
+        self.buy_signal = False
+        self.sell_signal = False
+        self.v_sell_signal = False
 
         # @HARDCODE Buy/Sell message
         # @TODO should not trade the first signal if we enter the bollinger_signal with an uptrend?
@@ -835,88 +618,78 @@ class WMAForceBollingerStrat(Strategy):
             self.dollar_volume_flag = False
 
         if self.bollinger.band > self.bband: # currently snooping 3.5%
-            bollinger_signal = True
-            tradable_window = timestamp
-        if timestamp > tradable_window + self.timeframe: # available at 1h trading window (3600s one hour)
-            bollinger_signal = False
+            self.bollinger_signal = True
+            self.tradable_window = timestamp
+        if timestamp > self.tradable_window + self.timeframe: # available at 1h trading window (3600s one hour)
+            self.bollinger_signal = False
 
         if self.hasCash() and not self.hasBalance():
-            if v_sell:
-                if uptrend or belowatr or aboveatr:
+            if self.v_sell:
+                if self.uptrend or belowatr or aboveatr:
                     return
-                elif downtrend:
-                    v_sell = False
+                elif self.downtrend:
+                    self.v_sell = False
             elif belowatr:
-                buy_signal = True
+                self.buy_signal = True
             else:
-                prev_crossover_time = None
+                self.prev_crossover_time = None
 
         elif self.hasBalance():
-            if dollar_volume_flag and self.vwma1.dollar_volume <= 0:
-                v_sell_signal = True
+            if self.dollar_volume_flag and self.vwma1.dollar_volume <= 0:
+                self.v_sell_signal = True
                 logger.signal("VWMA Indicate sell at: " + str(timestamp))
-            elif not can_sell and aboveatr:
-                sell_signal = True
-            elif can_sell and downtrend:
-                sell_signal = True
-            elif not can_sell and uptrend:
-                can_sell = True
-            elif not can_sell and downtrend:
+            elif not self.can_sell and aboveatr:
+                self.sell_signal = True
+            elif self.can_sell and self.downtrend:
+                self.sell_signal = True
+            elif not self.can_sell and self.uptrend:
+                self.can_sell = True
+            elif not self.can_sell and self.downtrend:
                 return
 
         else:
-            prev_crossover_time = None
+            self.prev_crossover_time = None
 
-        # Execution of signals
-        # Can only buy if buy_signal and bollinger_signal both exist
-        if self.hasCash() and not self.hasBalance() and buy_signal and bollinger_signal:
-            if prev_crossover_time is None:
-                prev_crossover_time = timestamp
+    # @Regression: Timestamp/Price/unneccesary signals shouldn't be here
+    # Execution of signals
+    # Can only buy if buy_signal and bollinger_signal both exist
+    def execute(self):
+        if self.hasCash() and not self.hasBalance() and self.buy_signal and self.bollinger_signal:
+            if self.prev_crossover_time is None:
+                self.prev_crossover_time = self.timestamp # @Hardcode @Fix logic, do not use timestamp here
 
-            elif timestamp - prev_crossover_time >= self.timelag_required:
-                amount = self.equity_at_risk * self.equity() / price
-                self.marketBuy(amount, appendTimestamp(self.message, timestamp), timestamp)
+            elif self.timestamp - self.prev_crossover_time >= self.timelag_required:
+                self.marketBuy(self.maxBuyAmount(), appendTimestamp(self.message, self.timestamp))
 
-                prev_crossover_time = None
+                self.prev_crossover_time = None
                 # setting can_sell flag for preventing premature exit
-                if uptrend:
-                    can_sell = True
-                elif downtrend:
-                    can_sell = False
+                if self.uptrend:
+                    self.can_sell = True
+                elif self.downtrend:
+                    self.can_sell = False
+
         # Sell immediately if v_sell signal is present, do not enter the position before next uptrend
-        elif self.hasBalance() and v_sell_signal:
-            amount = self.portfolio.balance[self.pair]
-            self.marketSell(amount, appendTimestamp(self.message, timestamp), timestamp)
+        elif self.hasBalance() and self.v_sell_signal:
+            self.marketSell(self.maxSellAmount(), appendTimestamp(self.message, self.timestamp))
 
-            prev_crossover_time = None
-            dollar_volume_flag = False
+            self.prev_crossover_time = None
+            self.dollar_volume_flag = False
 
-            v_sell = True
+            self.v_sell = True
 
-        elif self.hasBalance() and sell_signal:
+        elif self.hasBalance() and self.sell_signal:
 
-            if prev_crossover_time is None:
-                prev_crossover_time = timestamp
+            if self.prev_crossover_time is None:
+                self.prev_crossover_time = self.timestamp
 
-            elif timestamp - prev_crossover_time >= self.timelag_required:
+            elif self.timestamp - self.prev_crossover_time >= self.timelag_required:
 
-                amount = self.portfolio.balance[self.pair]
-                self.marketSell(amount, appendTimestamp(self.message, timestamp), timestamp)
+                self.marketSell(self.maxSellAmount(), appendTimestamp(self.message, self.timestamp))
 
-                prev_crossover_time = None
-                dollar_volume_flag = False
+                self.prev_crossover_time = None
+                self.dollar_volume_flag = False
 
-        ####### Hardcoded for BCH volume
-        # Do not trigger take into account of v_sell unless in position
 
-        self.bollinger_signal = bollinger_signal
-        self.tradable_window = tradable_window
-        self.prev_crossover_time = prev_crossover_time
-        self.prev_sell_time = prev_sell_time
-        self.entry_time = entry_time
-        self.can_sell = can_sell
-        self.dollar_volume_flag = dollar_volume_flag
-        self.v_sell = v_sell
 
 # @TODO RSI is validated, strategy partially implemented
 class WMABollingerRSIStrat(Strategy):
@@ -959,8 +732,8 @@ class WMABollingerRSIStrat(Strategy):
         action = -1 * (tick['type'] * 2 - 1)
 
         self.bar.update(price, timestamp)
-        self.vwma1.update(price, volume, timestamp, action)
-        self.vwma2.update(price, volume, timestamp, action)
+        self.vwma1.update(price, timestamp, volume, action)
+        self.vwma2.update(price, timestamp, volume, action)
 
         if self.init_time == 0:
             self.init_time = timestamp
@@ -1162,8 +935,8 @@ class SwissStrat(Strategy):
         tick = json.loads(tick)
         action = -1 * (tick['type'] * 2 - 1)
         self.candle.update(price, timestamp)
-        self.vwma1.update(price, volume, timestamp, action)
-        self.vwma2.update(price, volume, timestamp, action)
+        self.vwma1.update(price, timestamp, volume, action)
+        self.vwma2.update(price, timestamp, volume, action)
 
 
         ## First tick initialisation
@@ -1268,7 +1041,7 @@ class VWMAStrat(Strategy):
 
         action = -1 * (tick['type'] * 2 - 1)
 
-        self.vwma.update(price, volume, timestamp, action)
+        self.vwma.update(price, timestamp, volume, action)
 
         if self.prev_crossover_time == None:
             self.prev_crossover_time = timestamp
