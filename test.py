@@ -1,8 +1,8 @@
+from cryptle.backtest import *
+from cryptle.strategy import *
+from cryptle.utility  import *
+from cryptle.loglevel import defaultFormatter
 from ta import *
-from exchange import *
-from datafeed import *
-from strategy import *
-from loglevel import *
 
 from functools import wraps
 import logging
@@ -10,14 +10,13 @@ import math
 import time
 
 
-fmt = '%(name)-10s| %(asctime)s [%(levelname)-8s] %(message)s'
-formatter = logging.Formatter(fmt, '%H:%M:%S')
+formatter = defaultFormatter()
 
 sh = logging.StreamHandler()
 sh.setLevel(logging.REPORT)
 sh.setFormatter(formatter)
 
-logger = logging.getLogger('UnitTest')
+logger = logging.getLogger('Unittest')
 logger.setLevel(logging.DEBUG)
 logger.addHandler(sh)
 
@@ -36,6 +35,7 @@ COLOR   = "\033[%dm"
 RED     = COLOR % 31
 GREEN   = COLOR % 32
 YELLOW  = COLOR % 33
+
 
 def PASS(testname):
     logger.report(GREEN + 'Passed ' + RESET + testname)
@@ -58,44 +58,6 @@ def unittest(func):
     return func_wrapper
 
 
-# Test cases
-class TestStrat(Strategy):
-
-    def __call__(self, tick):
-        price, volume, timestamp = self.unpackTick(tick)
-        self.marketBuy(1, 'Testing Buy')
-        self.marketSell(1, 'Testing Sell')
-
-
-def testFunctor():
-    port = Portfolio(1000)
-    strat = TestStrat('ethusd', port)
-
-    jsonstr = '{"price": 100, "amount": 1, "timestamp": 15411121919}'
-    strat(jsonstr)
-
-
-def testBitstampFeed():
-    feed = BitstampFeed()
-    time.sleep(1)
-
-    feed.onTrade('btcusd', lambda x: logger.debug('Recieved BTC tick'))
-    feed.onTrade('xrpusd', lambda x: logger.debug('Recieved XRP tick'))
-    feed.onTrade('ethusd', lambda x: logger.debug('Recieved ETH tick'))
-    feed.onTrade('ltcusd', lambda x: logger.debug('Recieved LTC tick'))
-    feed.onTrade('bchusd', lambda x: logger.debug('Recieved BCH tick'))
-
-    time.sleep(5)
-
-    feed.pusher.disconnect()
-    logger.debug('Disconnected from Bitstamp WebSockets')
-
-
-def testBitstampREST():
-    bs = Bitstamp()
-    logger.debug(bs.getTicker('btcusd'))
-
-
 @unittest
 def testEquity():
     port  = Portfolio(10000)
@@ -111,6 +73,7 @@ def testEquity():
 
     port.withdraw('ethusd', 10)
     assert port.equity() == 10000
+
 
 # @Regression
 @unittest
@@ -246,6 +209,7 @@ def testRSI():
     for tick in alt_quad:
         candle_alt_quad.update(tick[0], tick[1])
     assert rsi_alt_quad.rsi - 55.48924 < 1e-5
+
 
 if __name__ == '__main__':
     testEquity()
