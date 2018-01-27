@@ -57,13 +57,64 @@ class ContinuousVWMA:
             else:
                 break
 
+    @property
     def high(self):
         return max(self.ticks)
 
-
+    @property
     def low(self):
         return min(self.ticks)
 
+
+# @Consider using recordclass API from MIT
+class Candle:
+    '''Mutable candle stick with namedtuple-like API.'''
+
+    def __init__(s, o, c, h, l, t, v):
+        s._bar = [o, c, h, l, t, v]
+
+    def __getitem__(self, item):
+        return self._bar[item]
+
+    @property
+    def open(s):
+        return s._bar[0]
+
+    @property
+    def close(s):
+        return s._bar[1]
+
+    @property
+    def hi(s):
+        return s._bar[2]
+
+    @property
+    def low(s):
+        return s._bar[3]
+
+    @property
+    def volume(s):
+        return s._bar[5]
+
+    @open.setter
+    def open(s, value):
+        s._bar[0] = value
+
+    @close.setter
+    def close(s, value):
+        s._bar[1] = value
+
+    @hi.setter
+    def hi(s, value):
+        s._bar[2] = value
+
+    @low.setter
+    def low(s, value):
+        s._bar[3] = value
+
+    @volume.setter
+    def volume(s, value):
+        s._bar[5] = value
 
 
 class CandleBar:
@@ -75,16 +126,13 @@ class CandleBar:
         self.metrics = []
         self.period = period
         self.last_timestamp = None
-
         self.last = 0
 
     def __getitem__(self, item):
         return self.bars[item]
 
-
     def __len__(self):
         return len(self.bars)
-
 
     def update(self, price, timestamp, volume=0, action=0):
 
@@ -92,54 +140,27 @@ class CandleBar:
             self.volume = volume
             self.last_timestamp = timestamp
 
-            self.bars.append(
-                [
-                    price,
-                    price,
-                    price,
-                    price,
-                    int(timestamp/self.period),
-                    volume
-                ]
-            )
+            self.bars.append(Candle(price, price, price, price, int(timestamp/self.period), volume))
 
             for metric in self.metrics:
                 metric.update()
 
         # append previous n candle bars if no tick arrives between the n candles
-        # the first bar to be appended
         elif int(timestamp / self.period) != int(self.last_timestamp / self.period):
-
-            # Update all attached candle dependent metrics for the bar of last tick
-
             timestamp_tmp = self.last_timestamp + self.period
+
             # append the in between bars if the next tick arrives 1+ bar after the previous one, if there is any
             while int(timestamp_tmp / self.period) < int(timestamp / self.period):
-                self.bars.append(
-                    [
-                        self.bars[-1][1], # append the close price of bar of last tick
-                        self.bars[-1][1],
-                        self.bars[-1][1],
-                        self.bars[-1][1],
-                        int(timestamp_tmp/self.period),
-                        0
-                    ]
-                )
+                self.bars.append(Candle(self.last_close, self.last_close, self.last_close,
+                    self.last_close, int(timestamp_tmp/self.period), 0))
+
                 for metric in self.metrics:
                     metric.update()
+
                 timestamp_tmp = timestamp_tmp + self.period
 
             # append the new bar that contains the newly arrived tick
-            self.bars.append(
-                [
-                    price,
-                    price,
-                    price,
-                    price,
-                    int(timestamp/self.period),
-                    volume
-                ]
-            )
+            self.bars.append(Candle(price, price, price, price, int(timestamp/self.period), volume))
 
             for metric in self.metrics:
                 metric.update()
@@ -148,19 +169,58 @@ class CandleBar:
 
 
         elif int(timestamp / self.period) == int(self.last_timestamp / self.period):
-            self.bars[-1][3] = min(self.bars[-1][3], price)
-            self.bars[-1][2] = max(self.bars[-1][2], price)
-            self.bars[-1][1] = price
-            self.bars[-1][5] += volume
+            self.last_low = min(self.last_low , price)
+            self.last_hi = max(self.last_hi, price)
+            self.last_close = price
+            self.last_volume += volume
 
         self.last = price
-
 
     def prune(self, size):
         try:
             self.bars = self.bars[-size:]
         except IndexError:
             raise ("Empty CandleBar cannot be pruned!")
+
+    @property
+    def last_open(s):
+        return s.bars[-1].open
+
+    @property
+    def last_close(s):
+        return s.bars[-1].close
+
+    @property
+    def last_hi(s):
+        return s.bars[-1].hi
+
+    @property
+    def last_low(s):
+        return s.bars[-1].low
+
+    @property
+    def last_volume(s):
+        return s.bars[-1].volume
+
+    @last_open.setter
+    def last_open(s, value):
+        s.bars[-1].open = value
+
+    @last_close.setter
+    def last_close(s, value):
+        s.bars[-1].close = value
+
+    @last_hi.setter
+    def last_hi(s, value):
+        s.bars[-1].hi = value
+
+    @last_low.setter
+    def last_low(s, value):
+        s.bars[-1].low = value
+
+    @last_volume.setter
+    def last_volume(s, value):
+        s.bars[-1].volume = value
 
 
 class RSI():
