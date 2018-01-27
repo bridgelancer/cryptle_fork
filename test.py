@@ -8,6 +8,8 @@ from functools import wraps
 import logging
 import math
 import time
+import sys
+import traceback
 
 
 formatter = defaultFormatter()
@@ -55,8 +57,11 @@ def unittest(func):
         try:
             func(*args, **kargs)
             PASS(func.__name__)
-        except AssertionError as e:
-            FAIL(func.__name__)
+        except AssertionError:
+            _, _, tb = sys.exc_info()
+            tb_info = traceback.extract_tb(tb)
+            _, line, _, text = tb_info[-1]
+            FAIL('{}: Line {}: {}'.format(func.__name__, line, text))
         except Exception as e:
             FATAL('{} raised {}: {}'.format(func.__name__, type(e).__name__, e))
     return func_wrapper
@@ -67,16 +72,16 @@ def testEquity():
     port  = Portfolio(10000)
 
     port.deposit('ethusd', 10, 1300)
-    assert port.equity() == 23000
+    assert port.equity == 23000
 
     port.withdraw('ethusd', 5)
-    assert port.equity() == 16500
+    assert port.equity == 16500
 
     port.deposit('ethusd', 5, 1000)
-    assert port.equity() == 21500
+    assert port.equity == 21500
 
     port.withdraw('ethusd', 10)
-    assert port.equity() == 10000
+    assert port.equity == 10000
 
 
 # @Regression
@@ -97,10 +102,10 @@ def testCVWMA():
     five_ma = []
     thre_ma = []
     for tick in line:
-        thre_line.update(tick[0], tick[1], tick[2])
-        five_line.update(tick[0], tick[1], tick[2])
-        thre_ma.append(thre_line.avg)
-        five_ma.append(five_line.avg)
+        thre_line.update(tick[0], tick[1], tick[2], 1)
+        five_line.update(tick[0], tick[1], tick[2], 1)
+        thre_ma.append(thre_line.dollar_volume)
+        five_ma.append(five_line.dollar_volume)
 
     assert thre_ma[3] == 2
     assert five_ma[13] == 11
@@ -108,10 +113,10 @@ def testCVWMA():
     five_ma.clear()
 
     for tick in quad:
-        thre_quad.update(tick[0], tick[1], tick[2])
-        five_quad.update(tick[0], tick[1], tick[2])
-        thre_ma.append(thre_quad.avg)
-        five_ma.append(five_quad.avg)
+        thre_quad.update(tick[0], tick[1], tick[2], 1)
+        five_quad.update(tick[0], tick[1], tick[2], 1)
+        thre_ma.append(thre_quad.dollar_volume)
+        five_ma.append(five_quad.dollar_volume)
 
     logger.debug(str(thre_ma[3]) + ' ' + str(thre_ma[8]) + ' ' + str(thre_ma[13]))
     logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
@@ -119,10 +124,10 @@ def testCVWMA():
     five_ma.clear()
 
     for tick in sine:
-        five_sine.update(tick[0], tick[1], tick[2])
-        thre_sine.update(tick[0], tick[1], tick[2])
-        thre_ma.append(thre_sine.avg)
-        five_ma.append(five_sine.avg)
+        five_sine.update(tick[0], tick[1], tick[2], 1)
+        thre_sine.update(tick[0], tick[1], tick[2], 1)
+        thre_ma.append(thre_sine.dollar_volume)
+        five_ma.append(five_sine.dollar_volume)
 
     logger.debug(str(thre_ma[3]) + ' ' + str(thre_ma[8]) + ' ' + str(thre_ma[13]))
     logger.debug(str(five_ma[3]) + ' ' + str(five_ma[8]) + ' ' + str(five_ma[13]))
@@ -217,6 +222,7 @@ def testRSI():
 
 if __name__ == '__main__':
     testEquity()
+    testCVWMA()
     testSMA()
     testEMA()
     testWMA()
