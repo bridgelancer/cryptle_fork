@@ -316,6 +316,16 @@ def demoBacktest(dataset, pair):
 
     plotCandles(strat.bar)
 
+def demoRSIStrat(dataset, pair):
+    port = Portfolio(10000)
+    exchange= PaperExchange(0.0012)
+    strat = WMAForceBollingerRSIStrat(pair=pair, portfolio=port, exchange=exchange)
+
+    test = Backtest(exchange)
+    test.readJSON(dataset)
+    test.run(strat.tick)
+
+    plotCandles(strat.bar)
 
 if __name__ == '__main__':
     demoBacktest('../../../../data/bitstamp/bch.04.log', 'btcusd')

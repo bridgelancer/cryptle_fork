@@ -1,10 +1,20 @@
 from cryptle.strategy import Strategy, Portfolio
 from cryptle.loglevel import *
+from cryptle.utility  import *
 
 from ta import *
 import logging
 
 logger = logging.getLogger('Cryptle')
+logger.setLevel(logging.DEBUG)
+
+formatter = defaultFormatter()
+
+fh = logging.FileHandler('BollRSIStrat_backtest.log', mode = 'w')
+fh.setLevel(logging.INDEX)
+fh.setFormatter(formatter)
+
+logger.addHandler(fh)
 
 
 class WMAForceBollingerRSIStrat(Strategy):
@@ -117,35 +127,19 @@ class WMAForceBollingerRSIStrat(Strategy):
                 pass
             elif s.rsi.rsi > 80:
                 s.rsi_sell_flag = True
-                s.rsi_max = max(s.rsi.rsi, s.rsi_max)
-            elif s.uptrend and s.can_rsi:
-                s.rsi_bsignal = True
-                s.rsi_counter = 0   # why need the counter
-                s.rsi_downtrend_time = None
-            elif s.downtrend and s.can_rsi:
-                if s.rsi_downtrend_time is None:
-                    s.rsi_downtrend_time = timestamp
-                s.rsi_counter = int(timestamp / s.period) - int(s.rsi_downtrend_time/ s.period)
+            else:
                 s.rsi_bsignal = True
                 s.rsi_ssignal = False
 
         # if downtrend, raise RSI, reset if reached the threshold
-        if s.rsi.rsi < 50 + s.rsi_counter * (s.period/60):
-            s.rsi_ssignal = True
-            s.rsi_sell_flag = False
-            s.rsi_downtrend_time = None
-            s.rsi_counter = 0
-
-        if s.rsi.rsi < s.rsi_max - 20:
+        if s.rsi.rsi < 60:
             if s.rsi_sell_flag:
                 s.rsi_ssignal = True
                 s.rsi_bsignal = False
-                s.rsi_max = 0
-
-        if not s.can_rsi and s.rsi.rsi < 50:
-            s.can_rsi = True
-
-
+            if s.rsi.rsi < 50:
+                s.rsi_ssignal = True
+                s.rsi_bsignal = False
+                s.rsi_sell_flag = False
 
         # Buy sell signal generation
         if s.hasCash and not s.hasBalance:
@@ -160,9 +154,9 @@ class WMAForceBollingerRSIStrat(Strategy):
                 s.prev_crossover_time = None
 
         elif s.hasBalance:
-            if s.dollar_volume_flag and s.vwma1.dollar_volume <= 0:
+            if s.dollar_volume_flag and s.vwma1.dollar_volume <= 0: # Currently no use
                 s.v_sell_signal = True
-                logger.signal("VWMA Indicate sell at: " + str(timestamp))
+                #logger.signal("VWMA Indicate sell at: " + str(timestamp))
             elif not s.can_sell and aboveatr:
                 s.sell_signal = True
             elif s.can_sell and s.downtrend:
@@ -194,14 +188,14 @@ class WMAForceBollingerRSIStrat(Strategy):
                     s.can_sell = False
 
         # Sell immediately if v_sell signal is present, do not enter the position before next uptrend
-        elif s.hasBalance and s.v_sell_signal:
-            s.marketSell(s.maxSellAmount)
+        # Currently commented out because of lack of valid snooping mechanism
+        # elif s.hasBalance and s.v_sell_signal:
+        #     s.marketSell(s.maxSellAmount)
 
-            s.prev_crossover_time = None
-            s.dollar_volume_flag = False
+        #     s.prev_crossover_time = None
+        #     s.dollar_volume_flag = False
 
-            s.was_v_sell = True
-
+        #     s.was_v_sell = True
 
         elif s.hasBalance and s.rsi_sell_flag and s.rsi_ssignal:
             logger.signal("Sell at max - 20:" + str(s.rsi.rsi))
@@ -240,17 +234,24 @@ if __name__ == '__main__':
             pair=pair,
             portfolio=port,
             exchange=exchange,
-            period=180,
+            period=120,
             scope1=5,
             scope2=8,
-            timeframe=3600)
+            timeframe=3600,
+            bband=3.0,
+            bband_period=30)
 
     test = Backtest(exchange)
-    test.readJSON('bch.log')
+    test.readJSON('bch_total.log')
     test.run(strat.tick)
 
-    plotCandles(
-            strat.bar,
-            title='Final equity {} Trades:{}'.format(strat.equity, len(strat.trades)),
-            trades=strat.trades)
-    plt.show()
+    logger.info('RSI Equity:    %.2f' % port.equity)
+    logger.info('RSI Cash:    %.2f' % port.cash)
+    logger.info('RSI Asset:    %.2f' % str(port.balance))
+
+    # Plot candle functions commented out as not runnable at the moment
+    # plotCandles(
+    #         strat.bar,
+    #         title='Final equity {} Trades:{}'.format(strat.equity, len(strat.trades)),
+    #         trades=strat.trades)
+    # plt.show()
