@@ -8,18 +8,54 @@ import csv
 log = logging.getLogger('Exchange')
 
 
+def backtest(strat, dataset, pair=None, portfolio=None, exchange=None, commission=0.0012):
+    '''Wrapper function for running backtest on tick based strategy.
+
+    Args:
+        pair: A string representation of the trade coin pair
+        portfolio: Portfolio object to be assigned to
+        commission: Sets the commission of PaperExchange. Ignored if an exchange
+            was passed as argument
+
+    Returns:
+        The strategy object that was passed as argument
+
+    Raise:
+        Exceptions that may be raised by the strategy
+    '''
+    port = portfolio or Portfolio(10000)
+    exchange = exchange or PaperExchange(commission)
+
+    strat.pair = strat.pair or pair
+    strat.portfolio = strat.portfolio or portfolio
+    strat.exchange = strat.exchange or exchange
+
+    test = Backtest(exchange)
+    test.read(dataset)
+    test.run(strat.tick)
+
+
 class Backtest():
+    '''Provides an interface to load datasets and launch backtests.'''
 
-    def __init__(self, exchange):
-        self.exchange = exchange
+    def __init__(self, exchange=None):
+        self.exchange = exchange or PaperExchange()
 
-    def run(self, exe):
+    def run(self, callback):
+        '''Run a tick strategy on the loaded dataset.
+
+        Args:
+            callback: A function taking (price, volume, timestamp, action) as parameter
+
+        Raises:
+            Does not raise exceptions.
+        '''
         for tick in self.ticks:
             price, timestamp, volume, action= unpackTick(tick)
             self.exchange.price = price
             self.exchange.volume = volume
             self.exchange.timestamp = timestamp
-            exe(price, timestamp, volume, action)
+            callback(price, timestamp, volume, action)
 
     # Read file, detect it's data format and automatically parses it
     def read(self, fname, fileformat=None, fmt=None):
@@ -174,4 +210,3 @@ class PaperExchange:
 
     def getOpenOrders(self, *args, **kws):
         raise NotImplementedError
-
