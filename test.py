@@ -64,7 +64,10 @@ def unittest(func):
             FAIL('{}: Line {}: {}'.format(func.__name__, line, text))
         except Exception as e:
             FATAL('{} raised {}: {}'.format(func.__name__, type(e).__name__, e))
+    tests.append(func_wrapper)
     return func_wrapper
+
+tests = []
 
 
 @unittest
@@ -82,6 +85,26 @@ def testEquity():
 
     port.withdraw('ethusd', 10)
     assert port.equity == 10000
+
+
+@unittest
+def testTruncate():
+    assert 0.123 == truncate(0.123198211212, 3)
+    assert 0.1231982 == truncate(0.123198211212, 7)
+
+    assert 0.231 != truncate(0.9121, 21)
+    assert 0.3121 == truncate(0.3121, 12)
+
+
+@unittest
+def testTickUnpack():
+    tick = {'price': 123, 'amount': 10, 'timestamp': 151221231, 'type': 0}
+    price, timestamp, volume, action = unpackTick(tick)
+
+    assert price == 123
+    assert volume == 10
+    assert timestamp == 151221231
+    assert action == 1
 
 
 # @Regression
@@ -221,11 +244,5 @@ def testRSI():
 
 
 if __name__ == '__main__':
-    testEquity()
-    testCVWMA()
-    testSMA()
-    testEMA()
-    testWMA()
-    testBollingerBand()
-    testRSI()
-
+    for test in tests:
+        test()
