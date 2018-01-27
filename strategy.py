@@ -607,7 +607,7 @@ class WMAForceBollingerStrat(Strategy):
         norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
 
         # Dollar volume signal # hard code threshold for the moment
-        if self.hasBalance() and  norm_vol1 > norm_vol2 * self.vol_multipler:
+        if self.hasBalance and  norm_vol1 > norm_vol2 * self.vol_multipler:
             self.dollar_volume_flag = True
         else:
             self.dollar_volume_flag = False
@@ -618,7 +618,7 @@ class WMAForceBollingerStrat(Strategy):
         if timestamp > self.tradable_window + self.timeframe: # available at 1h trading window (3600s one hour)
             self.bollinger_signal = False
 
-        if self.hasCash() and not self.hasBalance():
+        if self.hasCash and not self.hasBalance:
             if self.v_sell:
                 if self.uptrend or belowatr or aboveatr:
                     return
@@ -629,7 +629,7 @@ class WMAForceBollingerStrat(Strategy):
             else:
                 self.prev_crossover_time = None
 
-        elif self.hasBalance():
+        elif self.hasBalance:
             if self.dollar_volume_flag and self.vwma1.dollar_volume <= 0:
                 self.v_sell_signal = True
                 logger.signal("VWMA Indicate sell at: " + str(timestamp))
@@ -648,13 +648,13 @@ class WMAForceBollingerStrat(Strategy):
     # @Regression: Timestamp/Price/unneccesary signals shouldn't be here
     # Execution of signals
     # Can only buy if buy_signal and bollinger_signal both exist
-    def execute(self):
-        if self.hasCash() and not self.hasBalance() and self.buy_signal and self.bollinger_signal:
+    def execute(self, bitstamp):
+        if self.hasCash and not self.hasBalance and self.buy_signal and self.bollinger_signal:
             if self.prev_crossover_time is None:
                 self.prev_crossover_time = self.timestamp # @Hardcode @Fix logic, do not use timestamp here
 
             elif self.timestamp - self.prev_crossover_time >= self.timelag_required:
-                self.marketBuy(self.maxBuyAmount(), appendTimestamp(self.message, self.timestamp))
+                self.marketBuy(self.maxBuyAmount, appendTimestamp(self.message, self.timestamp))
 
                 self.prev_crossover_time = None
                 # setting can_sell flag for preventing premature exit
@@ -664,22 +664,22 @@ class WMAForceBollingerStrat(Strategy):
                     self.can_sell = False
 
         # Sell immediately if v_sell signal is present, do not enter the position before next uptrend
-        elif self.hasBalance() and self.v_sell_signal:
-            self.marketSell(self.maxSellAmount(), appendTimestamp(self.message, self.timestamp))
+        elif self.hasBalance and self.v_sell_signal:
+            self.marketSell(self.maxSellAmount, appendTimestamp(self.message, self.timestamp))
 
             self.prev_crossover_time = None
             self.dollar_volume_flag = False
 
             self.v_sell = True
 
-        elif self.hasBalance() and self.sell_signal:
+        elif self.hasBalance and self.sell_signal:
 
             if self.prev_crossover_time is None:
                 self.prev_crossover_time = self.timestamp
 
             elif self.timestamp - self.prev_crossover_time >= self.timelag_required:
 
-                self.marketSell(self.maxSellAmount(), appendTimestamp(self.message, self.timestamp))
+                self.marketSell(self.maxSellAmount, appendTimestamp(self.message, self.timestamp))
 
                 self.prev_crossover_time = None
                 self.dollar_volume_flag = False
