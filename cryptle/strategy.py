@@ -127,9 +127,6 @@ class Strategy:
     '''
 
     def __init__(self, pair=None, portfolio=None, exchange=None, equity_at_risk=1):
-        if exchange is None:
-            raise TypeError('Expected exchange for strategy constructor, None received')
-
         self.pair = pair
         self.portfolio = portfolio or Portfolio(10000)
         self.exchange = exchange
@@ -144,6 +141,9 @@ class Strategy:
     # [Data input interface]
     # Wrappers for trade logical steps
     def tick(self, price, timestamp, volume, action, callback=None):
+        if self.exchange is None:
+            raise TypeError('An exchange has to be associated before strategy runs')
+
         for k, v in self.indicators.items():
             v.update(price, timestamp, volume, action)
 

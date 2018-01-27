@@ -12,7 +12,7 @@ import sys
 import traceback
 
 
-formatter = defaultFormatter()
+formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')
 
 sh = logging.StreamHandler()
 sh.setLevel(logging.REPORT)
@@ -32,15 +32,18 @@ crylog.addHandler(fh)
 
 
 # Unit Test helpers
-RESET   = "\033[0m"
-COLOR   = "\033[%dm"
-RED     = COLOR % 31
+RESET   = '\033[0m'
+COLOR   = '\033[%dm'
+DIM     = '\033[%d;2m'
+BOLD    = '\033[01;%dm'
+RED     = BOLD % 31
+YELLOW  = BOLD % 33
 GREEN   = COLOR % 32
-YELLOW  = COLOR % 33
+GREY    = COLOR % 90
 
 
 def PASS(testname):
-    logger.report(GREEN + 'Passed ' + RESET + testname)
+    logger.report(GREEN + 'Passed ' + GREY + testname + RESET)
 
 
 def FAIL(testname):
@@ -63,11 +66,22 @@ def unittest(func):
             _, line, _, text = tb_info[-1]
             FAIL('{}: Line {}: {}'.format(func.__name__, line, text))
         except Exception as e:
-            FATAL('{} raised {}: {}'.format(func.__name__, type(e).__name__, e))
+            FATAL('{}: {}: {}'.format(func.__name__, type(e).__name__, e))
     tests.append(func_wrapper)
     return func_wrapper
 
 tests = []
+
+class TestStrat(Strategy):
+    def __init__(s, **kws):
+        s.indicators = {}
+        super().__init__(**kws)
+
+    def generateSignal(s, price, ts, volume, action):
+        pass
+
+    def execute(s, ts):
+        pass
 
 
 @unittest
@@ -107,7 +121,17 @@ def testTickUnpack():
     assert action == 1
 
 
-# @Regression
+@unittest
+def testBacktestClass():
+    test = Backtest()
+
+
+@unittest
+def testBacktestFunction():
+    strat = TestStrat()
+
+
+# @Regressing
 @unittest
 def testCVWMA():
     line = [(i, 1, i) for i in range(15)]
