@@ -39,13 +39,13 @@ class DemoStrat(Strategy):
             s.sell_signal = True
 
 
-    def execute(s):
-        if s.hasCash and not s.entered and s.buy_signal:
+    def execute(s, timestamp):
+        if s.buy_signal and s.hasCash and not s.entered:
             s.marketBuy(s.maxBuyAmount)
             s.entered = True
             return
 
-        if s.entered and s.sell_signal:
+        if s.sell_signal and s.entered:
             s.marketSell(s.maxSellAmount)
             s.entered = False
             return
