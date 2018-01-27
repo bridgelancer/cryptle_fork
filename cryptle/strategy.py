@@ -149,8 +149,8 @@ class Strategy:
 
         self.last_price = price
         self.timestamp = timestamp
-        self.generateSignal(price, timestamp, volume, action)
-        self.execute(timestamp)
+        if self.generateSignal(price, timestamp, volume, action) is None:
+            self.execute(timestamp)
 
         if callback:
             callback(self)
