@@ -42,7 +42,11 @@ def PASS(testname):
 
 
 def FAIL(testname):
-    logger.report(RED + 'Failed ' + RESET + testname)
+    logger.report(YELLOW + 'Failed ' + RESET + testname)
+
+
+def FATAL(testname):
+    logger.report(RED + 'ERROR  ' + RESET + testname)
 
 
 def unittest(func):
@@ -53,8 +57,8 @@ def unittest(func):
             PASS(func.__name__)
         except AssertionError as e:
             FAIL(func.__name__)
-        except:
-            pass
+        except Exception as e:
+            FATAL('{} raised {}: {}'.format(func.__name__, type(e).__name__, e))
     return func_wrapper
 
 
