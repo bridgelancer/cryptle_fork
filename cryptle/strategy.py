@@ -3,6 +3,65 @@ import logging
 
 logger = logging.getLogger('Cryptle')
 
+# @Consider using Enum instead?
+class DirectionFlag:
+    '''A boolean which can be accessed with specialised named attritubes.
+
+    The value of this flag can be accessed through members, up/down. The value
+    of these attributes are always oppositive of each other.
+    '''
+
+    def __init__(s):
+        s._up = s._down = False
+
+    @property
+    def up(s):
+        return s._up
+
+    @property
+    def down(s):
+        return s._down
+
+    @up.setter
+    def up(s, value):
+        s._up = value
+        s._down = not value
+
+    @down.setter
+    def down(s, value):
+        s._down = value
+        s._up = not value
+
+
+class TradeFlag:
+    '''A boolean which can be accessed with specialised named attritubes.
+
+    The value of this flag can be accessed through members, buy/sell. The value
+    of these attributes are always oppositive of each other.
+    '''
+
+    def __init__(s):
+        s._buy = s._sell = False
+
+    @property
+    def buy(s):
+        return s._buy
+
+    @property
+    def sell(s):
+        return s._sell
+
+    @buy.setter
+    def buy(s, value):
+        s._buy = value
+        s._sell = not value
+
+    @sell.setter
+    def sell(s, value):
+        s._sell = value
+        s._buy = not value
+
+
 class Portfolio:
     '''A proxy data structure for keeping track of balance in an account.'''
 
@@ -72,9 +131,9 @@ class Strategy:
             raise TypeError('Expected exchange for strategy constructor, None received')
 
         self.pair = pair
+        self.portfolio = portfolio or Portfolio(10000)
         self.exchange = exchange
         self.equity_at_risk = equity_at_risk
-        self.portfolio = portfolio or Portfolio(10000)
 
         for k, v in self.indicators.items():
             self.__dict__[k] = v
