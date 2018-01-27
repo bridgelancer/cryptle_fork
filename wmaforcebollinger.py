@@ -1,20 +1,15 @@
 from cryptle.strategy import *
 from cryptle.loglevel import *
-from cryptle.backtest import *
-
-from plotting import *
 from ta import *
 
 import logging
-import matplotlib.pyplot as plt
-
 logger = logging.getLogger('Cryptle')
 
 
 class WMAForceBollingerStrat(Strategy):
 
     def __init__(s,
-            message='[WMA Bollinger]',
+            message='[Force Bollinger]',
             period=180,
             scope1=5,
             scope2=8,
@@ -29,14 +24,16 @@ class WMAForceBollingerStrat(Strategy):
 
         s.indicators = {}
 
-        s.indicators['bar'] = bar = CandleBar(period)
+        s.indicators['bar'] = CandleBar(period)
         s.indicators['vwma1'] = ContinuousVWMA(period * 3) # @HARDCODE
         s.indicators['vwma2'] = ContinuousVWMA(period * vwma_lb) # @HARDCODE
 
-        s.ATR_5 = ATR(bar, scope1)
-        s.WMA_5 = WMA(bar, scope1)
-        s.WMA_8 = WMA(bar, scope2)
-        s.sma_20 = SMA(bar, bband_period)
+        super().__init__(**kws)
+
+        s.ATR_5 = ATR(s.bar, scope1)
+        s.WMA_5 = WMA(s.bar, scope1)
+        s.WMA_8 = WMA(s.bar, scope2)
+        s.sma_20 = SMA(s.bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
 
         s.message = message
@@ -54,7 +51,6 @@ class WMAForceBollingerStrat(Strategy):
         s.can_sell = False
         s.v_sell = False
 
-        super().__init__(**kws)
 
     def generateSignal(s, price, timestamp, volume, action):
 
@@ -127,10 +123,8 @@ class WMAForceBollingerStrat(Strategy):
         else:
             s.prev_crossover_time = None
 
-    # @Regression: Timestamp/Price/unneccesary signals shouldn't be here
-    # Execution of signals
     # Can only buy if buy_signal and bollinger_signal both exist
-    def execute(s):
+    def execute(s, timestamp):
         if s.hasCash and not s.hasBalance and s.buy_signal and s.bollinger_signal:
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = s.timestamp # @Hardcode @Fix logic, do not use timestamp here
@@ -166,6 +160,10 @@ class WMAForceBollingerStrat(Strategy):
                 s.prev_crossover_time = None
                 s.dollar_volume_flag = False
 
+
+from cryptle.backtest import *
+from plotting import *
+import matplotlib.pyplot as plt
 
 
 if __name__ == '__main__':
