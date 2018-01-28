@@ -8,14 +8,6 @@ import logging
 logger = logging.getLogger('Cryptle')
 logger.setLevel(logging.DEBUG)
 
-formatter = defaultFormatter()
-
-fh = logging.FileHandler('BollRSIStrat_backtest.log', mode = 'w')
-fh.setLevel(logging.INDEX)
-fh.setFormatter(formatter)
-
-logger.addHandler(fh)
-
 
 class WMAForceBollingerRSIStrat(Strategy):
 
@@ -214,12 +206,44 @@ class WMAForceBollingerRSIStrat(Strategy):
                 s.dollar_volume_flag = False
 
 
-from cryptle.backtest import Backtest, PaperExchange
+from cryptle.backtest import backtest_tick, Backtest, PaperExchange
 from plotting import *
+import signal
 import matplotlib.pyplot as plt
 
 
+formatter = defaultFormatter()
+
+fh = logging.FileHandler('BollRSIStrat_backtest.log', mode = 'w')
+fh.setLevel(logging.INDEX)
+fh.setFormatter(formatter)
+
+sh = logging.StreamHandler()
+sh.setLevel(logging.DEBUG)
+sh.setFormatter(formatter)
+
+logger.addHandler(sh)
+logger.addHandler(fh)
+
+
+vwma1 = []
+vwma2 = []
+
+def record_indicators(strat):
+    global vwma1
+    global vwma2
+
+    vwma1.append((strat.vwma1.dollar_volume, strat.last_timestamp))
+    vwma2.append((strat.vwma2.dollar_volume, strat.last_timestamp))
+
+
+def timeout(message=None):
+    raise TimeoutError(message)
+
+
 if __name__ == '__main__':
+    dataset = '../../../../data/bitstamp/bch/bch_total.log'
+
     pair = 'bchusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012)
@@ -233,17 +257,26 @@ if __name__ == '__main__':
             bband=3.0,
             bband_period=30)
 
-    test = Backtest(exchange)
-    test.readJSON('bch_total.log')
-    test.run(strat.tick)
+    # Can use this too
+    backtest_tick(strat, dataset, exchange=exchange)
+
+    #test = Backtest(exchange)
+    #test.readJSON(dataset)
+    #test.run(strat, record_indicators)
 
     logger.info('RSI Equity:    %.2f' % port.equity)
     logger.info('RSI Cash:    %.2f' % port.cash)
     logger.info('RSI Asset:    %s' % str(port.balance))
 
-    # Plot candle functions commented out as not runnable at the moment
+    # Sets a time out for plotting
+    signal.signal(signal.SIGALRM, timeout)
+    signal.alarm(300)
+
+    # # Plot candle functions commented out as not runnable at the moment
     # plotCandles(
     #         strat.bar,
     #         title='Final equity {} Trades:{}'.format(strat.equity, len(strat.trades)),
     #         trades=strat.trades)
+
+    signal.alarm(0)
     # plt.show()
