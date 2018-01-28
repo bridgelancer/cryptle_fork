@@ -30,7 +30,7 @@ class DemoStrat(Strategy):
         super().__init__(**kws)
 
 
-    def generateSignal(s, price, timestamp, volume, action):
+    def handleTick(s, price, timestamp, volume, action):
         if s.vwma > 10000:
             s.buy_signal = True
             s.sell_signal = False
@@ -52,16 +52,23 @@ class DemoStrat(Strategy):
 
 
 if __name__ == '__main__':
-    pair = 'btcusd'
-    port = Portfolio(10000)
-    exchange = PaperExchange(commission=0.0012)
+    dataset = '../../../../data/bitstamp/bch/4.log'
+    #pair = 'btcusd'
+    #port = Portfolio(10000)
+    #exchange = PaperExchange(commission=0.0012)
 
-    strat = DemoStrat(pair=pair, portfolio=port, exchange=exchange)
+    #strat = DemoStrat(pair=pair, portfolio=port, exchange=exchange)
 
-    test = Backtest(exchange)
-    test.readJSON('../../../../data/bitstamp/bch.04.log')
-    test.run(strat.tick)
+    #test = Backtest(exchange)
+    #test.readJSON(dataset)
+    #test.run(strat.tick)
 
-    plotCandles(strat.candle, title='Final equity {} Trades:{}'.format(strat.equity, len(strat.trades)), trades=strat.trades)
+    strat = DemoStrat()
+    backtest_tick(strat, dataset, pair='bchusd')
+
+    plotCandles(
+            strat.candle,
+            title='Final equity {} Trades:{}'.format(strat.equity, len(strat.trades)),
+            trades=strat.trades)
     plt.show()
 
