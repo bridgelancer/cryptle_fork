@@ -8,14 +8,17 @@ import csv
 log = logging.getLogger('Exchange')
 
 
-def backtest(strat, dataset, pair=None, portfolio=None, exchange=None, commission=0.0012):
+def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
+        commission=0.0012, slippage=0.0012, callback=None):
     '''Wrapper function for running backtest on tick based strategy.
 
     Args:
-        pair: A string representation of the trade coin pair
-        portfolio: Portfolio object to be assigned to
-        commission: Sets the commission of PaperExchange. Ignored if an exchange
-            was passed as argument
+        pair: String representation of the trade coin pair (meta info)
+        portfolio: Portfolio object to be assigned to the strategy
+        exchange: Exchagne object to be assigned to the strategy and Backtest manager
+        commission: Commission of this backtest. Ignored if an exchange was passed as argument
+        slippage: Slippage of this backtest. Ignored if an exchange was passed as argument
+        callback: Function to be called at the end of each tick
 
     Returns:
         The strategy object that was passed as argument
@@ -24,7 +27,7 @@ def backtest(strat, dataset, pair=None, portfolio=None, exchange=None, commissio
         Exceptions that may be raised by the strategy
     '''
     port = portfolio or Portfolio(10000)
-    exchange = exchange or PaperExchange(commission)
+    exchange = exchange or PaperExchange(commission=commission, slippage=slippage)
 
     strat.pair = strat.pair or pair
     strat.portfolio = strat.portfolio or portfolio
@@ -32,7 +35,7 @@ def backtest(strat, dataset, pair=None, portfolio=None, exchange=None, commissio
 
     test = Backtest(exchange)
     test.read(dataset)
-    test.run(strat.tick)
+    test.run(strat.tick, callback)
 
 
 class Backtest():
@@ -41,7 +44,7 @@ class Backtest():
     def __init__(self, exchange=None):
         self.exchange = exchange or PaperExchange()
 
-    def run(self, callback):
+    def run(self, strat, callback=None):
         '''Run a tick strategy on the loaded dataset.
 
         Args:
@@ -55,7 +58,8 @@ class Backtest():
             self.exchange.price = price
             self.exchange.volume = volume
             self.exchange.timestamp = timestamp
-            callback(price, timestamp, volume, action)
+            strat.tick(price, timestamp, volume, action)
+            callback(strat)
 
     # Read file, detect it's data format and automatically parses it
     def read(self, fname, fileformat=None, fmt=None):
@@ -115,7 +119,6 @@ class Backtest():
             s = s.split('n')
             for i, c in enumerate(s):
                 tx[fieldnames[i]] = c
-
 
 
 class PaperExchange:
