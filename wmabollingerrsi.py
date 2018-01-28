@@ -5,7 +5,7 @@ from cryptle.utility  import *
 from ta import *
 import logging
 
-logger = logging.getLogger('Cryptle')
+logger = logging.getLogger('cryptle.strategy')
 logger.setLevel(logging.DEBUG)
 
 
@@ -50,27 +50,24 @@ class WMAForceBollingerRSIStrat(Strategy):
 
         s.tradable_window = 0
         s.init_time = 0
-        s.dollar_volume_flag = False
+        # s.dollar_volume_flag = False
         s.bollinger_signal = False
         s.can_sell = False
-        s.was_v_sell = False
+        # s.was_v_sell = False
 
         s.rsi_sell_flag = False
-        s.prev_sell_time = None
-        s.rsi_bsignal = False
-        s.rsi_ssignal = False
-        s.current_atr = None
-        s.buy_signal = False
-        s.sell_signal = False
-        s.v_sell_signal = False
+        s.prev_crossover_time = None
+        # s.prev_sell_time = None
+        s.rsi_bsignal = None
+        s.rsi_ssignal = None
+        # s.current_atr = None
+        s.buy_signal = None
+        s.sell_signal = None
+        s.v_sell_signal = None
 
         super().__init__(**kws)
 
     def handleTick(s, price, timestamp, volume, action):
-
-        s.buy_signal = False
-        s.sell_signal = False
-        s.v_sell_signal = False
 
         if s.init_time == 0:
             s.init_time = timestamp
@@ -78,58 +75,71 @@ class WMAForceBollingerRSIStrat(Strategy):
         if timestamp < s.init_time + max(s.WMA_8.lookback, 20) * s.bar.period:
             return
 
-
         atr = s.ATR_5.atr
 
         belowatr = max(s.WMA_5.wma, s.WMA_8.wma) < price - s.lower_atr * atr
         aboveatr = min(s.WMA_5.wma, s.WMA_8.wma) > price + s.upper_atr * atr
 
-
         s.uptrend   = s.WMA_5.wma > s.WMA_8.wma
         s.downtrend = s.WMA_5.wma < s.WMA_8.wma
 
-        # @HARDCODE Buy/Sell message
         # @TODO should not trade the first signal if we enter the bollinger_signal with an uptrend?
 
-        # Buy/Sell singal generation
-        # Band confirmation
-        norm_vol1 = s.vwma1.dollar_volume / s.vwma1.period
-        norm_vol2 = s.vwma2.dollar_volume / s.vwma2.period
-
         # Dollar volume signal # hard code threshold for the moment
-        if s.hasBalance and  norm_vol1 > norm_vol2 * s.vol_multipler:
-            s.dollar_volume_flag = True
-        else:
-            s.dollar_volume_flag = False
+        # norm_vol1 = s.vwma1.dollar_volume / s.vwma1.period
+        # norm_vol2 = s.vwma2.dollar_volume / s.vwma2.period
+
+        # if s.hasBalance and  norm_vol1 > norm_vol2 * s.vol_multipler:
+        #     s.dollar_volume_flag = True
+        # else:
+        #     s.dollar_volume_flag = False
+
+        # Band confirmation
+        tradable_window = s.tradable_window
+        bollinger_signal = s.bollinger_signal
+        timeframe = s.timeframe
 
         if s.bollinger.band > s.bband: # s.bband = 3.0 by default
-            s.bollinger_signal = True
-            s.tradable_window = timestamp
-        if timestamp > s.tradable_window + s.timeframe: # available at 1h trading window (3600s one hour)
-            s.bollinger_signal = False
+            bollinger_signal = True
+            tradable_window = timestamp
+        if timestamp > tradable_window + timeframe: # available at 1h trading window (3600s one hour)
+            bollinger_signal = False
 
         # RSI signal generation
+        rsi_bsignal = False # local variable
+        rsi_ssignal = False # local variable
+        rsi_sell_flag = s.rsi_sell_flag
+
         if s.rsi.rsi > 50:
-            if s.rsi_sell_flag:
+            if rsi_sell_flag:
                 pass
             elif s.rsi.rsi > 80:
-                s.rsi_bsignal = True
-                s.rsi_ssignal = False
-                s.rsi_sell_flag = True
+                rsi_bsignal = True
+                rsi_ssignal = False
+                rsi_sell_flag = True
             else:
-                s.rsi_bsignal = True
-                s.rsi_ssignal = False
+                rsi_bsignal = True
+                rsi_ssignal = False
 
         if s.rsi.rsi < 60:
-            if s.rsi_sell_flag:
-                s.rsi_ssignal = True
-                s.rsi_bsignal = False
+            if rsi_sell_flag:
+                rsi_ssignal = True
+                rsi_bsignal = False
             if s.rsi.rsi < 50:
-                s.rsi_ssignal = True
-                s.rsi_bsignal = False
-                s.rsi_sell_flag = False
+                rsi_ssignal = True
+                rsi_bsignal = False
+                rsi_sell_flag = False
+
+        s.rsi_bsignal = rsi_bsignal
+        s.rsi_ssignal = rsi_ssignal
+        s.rsi_sell_flag = rsi_sell_flag
 
         # Buy sell signal generation
+        buy_signal = False
+        sell_signal = False
+        v_sell_signal = False
+        prev_crossover_time = s.prev_crossover_time
+
         if s.hasCash and not s.hasBalance:
             # if s.was_v_sell:
             #     if s.uptrend or belowatr or aboveatr:
@@ -137,25 +147,34 @@ class WMAForceBollingerRSIStrat(Strategy):
             #     elif s.downtrend:
             #         s.was_v_sell = False
             if belowatr:
-                s.buy_signal = True
+                buy_signal = True
             else:
-                s.prev_crossover_time = None
+                prev_crossover_time = None
 
         elif s.hasBalance:
             # if s.dollar_volume_flag and s.vwma1.dollar_volume <= 0: # Currently no use
-            #     s.v_sell_signal = True
+            #     v_sell_signal = True
             #     #logger.signal("VWMA Indicate sell at: " + str(timestamp))
             if not s.can_sell and aboveatr:
-                s.sell_signal = True
+                sell_signal = True
             elif s.can_sell and s.downtrend:
-                s.sell_signal = True
+                sell_signal = True
             elif not s.can_sell and s.uptrend:
-                s.can_sell = True
-            # elif not s.can_sell and s.downtrend:
-            #     return
+                can_sell = True
+            elif not s.can_sell and s.downtrend:
+                pass
 
         else:
-            s.prev_crossover_time = None
+            prev_crossover_time = None
+
+        s.buy_signal = buy_signal
+        s.sell_signal = sell_signal
+        s.v_sell_signal = v_sell_signal
+        s.tradable_window = tradable_window
+        s.bollinger_signal = bollinger_signal
+        s.timeframe = timeframe
+        s.prev_crossover_time = prev_crossover_time
+
 
     # @Regression: Timestamp/Price/unneccesary signals shouldn't be here
     # Execution of signals
@@ -227,15 +246,15 @@ logger.addHandler(sh)
 logger.addHandler(fh)
 
 
-vwma1 = []
-vwma2 = []
+# vwma1 = []
+# vwma2 = []
 
-def record_indicators(strat):
-    global vwma1
-    global vwma2
+# def record_indicators(strat):
+#     global vwma1
+#     global vwma2
 
-    vwma1.append((strat.vwma1.dollar_volume, strat.last_timestamp))
-    vwma2.append((strat.vwma2.dollar_volume, strat.last_timestamp))
+#     vwma1.append((strat.vwma1.dollar_volume, strat.last_timestamp))
+#     vwma2.append((strat.vwma2.dollar_volume, strat.last_timestamp))
 
 
 def timeout(message=None):
@@ -243,7 +262,7 @@ def timeout(message=None):
 
 
 if __name__ == '__main__':
-    dataset = 'bch_total.log'
+    dataset = 'bch_correct.log'
 
     pair = 'bchusd'
     port = Portfolio(10000)
@@ -274,10 +293,10 @@ if __name__ == '__main__':
     signal.alarm(300)
 
     # # Plot candle functions commented out as not runnable at the moment
-    # plotCandles(
-    #         strat.bar,
-    #         title='Final equity {} Trades:{}'.format(strat.equity, len(strat.trades)),
-    #         trades=strat.trades)
+    plotCandles(
+            strat.bar,
+            title='Final equity {} Trades:{}'.format(strat.equity, len(strat.trades)),
+            trades=strat.trades)
 
     signal.alarm(0)
-    # plt.show()
+    plt.show()

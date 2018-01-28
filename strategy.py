@@ -603,16 +603,16 @@ class WMAForceBollingerStrat(Strategy):
 
         # Buy/Sell singal generation
         # Band confirmation
-        norm_vol1 = self.vwma1.dollar_volume / self.vwma1.period
-        norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
+        # norm_vol1 = self.vwma1.dollar_volume / self.vwma1.period
+        # norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
 
         # Dollar volume signal # hard code threshold for the moment
-        if self.hasBalance and  norm_vol1 > norm_vol2 * self.vol_multipler:
-            self.dollar_volume_flag = True
-        else:
-            self.dollar_volume_flag = False
+        # if self.hasBalance and  norm_vol1 > norm_vol2 * self.vol_multipler:
+        #     self.dollar_volume_flag = True
+        # else:
+        #     self.dollar_volume_flag = False
 
-        if self.bollinger.band > self.bband: # currently snooping 3.5%
+        if self.bollinger.band > self.bband: # s.bband = 3.0 by default
             self.bollinger_signal = True
             self.tradable_window = timestamp
         if timestamp > self.tradable_window + self.timeframe: # available at 1h trading window (3600s one hour)
@@ -695,18 +695,16 @@ class WMABollingerRSIStrat(Strategy):
         self.ATR_5 = ATR(self.bar, scope1)
         self.WMA_5 = WMA(self.bar, scope1)
         self.WMA_8 = WMA(self.bar, scope2)
-        self.vwma1 = ContinuousVWMA(period * vwma_la)
-        self.vwma2 = ContinuousVWMA(period * vwma_lb)
+        #self.vwma1 = ContinuousVWMA(period * vwma_la)
+        #self.vwma2 = ContinuousVWMA(period * vwma_lb)
         self.sma_20 = SMA(self.bar, bband_period)
         self.bollinger = BollingerBand(self.sma_20, bband_period)
         self.rsi = RSI(self.bar, rsi_la) # @HARDCODE
 
         self.message = message
-        self.dollar_volume_flag = False
+        #self.dollar_volume_flag = False
 
         self.bollinger_signal = False
-        self.rsi_bsignal = False
-        self.rsi_ssignal = False
         self.rsi_sell_flag = False
         self.upper_atr = upper_atr
         self.lower_atr = lower_atr
@@ -715,8 +713,7 @@ class WMABollingerRSIStrat(Strategy):
         self.vol_multipler = vol_multipler
         self.can_sell = False
         self.v_sell = False
-        self.entry_time = None
-        self.prev_sell_time = None
+        #self.prev_sell_time = None
         self.tradable_window = 0
 
 
@@ -727,8 +724,13 @@ class WMABollingerRSIStrat(Strategy):
         action = -1 * (tick['type'] * 2 - 1)
 
         self.bar.update(price, timestamp)
+<<<<<<< fa131617a9714fc9574ae86ce03ded0ec00dbb3e
         self.vwma1.update(price, volume, timestamp, action)
         self.vwma2.update(price, volume, timestamp, action)
+=======
+        #self.vwma1.update(price, volume, timestamp, action)
+        #self.vwma2.update(price, volume, timestamp, action)
+>>>>>>> Attempting to solve the interface regression
 
         if self.init_time == 0:
             self.init_time = timestamp
@@ -737,16 +739,12 @@ class WMABollingerRSIStrat(Strategy):
             return
 
         prev_crossover_time = self.prev_crossover_time
-        prev_sell_time = self.prev_sell_time
-        entry_time = self.entry_time
+        #prev_sell_time = self.prev_sell_time
         can_sell = self.can_sell
-        dollar_volume_flag = self.dollar_volume_flag
+        #dollar_volume_flag = self.dollar_volume_flag
         v_sell = self.v_sell
         tradable_window = self.tradable_window
         bollinger_signal = self.bollinger_signal
-        rsi_bsignal = self.rsi_bsignal
-        rsi_ssignal = self.rsi_ssignal
-        rsi_sell_flag = self.rsi_sell_flag
 
         # @ta should not raise RuntimeWarning
         try:
@@ -760,17 +758,17 @@ class WMABollingerRSIStrat(Strategy):
         uptrend   = self.WMA_5.wma > self.WMA_8.wma
         downtrend = self.WMA_5.wma < self.WMA_8.wma
 
-        buy_signal = False
-        sell_signal = False
-        v_sell_signal = False
+        buy_signal = False # local variable
+        sell_signal = False # local variable
+        v_sell_signal = False # local variable
 
         # @HARDCODE Buy/Sell message
         # @TODO should not trade the first signal if we enter the bollinger_signal with an uptrend?
 
         # Buy/Sell singal generation
         # Band confirmation
-        norm_vol1 = self.vwma1.dollar_volume / self.vwma1.period
-        norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
+        # norm_vol1 = self.vwma1.dollar_volume / self.vwma1.period
+        # norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
 
         # Dollar volume signal # hard code threshold for the moment
         # if self.hasBalance() and  norm_vol1 > norm_vol2 * self.vol_multipler:
@@ -783,6 +781,10 @@ class WMABollingerRSIStrat(Strategy):
             tradable_window = timestamp
         if timestamp > tradable_window + self.timeframe: # available at 1h trading window (3600s one hour)
             bollinger_signal = False
+
+        rsi_bsignal = False # local variable
+        rsi_ssignal = False # local variable
+        rsi_sell_flag = self.rsi_sell_flag
 
         # RSI signal generation
         if self.rsi.rsi > 50:
@@ -806,11 +808,19 @@ class WMABollingerRSIStrat(Strategy):
                 rsi_sell_flag = False
 
         if self.hasCash() and not self.hasBalance():
+<<<<<<< fa131617a9714fc9574ae86ce03ded0ec00dbb3e
             if v_sell:
                 if uptrend or belowatr or aboveatr:
                     return
                 elif downtrend:
                     v_sell = False
+=======
+            # if v_sell:
+            #     if uptrend or belowatr or aboveatr:
+            #         return
+            #     elif downtrend:
+            #         v_sell = False
+>>>>>>> Attempting to solve the interface regression
             if belowatr:
                 buy_signal = True
             else:
@@ -827,7 +837,7 @@ class WMABollingerRSIStrat(Strategy):
             elif not can_sell and uptrend:
                 can_sell = True
             elif not can_sell and downtrend:
-                return
+                pass
 
         else:
             prev_crossover_time = None
@@ -874,20 +884,19 @@ class WMABollingerRSIStrat(Strategy):
         ####### Hardcoded for BCH volume
         # Do not trigger take into account of v_sell unless in position
 
-
         self.bollinger_signal = bollinger_signal
-        self.rsi_bsignal = rsi_bsignal
-        self.rsi_ssignal = rsi_ssignal
         self.rsi_sell_flag = rsi_sell_flag
         self.tradable_window = tradable_window
         self.prev_crossover_time = prev_crossover_time
-        self.prev_sell_time = prev_sell_time
-        self.entry_time = entry_time
+        #self.prev_sell_time = prev_sell_time
         self.can_sell = can_sell
-        self.dollar_volume_flag = dollar_volume_flag
+        #self.dollar_volume_flag = dollar_volume_flag
         self.v_sell = v_sell
+<<<<<<< fa131617a9714fc9574ae86ce03ded0ec00dbb3e
 
 
+=======
+>>>>>>> Attempting to solve the interface regression
 # @In Progress
 # Needs ATR x MA indicators
 class SwissStrat(Strategy):
