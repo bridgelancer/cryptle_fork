@@ -253,7 +253,8 @@ class Strategy:
         checkType(message, str)
         assert amount > 0
 
-        logger.debug('Placing market buy for {:.6g} {} {:s}'.format(amount, self.pair.upper(), message))
+        msg = 'Placing market buy for {:.6g} {} {:s}'
+        logger.debug(msg.format(amount, self.pair.upper(), message))
         res = self.exchange.marketBuy(self.pair, amount)
 
         self._cleanupBuy(res, message)
@@ -264,7 +265,8 @@ class Strategy:
         checkType(message, str)
         assert amount > 0
 
-        logger.debug('Placing market sell for {:.6g} {} {:s}'.format(amount, self.pair.upper(), message))
+        msg = 'Placing market sell for {:.6g} {} {:s}'
+        logger.debug(msg.format(amount, self.pair.upper(), message))
         res = self.exchange.marketSell(self.pair, amount)
 
         self._cleanupSell(res, message)
@@ -277,7 +279,8 @@ class Strategy:
         assert amount > 0
         assert price > 0
 
-        logger.debug('Placing limit buy for {:.6g} {} @${:.6g} {:s}'.format(amount, self.pair.upper(), price, message))
+        msg = 'Placing limit buy for {:.6g} {} @${:.6g} {:s}'
+        logger.debug(msg.format(amount, self.pair.upper(), price, message))
         res = self.exchange.limitBuy(self.pair, amount, price)
 
         self._cleanupBuy(res, message)
@@ -290,7 +293,8 @@ class Strategy:
         assert amount > 0
         assert price > 0
 
-        logger.debug('Placing limit sell for {:.6g} {} @${:.6g} {:s}'.format(amount, self.pair.upper(), price, message))
+        msg = 'Placing limit sell for {:.6g} {} @${:.6g} {:s}'
+        logger.debug(msg.format(amount, self.pair.upper(), price, message))
         res = self.exchange.limitSell(self.pair, amount, price)
 
         self._cleanupSell(res, message)
@@ -310,7 +314,8 @@ class Strategy:
         self.portfolio.cash -= amount * price
         self.trades.append([timestamp, price])
 
-        logger.info('Bought {:.7g} {} @${:<.6g} {}'.format(amount, self.pair.upper(), price, message))
+        msg= 'Bought {:.7g} {} @${:<.6g} at {} {}'
+        logger.info(msg.format(amount, self.pair.upper(), price, timestamp, message))
 
 
     def _cleanupSell(self, res, message=None):
@@ -326,7 +331,8 @@ class Strategy:
         self.portfolio.cash += amount * price
         self.trades[-1] += [timestamp, price]
 
-        logger.info('Sold   {:.7g} {} @${:<.6g} {}'.format(amount, self.pair.upper(), price, message))
+        msg = 'Sold   {:.7g} {} @${:<.6g} at {} {}'
+        logger.info(msg.format(amount, self.pair.upper(), price, timestamp, message))
 
 
     def _checkHasExchange(self):
