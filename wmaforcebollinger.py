@@ -52,7 +52,7 @@ class WMAForceBollingerStrat(Strategy):
         s.v_sell = False
 
 
-    def generateSignal(s, price, timestamp, volume, action):
+    def handleTick(s, price, timestamp, volume, action):
 
         s.buy_signal = False
         s.sell_signal = False

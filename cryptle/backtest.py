@@ -1,9 +1,10 @@
-from .loglevel import *
 from .utility  import *
+from .strategy import Portfolio
 
 import logging
 import json
 import csv
+
 
 log = logging.getLogger('Exchange')
 
@@ -26,7 +27,7 @@ def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
     Raise:
         Exceptions that may be raised by the strategy
     '''
-    port = portfolio or Portfolio(10000)
+    portfolio = portfolio or Portfolio(10000)
     exchange = exchange or PaperExchange(commission=commission, slippage=slippage)
 
     strat.pair = strat.pair or pair
@@ -35,9 +36,10 @@ def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
 
     test = Backtest(exchange)
     test.read(dataset)
-    test.run(strat.tick, callback)
+    test.run(strat, callback)
 
 
+# Only works with tick for now
 class Backtest():
     '''Provides an interface to load datasets and launch backtests.'''
 
@@ -58,8 +60,9 @@ class Backtest():
             self.exchange.price = price
             self.exchange.volume = volume
             self.exchange.timestamp = timestamp
-            strat.tick(price, timestamp, volume, action)
-            callback(strat)
+            strat.pushTick(price, timestamp, volume, action)
+            if callback:
+                callback(strat)
 
     # Read file, detect it's data format and automatically parses it
     def read(self, fname, fileformat=None, fmt=None):
