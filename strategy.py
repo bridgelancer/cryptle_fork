@@ -727,8 +727,8 @@ class WMABollingerRSIStrat(Strategy):
         action = -1 * (tick['type'] * 2 - 1)
 
         self.bar.update(price, timestamp)
-        self.vwma1.update(price, timestamp, volume, action)
-        self.vwma2.update(price, timestamp, volume, action)
+        self.vwma1.update(price, volume, timestamp, action)
+        self.vwma2.update(price, volume, timestamp, action)
 
         if self.init_time == 0:
             self.init_time = timestamp
@@ -773,10 +773,10 @@ class WMABollingerRSIStrat(Strategy):
         norm_vol2 = self.vwma2.dollar_volume / self.vwma2.period
 
         # Dollar volume signal # hard code threshold for the moment
-        if self.hasBalance() and  norm_vol1 > norm_vol2 * self.vol_multipler:
-            self.dollar_volume_flag = True
-        else:
-            self.dollar_volume_flag = False
+        # if self.hasBalance() and  norm_vol1 > norm_vol2 * self.vol_multipler:
+        #     self.dollar_volume_flag = True
+        # else:
+        #     self.dollar_volume_flag = False
 
         if self.bollinger.band > self.bband: # currently snooping 3.5%
             bollinger_signal = True
@@ -811,16 +811,16 @@ class WMABollingerRSIStrat(Strategy):
                     return
                 elif downtrend:
                     v_sell = False
-            elif belowatr:
+            if belowatr:
                 buy_signal = True
             else:
                 prev_crossover_time = None
 
         elif self.hasBalance():
-            if dollar_volume_flag and self.vwma1.dollar_volume <= 0:
-                v_sell_signal = True
-                logger.signal("VWMA Indicate sell at: " + str(timestamp))
-            elif not can_sell and aboveatr:
+            # if dollar_volume_flag and self.vwma1.dollar_volume <= 0:
+            #     v_sell_signal = True
+            #     logger.signal("VWMA Indicate sell at: " + str(timestamp))
+            if not can_sell and aboveatr:
                 sell_signal = True
             elif can_sell and downtrend:
                 sell_signal = True
@@ -849,14 +849,14 @@ class WMABollingerRSIStrat(Strategy):
                 elif downtrend:
                     can_sell = False
         # Sell immediately if v_sell signal is present, do not enter the position before next uptrend
-        elif self.hasBalance() and v_sell_signal:
-            amount = self.portfolio.balance[self.pair]
-            self.marketSell(amount, appendTimestamp(self.message, timestamp), timestamp)
+        # elif self.hasBalance() and v_sell_signal:
+        #     amount = self.portfolio.balance[self.pair]
+        #     self.marketSell(amount, appendTimestamp(self.message, timestamp), timestamp)
 
-            prev_crossover_time = None
-            dollar_volume_flag = False
+        #     prev_crossover_time = None
+        #     dollar_volume_flag = False
 
-            v_sell = True
+        #     v_sell = True
 
         elif self.hasBalance() and sell_signal and rsi_ssignal:
 
@@ -886,6 +886,7 @@ class WMABollingerRSIStrat(Strategy):
         self.can_sell = can_sell
         self.dollar_volume_flag = dollar_volume_flag
         self.v_sell = v_sell
+
 
 # @In Progress
 # Needs ATR x MA indicators

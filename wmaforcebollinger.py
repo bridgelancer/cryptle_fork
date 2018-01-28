@@ -181,7 +181,7 @@ if __name__ == '__main__':
             timeframe=3600)
 
     test = Backtest(exchange)
-    test.readJSON('../../../../data/bitstamp/bch.02.log')
+    test.readJSON('papertrade0114p_bch.log')
     test.run(strat.tick)
 
     plotCandles(

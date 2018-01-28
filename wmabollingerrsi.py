@@ -131,28 +131,28 @@ class WMAForceBollingerRSIStrat(Strategy):
 
         # Buy sell signal generation
         if s.hasCash and not s.hasBalance:
-            if s.was_v_sell:
-                if s.uptrend or belowatr or aboveatr:
-                    return
-                elif s.downtrend:
-                    s.was_v_sell = False
-            elif belowatr:
+            # if s.was_v_sell:
+            #     if s.uptrend or belowatr or aboveatr:
+            #         return
+            #     elif s.downtrend:
+            #         s.was_v_sell = False
+            if belowatr:
                 s.buy_signal = True
             else:
                 s.prev_crossover_time = None
 
         elif s.hasBalance:
-            if s.dollar_volume_flag and s.vwma1.dollar_volume <= 0: # Currently no use
-                s.v_sell_signal = True
-                #logger.signal("VWMA Indicate sell at: " + str(timestamp))
-            elif not s.can_sell and aboveatr:
+            # if s.dollar_volume_flag and s.vwma1.dollar_volume <= 0: # Currently no use
+            #     s.v_sell_signal = True
+            #     #logger.signal("VWMA Indicate sell at: " + str(timestamp))
+            if not s.can_sell and aboveatr:
                 s.sell_signal = True
             elif s.can_sell and s.downtrend:
                 s.sell_signal = True
             elif not s.can_sell and s.uptrend:
                 s.can_sell = True
-            elif not s.can_sell and s.downtrend:
-                return
+            # elif not s.can_sell and s.downtrend:
+            #     return
 
         else:
             s.prev_crossover_time = None
@@ -193,17 +193,18 @@ class WMAForceBollingerRSIStrat(Strategy):
 
 
         elif s.hasBalance and s.sell_signal and s.rsi_ssignal:
+        # elif s.hasBalance and s.sell_signal:
             #logger.signal("Sell at RSI: " + str(s.rsi.rsi))
 
-            if s.prev_crossover_time is None:
-                s.prev_crossover_time = timestamp
+            # if s.prev_crossover_time is None:
+            #     s.prev_crossover_time = timestamp
 
-            elif timestamp - s.prev_crossover_time >= s.timelag_required:
+            # elif timestamp - s.prev_crossover_time >= s.timelag_required:
 
-                s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
 
-                s.prev_crossover_time = None
-                s.dollar_volume_flag = False
+            s.prev_crossover_time = None
+            s.dollar_volume_flag = False
 
 
 from cryptle.backtest import backtest_tick, Backtest, PaperExchange
@@ -242,7 +243,7 @@ def timeout(message=None):
 
 
 if __name__ == '__main__':
-    dataset = '../../../../data/bitstamp/bch/bch_total.log'
+    dataset = 'bch_total.log'
 
     pair = 'bchusd'
     port = Portfolio(10000)
