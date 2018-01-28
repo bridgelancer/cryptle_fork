@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
-        commission=0.0012, slippage=0.0012, callback=None):
+        commission=0.0012, slippage=0, callback=None):
     '''Wrapper function for running backtest on tick based strategy.
 
     Args:
@@ -44,6 +44,7 @@ class Backtest:
     def __init__(self, exchange=None):
         self.exchange = exchange or PaperExchange()
 
+
     def run(self, strat, callback=None):
         '''Run a tick strategy on the loaded dataset.
 
@@ -62,6 +63,7 @@ class Backtest:
             if callback:
                 callback(strat)
 
+
     # Read file, detect it's data format and automatically parses it
     def read(self, fname, fileformat=None, fmt=None):
         raw = self._read(fname)
@@ -76,14 +78,17 @@ class Backtest:
         else:
             self.readString(fname)
 
+
     # Store ticks as list of strings
     def readString(self, fname):
         self.ticks = self._read(fname)
+
 
     # Not needed, Strategy now only supports json string
     def readJSON(self, fname):
         raw = self._read(fname)
         self.ticks = self._parseJSON(raw)
+
 
     # Not needed, Strategy now only supports json string
     def readCSV(self, fname, fieldnames=None):
@@ -103,14 +108,17 @@ class Backtest:
         else:
             return None
 
+
     @staticmethod
     def _read(fname):
         with open(fname) as f:
             return f.read().splitlines()
 
+
     @staticmethod
     def _parseJSON(strings):
         return [json.loads(tick) for tick in strings]
+
 
     @staticmethod
     def _parseCSV(strings, fieldnames=None):
