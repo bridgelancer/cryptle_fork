@@ -43,8 +43,13 @@ logging.Logger.tick   = _tick
 
 
 # Define a unified formatter for cross module use
-def defaultFormatter():
-    fmt = '%(name)-10s: %(asctime)s [%(levelname)-8s] %(message)s'
+def defaultFormatter(notimestamp=False):
+
+    if notimestamp:
+        fmt = '%(name)-10s [%(levelname)-8s] %(message)s'
+    else:
+        fmt = '%(name)-10s: %(asctime)s [%(levelname)-8s] %(message)s'
+
     datefmt = '%Y-%m-%d %H:%M:%S'
     return logging.Formatter(fmt=fmt, datefmt=datefmt)
 
