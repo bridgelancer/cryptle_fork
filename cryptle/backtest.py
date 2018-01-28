@@ -1,12 +1,10 @@
 from .utility  import *
 from .strategy import Portfolio
 
-import logging
 import json
 import csv
-
-
-log = logging.getLogger('Exchange')
+import logging
+logger = logging.getLogger(__name__)
 
 
 def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
@@ -40,7 +38,7 @@ def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
 
 
 # Only works with tick for now
-class Backtest():
+class Backtest:
     '''Provides an interface to load datasets and launch backtests.'''
 
     def __init__(self, exchange=None):
@@ -143,8 +141,8 @@ class PaperExchange:
         price *= (1 + self.commission)
         price *= (1 + self.slippage)
 
-        log.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
-        log.info('Paid {:.5g} commission'.format(self.price * self.commission))
+        logger.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
+        logger.info('Paid {:.5g} commission'.format(self.price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
 
@@ -157,8 +155,8 @@ class PaperExchange:
         price *= (1 - self.commission)
         price *= (1 - self.slippage)
 
-        log.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
-        log.info('Paid {:.5g} commission'.format(self.price * self.commission))
+        logger.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
+        logger.info('Paid {:.5g} commission'.format(self.price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
 
@@ -173,8 +171,8 @@ class PaperExchange:
         price *= (1 + self.commission)
         price *= (1 + self.slippage)
 
-        log.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
-        log.info('Paid {:.5g} commission'.format(price0 * self.commission))
+        logger.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
+        logger.info('Paid {:.5g} commission'.format(price0 * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
 
@@ -189,8 +187,8 @@ class PaperExchange:
         price *= (1 - self.commission)
         price *= (1 - self.slippage)
 
-        log.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
-        log.info('Paid {:.5g} commission'.format(price0 * self.commission))
+        logger.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
+        logger.info('Paid {:.5g} commission'.format(price0 * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
 

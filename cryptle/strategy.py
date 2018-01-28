@@ -1,7 +1,8 @@
 from .utility import *
-import logging
 
-logger = logging.getLogger('Cryptle')
+import logging
+logger = logging.getLogger(__name__)
+
 
 # @Consider using Enum instead?
 class DirectionFlag:
@@ -11,26 +12,26 @@ class DirectionFlag:
     of these attributes are always oppositive of each other.
     '''
 
-    def __init__(s):
-        s._up = s._down = False
+    def __init__(self):
+        self._up = self._down = False
 
     @property
-    def up(s):
-        return s._up
+    def up(self):
+        return self._up
 
     @property
-    def down(s):
-        return s._down
+    def down(self):
+        return self._down
 
     @up.setter
-    def up(s, value):
-        s._up = value
-        s._down = not value
+    def up(self, value):
+        self._up = value
+        self._down = not value
 
     @down.setter
-    def down(s, value):
-        s._down = value
-        s._up = not value
+    def down(self, value):
+        self._down = value
+        self._up = not value
 
 
 class TradeFlag:
@@ -40,26 +41,26 @@ class TradeFlag:
     of these attributes are always oppositive of each other.
     '''
 
-    def __init__(s):
-        s._buy = s._sell = False
+    def __init__(self):
+        self._buy = self._sell = False
 
     @property
-    def buy(s):
-        return s._buy
+    def buy(self):
+        return self._buy
 
     @property
-    def sell(s):
-        return s._sell
+    def sell(self):
+        return self._sell
 
     @buy.setter
-    def buy(s, value):
-        s._buy = value
-        s._sell = not value
+    def buy(self, value):
+        self._buy = value
+        self._sell = not value
 
     @sell.setter
-    def sell(s, value):
-        s._sell = value
-        s._buy = not value
+    def sell(self, value):
+        self._sell = value
+        self._buy = not value
 
 
 class Portfolio:
@@ -165,7 +166,7 @@ class Strategy:
         self._checkHasExchange()
 
         self.last_price = price
-        self.timestamp = timestamp
+        self.last_timestamp = timestamp
         for k, v in self.indicators.items():
             v.update(price, timestamp, volume, action)
 
@@ -180,7 +181,7 @@ class Strategy:
 
         # @Fix Need to separated tick based and candle based indicators
         self.last_price = price
-        self.timestamp = timestamp
+        self.last_timestamp = timestamp
         for k, v in self.indicators.items():
             v.update(op, cl, hi, lo, ts, vol)
 

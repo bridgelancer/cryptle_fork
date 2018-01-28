@@ -1,14 +1,12 @@
+from .utility import *
+
 import hashlib
 import hmac
 import json
-import logging
 import time
-
-from .utility import *
-
 import requests as req
-
-log = logging.getLogger('Exchange')
+import logging
+log = logging.getLogger(__name__)
 
 
 class Bitstamp:

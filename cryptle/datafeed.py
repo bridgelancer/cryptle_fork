@@ -1,6 +1,7 @@
-import logging
 import time
 import pysher
+import logging
+logger = logging.getLogger(__name__)
 
 
 class BitstampFeed:
