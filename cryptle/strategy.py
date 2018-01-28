@@ -115,52 +115,101 @@ class Portfolio:
 class Strategy:
     '''Base class of strategies implementation/realisations.
 
-    Provides wrapper function for buy/sell and portfolio management.
+    Defines the interfaces for external data to be relaid to the strategy for
+    processing.
 
-    Realisation classes must define the following functions:
-    - generateSignal()
-    - execute()
+    Also provides wrapper functions for order placements, portfolio management,
+    most recent input data, and other meta info.
+
+    Realisation classes should implement at least one of the data handling
+    functions. These are invoked whenever the corresponding push function are
+    called by external code.
+
+    Realisation classes must also implement the execute function. This function w
+    is called at the end of every data handling, provided that the handle
+    function returned None.
 
     Metrics/Indicators that needs to be updated tick by tick has to go into the
-    indicators dict. The update method will be called on the indicators whenever
-    tick() is called
+    indicators dict. The update method will be called on the indicators.
+
+    Args:
+        pair: String representation of the trade coin pair (meta info)
+        portfolio: Portfolio managed by the strategy instance
+        exchange: Exchange to be used by the strategy for order placements
+        equity_at_risk: The maximum proportion of
+
+    Attributs:
+        pair: String representation of the trade coin pair (meta info)
+        portfolio: Portfolio managed by the strategy instance
+        exchange: Exchange to be used by the strategy for order placements
+        equity_at_risk: The maximum proportion of
     '''
 
     def __init__(self, pair=None, portfolio=None, exchange=None, equity_at_risk=1):
         self.pair = pair
-        self.portfolio = portfolio or Portfolio(10000)
+        self.portfolio = portfolio
         self.exchange = exchange
         self.equity_at_risk = equity_at_risk
 
-        for k, v in self.indicators.items():
-            self.__dict__[k] = v
-
         self.trades = []
+        if self.indicators:
+            for k, v in self.indicators.items():
+                self.__dict__[k] = v
 
 
     # [Data input interface]
     # Wrappers for trade logical steps
-    def tick(self, price, timestamp, volume, action, callback=None):
-        if self.exchange is None:
-            raise TypeError('An exchange has to be associated before strategy runs')
+    def pushTick(self, price, timestamp, volume, action):
+        '''Public inferface for tick data'''
 
-        for k, v in self.indicators.items():
-            v.update(price, timestamp, volume, action)
+        self._checkHasExchange()
 
         self.last_price = price
         self.timestamp = timestamp
-        if self.generateSignal(price, timestamp, volume, action) is None:
+        for k, v in self.indicators.items():
+            v.update(price, timestamp, volume, action)
+
+        if self.handleTick(price, timestamp, volume, action) is None:
             self.execute(timestamp)
 
-        if callback:
-            callback(self)
+
+    def pushCandle(self, op, cl, hi, lo, ts, vol):
+        '''Public inferface for aggregated candlestick'''
+
+        self._checkHasExchange()
+
+        # @Fix Need to separated tick based and candle based indicators
+        self.last_price = price
+        self.timestamp = timestamp
+        for k, v in self.indicators.items():
+            v.update(op, cl, hi, lo, ts, vol)
+
+        if self.handleCandle(op, cl, hi, lo, ts, vol) is None:
+            self.execute(timestamp)
 
 
-    def news(self, string, timestamp):
+    def handleTick(self):
+        '''Process tick data and generate trade signals.'''
         raise NotImplementedError
 
 
-    def tweet(self, string, timestamp):
+    def handleCandle(self):
+        '''Process candlestick data and generate trade signals.'''
+        raise NotImplementedError
+
+
+    def execute(self):
+        '''Execute the trade signals raised by handling new data'''
+        raise NotImplementedError
+
+
+    def pushNews(self, string, timestamp):
+        '''Stub method as example of future possible data types.'''
+        raise NotImplementedError
+
+
+    def handlNews(self, string, timestamp):
+        '''Stub method as example of future possible data types.'''
         raise NotImplementedError
 
 
@@ -278,3 +327,7 @@ class Strategy:
 
         logger.info('Sold   {:.7g} {} @${:<.6g} {}'.format(amount, self.pair.upper(), price, message))
 
+
+    def _checkHasExchange(self):
+        if self.exchange is None:
+            raise AttributeError('An exchange has to be associated before strategy runs')
