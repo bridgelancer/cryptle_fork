@@ -8,22 +8,6 @@ class ContinuousVWMA:
         self.period = period
 
 
-    def __int__(self):
-        return self.dollar_volume
-
-
-    def __float__(self):
-        return self.dollar_volume
-
-
-    def __lt__(self, other):
-        return self.dollar_volume < other
-
-
-    def __gt__(self, other):
-        return self.dollar_volume > other
-
-
     # Action: (1) is buy, (-1) is sell
     def update(self, price, timestamp, volume, action):
 
@@ -65,6 +49,25 @@ class ContinuousVWMA:
     def low(self):
         return min(self.ticks)
 
+
+    def __int__(self):
+        return self.dollar_volume
+
+
+    def __float__(self):
+        return self.dollar_volume
+
+
+    def __lt__(self, other):
+        return self.dollar_volume < other
+
+
+    def __gt__(self, other):
+        return self.dollar_volume > other
+
+
+    def __repr__(self):
+        return str(self.dollar_volume)
 
 # @Consider using recordclass API from MIT
 class Candle:
@@ -335,13 +338,17 @@ class SMA():
         self.sma = (sum([x[0] for x in self.candle[-self.lookback :]])) / self.lookback
 
 
+    def __repr__(self):
+        return str(self.wma)
+
+
 
 class WMA():
 
     def __init__(self, candle, lookback):
         self.candle = candle
         self.lookback = lookback
-        self.wma= 0
+        self.wma = 0
         self.weight = [x / (lookback * (lookback + 1) / 2) for x in range(1, lookback + 1)]
 
         candle.metrics.append(self)
@@ -363,6 +370,10 @@ class WMA():
 
             self.price_list_test = price_list
             self.wma = sum(p * w for p,w in zip(price_list, self.weight))
+
+
+    def __repr__(self):
+        return str(self.wma)
 
 
 
@@ -390,6 +401,10 @@ class EMA():
             return
 
         self.ema = self.weight*val + (1-self.weight)*self.ema
+
+
+    def __repr__(self):
+        return str(self.wma)
 
 
 
