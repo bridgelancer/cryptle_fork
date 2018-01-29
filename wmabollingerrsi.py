@@ -297,15 +297,11 @@ logger.addHandler(sh)
 logger.addHandler(fh)
 
 
-vwma1 = []
-vwma2 = []
 wma5 = []
 wma8 = []
 equity = []
 
 def record_indicators(strat):
-    global vwma1
-    global vwma2
     global wma5
     global wma8
     global equity
@@ -337,18 +333,12 @@ if __name__ == '__main__':
     # Can use this too
     backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
 
-    #test = Backtest(exchange)
-    #test.readJSON(dataset)
-    #test.run(strat, record_indicators)
-
     logger.report('RSI Equity:    %.2f' % port.equity)
     logger.report('RSI Cash:    %.2f' % port.cash)
     logger.report('RSI Asset:    %s' % str(port.balance))
     logger.report('Number of trades:  %d' % len(strat.trades))
     logger.report('Number of candles: %d' % len(strat.bar))
 
-    vwma1 = [[x[0] for x in vwma1], [x[1] for x in vwma1]]
-    vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]
     wma5 = [[x[0] for x in wma5], [x[1] for x in wma5]]
     wma8 = [[x[0] for x in wma8], [x[1] for x in wma8]]
     equity = [[x[0] for x in equity], [x[1] for x in equity]]

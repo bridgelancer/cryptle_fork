@@ -1,20 +1,10 @@
 from cryptle.strategy import Strategy, Portfolio
-from cryptle.loglevel import *
+from cryptle.loglevel import defaultFormatter
 from cryptle.utility  import *
-
 from ta import *
+
 import logging
-
-logger = logging.getLogger('cryptle.strategy')
-logger.setLevel(logging.DEBUG)
-
-formatter = defaultFormatter()
-
-fh = logging.FileHandler('BollRSIStrat_backtest_correct.log', mode='w')
-fh.setLevel(logging.INDEX)
-fh.setFormatter(formatter)
-
-logger.addHandler(fh)
+logger = logging.getLogger('Cryptle')
 
 
 class WMARSIOBCStrat(Strategy):
@@ -300,24 +290,28 @@ class WMARSIOBCStrat(Strategy):
 
 
 
-
 from cryptle.backtest import backtest_tick, Backtest, PaperExchange
-from plotting import *
+from plotting import plot
 import matplotlib.pyplot as plt
 
 
 formatter = defaultFormatter()
 
-fh = logging.FileHandler('rsi_new.log', mode = 'w')
-fh.setLevel(logging.INFO)
+fh = logging.FileHandler('rsiobc.log', mode='w')
+fh.setLevel(logging.INDEX)
 fh.setFormatter(formatter)
 
 sh = logging.StreamHandler()
 sh.setLevel(logging.REPORT)
 sh.setFormatter(formatter)
 
+logger.setLevel(logging.INDEX)
 logger.addHandler(sh)
 logger.addHandler(fh)
+
+base_logger = logging.getLogger('cryptle.strategy')
+base_logger.setLevel(logging.DEBUG)
+base_logger.addHandler(fh)
 
 
 vwma1 = []
@@ -342,7 +336,7 @@ def record_indicators(strat):
 
 
 if __name__ == '__main__':
-    dataset = 'bch_correct.log'
+    dataset = 'data/bch_correct.log'
 
     pair = 'bchusd'
     port = Portfolio(10000)
@@ -360,10 +354,6 @@ if __name__ == '__main__':
     # Can use this too
     backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
 
-    #test = Backtest(exchange)
-    #test.readJSON(dataset)
-    #test.run(strat, record_indicators)
-
     logger.report('RSI Equity:    %.2f' % port.equity)
     logger.report('RSI Cash:    %.2f' % port.cash)
     logger.report('RSI Asset:    %s' % str(port.balance))
@@ -376,9 +366,8 @@ if __name__ == '__main__':
     wma8 = [[x[0] for x in wma8], [x[1] for x in wma8]]
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
 
-    # Sets a time out for plotting
-     # Plot candle functions commented out as not runnable at the moment
-    plotCandles(
+    # Plot candle functions commented out as not runnable at the moment
+    plot(
         strat.bar,
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
@@ -386,3 +375,4 @@ if __name__ == '__main__':
         indicators=[[equity]])
 
     plt.show()
+    #fig.savefig('some_plot.png', dpi=1000)
