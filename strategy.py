@@ -3,6 +3,7 @@ from cryptle.backtest import PaperExchange
 from cryptle.strategy import *
 from cryptle.loglevel import *
 from cryptle.utility  import *
+from wmarsiobc import WMARSIOBCStrat
 
 from datetime import datetime
 import json
@@ -724,13 +725,8 @@ class WMABollingerRSIStrat(Strategy):
         action = -1 * (tick['type'] * 2 - 1)
 
         self.bar.update(price, timestamp)
-<<<<<<< fa131617a9714fc9574ae86ce03ded0ec00dbb3e
-        self.vwma1.update(price, volume, timestamp, action)
-        self.vwma2.update(price, volume, timestamp, action)
-=======
         #self.vwma1.update(price, volume, timestamp, action)
         #self.vwma2.update(price, volume, timestamp, action)
->>>>>>> Attempting to solve the interface regression
 
         if self.init_time == 0:
             self.init_time = timestamp
@@ -808,19 +804,11 @@ class WMABollingerRSIStrat(Strategy):
                 rsi_sell_flag = False
 
         if self.hasCash() and not self.hasBalance():
-<<<<<<< fa131617a9714fc9574ae86ce03ded0ec00dbb3e
-            if v_sell:
-                if uptrend or belowatr or aboveatr:
-                    return
-                elif downtrend:
-                    v_sell = False
-=======
             # if v_sell:
             #     if uptrend or belowatr or aboveatr:
             #         return
             #     elif downtrend:
             #         v_sell = False
->>>>>>> Attempting to solve the interface regression
             if belowatr:
                 buy_signal = True
             else:
@@ -892,11 +880,8 @@ class WMABollingerRSIStrat(Strategy):
         self.can_sell = can_sell
         #self.dollar_volume_flag = dollar_volume_flag
         self.v_sell = v_sell
-<<<<<<< fa131617a9714fc9574ae86ce03ded0ec00dbb3e
 
 
-=======
->>>>>>> Attempting to solve the interface regression
 # @In Progress
 # Needs ATR x MA indicators
 class SwissStrat(Strategy):
