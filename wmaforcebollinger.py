@@ -162,7 +162,7 @@ class WMAForceBollingerStrat(Strategy):
 
 
 from cryptle.backtest import *
-from plotting import *
+from cryptle.plotting import *
 import matplotlib.pyplot as plt
 
 

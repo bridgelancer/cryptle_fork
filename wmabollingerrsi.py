@@ -279,7 +279,7 @@ class WMAForceBollingerRSIStrat(Strategy):
 
 
 from cryptle.backtest import backtest_tick, Backtest, PaperExchange
-from plotting import *
+from cryptle.plotting import *
 import matplotlib.pyplot as plt
 
 

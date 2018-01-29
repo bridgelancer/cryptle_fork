@@ -273,13 +273,12 @@ class WMARSIOBCStrat(Strategy):
             s.rsi_sell_flag_80 = False
 
         elif s.hasBalance and s.sell_signal and s.rsi_ssignal:
-        # elif s.hasBalance and s.sell_signal:
             #logger.signal("Sell at RSI: " + str(s.rsi.rsi))
 
-            # if s.prev_crossover_time is None:
-            #     s.prev_crossover_time = timestamp
+            if s.prev_crossover_time is None:
+                s.prev_crossover_time = timestamp
 
-            # elif timestamp - s.prev_crossover_time >= s.timelag_required:
+            elif timestamp - s.prev_crossover_time >= s.timelag_required:
 
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
 
@@ -291,7 +290,7 @@ class WMARSIOBCStrat(Strategy):
 
 
 from cryptle.backtest import backtest_tick, Backtest, PaperExchange
-from plotting import plot
+from cryptle.plotting import plot
 import matplotlib.pyplot as plt
 
 
