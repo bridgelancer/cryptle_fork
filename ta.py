@@ -70,11 +70,14 @@ class ContinuousVWMA:
 class Candle:
     '''Mutable candle stick with namedtuple-like API.'''
 
-    def __init__(s, o, c, h, l, t, v):
-        s._bar = [o, c, h, l, t, v]
+    def __init__(self, o, c, h, l, t, v):
+        self._bar = [o, c, h, l, t, v]
 
     def __getitem__(self, item):
         return self._bar[item]
+
+    def __repr__(self):
+        return self._bar.__repr__()
 
     @property
     def open(s):
