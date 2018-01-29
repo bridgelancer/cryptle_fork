@@ -72,7 +72,7 @@ class CandleStickChart:
         color = ['g' if bar[0] < bar[1] else 'r' for bar in candle]
         fill  = [c == 'r' for c in color]
 
-        self._axes[0].bar(left=ts, height=barlen, bottom=bottom, width=20, color=color,
+        self._axes[0].bar(ts, height=barlen, bottom=bottom, width=20, color=color,
                 edgecolor=color, fill=fill, linewidth=1)
         self._axes[0].vlines(x=ts, ymin=lo, ymax=hi, color=color, linewidth=1)
 
