@@ -4,6 +4,7 @@ from plotting import *
 from cryptle.backtest import *
 from cryptle.datafeed import *
 from cryptle.loglevel import *
+from wmarsiobc import *
 
 import matplotlib.pyplot as plt
 
@@ -21,7 +22,7 @@ logger.setLevel(logging.DEBUG)
 
 formatter = defaultFormatter()
 
-fh = logging.FileHandler('backtest.log', mode='w')
+fh = logging.FileHandler('Snooped_rsiobc_1.log', mode='w')
 fh.setLevel(logging.INDEX)
 fh.setFormatter(formatter)
 
@@ -160,17 +161,17 @@ def testWMAStrategy(pair):
 
 # This new function intends to snoop all the necessary parameters for a paritcular strategy on a single run. Already functioning
 # Caution: This function may run in extended period of time.
-def testSnoopingSuite(pair):
+def testSnoopingSuite(pair, dataset):
 
     # Datatypes to snoop
-    period = range(2, 5, 1) # need to multiply by 60
-    bband = range (200, 401, 10) # need to divide by 100
-    timeframe = range(0, 181, 60) # need to multiply by 60
-    delay = range(0, 31, 15) # (0, 91, 30)
+    period = range(90, 181, 30) # no need to multiply by 60
+    bband = range (400, 1201, 50) # need to divide by 100
+    timeframe = range(30, 91, 30) # need to multiply by 60
+    delay = range(0, 31, 10) # (0, 91, 30)
     upperatr = range(50, 51, 15) # need to divide by 100
     loweratr = range(50, 51, 15) # need to divide by 100
-    bband_period = range (5, 31, 5)
-    vol_multiplier = range (10, 111, 20)
+    bband_period = range (5, 41, 5)
+    vol_multiplier = range (30, 31, 20)
 
     period_60 = [x*60 for x in period]
     timeframe_60 = [x*60 for x in timeframe]
@@ -179,7 +180,7 @@ def testSnoopingSuite(pair):
     loweratr_100 = [x/100 for x in loweratr]
     # @TODO also snoop type of ma used for bars, bollinger band
 
-    configs = itertools.product(period_60, bband_100, timeframe_60, delay, upperatr_100, loweratr_100, bband_period, vol_multiplier)
+    configs = itertools.product(period, bband_100, timeframe_60, delay, upperatr_100, loweratr_100, bband_period, vol_multiplier)
 
     strats = {}
     ports = {}
@@ -195,27 +196,32 @@ def testSnoopingSuite(pair):
         bband_period = config[6]
         vol_multiplier = config[7]
 
-        ports[config] = Portfolio(1000)
+        ports[config] = Portfolio(10000)
         paper = PaperExchange(0.0012)
-        strat = WMAForceBollingerStrat(str(pair), ports[config], exchange=paper, message='[WMA Force Bollinger]', period=period, bband_period=bband_period)
+        strat = WMARSIOBCStrat(pair=str(pair), portfolio=ports[config], exchange=paper)
 
+        strat.period           = period
         strat.bband            = bband
         strat.timeframe        = timeframe
         strat.timelag_required = delay
         strat.upper_atr        = upperatr
         strat.lower_atr        = loweratr
         strat.vol_multipler    = vol_multiplier
+        strat.bband_period     = bband_period
         strat.equity_at_risk = 1.0
+
+        test = Backtest(paper)
+        test.readJSON(dataset)
+        test.run(strat.tick)
 
         strats[config] = strat
 
     counter = 0
     # load tick data to ls once only
-    ls = parseJSON(pair)
     # feed tick data through strategies, and report the equity value of portfolio after finish parsing
     for key in sorted(strats.keys()):
         # the keys for the strats are the strategy config
-        loadJSON(ls, strats[key])
+
         logger.info('Port' + str(key) + ' equity: %.2f' % strats[key].portfolio.getEquity())
 
         counter = counter + 1
@@ -328,5 +334,4 @@ def demoRSIStrat(dataset, pair):
     plotCandles(strat.bar)
 
 if __name__ == '__main__':
-    demoBacktest('../../../../data/bitstamp/bch.04.log', 'btcusd')
-    plt.show()
+    testSnoopingSuite('bchusd', 'bch_correct.log')

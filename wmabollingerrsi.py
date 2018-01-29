@@ -331,7 +331,7 @@ if __name__ == '__main__':
         exchange=exchange,
         period = 120,
         timeframe=3600,
-        bband=5.0,
+        bband=4.0,
         bband_period=30)
 
     # Can use this too

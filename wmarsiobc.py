@@ -20,7 +20,7 @@ logger.addHandler(fh)
 class WMARSIOBCStrat(Strategy):
 
     def __init__(s,
-            message='[WMA Bollinger RSI]',
+            message='[RSI OBC]',
             period=180,
             scope1=5,
             scope2=8,
@@ -64,6 +64,7 @@ class WMARSIOBCStrat(Strategy):
         # s.was_v_sell = False
 
         s.rsi_sell_flag = False
+        s.rsi_sell_flag_80 = False
         s.prev_crossover_time = None
         # s.prev_sell_time = None
         s.rsi_bsignal = None
@@ -123,12 +124,17 @@ class WMARSIOBCStrat(Strategy):
         rsi_bsignal = False # local variable
         rsi_ssignal = False # local variable
         rsi_sell_flag = s.rsi_sell_flag
+        rsi_sell_flag_80 = s.rsi_sell_flag_80
 
         if s.rsi.rsi > 50:
             if s.rsi.rsi > 70:
                 rsi_bsignal = True
                 rsi_ssignal = False
                 rsi_sell_flag = True
+            elif s.rsi.rsi > 80:
+                rsi_bsignal = True
+                rsi_ssignal = False
+                rsi_sell_flag_80 = True
             else:
                 rsi_bsignal = True
                 rsi_ssignal = False
@@ -137,14 +143,20 @@ class WMARSIOBCStrat(Strategy):
             rsi_ssignal = True
             rsi_bsignal = False
 
+        if rsi_sell_flag_80 and s.rsi.rsi < 70:
+            rsi_ssignal = True
+            rsi_bsignal = False
+
         if s.rsi.rsi < 50:
             rsi_ssignal = True
             rsi_bsignal = False
             rsi_sell_flag = False
+            rsi_sell_flag_80 = False
 
         s.rsi_bsignal = rsi_bsignal
         s.rsi_ssignal = rsi_ssignal
         s.rsi_sell_flag = rsi_sell_flag
+        s.rsi_sell_flag_80 = rsi_sell_flag_80
 
         # Buy sell signal generation
         buy_signal = False
@@ -258,6 +270,17 @@ class WMARSIOBCStrat(Strategy):
             s.prev_buy_price = 0
             s.prev_buy_time = None
             s.rsi_sell_flag = False
+            s.rsi_sell_flag_80 = False
+
+        elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag_80:
+            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+
+            s.prev_crossover_time = None
+            s.dollar_volume_flag = False
+            s.prev_buy_price = 0
+            s.prev_buy_time = None
+            s.rsi_sell_flag = False
+            s.rsi_sell_flag_80 = False
 
         elif s.hasBalance and s.sell_signal and s.rsi_ssignal:
         # elif s.hasBalance and s.sell_signal:
@@ -331,7 +354,7 @@ if __name__ == '__main__':
         exchange=exchange,
         period=120,
         timeframe=3600,
-        bband=8.0,
+        bband=4.0,
         bband_period=30)
 
     # Can use this too
