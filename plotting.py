@@ -18,14 +18,20 @@ def plot(candle=None,
 
     Args:
         candledata: A filled Candlebar
+
         title: An optional title for the chart
+
+        plot_volume: If True, plot volume bars
+
         signals: Sequence of metrics to be plotted over (on top of) the candlestick chart
-        indicators: Sequence of metrics to plotted below the candlestick chart in subplots
+
+        indicators: Sequence of sequence of metrics to plotted below the candlestick chart in
+            subplots. The number of subplots is deteremined by len(indicators)
+
         trades: A list of tuples in the following format
             (entry_time, entry_price, exit_time, exit_price)
-        plot_volume: If True, plot volume bars
     '''
-    numplots = 1 + len(signals) + len(indicators) + plot_volume
+    numplots = 1 + len(indicators) + plot_volume
     chart = CandleStickChart(numplots, title)
 
     chart.plotCandle(candle, plot_volume)
@@ -66,7 +72,8 @@ class CandleStickChart:
         color = ['g' if bar[0] < bar[1] else 'r' for bar in candle]
         fill  = [c == 'r' for c in color]
 
-        self._axes[0].bar(x=ts, height=barlen, bottom=bottom, color=color, edgecolor=color, fill=fill, linewidth=1)
+        self._axes[0].bar(x=ts, height=barlen, bottom=bottom, width=20, color=color,
+                edgecolor=color, fill=fill, linewidth=1)
         self._axes[0].vlines(x=ts, ymin=lo, ymax=hi, color=color, linewidth=1)
 
         # Plots volume
@@ -129,20 +136,22 @@ class CandleStickChart:
         '''Plot metrics over the candlestick chart
 
         Args:
-            signal: A (2 x N) series; (1, :) are signal values; and (2, :) are unix timestamps
+            signal: A (2 x N) series; (1, :) are unix timestamps; and (2, :) are signal values
         '''
-        self._axes[0].plot(signal)
+        self._axes[0].plot(signal[0], signal[1])
 
 
-    def plotIndicator(self, indicators):
+    # @Bad interface @Fix
+    def plotIndicator(self, indicator):
         '''Plot indicators below the candlestick chart
 
         Args:
-            signal: A (2 x N) series; (1, :) are indicator values; and (2, :) are unix timestamps
+            indicator: A (2 x N) series; (1, :) are unix timestamps; and (2, :) are indicator values
         '''
         self._axcounter += 1
         ax = self._axes[-self._axcounter]
-        ax.plot(indicator)
+        for i in indicator:
+            ax.plot(i[0], i[1])
 
     def scale(self):
         for ax in self._axes:
