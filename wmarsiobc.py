@@ -17,7 +17,7 @@ fh.setFormatter(formatter)
 logger.addHandler(fh)
 
 
-class WMAForceBollingerRSIStrat(Strategy):
+class WMARSIOBCStrat(Strategy):
 
     def __init__(s,
             message='[WMA Bollinger RSI]',
@@ -325,13 +325,13 @@ if __name__ == '__main__':
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
-    strat = WMAForceBollingerRSIStrat(
+    strat = WMARSIOBCStrat(
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period = 120,
+        period=120,
         timeframe=3600,
-        bband=5.0,
+        bband=8.0,
         bband_period=30)
 
     # Can use this too
