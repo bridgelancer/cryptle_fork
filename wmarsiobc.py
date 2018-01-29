@@ -279,13 +279,12 @@ class WMARSIOBCStrat(Strategy):
                 s.prev_crossover_time = timestamp
 
             elif timestamp - s.prev_crossover_time >= s.timelag_required:
+                s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
 
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
-
-            s.prev_crossover_time = None
-            s.dollar_volume_flag = False
-            s.prev_buy_price = 0
-            s.prev_buy_time = None
+                s.prev_crossover_time = None
+                s.dollar_volume_flag = False
+                s.prev_buy_price = 0
+                s.prev_buy_time = None
 
 
 
