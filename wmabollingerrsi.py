@@ -228,37 +228,40 @@ class WMAForceBollingerRSIStrat(Strategy):
 
 from cryptle.backtest import backtest_tick, Backtest, PaperExchange
 from plotting import *
-import signal
 import matplotlib.pyplot as plt
 
 
 formatter = defaultFormatter()
 
-fh = logging.FileHandler('BollRSIStrat_backtest.log', mode = 'w')
-fh.setLevel(logging.INDEX)
+fh = logging.FileHandler('rsi_new.log', mode = 'w')
+fh.setLevel(logging.INFO)
 fh.setFormatter(formatter)
 
 sh = logging.StreamHandler()
-sh.setLevel(logging.DEBUG)
+sh.setLevel(logging.REPORT)
 sh.setFormatter(formatter)
 
 logger.addHandler(sh)
 logger.addHandler(fh)
 
 
-# vwma1 = []
-# vwma2 = []
+vwma1 = []
+vwma2 = []
+wma5 = []
+wma8 = []
 
-# def record_indicators(strat):
-#     global vwma1
-#     global vwma2
+def record_indicators(strat):
+    global vwma1
+    global vwma2
+    global wma5
+    global wma8
 
-#     vwma1.append((strat.vwma1.dollar_volume, strat.last_timestamp))
-#     vwma2.append((strat.vwma2.dollar_volume, strat.last_timestamp))
-
-
-def timeout(message=None):
-    raise TimeoutError(message)
+    vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
+    vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
+    equity.append((strat.last_timestamp, strat.equity))
+    if len(strat.bar) > 10:
+        wma5.append((strat.last_timestamp, strat.WMA_5.wma))
+        wma8.append((strat.last_timestamp, strat.WMA_8.wma))
 
 
 if __name__ == '__main__':
@@ -266,7 +269,7 @@ if __name__ == '__main__':
 
     pair = 'bchusd'
     port = Portfolio(10000)
-    exchange = PaperExchange(commission=0.0012)
+    exchange = PaperExchange(commission=0.0012, slippage=0)
 
     strat = WMAForceBollingerRSIStrat(
             pair=pair,
@@ -278,25 +281,30 @@ if __name__ == '__main__':
             bband_period=30)
 
     # Can use this too
-    backtest_tick(strat, dataset, exchange=exchange)
+    backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
 
     #test = Backtest(exchange)
     #test.readJSON(dataset)
     #test.run(strat, record_indicators)
 
-    logger.info('RSI Equity:    %.2f' % port.equity)
-    logger.info('RSI Cash:    %.2f' % port.cash)
-    logger.info('RSI Asset:    %s' % str(port.balance))
+    logger.report('RSI Equity:    %.2f' % port.equity)
+    logger.report('RSI Cash:    %.2f' % port.cash)
+    logger.report('RSI Asset:    %s' % str(port.balance))
+    logger.report('Number of trades:  %d' % len(strat.trades))
+    logger.report('Number of candles: %d' % len(strat.bar))
+
+    vwma1 = [[x[0] for x in vwma1], [x[1] for x in vwma1]]
+    vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]
+    wma5 = [[x[0] for x in wma5], [x[1] for x in wma5]]
+    wma8 = [[x[0] for x in wma8], [x[1] for x in wma8]]
 
     # Sets a time out for plotting
-    signal.signal(signal.SIGALRM, timeout)
-    signal.alarm(300)
-
-    # # Plot candle functions commented out as not runnable at the moment
+     # Plot candle functions commented out as not runnable at the moment
     plotCandles(
             strat.bar,
-            title='Final equity {} Trades:{}'.format(strat.equity, len(strat.trades)),
-            trades=strat.trades)
+            title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
+            trades=strat.trades,
+            signals=[wma5, wma8],
+            indicators=[[vwma1, vwma2]])
 
-    signal.alarm(0)
     plt.show()
