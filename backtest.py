@@ -36,7 +36,8 @@ def snoop(Strat, pair, dataset, **kws):
     upperatr        = range(50, 51, 15)     # need to divide by 100
     loweratr        = range(50, 51, 15)     # need to divide by 100
     bband_period    = range(5, 41, 5)
-    vol_multiplier  = range(30, 31, 20)
+    #vol_multiplier  = range(30, 31, 20)
+    vol_multiplier   = [30]
 
     timeframe_60    = [x * 60 for x in timeframe]
     bband_100       = [x / 100 for x in bband]
@@ -52,21 +53,22 @@ def snoop(Strat, pair, dataset, **kws):
 
     # Run the config of strategies
     for i, config in enumerate(configs):
-        period, bband, timeframe, delay, upperatr, loweratr, bband_period, vol_multipler = config
+        period, bband, timeframe, delay, uatr, latr, bband_period, vol_multiplier = config
 
         port = Portfolio(10000)
-        strat = Strat(pair=pair, portfolio=port, exchange=paper)
-
-        strat.period            = period
-        strat.bband             = bband
-        strat.timeframe         = timeframe
-        strat.timelag_required  = delay
-        strat.upper_atr         = upperatr
-        strat.lower_atr         = loweratr
-        strat.vol_multipler     = vol_multiplier
-        strat.bband_period      = bband_period
-        strat.equity_at_risk    = 1.0
-
+        strat = Strat(
+                period=period,
+                upper_atr=uatr,
+                lower_atr=latr,
+                timeframe=timeframe,
+                bband=bband,
+                bband_period=bband_period,
+                vol_multiplier=vol_multiplier,
+                timelag_required=delay,
+                pair=pair,
+                portfolio=port,
+                exchange=paper,
+                equity_at_risk=1.0)
         test.run(strat)
 
         fmt = 'Port{} Equity: {:.2f} Trades: {}'
