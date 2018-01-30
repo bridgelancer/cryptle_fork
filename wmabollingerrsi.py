@@ -66,6 +66,7 @@ class WMAForceBollingerRSIStrat(Strategy):
         s.buy_signal = None
         s.sell_signal = None
         s.v_sell_signal = None
+        s.stop_loss_time = None
 
         super().__init__(**kws)
 
@@ -179,10 +180,20 @@ class WMAForceBollingerRSIStrat(Strategy):
                 bar_diff = int(timestamp / s.period) - int(s.prev_buy_time / s.period)
                 bar_min = min(s.bar.bars[-1 - bar_diff][0], s.bar.bars[-1 - bar_diff][1])
                 #stop_loss_price = min(bar_min * .99, bar_min - current_atr)
-                s.stop_loss_price = bar_min * .0
+                s.stop_loss_price = bar_min * .990
                 #stop_loss_price = 0
 
-                s.prev_buy_time == None
+                s.prev_buy_time = None
+
+        except TypeError:
+            pass
+
+
+        try:
+            if int(timestamp/ s.period) < int(s.stop_loss_time/ s.period) + 10:
+                return -1
+            else:
+                s.stop_loss_time = None
         except TypeError:
             pass
 
@@ -230,7 +241,7 @@ class WMAForceBollingerRSIStrat(Strategy):
         #     s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
         #     s.prev_crossover_time = None
         #     s.dollar_volume_flag = False
-        elif s.hasBalance and s.price < s.stop_loss_price and int(timestamp / s.period) > int(s.prev_buy_time / s.period):
+        elif s.hasBalance and s.price < s.stop_loss_price:
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
 
             s.prev_crossover_time = None
@@ -238,7 +249,7 @@ class WMAForceBollingerRSIStrat(Strategy):
             s.prev_buy_price = 0
             s.prev_buy_time = None
 
-            # now setting no stop loss for the moment
+            s.stop_loss_time = timestamp
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
@@ -249,7 +260,7 @@ class WMAForceBollingerRSIStrat(Strategy):
             s.prev_buy_time = None
             s.rsi_sell_flag = False
 
-        elif s.hasBalance and s.sell_signal and s.rsi_ssignal:
+        elif s.hasBalance and s.sell_signal:
         # elif s.hasBalance and s.sell_signal:
             #logger.signal("Sell at RSI: " + str(s.rsi.rsi))
 
@@ -286,15 +297,35 @@ if __name__ == '__main__':
     logger.addHandler(sh)
     logger.addHandler(fh)
 
+vwma1 = []
+vwma2 = []
+wma5 = []
+wma8 = []
+equity = []
+bband = []
+upperband = []
+lowerband = []
 
-    wma5 = []
-    wma8 = []
-    equity = []
+def record_indicators(strat):
+    global vwma1
+    global vwma2
+    global wma5
+    global wma8
+    global equity
+    global bband
+    global sharpe_ratio
 
-    def record_indicators(strat):
-        global wma5
-        global wma8
-        global equity
+    vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
+    vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
+    equity.append((strat.last_timestamp, strat.equity))
+
+    if len(strat.bar) > 10:
+        wma5.append((strat.last_timestamp, strat.WMA_5.wma))
+        wma8.append((strat.last_timestamp, strat.WMA_8.wma))
+    if len(strat.bar) > strat.bollinger.lookback:
+        bband.append((strat.last_timestamp, strat.bollinger.band))
+        upperband.append((strat.last_timestamp, strat.bollinger.upperband))
+        lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
         vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
         vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
@@ -303,19 +334,20 @@ if __name__ == '__main__':
             wma5.append((strat.last_timestamp, strat.WMA_5.wma))
             wma8.append((strat.last_timestamp, strat.WMA_8.wma))
 
+if __name__ == '__main__':
+    dataset = 'btc_correct.log'
 
-    dataset = 'data/bch_correct.log'
-    pair = 'bchusd'
+    pair = 'btcusd'
     port = Portfolio(10000)
-    exchange = PaperExchange(commission=0.0012, slippage=0)
+    exchange = PaperExchange(commission=0.00, slippage=0)
 
     strat = WMAForceBollingerRSIStrat(
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period = 120,
+        period = 3600,
         timeframe=3600,
-        bband=4.0,
+        bband=0.0,
         bband_period=30)
 
     backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
@@ -328,12 +360,30 @@ if __name__ == '__main__':
 
     wma5 = [[x[0] for x in wma5], [x[1] for x in wma5]]
     wma8 = [[x[0] for x in wma8], [x[1] for x in wma8]]
+    upperband = [[x[0] for x in upperband], [x[1] for x in upperband]]
+    lowerband = [[x[0] for x in lowerband], [x[1] for x in lowerband]]
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
+    bband = [[x[0] for x in bband], [x[1] for x in bband]]
 
     plotCandles(
         strat.bar,
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         signals=[wma5, wma8],
-        indicators=[[equity]])
+        indicators=[[equity], [bband]])
+
+
+    equity_list = []
+    equity_list = equity[1][0::int(24*60*60 / strat.period * 20)] # this is not correct
+
+    mean_return = sum(equity_list) / len(equity_list) / 10000
+    print (mean_return)
+
+    mean_square = list(map(lambda y: ((y - mean_return) / 10000) ** 2, equity_list))
+    stdev_return = (sum(mean_square) / len(equity_list)) ** 0.5
+    print(stdev_return)
+
+    sharpe_ratio = (sum([(y - mean_return) / 10000 for y in equity_list]) / len(equity_list)) / stdev_return
+    print("Sharpe ratio: {}".format(sharpe_ratio))
+
     plt.show()
