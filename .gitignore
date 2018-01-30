@@ -21,6 +21,7 @@ log/
 data/
 sample/
 
+__pycache__/
 .DS_Store/
 .vscode/
-__pycache__/
+.ipynb_checkpoints/
