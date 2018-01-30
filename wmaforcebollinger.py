@@ -1,5 +1,6 @@
-from cryptle.strategy import *
+from cryptle.strategy import Strategy, Portfolio
 from cryptle.loglevel import *
+from cryptle.utility  import *
 from ta import *
 
 import logging
@@ -161,12 +162,11 @@ class WMAForceBollingerStrat(Strategy):
                 s.dollar_volume_flag = False
 
 
-from cryptle.backtest import *
-from cryptle.plotting import *
-import matplotlib.pyplot as plt
-
-
 if __name__ == '__main__':
+    from cryptle.backtest import *
+    from cryptle.plotting import *
+    import matplotlib.pyplot as plt
+
     pair = 'bchusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012)

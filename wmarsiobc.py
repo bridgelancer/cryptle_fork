@@ -287,53 +287,51 @@ class WMARSIOBCStrat(Strategy):
                 s.prev_buy_time = None
 
 
-
-from cryptle.backtest import backtest_tick, Backtest, PaperExchange
-from cryptle.plotting import plot
-import matplotlib.pyplot as plt
-
-
-formatter = defaultFormatter()
-
-fh = logging.FileHandler('rsiobc.log', mode='w')
-fh.setLevel(logging.INDEX)
-fh.setFormatter(formatter)
-
-sh = logging.StreamHandler()
-sh.setLevel(logging.REPORT)
-sh.setFormatter(formatter)
-
-logger.setLevel(logging.INDEX)
-logger.addHandler(sh)
-logger.addHandler(fh)
-
-base_logger = logging.getLogger('cryptle.strategy')
-base_logger.setLevel(logging.DEBUG)
-base_logger.addHandler(fh)
-
-
-vwma1 = []
-vwma2 = []
-wma5 = []
-wma8 = []
-equity = []
-
-def record_indicators(strat):
-    global vwma1
-    global vwma2
-    global wma5
-    global wma8
-    global equity
-
-    vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
-    vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
-    equity.append((strat.last_timestamp, strat.equity))
-    if len(strat.bar) > 10:
-        wma5.append((strat.last_timestamp, strat.WMA_5.wma))
-        wma8.append((strat.last_timestamp, strat.WMA_8.wma))
-
-
 if __name__ == '__main__':
+    from cryptle.backtest import backtest_tick, Backtest, PaperExchange
+    from cryptle.plotting import plot
+    import matplotlib.pyplot as plt
+
+    formatter = defaultFormatter()
+
+    fh = logging.FileHandler('rsiobc.log', mode='w')
+    fh.setLevel(logging.INDEX)
+    fh.setFormatter(formatter)
+
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.REPORT)
+    sh.setFormatter(formatter)
+
+    logger.setLevel(logging.INDEX)
+    logger.addHandler(sh)
+    logger.addHandler(fh)
+
+    base_logger = logging.getLogger('cryptle.strategy')
+    base_logger.setLevel(logging.DEBUG)
+    base_logger.addHandler(fh)
+
+
+    vwma1 = []
+    vwma2 = []
+    wma5 = []
+    wma8 = []
+    equity = []
+
+    def record_indicators(strat):
+        global vwma1
+        global vwma2
+        global wma5
+        global wma8
+        global equity
+
+        vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
+        vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
+        equity.append((strat.last_timestamp, strat.equity))
+        if len(strat.bar) > 10:
+            wma5.append((strat.last_timestamp, strat.WMA_5.wma))
+            wma8.append((strat.last_timestamp, strat.WMA_8.wma))
+
+
     dataset = 'data/bch_correct.log'
 
     pair = 'bchusd'
@@ -349,7 +347,6 @@ if __name__ == '__main__':
         bband=4.0,
         bband_period=30)
 
-    # Can use this too
     backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
 
     logger.report('RSI Equity:    %.2f' % port.equity)
@@ -364,13 +361,11 @@ if __name__ == '__main__':
     wma8 = [[x[0] for x in wma8], [x[1] for x in wma8]]
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
 
-    # Plot candle functions commented out as not runnable at the moment
     plot(
         strat.bar,
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         signals=[wma5, wma8],
         indicators=[[equity]])
-
     plt.show()
     #fig.savefig('some_plot.png', dpi=1000)
