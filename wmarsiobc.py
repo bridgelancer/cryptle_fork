@@ -19,9 +19,10 @@ class WMARSIOBCStrat(Strategy):
             timeframe=3600,
             bband=3.5,
             bband_period=20,
-            vol_multipler=30,
+            vol_multiplier=30,
             vwma_lb=40,
-            rsi_la = 14,
+            rsi_lb=14,
+            timelag_required=10,
             **kws):
 
         s.indicators = {}
@@ -35,16 +36,16 @@ class WMARSIOBCStrat(Strategy):
         s.WMA_8 = WMA(bar, scope2)
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
-        s.rsi = RSI(bar, rsi_la)
+        s.rsi = RSI(bar, rsi_lb)
 
         s.period = period
         s.message = message
-        s.timelag_required = 10
+        s.timelag_required = timelag_required
         s.upper_atr = upper_atr
         s.lower_atr = lower_atr
         s.bband = bband
         s.timeframe = timeframe
-        s.vol_multipler = vol_multipler
+        s.vol_multiplier = vol_multiplier
 
         s.tradable_window = 0
         s.init_time = 0
@@ -94,7 +95,7 @@ class WMARSIOBCStrat(Strategy):
         # norm_vol1 = s.vwma1.dollar_volume / s.vwma1.period
         # norm_vol2 = s.vwma2.dollar_volume / s.vwma2.period
 
-        # if s.hasBalance and  norm_vol1 > norm_vol2 * s.vol_multipler:
+        # if s.hasBalance and  norm_vol1 > norm_vol2 * s.vol_multiplier:
         #     s.dollar_volume_flag = True
         # else:
         #     s.dollar_volume_flag = False
