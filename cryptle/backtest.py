@@ -64,6 +64,17 @@ class Backtest:
                 callback(strat)
 
 
+    def runCandle(self, strat, callback=None):
+        for candle in self.candles:
+            o, c, h, l, t, v = candle
+            self.exchange.price = c
+            self.exchange.volume = v
+            self.exchange.timestamp = t
+            strat.pushCandle(o, c, h, l, t, v)
+            if callback:
+                callback(strat)
+
+
     # Read file, detect it's data format and automatically parses it
     def read(self, fname, fileformat=None, fmt=None):
         raw = self._read(fname)
@@ -131,6 +142,11 @@ class Backtest:
 
 
 class PaperExchange:
+    '''A stub for exchange objects. Exposes only buy/sell interfaces.
+
+    When used with the OO backtest interface, it should be passed to the Backtest object such that
+    the market price is updated while the strategy processeses incoming market information.
+    '''
 
     def __init__(self, commission=0, slippage=0):
         self.price = 0
