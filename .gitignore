@@ -21,6 +21,7 @@ snoop.ipynb
 log/
 data/
 sample/
+pysher/
 
 __pycache__/
 .DS_Store/
