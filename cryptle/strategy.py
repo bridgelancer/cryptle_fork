@@ -314,8 +314,13 @@ class Strategy:
         self.portfolio.cash -= amount * price
         self.trades.append([timestamp, price])
 
-        msg= 'Bought {:.7g} {} @${:<.6g} at {} {}'
-        logger.info(msg.format(amount, self.pair.upper(), price, timestamp, message))
+        msg = 'Bought {:.7g} {} @${:<.6g} at {:%Y-%m-%d %H:%M:%S} {}'
+        logger.info(msg.format(
+                amount,
+                self.pair.upper(),
+                price,
+                datetime.fromtimestamp(timestamp),
+                message))
 
 
     def _cleanupSell(self, res, message=None):
@@ -331,8 +336,13 @@ class Strategy:
         self.portfolio.cash += amount * price
         self.trades[-1] += [timestamp, price]
 
-        msg = 'Sold   {:.7g} {} @${:<.6g} at {} {}'
-        logger.info(msg.format(amount, self.pair.upper(), price, timestamp, message))
+        msg = 'Sold   {:.7g} {} @${:<.6g} at {:%Y-%m-%d %H:%M:%S} {}'
+        logger.info(msg.format(
+                amount,
+                self.pair.upper(),
+                price,
+                datetime.fromtimestamp(timestamp),
+                message))
 
 
     def _checkHasExchange(self):
