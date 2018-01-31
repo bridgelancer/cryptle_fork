@@ -1,13 +1,23 @@
 from cryptle.strategy import Strategy, Portfolio
-from cryptle.loglevel import defaultFormatter
+from cryptle.loglevel import *
 from cryptle.utility  import *
+
 from ta import *
-
 import logging
-logger = logging.getLogger('Cryptle')
+
+logger = logging.getLogger('cryptle.strategy')
+logger.setLevel(logging.DEBUG)
+
+formatter = defaultFormatter()
+
+fh = logging.FileHandler('BollRSIStrat_backtest_correct.log', mode='w')
+fh.setLevel(logging.INDEX)
+fh.setFormatter(formatter)
+
+logger.addHandler(fh)
 
 
-class WMARSIOBCStrat(Strategy):
+class WMAMACDRSIStrat(Strategy):
 
     def __init__(s,
             message='[RSI OBC]',
@@ -19,10 +29,9 @@ class WMARSIOBCStrat(Strategy):
             timeframe=3600,
             bband=3.5,
             bband_period=20,
-            vol_multiplier=30,
+            vol_multipler=30,
             vwma_lb=40,
-            rsi_lb=14,
-            timelag_required=10,
+            rsi_la = 14,
             **kws):
 
         s.indicators = {}
@@ -34,18 +43,21 @@ class WMARSIOBCStrat(Strategy):
         s.ATR_5 = ATR(bar, scope1)
         s.WMA_5 = WMA(bar, scope1)
         s.WMA_8 = WMA(bar, scope2)
+        s.WMA_12 = WMA(bar, 10)
+        s.WMA_26 = WMA(bar, 16)
+        s.macd = MACD_WMA(s.WMA_12, s.WMA_26, 6)
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
-        s.rsi = RSI(bar, rsi_lb)
+        s.rsi = RSI(bar, rsi_la)
 
         s.period = period
         s.message = message
-        s.timelag_required = timelag_required
+        s.timelag_required = 10
         s.upper_atr = upper_atr
         s.lower_atr = lower_atr
         s.bband = bband
         s.timeframe = timeframe
-        s.vol_multiplier = vol_multiplier
+        s.vol_multipler = vol_multipler
 
         s.tradable_window = 0
         s.init_time = 0
@@ -95,17 +107,29 @@ class WMARSIOBCStrat(Strategy):
         # norm_vol1 = s.vwma1.dollar_volume / s.vwma1.period
         # norm_vol2 = s.vwma2.dollar_volume / s.vwma2.period
 
-        # if s.hasBalance and  norm_vol1 > norm_vol2 * s.vol_multiplier:
+        # if s.hasBalance and  norm_vol1 > norm_vol2 * s.vol_multipler:
         #     s.dollar_volume_flag = True
         # else:
         #     s.dollar_volume_flag = False
 
         # Band confirmation
+        tradable_window = s.tradable_window
+        bollinger_signal = s.bollinger_signal
+        timeframe = s.timeframe
+
         if s.bollinger.band > s.bband: # s.bband = 3.0 by default
-            s.bollinger_signal = True
-            s.tradable_window = timestamp
-        if timestamp > s.tradable_window + s.timeframe: # available at 1h trading window (3600s one hour)
-            s.bollinger_signal = False
+            bollinger_signal = True
+            tradable_window = timestamp
+        if timestamp > tradable_window + timeframe: # available at 1h trading window (3600s one hour)
+            bollinger_signal = False
+
+        # MACD singal generation
+        macd_signal = False
+
+        if s.macd.wma3 < s.macd.wma1.wma - s.macd.wma2.wma :
+            macd_signal = True
+        else:
+            macd_signal = False
 
         # RSI signal generation
         rsi_bsignal = False # local variable
@@ -149,6 +173,7 @@ class WMARSIOBCStrat(Strategy):
         buy_signal = False
         sell_signal = False
         v_sell_signal = False
+        prev_crossover_time = s.prev_crossover_time
 
         if s.hasCash and not s.hasBalance:
             # if s.was_v_sell:
@@ -159,7 +184,7 @@ class WMARSIOBCStrat(Strategy):
             if belowatr:
                 buy_signal = True
             else:
-                s.prev_crossover_time = None
+                prev_crossover_time = None
 
         elif s.hasBalance:
             # if s.dollar_volume_flag and s.vwma1.dollar_volume <= 0: # Currently no use
@@ -175,7 +200,7 @@ class WMARSIOBCStrat(Strategy):
                 pass
 
         else:
-            s.prev_crossover_time = None
+            prev_crossover_time = None
 
         #Do not allow trade if this tick is still within the same bar with prev_buy_time
         try:
@@ -194,14 +219,21 @@ class WMARSIOBCStrat(Strategy):
         except TypeError:
             pass
 
+        s.macd_signal = macd_signal
         s.buy_signal = buy_signal
         s.sell_signal = sell_signal
         s.v_sell_signal = v_sell_signal
+        s.tradable_window = tradable_window
+        s.bollinger_signal = bollinger_signal
+        s.timeframe = timeframe
+        s.prev_crossover_time = prev_crossover_time
 
 
-    # Signal execution
+    # @Regression: Timestamp/Price/unneccesary signals shouldn't be here
+    # Execution of signals
+    # Can only buy if buy_signal and bollinger_signal both exist
     def execute(s, timestamp):
-        if s.hasCash and not s.hasBalance and s.buy_signal and s.bollinger_signal and s.rsi_bsignal:
+        if s.hasCash and not s.hasBalance and s.buy_signal and s.bollinger_signal and s.rsi_bsignal and s.macd_signal:
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = timestamp # @Hardcode @Fix logic, do not use timestamp here
 
@@ -263,65 +295,72 @@ class WMARSIOBCStrat(Strategy):
             s.rsi_sell_flag_80 = False
 
         elif s.hasBalance and s.sell_signal and s.rsi_ssignal:
+        # elif s.hasBalance and s.sell_signal:
             #logger.signal("Sell at RSI: " + str(s.rsi.rsi))
 
-            if s.prev_crossover_time is None:
-                s.prev_crossover_time = timestamp
+            # if s.prev_crossover_time is None:
+            #     s.prev_crossover_time = timestamp
 
-            elif timestamp - s.prev_crossover_time >= s.timelag_required:
-                s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            # elif timestamp - s.prev_crossover_time >= s.timelag_required:
 
-                s.prev_crossover_time = None
-                s.dollar_volume_flag = False
-                s.prev_buy_price = 0
-                s.prev_buy_time = None
+            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+
+            s.prev_crossover_time = None
+            s.dollar_volume_flag = False
+            s.prev_buy_price = 0
+            s.prev_buy_time = None
+
+
+
+
+from cryptle.backtest import backtest_tick, Backtest, PaperExchange
+from plotting import *
+import matplotlib.pyplot as plt
+
+
+formatter = defaultFormatter()
+
+fh = logging.FileHandler('rsi_new.log', mode = 'w')
+fh.setLevel(logging.INFO)
+fh.setFormatter(formatter)
+
+sh = logging.StreamHandler()
+sh.setLevel(logging.REPORT)
+sh.setFormatter(formatter)
+
+logger.addHandler(sh)
+logger.addHandler(fh)
+
+
+vwma1 = []
+vwma2 = []
+wma5 = []
+wma8 = []
+equity = []
+
+def record_indicators(strat):
+    global vwma1
+    global vwma2
+    global wma5
+    global wma8
+    global equity
+
+    vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
+    vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
+    equity.append((strat.last_timestamp, strat.equity))
+    if len(strat.bar) > 10:
+        wma5.append((strat.last_timestamp, strat.WMA_5.wma))
+        wma8.append((strat.last_timestamp, strat.WMA_8.wma))
 
 
 if __name__ == '__main__':
-    from cryptle.backtest import backtest_tick, Backtest, PaperExchange
-    from cryptle.plotting import plot
-    import matplotlib.pyplot as plt
-
-    formatter = defaultFormatter()
-
-    fh = logging.FileHandler('rsiobc.log', mode='w')
-    fh.setLevel(logging.INDEX)
-    fh.setFormatter(formatter)
-
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.REPORT)
-    sh.setFormatter(formatter)
-
-    logger.setLevel(logging.INDEX)
-    logger.addHandler(sh)
-    logger.addHandler(fh)
-
-    base_logger = logging.getLogger('cryptle.strategy')
-    base_logger.setLevel(logging.DEBUG)
-    base_logger.addHandler(fh)
-
-    # Handler for recording indicators
-    equity = []
-
-    def record_indicators(strat):
-        global equity
-        equity.append((strat.last_timestamp, strat.equity))
-
-
-    dataset = 'data/bch_correct.log'
+    dataset = 'bch_correct.log'
 
     pair = 'bchusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
-    strat = WMARSIOBCStrat(
-        period=120,
-        timeframe=3600,
-        bband=6,
-        bband_period=20,
-        vwma_lb=40,
-        rsi_lb=14,
-        timelag_required=0,
+    strat = WMAMACDRSIStrat(
         pair=pair,
         portfolio=port,
         exchange=exchange,
@@ -330,10 +369,12 @@ if __name__ == '__main__':
         bband=6.0,
         bband_period=25)
 
-    backtest_tick(strat, dataset, exchange=exchange) #, callback=record_indicators)
+    # Can use this too
+    backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
 
-    logger.report('Period: {} BBand: {} BPeriod: {}'
-            .format(strat.period, strat.bband, strat.bollinger.lookback))
+    #test = Backtest(exchange)
+    #test.readJSON(dataset)
+    #test.run(strat, record_indicators)
 
     logger.report('RSI Equity:    %.2f' % port.equity)
     logger.report('RSI Cash:    %.2f' % port.cash)
@@ -341,15 +382,19 @@ if __name__ == '__main__':
     logger.report('Number of trades:  %d' % len(strat.trades))
     logger.report('Number of candles: %d' % len(strat.bar))
 
+    vwma1 = [[x[0] for x in vwma1], [x[1] for x in vwma1]]
+    vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]
+    wma5 = [[x[0] for x in wma5], [x[1] for x in wma5]]
+    wma8 = [[x[0] for x in wma8], [x[1] for x in wma8]]
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
 
-    plt.plot(equity[0], equity[1])
-    plt.show()
-
-    plot(
+    # Sets a time out for plotting
+     # Plot candle functions commented out as not runnable at the moment
+    plotCandles(
         strat.bar,
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
+        signals=[wma5, wma8],
         indicators=[[equity]])
+
     plt.show()
-    # fig.savefig('some_plot.png', dpi=1000)
