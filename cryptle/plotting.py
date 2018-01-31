@@ -8,7 +8,7 @@ def plotCandles(*args, **kws):
 
 def plot(candle=None,
         title=None,
-        trades=None,
+        trades=[],
         signals=[],
         indicators=[],
         plot_volume=False,
