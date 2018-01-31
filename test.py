@@ -183,7 +183,9 @@ def testCVWMA():
 const = [(3, i) for i in range(1, 100)]
 lin = [(i, i) for i in  range(1, 100)]
 quad  = [(i**2, i) for i in range(1, 100)]
-alt_quad = [((100+ ((-1) ** i) * (i/4)**2), i) for i in range (1, 33)]
+alt_quad = [((100+ ((-1) ** i) * (i/4)**2), i) for i in range (1, 100)]
+logistic = [((10 / (1 + 100 * math.exp(-i/10))), i) for i in range(1, 100)]
+sine = [(( 100 + (i/4) * (2* math.sin(i) ** 3 * i - math.sin(i) ** 5) / 2 / (i / 1.5)) , i) for i in range(1, 100)]
 
 
 @unittest
@@ -214,6 +216,18 @@ def testEMA():
 
     for tick in lin:
         candle.update(tick[0], tick[1])
+
+@unittest
+def testMACD_WMA():
+    candle = CandleBar(1)
+    wma1 = WMA(candle, 5)
+    wma2 = WMA(candle, 8)
+    macd_wma = MACD_WMA(wma1, wma2, 3)
+
+    for tick in sine:
+        candle.update(tick[0], tick[1])
+        print (macd_wma.wma3)
+
 
 
 @unittest
@@ -266,7 +280,5 @@ def testRSI():
         candle_alt_quad.update(tick[0], tick[1])
     assert rsi_alt_quad.rsi - 55.48924 < 1e-5
 
-
 if __name__ == '__main__':
-    for test in tests:
-        test()
+    testMACD_WMA()

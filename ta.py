@@ -406,7 +406,37 @@ class EMA():
     def __repr__(self):
         return str(self.wma)
 
+class MACD_WMA():
 
+    # wma1 and wma2 needs to use the same candle instance
+    def __init__(self, wma1, wma2, lookback):
+
+        self.wma1 = wma1
+        self.wma2 = wma2
+        self.wma3 = None
+        self.lookback = lookback
+        self.past = []
+        self.weight = [x / (lookback * (lookback + 1) / 2) for x in range(1, lookback + 1)]
+
+        wma1.candle.metrics.append(self)
+
+    def update(self):
+
+        diff = self.wma1.wma - self.wma2.wma
+        # append the diff of wma to the list past
+        self.past.append(diff)
+
+        # @TODO past should only store lookback # of differenced wma
+
+        if len(self.past) < (self.lookback - 1):
+            pass
+
+        else:
+            price_list = []
+            price_list = self.past[-self.lookback:]
+
+            self.price_list_test = price_list
+            self.wma3 = sum(p * w for p,w in zip(price_list, self.weight))
 
 class MACD():
 
@@ -423,7 +453,7 @@ class MACD():
 
         ema1.candle.metrics.append(self)
 
-    def update(self, price):
+    def update(self):
 
         self.macd = self.ema1.ema - self.ema2.ema
         self.past.append(self.macd)
