@@ -11,7 +11,7 @@ logger.setLevel(logging.DEBUG)
 formatter = defaultFormatter()
 
 fh = logging.FileHandler('BollRSIStrat_backtest_correct.log', mode='w')
-fh.setLevel(logging.INDEX)
+fh.setLevel(logging.METRIC)
 fh.setFormatter(formatter)
 
 logger.addHandler(fh)
@@ -314,7 +314,7 @@ class WMAMACDRSIStrat(Strategy):
 
 
 from cryptle.backtest import backtest_tick, Backtest, PaperExchange
-from plotting import *
+from cryptle.plotting import *
 import matplotlib.pyplot as plt
 
 

@@ -351,8 +351,6 @@ if __name__ == '__main__':
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         indicators=[[equity]])
-<<<<<<< dc16bce41488aa0447490af248b8f693e3230956
-=======
 
     equity_list = []
     returns_list = []
@@ -378,6 +376,5 @@ if __name__ == '__main__':
     print("Sharpe ratio: {}".format(sharpe_ratio))
 
 
->>>>>>> Implemented wmamacdrsi.py (superior)
     plt.show()
     # fig.savefig('some_plot.png', dpi=1000)
