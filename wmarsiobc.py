@@ -327,8 +327,8 @@ if __name__ == '__main__':
         exchange=exchange,
         period=120,
         timeframe=3600,
-        bband=6.0,
-        bband_period=25)
+        bband=7.0,
+        bband_period=20)
 
     backtest_tick(strat, dataset, exchange=exchange) #, callback=record_indicators)
 
@@ -351,5 +351,33 @@ if __name__ == '__main__':
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         indicators=[[equity]])
+<<<<<<< dc16bce41488aa0447490af248b8f693e3230956
+=======
+
+    equity_list = []
+    returns_list = []
+    equity_list = equity[1][0::int(24*60*60 / strat.period * 20)] # this is not correct
+    for i, item in enumerate(equity_list):
+        try:
+            returns = equity_list[i + 1] / item
+            returns_list.append(returns)
+        except IndexError:
+            pass
+
+    print (returns_list)
+
+    mean_return = sum(returns_list) / len(returns_list)
+    print (mean_return)
+
+    mean_square = list(map(lambda y: ((y - mean_return)) ** 2, returns_list))
+    stdev_return = (sum(mean_square) / len(returns_list)) ** 0.5
+    print(stdev_return)
+
+    sharpe_ratio = ((equity_list[-1] / 10000) - 1) / stdev_return
+
+    print("Sharpe ratio: {}".format(sharpe_ratio))
+
+
+>>>>>>> Implemented wmamacdrsi.py (superior)
     plt.show()
     # fig.savefig('some_plot.png', dpi=1000)

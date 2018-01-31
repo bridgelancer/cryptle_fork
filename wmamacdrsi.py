@@ -43,9 +43,9 @@ class WMAMACDRSIStrat(Strategy):
         s.ATR_5 = ATR(bar, scope1)
         s.WMA_5 = WMA(bar, scope1)
         s.WMA_8 = WMA(bar, scope2)
-        s.WMA_12 = WMA(bar, 10)
-        s.WMA_26 = WMA(bar, 16)
-        s.macd = MACD_WMA(s.WMA_12, s.WMA_26, 6)
+        s.WMA_12 = WMA(bar, 5)
+        s.WMA_26 = WMA(bar, 8)
+        s.macd = MACD_WMA(s.WMA_12, s.WMA_26, 4)
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
         s.rsi = RSI(bar, rsi_la)
@@ -233,7 +233,7 @@ class WMAMACDRSIStrat(Strategy):
     # Execution of signals
     # Can only buy if buy_signal and bollinger_signal both exist
     def execute(s, timestamp):
-        if s.hasCash and not s.hasBalance and s.buy_signal and s.bollinger_signal and s.rsi_bsignal and s.macd_signal:
+        if s.hasCash and not s.hasBalance and s.bollinger_signal and s.rsi_bsignal and s.macd_signal:
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = timestamp # @Hardcode @Fix logic, do not use timestamp here
 
@@ -294,7 +294,7 @@ class WMAMACDRSIStrat(Strategy):
             s.rsi_sell_flag = False
             s.rsi_sell_flag_80 = False
 
-        elif s.hasBalance and s.sell_signal and s.rsi_ssignal:
+        elif s.hasBalance and s.rsi_ssignal and not s.macd_signal:
         # elif s.hasBalance and s.sell_signal:
             #logger.signal("Sell at RSI: " + str(s.rsi.rsi))
 
@@ -337,6 +337,9 @@ vwma2 = []
 wma5 = []
 wma8 = []
 equity = []
+bband = []
+upperband = []
+lowerband = []
 
 def record_indicators(strat):
     global vwma1
@@ -344,13 +347,20 @@ def record_indicators(strat):
     global wma5
     global wma8
     global equity
+    global bband
+    global sharpe_ratio
 
     vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
     vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
     equity.append((strat.last_timestamp, strat.equity))
+
     if len(strat.bar) > 10:
         wma5.append((strat.last_timestamp, strat.WMA_5.wma))
         wma8.append((strat.last_timestamp, strat.WMA_8.wma))
+    if len(strat.bar) > strat.bollinger.lookback:
+        bband.append((strat.last_timestamp, strat.bollinger.band))
+        upperband.append((strat.last_timestamp, strat.bollinger.upperband))
+        lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
 
 if __name__ == '__main__':
@@ -366,8 +376,8 @@ if __name__ == '__main__':
         exchange=exchange,
         period=120,
         timeframe=3600,
-        bband=6.0,
-        bband_period=25)
+        bband=7.0,
+        bband_period=20)
 
     # Can use this too
     backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
@@ -386,7 +396,10 @@ if __name__ == '__main__':
     vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]
     wma5 = [[x[0] for x in wma5], [x[1] for x in wma5]]
     wma8 = [[x[0] for x in wma8], [x[1] for x in wma8]]
+    upperband = [[x[0] for x in upperband], [x[1] for x in upperband]]
+    lowerband = [[x[0] for x in lowerband], [x[1] for x in lowerband]]
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
+    bband = [[x[0] for x in bband], [x[1] for x in bband]]
 
     # Sets a time out for plotting
      # Plot candle functions commented out as not runnable at the moment
@@ -395,6 +408,29 @@ if __name__ == '__main__':
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         signals=[wma5, wma8],
-        indicators=[[equity]])
+        indicators=[[bband], [equity]])
+
+    equity_list = []
+    returns_list = []
+    equity_list = equity[1][0::int(24*60*60 / strat.period * 20)] # this is not correct
+    for i, item in enumerate(equity_list):
+        try:
+            returns = equity_list[i + 1] / item
+            returns_list.append(returns)
+        except IndexError:
+            pass
+
+    print (returns_list)
+
+    mean_return = sum(returns_list) / len(returns_list)
+    print (mean_return)
+
+    mean_square = list(map(lambda y: ((y - mean_return)) ** 2, returns_list))
+    stdev_return = (sum(mean_square) / len(returns_list)) ** 0.5
+    print(stdev_return)
+
+    sharpe_ratio = ((equity_list[-1] / 10000) - 1) / stdev_return
+
+    print("Sharpe ratio: {}".format(sharpe_ratio))
 
     plt.show()
