@@ -101,15 +101,11 @@ class WMARSIOBCStrat(Strategy):
         #     s.dollar_volume_flag = False
 
         # Band confirmation
-        tradable_window = s.tradable_window
-        bollinger_signal = s.bollinger_signal
-        timeframe = s.timeframe
-
         if s.bollinger.band > s.bband: # s.bband = 3.0 by default
-            bollinger_signal = True
-            tradable_window = timestamp
-        if timestamp > tradable_window + timeframe: # available at 1h trading window (3600s one hour)
-            bollinger_signal = False
+            s.bollinger_signal = True
+            s.tradable_window = timestamp
+        if timestamp > s.tradable_window + s.timeframe: # available at 1h trading window (3600s one hour)
+            s.bollinger_signal = False
 
         # RSI signal generation
         rsi_bsignal = False # local variable
@@ -153,7 +149,6 @@ class WMARSIOBCStrat(Strategy):
         buy_signal = False
         sell_signal = False
         v_sell_signal = False
-        prev_crossover_time = s.prev_crossover_time
 
         if s.hasCash and not s.hasBalance:
             # if s.was_v_sell:
@@ -164,7 +159,7 @@ class WMARSIOBCStrat(Strategy):
             if belowatr:
                 buy_signal = True
             else:
-                prev_crossover_time = None
+                s.prev_crossover_time = None
 
         elif s.hasBalance:
             # if s.dollar_volume_flag and s.vwma1.dollar_volume <= 0: # Currently no use
@@ -180,7 +175,7 @@ class WMARSIOBCStrat(Strategy):
                 pass
 
         else:
-            prev_crossover_time = None
+            s.prev_crossover_time = None
 
         #Do not allow trade if this tick is still within the same bar with prev_buy_time
         try:
@@ -202,15 +197,9 @@ class WMARSIOBCStrat(Strategy):
         s.buy_signal = buy_signal
         s.sell_signal = sell_signal
         s.v_sell_signal = v_sell_signal
-        s.tradable_window = tradable_window
-        s.bollinger_signal = bollinger_signal
-        s.timeframe = timeframe
-        s.prev_crossover_time = prev_crossover_time
 
 
-    # @Regression: Timestamp/Price/unneccesary signals shouldn't be here
-    # Execution of signals
-    # Can only buy if buy_signal and bollinger_signal both exist
+    # Signal execution
     def execute(s, timestamp):
         if s.hasCash and not s.hasBalance and s.buy_signal and s.bollinger_signal and s.rsi_bsignal:
             if s.prev_crossover_time is None:
@@ -311,26 +300,12 @@ if __name__ == '__main__':
     base_logger.setLevel(logging.DEBUG)
     base_logger.addHandler(fh)
 
-
-    vwma1 = []
-    vwma2 = []
-    wma5 = []
-    wma8 = []
+    # Handler for recording indicators
     equity = []
 
     def record_indicators(strat):
-        global vwma1
-        global vwma2
-        global wma5
-        global wma8
         global equity
-
-        vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
-        vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
         equity.append((strat.last_timestamp, strat.equity))
-        if len(strat.bar) > 10:
-            wma5.append((strat.last_timestamp, strat.WMA_5.wma))
-            wma8.append((strat.last_timestamp, strat.WMA_8.wma))
 
 
     dataset = 'data/bch_correct.log'
@@ -340,15 +315,22 @@ if __name__ == '__main__':
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
     strat = WMARSIOBCStrat(
+        period=120,
+        timeframe=3600,
+        bband=6,
+        bband_period=20,
+        vwma_lb=40,
+        rsi_lb=14,
+        timelag_required=0,
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=120,
-        timeframe=3600,
-        bband=4.0,
-        bband_period=30)
+        equity_at_risk=1)
 
-    backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
+    backtest_tick(strat, dataset, exchange=exchange) #, callback=record_indicators)
+
+    logger.report('Period: {} BBand: {} BPeriod: {}'
+            .format(strat.period, strat.bband, strat.bollinger.lookback))
 
     logger.report('RSI Equity:    %.2f' % port.equity)
     logger.report('RSI Cash:    %.2f' % port.cash)
@@ -356,17 +338,15 @@ if __name__ == '__main__':
     logger.report('Number of trades:  %d' % len(strat.trades))
     logger.report('Number of candles: %d' % len(strat.bar))
 
-    vwma1 = [[x[0] for x in vwma1], [x[1] for x in vwma1]]
-    vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]
-    wma5 = [[x[0] for x in wma5], [x[1] for x in wma5]]
-    wma8 = [[x[0] for x in wma8], [x[1] for x in wma8]]
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
+
+    plt.plot(equity[0], equity[1])
+    plt.show()
 
     plot(
         strat.bar,
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
-        signals=[wma5, wma8],
         indicators=[[equity]])
     plt.show()
-    #fig.savefig('some_plot.png', dpi=1000)
+    # fig.savefig('some_plot.png', dpi=1000)
