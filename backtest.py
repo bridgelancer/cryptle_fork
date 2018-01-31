@@ -22,7 +22,7 @@ fh.setFormatter(formatter)
 logger.addHandler(fh)
 
 
-def snoop(Strat, pair, dataset, **kws):
+def snoop(Strat, dataset, pair, **kws):
     '''Snoop necessary parameters for a paritcular strategy on a single run.
 
     Caution: This function may run in extended period of time.
@@ -36,8 +36,7 @@ def snoop(Strat, pair, dataset, **kws):
     upperatr        = range(50, 51, 15)     # need to divide by 100
     loweratr        = range(50, 51, 15)     # need to divide by 100
     bband_period    = range(5, 41, 5)
-    #vol_multiplier  = range(30, 31, 20)
-    vol_multiplier   = [30]
+    vol_multiplier  = range(30, 31, 20)
 
     timeframe_60    = [x * 60 for x in timeframe]
     bband_100       = [x / 100 for x in bband]
@@ -78,7 +77,7 @@ def snoop(Strat, pair, dataset, **kws):
             print('%i configs' % i + ' finished running')
 
 
-def snoop_random(Strat, pair, dataset, runs, **kws):
+def snoop_random(Strat, dataset, pair, runs, **kws):
     '''Randomly sample configurations of all ranges'''
 
     paper = PaperExchange(commission=0.0012, slippage=0)
@@ -117,17 +116,33 @@ def snoop_random(Strat, pair, dataset, runs, **kws):
             print ('%i Strategy configs' % run + ' finished parsing')
 
 
-# @Temporary
-def demoBacktest(dataset, pair):
+from wmabollingerrsi import WMAForceBollingerRSIStrat
+from wmarsiobc import WMARSIOBCStrat
+
+import matplotlib.pyplot as plt
+
+
+def demoRSIOBC(dataset, pair):
     port = Portfolio(10000)
-    exchange = PaperExchange(0.0012)
-    strat = WMAForceBollingerStrat(pair=pair, portfolio=port, exchange=exchange)
+    exchange = PaperExchange(commission=0.0012, slippage=0)
+    strat = WMARSIOBCStrat(
+            period=120,
+            bband=6.0,
+            bband_period=20,
+            timelag_required=0,
+            pair=pair,
+            portfolio=port,
+            exchange=exchange,
+            equity_at_risk=1.0)
 
     test = Backtest(exchange)
     test.readJSON(dataset)
-    test.run(strat.tick)
+    test.run(strat)
 
-    plotCandles(strat.bar)
+    plotCandles(
+            strat.bar,
+            title='Final equity: {} Trades: {}'.format(port.equity, len(strat.trades)),
+            trades=strat.trades)
 
 
 def demoRSIStrat(dataset, pair):
@@ -137,16 +152,12 @@ def demoRSIStrat(dataset, pair):
 
     test = Backtest(exchange)
     test.readJSON(dataset)
-    test.run(strat.tick)
+    test.run(strat)
 
     plotCandles(strat.bar)
 
 
-from wmabollingerrsi import WMAForceBollingerRSIStrat
-from wmarsiobc import WMARSIOBCStrat
-
-import matplotlib.pyplot as plt
-
-
 if __name__ == '__main__':
-    snoop(WMARSIOBCStrat, 'bchusd', 'data/bch_correct.log')
+    #snoop(WMARSIOBCStrat, 'data/bch_correct.log', 'bchusd')
+    demoRSIOBC('data/bch_correct.log',  'bchusd')
+    plt.show()
