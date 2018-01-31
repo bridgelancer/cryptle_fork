@@ -1,41 +1,36 @@
-from datafeed import *
-from exchange import *
-from strategy import *
+from cryptle.datafeed import BitstampFeed
+from cryptle.exchange import Bitstamp
+from cryptle.strategy import Portfolio
+from cryptle.loglevel import *
+from cryptle.utility  import *
+
+from wmarsiobc import WMARSIOBCStrat
 
 import logging
 import sys
 import time
+import json
 
 
-logging.TICK = 5
-logging.addLevelName(logging.TICK, 'TICK')
+formatter = defaultFormatter()
 
-fmt = '%(name)-10s| %(asctime)s [%(levelname)5s] %(message)s'
-formatter = logging.Formatter(fmt, '%Y-%m-%d %H:%M:%S')
-
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-ch.setFormatter(formatter)
+sh = logging.StreamHandler()
+sh.setLevel(logging.REPORT)
+sh.setFormatter(formatter)
 
 fh = logging.FileHandler('livetrade.log', mode='w')
 fh.setLevel(logging.TICK)
 fh.setFormatter(formatter)
 
 log = logging.getLogger('Report')
-log.setLevel(logging.TICK)
-log.tick = lambda x: log.log(logging.TICK, x)
-log.addHandler(ch)
+log.setLevel(logging.INFO)
+log.addHandler(sh)
 log.addHandler(fh)
 
-crlog = logging.getLogger('Cryptle')
-crlog.setLevel(logging.DEBUG)
-crlog.addHandler(ch)
+crlog = logging.getLogger('cryptle')
+crlog.setLevel(logging.INDEX)
+crlog.addHandler(sh)
 crlog.addHandler(fh)
-
-exlog = logging.getLogger('Exchange')
-exlog.setLevel(logging.DEBUG)
-exlog.addHandler(ch)
-exlog.addHandler(fh)
 
 
 def livetrade(key, secret, cid):
@@ -62,21 +57,27 @@ def livetrade(key, secret, cid):
 
 
     log.debug('Initialising strategy...')
-    wma = WMAForceStrat(pair, port, exchange=exchange, period=180)
-    wma.equity_at_risk = 0.8
-
+    wma = WMARSIOBCStrat(
+            period=120,
+            bband=8.0,
+            bband_period=20,
+            timelag_required=0,
+            pair=pair,
+            portfolio=port,
+            exchange=exchange,
+            equity_at_risk=0.8)
 
     log.debug('Initialising data feed and callbacks...')
     bs = BitstampFeed()
-    bs.onTrade(pair, log.tick)
-    bs.onTrade(pair, wma)
+    # Fix after changing bitstampfeed to output json
+    bs.onTrade(pair, lambda x: wma.pushTick(*unpackTick(x)))
 
 
     log.debug('Reporting started')
     while bs.isConnected():
-        log.info('Equity:  {}'.format(port.equity()))
-        log.info('Cash:    {}'.format(port.cash))
-        log.info('Balance: {}'.format(port.balance))
+        log.report('Equity:  {}'.format(port.equity))
+        log.report('Cash:    {}'.format(port.cash))
+        log.report('Balance: {}'.format(port.balance))
 
         time.sleep(60)
         port.cash = exchange.getCash()
