@@ -20,7 +20,7 @@ class Bitstamp:
 
     def getCash(self):
         balance = self.getBalance()
-        return balance['usd_available']
+        return float(balance['usd_available'])
 
 
     def getTicker(self, pair):
@@ -63,6 +63,7 @@ class Bitstamp:
 
 
     def marketBuy(self, pair, amount):
+        '''Places marketbuy on bitstamp. Returns python dict when order terminates'''
         checkType(pair, str)
         checkType(amount, int, float)
         assert amount > 0
@@ -78,6 +79,7 @@ class Bitstamp:
 
 
     def marketSell(self, pair, amount):
+        '''Places marketsell on bitstamp. Returns python dict when order terminates'''
         checkType(pair, str)
         checkType(amount, int, float)
         assert amount > 0
@@ -93,6 +95,7 @@ class Bitstamp:
 
 
     def limitBuy(self, pair, amount, price):
+        '''Places limitbuy on bitstamp. Returns python dict when order terminates'''
         checkType(pair, str)
         checkType(amount, int, float)
         checkType(price, int, float)
@@ -111,6 +114,7 @@ class Bitstamp:
 
 
     def limitSell(self, pair, amount, price):
+        '''Places limitsell on bitstamp. Returns python dict when order terminates'''
         checkType(pair, str)
         checkType(amount, int, float)
         checkType(price, int, float)
@@ -142,6 +146,7 @@ class Bitstamp:
 
 
     def _get(self, endpoint, params=None):
+        '''Sends HTTP GET request to bitstamp. Returns python object.'''
         checkType(endpoint, str)
         checkType(params, dict, type(None))
 
@@ -156,6 +161,7 @@ class Bitstamp:
 
 
     def _post(self, endpoint, params):
+        '''Sends HTTP POST request to bitstamp. Returns python object.'''
         checkType(endpoint, str)
         checkType(params, dict)
 

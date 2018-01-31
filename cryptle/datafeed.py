@@ -1,3 +1,5 @@
+from cryptle.utility import *
+import json
 import time
 import pysher
 import logging
@@ -32,9 +34,9 @@ class BitstampFeed:
         assert callable(callback)
 
         if pair == 'btcusd':
-            self._bindSocket('live_trades', 'trade', callback)
+            self._bindSocket('live_trades', 'trade', lambda x: callback(json.loads(x)))
         else:
-            self._bindSocket('live_trades_' + pair, 'trade', callback)
+            self._bindSocket('live_trades_' + pair, 'trade', lambda x: callback(json.loads(x)))
 
 
     def onOrderCreate(self, pair, callback):
@@ -42,9 +44,9 @@ class BitstampFeed:
         assert callable(callback)
 
         if pair == 'btcusd':
-            self._bindSocket('live_orders', 'order_created', callback)
+            self._bindSocket('live_trades', 'order_created', lambda x: callback(json.loads(x)))
         else:
-            self._bindSocket('live_orders_' + pair, 'order_created', callback)
+            self._bindSocket('live_orders_' + pair, 'order_created', lambda x: callback(json.loads(x)))
 
 
     def onOrderChanged(self, pair, callback):
@@ -52,9 +54,9 @@ class BitstampFeed:
         assert callable(callback)
 
         if pair == 'btcusd':
-            self._bindSocket('live_orders', 'order_changed', callback)
+            self._bindSocket('live_trades', 'order_changed', lambda x: callback(json.loads(x)))
         else:
-            self._bindSocket('live_orders_' + pair, 'order_changed', callback)
+            self._bindSocket('live_orders_' + pair, 'order_changed', lambda x: callback(json.loads(x)))
 
 
     def onOrderDeleted(self, pair, callback):
@@ -62,9 +64,9 @@ class BitstampFeed:
         assert callable(callback)
 
         if pair == 'btcusd':
-            self._bindSocket('live_orders', 'order_deleted', callback)
+            self._bindSocket('live_orders', 'order_deleted', lambda x: callback(json.loads(x)))
         else:
-            self._bindSocket('live_orders_' + pair, 'order_deleted', callback)
+            self._bindSocket('live_orders_' + pair, 'order_deleted', lambda x: callback(json.loads(x)))
 
 
     def onOrderBookUpdate(self, pair, callback):
@@ -72,9 +74,9 @@ class BitstampFeed:
         assert callable(callback)
 
         if pair == 'btcusd':
-            self._bindSocket('order_book', 'data', callback)
+            self._bindSocket('order_book', 'data', lambda x: callback(json.loads(x)))
         else:
-            self._bindSocket('order_book_' + pair, 'data', callback)
+            self._bindSocket('order_book_' + pair, 'data', lambda x: callback(json.loads(x)))
 
 
     def onOrderBookDiff(self, pair, callback):
@@ -82,9 +84,9 @@ class BitstampFeed:
         assert callable(callback)
 
         if pair == 'btcusd':
-            self._bindSocket('diff_order_book', 'data', callback)
+            self._bindSocket('diff_order_book', 'data', lambda x: callback(json.loads(x)))
         else:
-            self._bindSocket('diff_order_book_' + pair, 'data', callback)
+            self._bindSocket('diff_order_book_' + pair, 'data', lambda x: callback(json.loads(x)))
 
 
     def _bindSocket(self, channel_name, event, callback):
