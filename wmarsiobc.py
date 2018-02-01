@@ -207,6 +207,7 @@ class WMARSIOBCStrat(Strategy):
 
             elif timestamp - s.prev_crossover_time >= s.timelag_required:
                 s.marketBuy(s.maxBuyAmount)
+                logger.signal("Buy: Normal Buy")
 
                 s.prev_crossover_time = None
                 s.prev_buy_time = timestamp
@@ -234,6 +235,7 @@ class WMARSIOBCStrat(Strategy):
         #     s.dollar_volume_flag = False
         elif s.hasBalance and s.price < s.stop_loss_price and int(timestamp / s.period) > int(s.prev_buy_time / s.period):
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            logger.signal('Sell: Triggered stoploss')
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -244,6 +246,7 @@ class WMARSIOBCStrat(Strategy):
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            logger.signal('Sell: Over 70 RSI')
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -254,6 +257,7 @@ class WMARSIOBCStrat(Strategy):
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag_80:
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            logger.signal('Sell: Over 80 RSI')
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -264,6 +268,7 @@ class WMARSIOBCStrat(Strategy):
 
         elif s.hasBalance and s.sell_signal and s.rsi_ssignal:
             #logger.signal("Sell at RSI: " + str(s.rsi.rsi))
+            logger.signal('Sell: Normal RSI + ATR')
 
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = timestamp

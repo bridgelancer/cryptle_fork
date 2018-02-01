@@ -23,12 +23,12 @@ fh.setLevel(logging.TICK)
 fh.setFormatter(formatter)
 
 log = logging.getLogger('Report')
-log.setLevel(logging.INFO)
+log.setLevel(logging.TICK)
 log.addHandler(sh)
 log.addHandler(fh)
 
 crlog = logging.getLogger('cryptle')
-crlog.setLevel(logging.INDEX)
+crlog.setLevel(logging.TICK)
 crlog.addHandler(sh)
 crlog.addHandler(fh)
 
