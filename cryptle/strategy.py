@@ -183,6 +183,7 @@ class Strategy:
         '''Public inferface for tick data'''
 
         self._checkHasExchange()
+        logger.tick('Received tick')
 
         self.last_price = price
         self.last_timestamp = timestamp
@@ -197,6 +198,7 @@ class Strategy:
         '''Public inferface for aggregated candlestick'''
 
         self._checkHasExchange()
+        logger.tick('Received candle')
 
         # @Fix Need to separated tick based and candle based indicators
         self.last_price = cl
