@@ -31,6 +31,7 @@ class MACDTurtleStrat(Strategy):
         s.indicators['vwma1'] = ContinuousVWMA(period * 3) # @HARDCODE
         s.indicators['vwma2'] = ContinuousVWMA(period * vwma_lb) # @HARDCODE
 
+        # Initialize appropriate TAs
         s.ATR_5 = ATR(bar, scope1)
         s.WMA_5 = WMA(bar, scope1)
         s.WMA_8 = WMA(bar, scope2)
@@ -40,35 +41,40 @@ class MACDTurtleStrat(Strategy):
         s.bollinger = BollingerBand(s.sma_20, bband_period)
         s.rsi = RSI(bar, rsi_la)
 
+        # Initialize key parameters of the strategy
         s.period = period
         s.message = message
-        s.timelag_required = 10
+        s.timelag_required = 10 # HARDCODE
         s.upper_atr = upper_atr
         s.lower_atr = lower_atr
         s.bband = bband
         s.timeframe = timeframe
 
+        # Initialize class storage of local instances of signals for execution
         s.tradable_window = 0
         s.init_time = 0
         # s.dollar_volume_flag = False
         s.bollinger_signal = False
+        s.rsi_bsignal = None
+        s.rsi_ssignal = None
         # s.was_v_sell = False
 
+        # Initialize flags and states related to the processing of incoming tick / bar
         s.rsi_sell_flag = False
         s.rsi_sell_flag_80 = False
         s.prev_crossover_time = None
         # s.prev_sell_time = None
-        s.rsi_bsignal = None
-        s.rsi_ssignal = None
         # s.current_atr = None
         s.prev_buy_time = None
         s.prev_buy_price = 0
-        s.stop_loss_price = 0
         s.stop_loss_time = None
+        s.stop_loss_price = 0
         s.stop_loss_flag = False
         s.price = 0
 
-        # The s.iHasCash / s.iHasBalance implementation for tracking is a temporary implementation to make it works. This is not supposed to be implemented in this way (e.g. state machine would be much elegant)
+        # The s.iHasCash / s.iHasBalance implementation for tracking is a temporary implementation to make it works. This is not supposed to be implemented in this way (e.g. state machine would be preferable)
+
+        # Initialize virtual tracking variables of cash and balance for "turtle" purposes
         s.iHasCash = True
         s.iHasBalance = False
 
@@ -78,22 +84,19 @@ class MACDTurtleStrat(Strategy):
 
         s.price = price
 
+        # Track initialization time
         if s.init_time == 0:
             s.init_time = timestamp
-
-        if timestamp < s.init_time + max(s.WMA_8.lookback, 20) * s.bar.period:
+        # Terminate all subsequent processes if there is not enough bars collected
+        if timestamp < s.init_time + max(s.WMA_8.lookback, s.bollinger.lookback) * s.bar.period:
             return
-
+        # Miscellaneous indicators
         atr = s.ATR_5.atr
-
         belowatr = max(s.WMA_5.wma, s.WMA_8.wma) < price - s.lower_atr * atr
-
         s.uptrend   = s.WMA_5.wma > s.WMA_8.wma
         s.downtrend = s.WMA_5.wma < s.WMA_8.wma
 
-        # @TODO should not trade the first signal if we enter the bollinger_signal with an uptrend?
-
-        # Dollar volume signal # hard code threshold for the moment
+        # Dollar volume signal module
         # norm_vol1 = s.vwma1.dollar_volume / s.vwma1.period
         # norm_vol2 = s.vwma2.dollar_volume / s.vwma2.period
 
@@ -110,7 +113,6 @@ class MACDTurtleStrat(Strategy):
             s.bollinger_signal = False
 
         # MACD singal generation
-
         if s.macd.wma3 < s.macd.wma1.wma - s.macd.wma2.wma :
             s.macd_signal = True
         else:
@@ -150,8 +152,7 @@ class MACDTurtleStrat(Strategy):
         s.rsi_bsignal = rsi_bsignal
         s.rsi_ssignal = rsi_ssignal
 
-        # @FINDOUT Probably because if we would set prev_crossover_time = None if not belowatr
-
+        # Set prev_crossover_time = None if not belowatr
         if s.iHasCash and not s.iHasBalance:
             # if s.was_v_sell:
             #     if s.uptrend or belowatr or aboveatr:
@@ -185,7 +186,6 @@ class MACDTurtleStrat(Strategy):
 
     # @Regression: Timestamp/Price/unneccesary signals shouldn't be here
     # Execution of signals
-    # Can only buy if buy_signal and bollinger_signal both exist
     def execute(s, timestamp):
         # The s.iHasCash / s.iHasBalance implementation for tracking is a temporary implementation to make it works. This is not supposed to be implemented in this way (e.g. state machine would be much elegant)
         if s.iHasCash and not s.iHasBalance and s.bollinger_signal and s.macd_signal:
