@@ -256,6 +256,7 @@ class WMAMACDRSIStrat(Strategy):
         #     s.dollar_volume_flag = False
         elif s.hasBalance and s.price < s.stop_loss_price and int(timestamp / s.period) > int(s.prev_buy_time / s.period):
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            logger.signal('Sell: Triggered stoploss')
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -266,6 +267,7 @@ class WMAMACDRSIStrat(Strategy):
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            logger.signal('Sell: Over 70 RSI')
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -276,6 +278,7 @@ class WMAMACDRSIStrat(Strategy):
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag_80:
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            logger.signal('Sell: Over 80 RSI')
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -294,6 +297,7 @@ class WMAMACDRSIStrat(Strategy):
             # elif timestamp - s.prev_crossover_time >= s.timelag_required:
 
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            logger.signal('Sell: Normal RSI + MACD')
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -308,7 +312,7 @@ if __name__ == '__main__':
     from cryptle.plotting import *
     import matplotlib.pyplot as plt
 
-    formatter = defaultFormatter()
+    formatter = defaultFormatter(notimestamp=True)
     fh = logging.FileHandler('BollRSIStrat_backtest_correct.log', mode='w')
     fh.setLevel(logging.METRIC)
     fh.setFormatter(formatter)
@@ -372,9 +376,9 @@ if __name__ == '__main__':
     #test.readJSON(dataset)
     #test.run(strat, record_indicators)
 
-    logger.report('RSI Equity:    %.2f' % port.equity)
-    logger.report('RSI Cash:    %.2f' % port.cash)
-    logger.report('RSI Asset:    %s' % str(port.balance))
+    logger.report('MACD Equity:    %.2f' % port.equity)
+    logger.report('MACD Cash:    %.2f' % port.cash)
+    logger.report('MACD Asset:    %s' % str(port.balance))
     logger.report('Number of trades:  %d' % len(strat.trades))
     logger.report('Number of candles: %d' % len(strat.bar))
 
@@ -387,9 +391,8 @@ if __name__ == '__main__':
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
     bband = [[x[0] for x in bband], [x[1] for x in bband]]
 
-    # Sets a time out for plotting
-     # Plot candle functions commented out as not runnable at the moment
-    plotCandles(
+    # Plot candle functions commented out as not runnable at the moment
+    plot(
         strat.bar,
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
