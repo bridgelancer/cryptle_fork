@@ -36,6 +36,35 @@ def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
     test.read(dataset)
     test.run(strat, callback)
 
+def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
+        commission=0.0012, slippage=0, callback=None):
+    '''Wrapper function for running backtest on bar based strategy.
+
+    Args:
+        pair: String representation of the trade coin pair (meta info)
+        portfolio: Portfolio object to be assigned to the strategy
+        exchange: Exchagne object to be assigned to the strategy and Backtest manager
+        commission: Commission of this backtest. Ignored if an exchange was passed as argument
+        slippage: Slippage of this backtest. Ignored if an exchange was passed as argument
+        callback: Function to be called at the end of each bar
+
+    Returns:
+        The strategy object that was passed as argument
+
+    Raise:
+        Exceptions that may be raised by the strategy
+    '''
+    portfolio = portfolio or Portfolio(10000)
+    exchange = exchange or PaperExchange(commission=commission, slippage=slippage)
+
+    strat.pair = strat.pair or pair
+    strat.portfolio = strat.portfolio or portfolio
+    strat.exchange = strat.exchange or exchange
+
+    test = Backtest(exchange)
+    test.read(dataset)
+    test.runCandle(strat, callback)
+
 
 # Only works with tick for now
 class Backtest:
@@ -59,7 +88,7 @@ class Backtest:
             self.exchange.price = price
             self.exchange.volume = volume
             self.exchange.timestamp = timestamp
-            strat.pushTick(price, timestamp, volume, action)
+            strat.pushTick(price, timestamp, volume, action) # push the tick to strat
             if callback:
                 callback(strat)
 
@@ -70,7 +99,7 @@ class Backtest:
             self.exchange.price = c
             self.exchange.volume = v
             self.exchange.timestamp = t
-            strat.pushCandle(o, c, h, l, t, v)
+            strat.pushCandle(o, c, h, l, t, v) # push the candle stick to strat
             if callback:
                 callback(strat)
 
