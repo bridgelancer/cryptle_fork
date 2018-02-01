@@ -33,16 +33,16 @@ class WMAMACDRSIStrat(Strategy):
         s.ATR_5 = ATR(bar, scope1)
         s.WMA_5 = WMA(bar, scope1)
         s.WMA_8 = WMA(bar, scope2)
-        s.WMA_12 = WMA(bar, 5)
-        s.WMA_26 = WMA(bar, 8)
-        s.macd = MACD_WMA(s.WMA_12, s.WMA_26, 4)
+        s.WMA_12 = WMA(bar, 5) # @HARDCODE
+        s.WMA_26 = WMA(bar, 8) # @HARDCODE
+        s.macd = MACD_WMA(s.WMA_12, s.WMA_26, 4) # @HARDCODE
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
         s.rsi = RSI(bar, rsi_la)
 
         s.period = period
         s.message = message
-        s.timelag_required = 10
+        s.timelag_required = 10 # @HARDCODE
         s.upper_atr = upper_atr
         s.lower_atr = lower_atr
         s.bband = bband
@@ -73,6 +73,100 @@ class WMAMACDRSIStrat(Strategy):
         s.v_sell_signal = None
 
         super().__init__(**kws)
+
+    # Bar version of macdrsi strategy
+    def handleCandle(s, op, cl, hi, lo, ts, vol):
+        s.price = cl
+
+        if s.init_time == 0:
+            s.init_time = ts
+
+        if ts < s.init_time + max(s.WMA_8.lookback, 20) * s.bar.period:
+            return
+
+        # Band confirmation
+        tradable_window = s.tradable_window
+        bollinger_signal = s.bollinger_signal
+        timeframe = s.timeframe
+
+        if s.bollinger.band > s.bband:
+            bollinger_signal = True
+            tradable_window = ts
+        if ts > tradable_window + timeframe: # available at 1h trading window (3600s one hour)
+            bollinger_signal = False
+
+        # MACD singal generation
+        macd_signal = False
+
+        if s.macd.wma3 < s.macd.wma1.wma - s.macd.wma2.wma :
+            macd_signal = True
+        else:
+            macd_signal = False
+
+        # RSI signal generation
+        rsi_bsignal = False # local variable
+        rsi_ssignal = False # local variable
+        rsi_sell_flag = s.rsi_sell_flag
+        rsi_sell_flag_80 = s.rsi_sell_flag_80
+
+        if s.rsi.rsi > 50:
+            if s.rsi.rsi > 70:
+                rsi_bsignal = True
+                rsi_ssignal = False
+                rsi_sell_flag = True
+            elif s.rsi.rsi > 80:
+                rsi_bsignal = True
+                rsi_ssignal = False
+                rsi_sell_flag_80 = True
+            else:
+                rsi_bsignal = True
+                rsi_ssignal = False
+
+        if rsi_sell_flag and s.downtrend:
+            rsi_ssignal = True
+            rsi_bsignal = False
+
+        if rsi_sell_flag_80 and s.rsi.rsi < 70:
+            rsi_ssignal = True
+            rsi_bsignal = False
+
+        if s.rsi.rsi < 50:
+            rsi_ssignal = True
+            rsi_bsignal = False
+            rsi_sell_flag = False
+            rsi_sell_flag_80 = False
+
+        s.rsi_bsignal = rsi_bsignal
+        s.rsi_ssignal = rsi_ssignal
+        s.rsi_sell_flag = rsi_sell_flag
+        s.rsi_sell_flag_80 = rsi_sell_flag_80
+
+        # Buy sell signal generation
+        buy_signal = False
+        sell_signal = False
+        v_sell_signal = False
+
+        #Do not allow trade if this tick is still within the same bar with prev_buy_time
+        try:
+            if int(ts / s.period) > int(s.prev_buy_time / s.period):
+            # if int(timestamp / s.period) > int(s.prev_buy_time / s.period):
+                bar_diff = int(ts / s.period) - int(s.prev_buy_time / s.period)
+                bar_min = min(s.bar.bars[-1 - bar_diff][0], s.bar.bars[-1 - bar_diff][1])
+                #stop_loss_price = min(bar_min * .99, bar_min - current_atr)
+                s.stop_loss_price = bar_min * .99
+                #stop_loss_price = 0
+
+                s.prev_buy_time == None
+        except TypeError:
+            pass
+
+        s.macd_signal = macd_signal
+        s.buy_signal = buy_signal
+        s.sell_signal = sell_signal
+        s.v_sell_signal = v_sell_signal
+        s.tradable_window = tradable_window
+        s.bollinger_signal = bollinger_signal
+        s.timeframe = timeframe
 
     def handleTick(s, price, timestamp, volume, action):
 
@@ -223,6 +317,8 @@ class WMAMACDRSIStrat(Strategy):
     # @Regression: Timestamp/Price/unneccesary signals shouldn't be here
     # Execution of signals
     # Can only buy if buy_signal and bollinger_signal both exist
+
+    # if the strategy works by candleBar, there should be no prev_crossover_time
     def execute(s, timestamp):
         if s.hasCash and not s.hasBalance and s.bollinger_signal and s.rsi_bsignal and s.macd_signal:
             if s.prev_crossover_time is None:

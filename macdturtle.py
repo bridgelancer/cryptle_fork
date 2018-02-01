@@ -1,20 +1,10 @@
 from cryptle.strategy import Strategy, Portfolio
 from cryptle.loglevel import *
 from cryptle.utility  import *
-
 from ta import *
+
 import logging
-
-logger = logging.getLogger('cryptle.strategy')
-logger.setLevel(logging.DEBUG)
-
-formatter = defaultFormatter()
-
-fh = logging.FileHandler('MACDTurtleStrat_backtest_correct.log', mode='w')
-fh.setLevel(logging.METRIC)
-fh.setFormatter(formatter)
-
-logger.addHandler(fh)
+logger = logging.getLogger('Cryptle')
 
 
 class MACDTurtleStrat(Strategy):
@@ -83,6 +73,7 @@ class MACDTurtleStrat(Strategy):
         s.sell_signal = None
         s.v_sell_signal = None
 
+        # The s.iHasCash / s.iHasBalance implementation for tracking is a temporary implementation to make it works. This is not supposed to be implemented in this way (e.g. state machine would be much elegant)
         s.iHasCash = True
         s.iHasBalance = False
 
@@ -246,6 +237,7 @@ class MACDTurtleStrat(Strategy):
     # Execution of signals
     # Can only buy if buy_signal and bollinger_signal both exist
     def execute(s, timestamp):
+        # The s.iHasCash / s.iHasBalance implementation for tracking is a temporary implementation to make it works. This is not supposed to be implemented in this way (e.g. state machine would be much elegant)
         if s.iHasCash and not s.iHasBalance and s.bollinger_signal and s.macd_signal:
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = timestamp # @Hardcode @Fix logic, do not use timestamp here
@@ -495,7 +487,7 @@ if __name__ == '__main__':
 
     equity_list = []
     returns_list = []
-    equity_list = equity[1][0::int(24*60*60 / strat.period * 20)] # this is not correct
+    equity_list = equity[1][0::int(24*60*60 / strat.period * 400)] # this is not correct
     for i, item in enumerate(equity_list):
         try:
             returns = equity_list[i + 1] / item

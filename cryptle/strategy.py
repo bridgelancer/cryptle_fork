@@ -199,13 +199,13 @@ class Strategy:
         self._checkHasExchange()
 
         # @Fix Need to separated tick based and candle based indicators
-        self.last_price = price
-        self.last_timestamp = timestamp
+        self.last_price = cl
+        self.last_timestamp = ts
         for k, v in self.indicators.items():
             v.update(op, cl, hi, lo, ts, vol)
 
         if self.handleCandle(op, cl, hi, lo, ts, vol) is None:
-            self.execute(timestamp)
+            self.execute(ts)
 
 
     def handleTick(self):
