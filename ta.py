@@ -49,25 +49,21 @@ class ContinuousVWMA:
     def low(self):
         return min(self.ticks)
 
-
     def __int__(self):
         return self.dollar_volume
-
 
     def __float__(self):
         return self.dollar_volume
 
-
     def __lt__(self, other):
         return self.dollar_volume < other
-
 
     def __gt__(self, other):
         return self.dollar_volume > other
 
-
     def __repr__(self):
         return str(self.dollar_volume)
+
 
 # @Consider using recordclass API from MIT
 class Candle:
@@ -298,6 +294,23 @@ class RSI():
             elif self.ema_up == 0 and self.ema_down == 0:
                 self.rsi = 50
 
+    def __float__(self):
+        return self.rsi
+
+    def __lt__(self, other):
+        return self.rsi < other
+
+    def __gt__(self, other):
+        return self.rsi > other
+
+    def __le__(self, other):
+        return self.rsi <= other
+
+    def __ge__(self, other):
+        return self.rsi >= other
+
+    def __repr__(self):
+        return str(self.rsi)
 
 
 class ATR():
@@ -322,6 +335,23 @@ class ATR():
             tr = max(t1, t2, t3)
             self.atr = (self.atr * (self.lookback - 1) + tr) / self.lookback
 
+    def __float__(self):
+        return self.atr
+
+    def __lt__(self, other):
+        return self.atr < other
+
+    def __gt__(self, other):
+        return self.atr > other
+
+    def __le__(self, other):
+        return self.atr <= other
+
+    def __ge__(self, other):
+        return self.atr >= other
+
+    def __repr__(self):
+        return str(self.atr)
 
 
 class SMA():
@@ -414,6 +444,7 @@ class MACD_WMA():
         self.wma1 = wma1
         self.wma2 = wma2
         self.wma3 = None
+        self.macd = None
         self.lookback = lookback
         self.past = []
         self.weight = [x / (lookback * (lookback + 1) / 2) for x in range(1, lookback + 1)]
@@ -422,9 +453,9 @@ class MACD_WMA():
 
     def update(self):
 
-        diff = self.wma1.wma - self.wma2.wma
+        macd = self.wma1.wma - self.wma2.wma
         # append the diff of wma to the list past
-        self.past.append(diff)
+        self.past.append(macd)
 
         # @TODO past should only store lookback # of differenced wma
 
@@ -438,6 +469,11 @@ class MACD_WMA():
             self.price_list_test = price_list
             self.wma3 = sum(p * w for p,w in zip(price_list, self.weight))
 
+        self.macd = macd
+        self.diff = self.macd
+        self.diff_ma = self.wma3
+
+
 class MACD():
 
     # ema1 and ema2 needs to use the same candle instance
@@ -447,6 +483,7 @@ class MACD():
         self.ema2 = ema2
         self.macd = 0
         self.ema3 = None
+        self.diff = None
         self.lookback = lookback
         self.past = []
         self.weight = 2 / (lookback + 1)
@@ -466,6 +503,8 @@ class MACD():
 
         self.ema3 = self.weight*val + (1-self.weight)*self.ema3
 
+        self.diff = self.macd
+        self.diff_ma = self.ema3
 
 
 class BollingerBand():
@@ -497,3 +536,20 @@ class BollingerBand():
         self.lowerband = self.sma.candle.bars[-1][1] - 2 * self.width
         self.band = ( self.upperband / self.lowerband - 1 ) * 100
 
+    def __float__(self):
+        return self.band
+
+    def __lt__(self, other):
+        return self.band < other
+
+    def __gt__(self, other):
+        return self.band > other
+
+    def __le__(self, other):
+        return self.band <= other
+
+    def __ge__(self, other):
+        return self.band >= other
+
+    def __repr__(self):
+        return str({'band': self.band, 'upperband': self.upperband, 'lowerband': self.lowerband})
