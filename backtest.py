@@ -1,5 +1,5 @@
 from cryptle.backtest import *
-from cryptle.strategy import Strategy, Portfolio
+from cryptle.strategy import Portfolio
 from cryptle.loglevel import *
 from cryptle.plotting import *
 
@@ -15,10 +15,15 @@ logger.setLevel(logging.DEBUG)
 
 formatter = defaultFormatter()
 
-fh = logging.FileHandler('snoop_rsiobc_1.log', mode='w')
-fh.setLevel(logging.INDEX)
+sh = logging.StreamHandler()
+sh.setLevel(logging.REPORT)
+sh.setFormatter(formatter)
+
+fh = logging.FileHandler('backtest.log', mode='w')
+fh.setLevel(logging.METRIC)
 fh.setFormatter(formatter)
 
+logger.addHandler(sh)
 logger.addHandler(fh)
 
 
@@ -117,6 +122,7 @@ def snoop_random(Strat, dataset, pair, runs, **kws):
 
 
 from wmabollingerrsi import WMAForceBollingerRSIStrat
+from wmamacdrsi import WMAMACDRSIStrat
 from wmarsiobc import WMARSIOBCStrat
 
 import matplotlib.pyplot as plt
@@ -157,7 +163,50 @@ def demoRSIStrat(dataset, pair):
     plotCandles(strat.bar)
 
 
+def demoMACDStrat(dataset, pair):
+    equity = []
+    bband  = []
+
+    def record_indicators(strat, equity, bband):
+        equity.append((strat.last_timestamp, strat.equity))
+        if len(strat.bar) > strat.bollinger.lookback:
+            bband.append((strat.last_timestamp, strat.bollinger.band))
+
+    port = Portfolio(10000)
+    exchange = PaperExchange(commission=0.0012)
+    strat = WMAMACDRSIStrat(
+            period=120,
+            timeframe=3600,
+            bband=6.0,
+            bband_period=20,
+            pair=pair,
+            portfolio=port,
+            exchange=exchange,
+            equity_at_risk=1.0)
+
+    backtest_tick(
+            strat,
+            dataset,
+            exchange=exchange,
+            callback=lambda x: record_indicators(x, equity, bband))
+
+    logger.report('MACD Equity:    %.2f' % port.equity)
+    logger.report('MACD Cash:    %.2f' % port.cash)
+    logger.report('MACD Asset:    %s' % str(port.balance))
+    logger.report('Number of trades:  %d' % len(strat.trades))
+    logger.report('Number of candles: %d' % len(strat.bar))
+
+    equity = [[x[0] for x in equity], [x[1] for x in equity]]
+    bband = [[x[0] for x in bband], [x[1] for x in bband]]
+
+    plotCandles(
+        strat.bar,
+        title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
+        trades=strat.trades,
+        indicators=[[bband], [equity]])
+
+
 if __name__ == '__main__':
     #snoop(WMARSIOBCStrat, 'data/bch_correct.log', 'bchusd')
-    demoRSIOBC('data/bch_correct.log',  'bchusd')
+    demoMACDStrat('data/bch_correct.log',  'bchusd')
     plt.show()
