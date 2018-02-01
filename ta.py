@@ -86,14 +86,14 @@ class CandleBuffer:
         # append previous n candles if no tick arrived in between
         elif self.barIndex(timestamp) != self.barIndex(self._last_timestamp):
             tmp_ts = self._last_timestamp + self.period
-            while self.barIndex(tmp_ts) < self.barIndex(timestamp)
+            while self.barIndex(tmp_ts) < self.barIndex(timestamp):
                 self.pushEmptyCandle(self.last_close, tmp_ts)
                 self._broadcast()
                 tmp_ts += self.period
 
             self.pushInitCandle(price, timestamp, volume)
             self._broadcast()
-            self._last_timestamp =
+            self._last_timestamp = timestamp
 
         # if tick arrived before next time period, update current candle
         elif self.barIndex(timestamp) == self.barIndex(self.last_timestamp):
