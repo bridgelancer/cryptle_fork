@@ -10,9 +10,6 @@ import itertools
 import random
 
 
-logger = logging.getLogger('Backtest')
-logger.setLevel(logging.DEBUG)
-
 formatter = defaultFormatter()
 
 sh = logging.StreamHandler()
@@ -23,8 +20,14 @@ fh = logging.FileHandler('backtest.log', mode='w')
 fh.setLevel(logging.METRIC)
 fh.setFormatter(formatter)
 
+logger = logging.getLogger('Backtest')
+logger.setLevel(logging.DEBUG)
 logger.addHandler(sh)
 logger.addHandler(fh)
+
+baselog = logging.getLogger('cryptle')
+baselog.setLevel(logging.METRIC)
+baselog.addHandler(fh)
 
 
 def snoop(Strat, dataset, pair, **kws):
