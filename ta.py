@@ -1,3 +1,251 @@
+# @Consider using recordclass API from MIT
+class Candle:
+    '''Mutable candle stick with namedtuple-like API.'''
+
+    def __init__(self, o, c, h, l, t, v):
+        self._bar = [o, c, h, l, t, v]
+
+    def __getitem__(self, item):
+        return self._bar[item]
+
+    def __repr__(self):
+        return self._bar.__repr__()
+
+    @property
+    def open(s):
+        return s._bar[0]
+
+    @property
+    def close(s):
+        return s._bar[1]
+
+    @property
+    def hi(s):
+        return s._bar[2]
+
+    @property
+    def low(s):
+        return s._bar[3]
+
+    @property
+    def volume(s):
+        return s._bar[5]
+
+    @open.setter
+    def open(s, value):
+        s._bar[0] = value
+
+    @close.setter
+    def close(s, value):
+        s._bar[1] = value
+
+    @hi.setter
+    def hi(s, value):
+        s._bar[2] = value
+
+    @low.setter
+    def low(s, value):
+        s._bar[3] = value
+
+    @volume.setter
+    def volume(s, value):
+        s._bar[5] = value
+
+
+class CandleBuffer:
+    '''Container for candlesticks of a given length.
+
+    Candle dependent metrics can be attached to a CandleBuffer instance. These
+    metrics will then be pinged everytime a new candle is added to the buffer.
+    Metrics must implement a ping() function which retrieves the newest candle
+    from the buffer and update themselves accordingly.
+
+    Args:
+        period: Length of each candlestick of this collection
+        maxcandles: Maximum number of historic candles to keep around
+
+    Attributes:
+        _bars: List of all the Candle objects
+        _maxsize: Maximum number of historic candles to keep around
+    '''
+
+    def __init__(self, period, maxcandles=500):
+        self._bars = []
+        self._metrics = []
+        self._period = period
+        self._last_timestamp = None
+        self._maxsize = maxcandles
+
+
+    def pushTick(self, price, timestamp, volume=0, action=0):
+        # initialise the candle collection
+        if self._last_timestamp is None:
+            self._last_timestamp = timestamp
+            self.pushInitCandle(price, timestamp, volume)
+
+        # append previous n candles if no tick arrived in between
+        elif self.barIndex(timestamp) != self.barIndex(self._last_timestamp):
+            tmp_ts = self._last_timestamp + self.period
+            while self.barIndex(tmp_ts) < self.barIndex(timestamp)
+                self.pushEmptyCandle(self.last_close, tmp_ts)
+                self._broadcast()
+                tmp_ts += self.period
+
+            self.pushInitCandle(price, timestamp, volume)
+            self._broadcast()
+            self._last_timestamp =
+
+        # if tick arrived before next time period, update current candle
+        elif self.barIndex(timestamp) == self.barIndex(self.last_timestamp):
+            self.last_low = min(self.last_low , price)
+            self.last_hi = max(self.last_hi, price)
+            self.last_close = price
+            self.last_volume += volume
+
+        self.prune(self._maxsize)
+
+
+    def pushFullCandle(self, o, c, h, l, t, v):
+        self._bars.append(Candle(o, c, h, l, t, v))
+        self._broadcast()
+
+
+    def pushInitCandle(self, price, timestamp, volume):
+        self._bars.append(Candle(price, price, price, price, self.barIndex(timestamp), volume))
+        return Candle(price, price, price, price, label, volume)
+
+
+    def pushEmptyCandle(self, price, label):
+        return Candle(price, price, price, price, label, 0)
+
+
+    def attach(self, metric):
+        self._metrics.append(metric)
+
+
+    def barIndex(self, timestamp):
+        return int(timestamp / self.period)
+
+
+    def prune(self, size):
+        try:
+            self.bars = self.bars[-size:]
+        except IndexError:
+            raise ("Empty CandleBar cannot be pruned")
+
+    def _broadcast(self):
+        for metric in self.metrics:
+            metric.ping()
+
+    def __getitem__(self, item):
+        return self.bars[item]
+
+    def __len__(self):
+        return len(self.bars)
+
+    @property
+    def last_open(s):
+        return s.bars[-1].open
+
+    @property
+    def last_close(s):
+        return s.bars[-1].close
+
+    @property
+    def last_hi(s):
+        return s.bars[-1].hi
+
+    @property
+    def last_low(s):
+        return s.bars[-1].low
+
+    @property
+    def last_volume(s):
+        return s.bars[-1].volume
+
+    @last_open.setter
+    def last_open(s, value):
+        s.bars[-1].open = value
+
+    @last_close.setter
+    def last_close(s, value):
+        s.bars[-1].close = value
+
+    @last_hi.setter
+    def last_hi(s, value):
+        s.bars[-1].hi = value
+
+    @last_low.setter
+    def last_low(s, value):
+        s.bars[-1].low = value
+
+    @last_volume.setter
+    def last_volume(s, value):
+        s.bars[-1].volume = value
+
+
+class Metric:
+    '''Base class for single valued metrics'''
+
+    def __int__(self):
+        return int(self._value)
+
+    def __float__(self):
+        return float(self._value)
+
+    def __lt__(self, other):
+        return self._value < other
+
+    def __gt__(self, other):
+        return self._value > other
+
+    def __le__(self, other):
+        return self._value <= other
+
+    def __ge__(self, other):
+        return self._value >= other
+
+    def __repr__(self):
+        return str(self._value)
+
+
+class CandleMetric(Metric):
+    '''Base class for candle dependent metrics'''
+
+    def __init__(self, candle):
+        self._candle = candle
+        self._value = 0
+        candle.attach(self)
+
+    def ping(self):
+        raise NotImplementedError('Base class CandleMetric should not be called')
+
+
+# Ends with _new during deprecation period
+class SMA_new(CandleMetric):
+
+    def __init__(self, candle, lookback):
+        super().__init__(candle)
+        self._lookback = lookback
+        self._value = 0
+
+    def ping(self):
+        self._value = sum([x[0] for x in self._candle[-self._lookback :]]) / self._lookback
+
+
+class WMA_new(CandleMetric):
+
+    def __init__(self, candle, lookback):
+        super().__init__(candle)
+        self._lookback = lookback
+        self._value = 0
+        self._weight = [x + 1 / (lookback * (lookback + 1) / 2) for x in range(lookback)]
+
+    def ping(self, open_p=True):
+        prices = [x[0] if open_p else x[1] for x in self._candle[-self._lookback:]]
+        self._value = sum(p * w for p,w in zip(prices, self._weight))
+
+
 class ContinuousVWMA:
 
     def __init__(self, period):
@@ -63,60 +311,6 @@ class ContinuousVWMA:
 
     def __repr__(self):
         return str(self.dollar_volume)
-
-
-# @Consider using recordclass API from MIT
-class Candle:
-    '''Mutable candle stick with namedtuple-like API.'''
-
-    def __init__(self, o, c, h, l, t, v):
-        self._bar = [o, c, h, l, t, v]
-
-    def __getitem__(self, item):
-        return self._bar[item]
-
-    def __repr__(self):
-        return self._bar.__repr__()
-
-    @property
-    def open(s):
-        return s._bar[0]
-
-    @property
-    def close(s):
-        return s._bar[1]
-
-    @property
-    def hi(s):
-        return s._bar[2]
-
-    @property
-    def low(s):
-        return s._bar[3]
-
-    @property
-    def volume(s):
-        return s._bar[5]
-
-    @open.setter
-    def open(s, value):
-        s._bar[0] = value
-
-    @close.setter
-    def close(s, value):
-        s._bar[1] = value
-
-    @hi.setter
-    def hi(s, value):
-        s._bar[2] = value
-
-    @low.setter
-    def low(s, value):
-        s._bar[3] = value
-
-    @volume.setter
-    def volume(s, value):
-        s._bar[5] = value
 
 
 class CandleBar:
@@ -372,7 +566,6 @@ class SMA():
         return str(self.wma)
 
 
-
 class WMA():
 
     def __init__(self, candle, lookback):
@@ -406,7 +599,6 @@ class WMA():
         return str(self.wma)
 
 
-
 class EMA():
 
     def __init__(self, candle, lookback):
@@ -435,6 +627,7 @@ class EMA():
 
     def __repr__(self):
         return str(self.wma)
+
 
 class MACD_WMA():
 
