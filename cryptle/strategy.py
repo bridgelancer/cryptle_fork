@@ -104,6 +104,7 @@ class Portfolio:
         except KeyError:
             self.balance[pair] = amount
             self.balance_value[pair] = amount * price
+        logger.debug('Deposited {} {}'.format(amount, pair))
 
 
     def withdraw(self, pair, amount):
@@ -113,6 +114,7 @@ class Portfolio:
         try:
             self.balance_value[pair] *= ((self.balance[pair] - amount) / self.balance[pair])
             self.balance[pair] -= amount
+            logger.debug('Withdrew {} {}'.format(amount, pair))
         except (KeyError, ZeroDivisionError):
             raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
 
@@ -190,6 +192,10 @@ class Strategy:
         for k, v in self.indicators.items():
             v.update(price, timestamp, volume, action)
 
+        #Prepare for new TA interface
+        #for k, metric in self.tick_metrics.items():
+            #metric.pushTick(price, timestamp, volume, action)
+
         if self.handleTick(price, timestamp, volume, action) is None:
             self.execute(timestamp)
 
@@ -205,6 +211,10 @@ class Strategy:
         self.last_timestamp = ts
         for k, v in self.indicators.items():
             v.update(op, cl, hi, lo, ts, vol)
+
+        #Prepare for new TA interface
+        #for k, metric in self.candle_metrics.items():
+            #metric.pushCandle(op, cl, hi, lo, ts, vol)
 
         if self.handleCandle(op, cl, hi, lo, ts, vol) is None:
             self.execute(ts)
