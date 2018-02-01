@@ -14,6 +14,7 @@ class MACDTurtleStrat(Strategy):
             period=180,
             scope1=5,
             scope2=8,
+            macd_scope=4,
             upper_atr=0.5,
             lower_atr=0.5,
             timeframe=3600,
@@ -33,9 +34,8 @@ class MACDTurtleStrat(Strategy):
         s.ATR_5 = ATR(bar, scope1)
         s.WMA_5 = WMA(bar, scope1)
         s.WMA_8 = WMA(bar, scope2)
-        s.WMA_12 = WMA(bar, 5)
-        s.WMA_26 = WMA(bar, 8)
-        s.macd = MACD_WMA(s.WMA_12, s.WMA_26, 4)
+        s.downtrend = None
+        s.macd = MACD_WMA(s.WMA_5, s.WMA_8, macd_scope)
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
         s.rsi = RSI(bar, rsi_la)
@@ -47,13 +47,11 @@ class MACDTurtleStrat(Strategy):
         s.lower_atr = lower_atr
         s.bband = bband
         s.timeframe = timeframe
-        s.vol_multipler = vol_multipler
 
         s.tradable_window = 0
         s.init_time = 0
         # s.dollar_volume_flag = False
         s.bollinger_signal = False
-        s.can_sell = False
         # s.was_v_sell = False
 
         s.rsi_sell_flag = False
@@ -69,9 +67,6 @@ class MACDTurtleStrat(Strategy):
         s.stop_loss_time = None
         s.stop_loss_flag = False
         s.price = 0
-        s.buy_signal = None
-        s.sell_signal = None
-        s.v_sell_signal = None
 
         # The s.iHasCash / s.iHasBalance implementation for tracking is a temporary implementation to make it works. This is not supposed to be implemented in this way (e.g. state machine would be much elegant)
         s.iHasCash = True
@@ -92,7 +87,6 @@ class MACDTurtleStrat(Strategy):
         atr = s.ATR_5.atr
 
         belowatr = max(s.WMA_5.wma, s.WMA_8.wma) < price - s.lower_atr * atr
-        aboveatr = min(s.WMA_5.wma, s.WMA_8.wma) > price + s.upper_atr * atr
 
         s.uptrend   = s.WMA_5.wma > s.WMA_8.wma
         s.downtrend = s.WMA_5.wma < s.WMA_8.wma
@@ -165,36 +159,19 @@ class MACDTurtleStrat(Strategy):
         s.rsi_sell_flag = rsi_sell_flag
         s.rsi_sell_flag_80 = rsi_sell_flag_80
 
-        # Buy sell signal generation
-        buy_signal = False
-        sell_signal = False
-        v_sell_signal = False
+        # @FINDOUT Probably because if we would set prev_crossover_time = None if not belowatr
         prev_crossover_time = s.prev_crossover_time
 
-        if s.hasCash and not s.hasBalance:
+        if s.iHasCash and not s.iHasBalance:
             # if s.was_v_sell:
             #     if s.uptrend or belowatr or aboveatr:
             #         return
             #     elif s.downtrend:
             #         s.was_v_sell = False
             if belowatr:
-                buy_signal = True
+                pass
             else:
                 prev_crossover_time = None
-
-        elif s.hasBalance:
-            # if s.dollar_volume_flag and s.vwma1.dollar_volume <= 0: # Currently no use
-            #     v_sell_signal = True
-            #     #logger.signal("VWMA Indicate sell at: " + str(timestamp))
-            if not s.can_sell and aboveatr:
-                sell_signal = True
-            elif s.can_sell and s.downtrend:
-                sell_signal = True
-            elif not s.can_sell and s.uptrend:
-                can_sell = True
-            elif not s.can_sell and s.downtrend:
-                pass
-
         else:
             prev_crossover_time = None
 
@@ -215,18 +192,7 @@ class MACDTurtleStrat(Strategy):
         except TypeError:
             pass
 
-        # try:
-        #     if int(timestamp/ s.period) < int(s.stop_loss_time/ s.period):
-        #         return -1
-        #     else:
-        #         s.stop_loss_time = None
-        # except TypeError:
-        #     pass
-
         s.macd_signal = macd_signal
-        s.buy_signal = buy_signal
-        s.sell_signal = sell_signal
-        s.v_sell_signal = v_sell_signal
         s.tradable_window = tradable_window
         s.bollinger_signal = bollinger_signal
         s.timeframe = timeframe
@@ -246,23 +212,9 @@ class MACDTurtleStrat(Strategy):
                 if s.hasCash and not s.hasBalance and not s.stop_loss_flag:
                     s.marketBuy(s.maxBuyAmount)
 
-                    s.prev_crossover_time = None
-                    s.prev_buy_time = timestamp
-                    s.prev_buy_price = s.price
-                    # setting can_sell flag for preventing premature exit
-                    if s.uptrend:
-                        s.can_sell = True
-                    elif s.downtrend:
-                        s.can_sell = False
-                elif s.stop_loss_flag:
-                    s.prev_crossover_time = None
-                    s.prev_buy_time = timestamp
-                    s.prev_buy_price = s.price
-                    # setting can_sell flag for preventing premature exit
-                    if s.uptrend:
-                        s.can_sell = True
-                    elif s.downtrend:
-                        s.can_sell = False
+                s.prev_crossover_time = None
+                s.prev_buy_time = timestamp
+                s.prev_buy_price = s.price
 
                 s.iHasCash = False
                 s.iHasBalance = True
@@ -287,25 +239,18 @@ class MACDTurtleStrat(Strategy):
             if s.hasBalance and not s.stop_loss_flag:
                 logger.info("Stop loss triggered")
                 s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
-                s.prev_crossover_time = None
-                s.dollar_volume_flag = False
-                s.prev_buy_price = 0
-                s.prev_buy_time = None
-
-                s.stop_loss_time = timestamp
-                s.stop_loss_price = 0
-                s.stop_loss_flag = True
 
             elif s.stop_loss_flag:
                 s.stop_loss_flag = True
-                s.prev_crossover_time = None
-                s.dollar_volume_flag = False
-                s.prev_buy_price = 0
-                s.prev_buy_time = None
 
-                s.stop_loss_time = timestamp
-                s.stop_loss_price = 0
-                s.stop_loss_flag = True
+            s.prev_crossover_time = None
+            s.dollar_volume_flag = False
+            s.prev_buy_price = 0
+            s.prev_buy_time = None
+
+            s.stop_loss_time = timestamp
+            s.stop_loss_price = 0
+            s.stop_loss_flag = True
 
             s.iHasBalance = False
             s.iHasCash = True
@@ -314,22 +259,17 @@ class MACDTurtleStrat(Strategy):
         if s.iHasBalance and s.rsi_ssignal and s.rsi_sell_flag:
             if s.hasBalance and not s.stop_loss_flag:
                 s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
-                s.prev_crossover_time = None
-                s.dollar_volume_flag = False
-                s.prev_buy_price = 0
-                s.prev_buy_time = None
-                s.rsi_sell_flag = False
-                s.rsi_sell_flag_80 = False
-                s.stop_loss_price = 0
+
             elif s.stop_loss_flag:
                 s.stop_loss_flag = False
-                s.prev_crossover_time = None
-                s.dollar_volume_flag = False
-                s.prev_buy_price = 0
-                s.prev_buy_time = None
-                s.rsi_sell_flag = False
-                s.rsi_sell_flag_80 = False
-                s.stop_loss_price = 0
+
+            s.prev_crossover_time = None
+            s.dollar_volume_flag = False
+            s.prev_buy_price = 0
+            s.prev_buy_time = None
+            s.rsi_sell_flag = False
+            s.rsi_sell_flag_80 = False
+            s.stop_loss_price = 0
 
             s.iHasBalance = False
             s.iHasCash = True
@@ -337,22 +277,17 @@ class MACDTurtleStrat(Strategy):
         if s.iHasBalance and s.rsi_ssignal and s.rsi_sell_flag_80:
             if s.hasBalance and not s.stop_loss_flag:
                 s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
-                s.prev_crossover_time = None
-                s.dollar_volume_flag = False
-                s.prev_buy_price = 0
-                s.prev_buy_time = None
-                s.rsi_sell_flag = False
-                s.rsi_sell_flag_80 = False
-                s.stop_loss_price = 0
+
             elif s.stop_loss_flag:
                 s.stop_loss_flag = False
-                s.prev_crossover_time = None
-                s.dollar_volume_flag = False
-                s.prev_buy_price = 0
-                s.prev_buy_time = None
-                s.rsi_sell_flag = False
-                s.rsi_sell_flag_80 = False
-                s.stop_loss_price = 0
+
+            s.prev_crossover_time = None
+            s.dollar_volume_flag = False
+            s.prev_buy_price = 0
+            s.prev_buy_time = None
+            s.rsi_sell_flag = False
+            s.rsi_sell_flag_80 = False
+            s.stop_loss_price = 0
 
             s.iHasBalance = False
             s.iHasCash = True
@@ -368,24 +303,18 @@ class MACDTurtleStrat(Strategy):
 
             if s.hasBalance and not s.stop_loss_flag:
                 s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
-                s.prev_crossover_time = None
-                s.dollar_volume_flag = False
-                s.prev_buy_price = 0
-                s.prev_buy_time = None
-                s.stop_loss_price = 0
+
             elif s.stop_loss_flag:
                 s.stop_loss_flag = False
-                s.prev_crossover_time = None
-                s.dollar_volume_flag = False
-                s.prev_buy_price = 0
-                s.prev_buy_time = None
-                s.stop_loss_price = 0
+
+            s.prev_crossover_time = None
+            s.dollar_volume_flag = False
+            s.prev_buy_price = 0
+            s.prev_buy_time = None
+            s.stop_loss_price = 0
 
             s.iHasBalance = False
             s.iHasCash = True
-
-
-
 
 
 from cryptle.backtest import backtest_tick, Backtest, PaperExchange
