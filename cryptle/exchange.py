@@ -1,9 +1,9 @@
 from .utility import *
 
+from time import time as now
 import hashlib
 import hmac
 import json
-import time
 import requests as req
 import logging
 log = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ class Bitstamp:
         params['amount'] = truncate(amount, 8)
 
         res = self._post('/buy/market/' + pair + '/', params=params)
-        res['timestamp'] = time.now()
+        res['timestamp'] = now()
 
         self.handleBitstampErrors(res, 'Market buy {} failed'.format(pair.upper()))
         return res
@@ -88,7 +88,7 @@ class Bitstamp:
         params['amount'] = truncate(amount, 8)
 
         res = self._post('/sell/market/' + pair + '/', params=params)
-        res['timestamp'] = time.now()
+        res['timestamp'] = now()
 
         self.handleBitstampErrors(res, 'Market sell {} failed'.format(pair.upper()))
         return res
@@ -107,7 +107,7 @@ class Bitstamp:
         params['price'] = truncate(price)
 
         res = self._post('/buy/' + pair + '/', params=params)
-        res['timestamp'] = time.now()
+        res['timestamp'] = now()
 
         self.handleBitstampErrors(res, 'Limit buy {} failed'.format(pair.upper()))
         return res
@@ -126,7 +126,7 @@ class Bitstamp:
         params['price'] = truncate(price)
 
         res = self._post('/sell/' + pair + '/', params=params)
-        res['timestamp'] = time.now()
+        res['timestamp'] = now()
 
         self.handleBitstampErrors(res, 'Limit sell {} failed'.format(pair.upper()))
         return res
@@ -178,7 +178,7 @@ class Bitstamp:
     def _authParams(self):
         assert self.secret is not None
 
-        nonce = int(time.time() * 100)
+        nonce = int(now() * 100)
         params = {}
         params['key'] = self.key
         params['signature'] = self._sign(str(nonce))
