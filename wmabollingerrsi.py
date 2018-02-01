@@ -1,4 +1,4 @@
-from cryptle.strategy import Strategy, Portfolio
+from cryptle.strategy import Strategy
 from cryptle.loglevel import *
 from cryptle.utility  import *
 from ta import *
@@ -281,60 +281,58 @@ class WMAForceBollingerRSIStrat(Strategy):
 
 if __name__ == '__main__':
     from cryptle.backtest import backtest_tick, Backtest, PaperExchange
+    from cryptle.strategy import Portfolio
     from cryptle.plotting import *
     import matplotlib.pyplot as plt
 
     formatter = defaultFormatter(notimestamp=True)
-
     fh = logging.FileHandler('rsi_new.log', mode='w')
-    fh.setLevel(logging.INDEX)
+    fh.setLevel(logging.METRIC)
     fh.setFormatter(formatter)
-
     sh = logging.StreamHandler()
     sh.setLevel(logging.REPORT)
     sh.setFormatter(formatter)
-
+    logger.setLevel(logging.METRIC)
     logger.addHandler(sh)
     logger.addHandler(fh)
 
-vwma1 = []
-vwma2 = []
-wma5 = []
-wma8 = []
-equity = []
-bband = []
-upperband = []
-lowerband = []
+    vwma1 = []
+    vwma2 = []
+    wma5 = []
+    wma8 = []
+    equity = []
+    bband = []
+    upperband = []
+    lowerband = []
 
-def record_indicators(strat):
-    global vwma1
-    global vwma2
-    global wma5
-    global wma8
-    global equity
-    global bband
-    global sharpe_ratio
-
-    vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
-    vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
-    equity.append((strat.last_timestamp, strat.equity))
-
-    if len(strat.bar) > 10:
-        wma5.append((strat.last_timestamp, strat.WMA_5.wma))
-        wma8.append((strat.last_timestamp, strat.WMA_8.wma))
-    if len(strat.bar) > strat.bollinger.lookback:
-        bband.append((strat.last_timestamp, strat.bollinger.band))
-        upperband.append((strat.last_timestamp, strat.bollinger.upperband))
-        lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
+    def record_indicators(strat):
+        global vwma1
+        global vwma2
+        global wma5
+        global wma8
+        global equity
+        global bband
+        global sharpe_ratio
 
         vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
         vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
         equity.append((strat.last_timestamp, strat.equity))
+
         if len(strat.bar) > 10:
             wma5.append((strat.last_timestamp, strat.WMA_5.wma))
             wma8.append((strat.last_timestamp, strat.WMA_8.wma))
+        if len(strat.bar) > strat.bollinger.lookback:
+            bband.append((strat.last_timestamp, strat.bollinger.band))
+            upperband.append((strat.last_timestamp, strat.bollinger.upperband))
+            lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
-if __name__ == '__main__':
+            vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
+            vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
+            equity.append((strat.last_timestamp, strat.equity))
+            if len(strat.bar) > 10:
+                wma5.append((strat.last_timestamp, strat.WMA_5.wma))
+                wma8.append((strat.last_timestamp, strat.WMA_8.wma))
+
     dataset = 'bch_correct.log'
 
     pair = 'bchusd'

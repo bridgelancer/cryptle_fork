@@ -1,4 +1,4 @@
-from cryptle.strategy import Strategy, Portfolio
+from cryptle.strategy import Strategy
 from cryptle.loglevel import *
 from cryptle.utility  import *
 from ta import *

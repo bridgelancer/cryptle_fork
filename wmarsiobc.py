@@ -283,21 +283,17 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     formatter = defaultFormatter()
-
     fh = logging.FileHandler('rsiobc.log', mode='w')
     fh.setLevel(logging.INDEX)
     fh.setFormatter(formatter)
-
     sh = logging.StreamHandler()
     sh.setLevel(logging.REPORT)
     sh.setFormatter(formatter)
-
-    logger.setLevel(logging.INDEX)
+    logger.setLevel(logging.METRIC)
     logger.addHandler(sh)
     logger.addHandler(fh)
-
     base_logger = logging.getLogger('cryptle.strategy')
-    base_logger.setLevel(logging.DEBUG)
+    base_logger.setLevel(logging.METRIC)
     base_logger.addHandler(fh)
 
     # Handler for recording indicators
@@ -324,11 +320,7 @@ if __name__ == '__main__':
         timelag_required=0,
         pair=pair,
         portfolio=port,
-        exchange=exchange,
-        period=120,
-        timeframe=3600,
-        bband=7.0,
-        bband_period=20)
+        exchange=exchange)
 
     backtest_tick(strat, dataset, exchange=exchange) #, callback=record_indicators)
 
