@@ -1,13 +1,23 @@
 from cryptle.strategy import Strategy, Portfolio
 from cryptle.loglevel import *
 from cryptle.utility  import *
+
 from ta import *
-
 import logging
-logger = logging.getLogger('Cryptle')
+
+logger = logging.getLogger('cryptle.strategy')
+logger.setLevel(logging.DEBUG)
+
+formatter = defaultFormatter()
+
+fh = logging.FileHandler('MACDTurtleStrat_backtest_correct.log', mode='w')
+fh.setLevel(logging.METRIC)
+fh.setFormatter(formatter)
+
+logger.addHandler(fh)
 
 
-class WMAMACDRSIStrat(Strategy):
+class MACDTurtleStrat(Strategy):
 
     def __init__(s,
             message='[RSI OBC]',
@@ -21,7 +31,7 @@ class WMAMACDRSIStrat(Strategy):
             bband_period=20,
             vol_multipler=30,
             vwma_lb=40,
-            rsi_la=14,
+            rsi_la = 14,
             **kws):
 
         s.indicators = {}
@@ -67,10 +77,14 @@ class WMAMACDRSIStrat(Strategy):
         s.prev_buy_price = 0
         s.stop_loss_price = 0
         s.stop_loss_time = None
+        s.stop_loss_flag = False
         s.price = 0
         s.buy_signal = None
         s.sell_signal = None
         s.v_sell_signal = None
+
+        s.iHasCash = True
+        s.iHasBalance = False
 
         super().__init__(**kws)
 
@@ -210,6 +224,14 @@ class WMAMACDRSIStrat(Strategy):
         except TypeError:
             pass
 
+        # try:
+        #     if int(timestamp/ s.period) < int(s.stop_loss_time/ s.period):
+        #         return -1
+        #     else:
+        #         s.stop_loss_time = None
+        # except TypeError:
+        #     pass
+
         s.macd_signal = macd_signal
         s.buy_signal = buy_signal
         s.sell_signal = sell_signal
@@ -224,21 +246,34 @@ class WMAMACDRSIStrat(Strategy):
     # Execution of signals
     # Can only buy if buy_signal and bollinger_signal both exist
     def execute(s, timestamp):
-        if s.hasCash and not s.hasBalance and s.bollinger_signal and s.rsi_bsignal and s.macd_signal:
+        if s.iHasCash and not s.iHasBalance and s.bollinger_signal and s.macd_signal and s.rsi_bsignal:
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = timestamp # @Hardcode @Fix logic, do not use timestamp here
 
             elif timestamp - s.prev_crossover_time >= s.timelag_required:
-                s.marketBuy(s.maxBuyAmount)
+                if s.hasCash and not s.hasBalance and not s.stop_loss_flag:
+                    s.marketBuy(s.maxBuyAmount)
 
-                s.prev_crossover_time = None
-                s.prev_buy_time = timestamp
-                s.prev_buy_price = s.price
-                # setting can_sell flag for preventing premature exit
-                if s.uptrend:
-                    s.can_sell = True
-                elif s.downtrend:
-                    s.can_sell = False
+                    s.prev_crossover_time = None
+                    s.prev_buy_time = timestamp
+                    s.prev_buy_price = s.price
+                    # setting can_sell flag for preventing premature exit
+                    if s.uptrend:
+                        s.can_sell = True
+                    elif s.downtrend:
+                        s.can_sell = False
+                elif s.stop_loss_flag:
+                    s.prev_crossover_time = None
+                    s.prev_buy_time = timestamp
+                    s.prev_buy_price = s.price
+                    # setting can_sell flag for preventing premature exit
+                    if s.uptrend:
+                        s.can_sell = True
+                    elif s.downtrend:
+                        s.can_sell = False
+
+                s.iHasCash = False
+                s.iHasBalance = True
 
         #Sell immediately if v_sell signal is present, do not enter the position before next uptrend
         #Currently commented out because of lack of valid snooping mechanism
@@ -255,47 +290,82 @@ class WMAMACDRSIStrat(Strategy):
         #     s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
         #     s.prev_crossover_time = None
         #     s.dollar_volume_flag = False
-        elif s.hasBalance and s.price < s.stop_loss_price:
-            logger.info("Stop lost triggered")
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
-            logger.signal('Sell: Triggered stoploss')
+        if s.iHasBalance and s.price < s.stop_loss_price:
 
-            s.prev_crossover_time = None
-            s.dollar_volume_flag = False
-            s.prev_buy_price = 0
-            s.prev_buy_time = None
+            if s.hasBalance and not s.stop_loss_flag:
+                logger.info("Stop loss triggered")
+                s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+                s.prev_crossover_time = None
+                s.dollar_volume_flag = False
+                s.prev_buy_price = 0
+                s.prev_buy_time = None
 
-            s.stop_loss_time = timestamp
-            s.stop_loss_flag = True
-            s.stop_loss_price = 0
+                s.stop_loss_time = timestamp
+                s.stop_loss_price = 0
+                s.stop_loss_flag = True
 
+            elif s.stop_loss_flag:
+                s.stop_loss_flag = True
+                s.prev_crossover_time = None
+                s.dollar_volume_flag = False
+                s.prev_buy_price = 0
+                s.prev_buy_time = None
+
+                s.stop_loss_time = timestamp
+                s.stop_loss_price = 0
+                s.stop_loss_flag = True
+
+            s.iHasBalance = False
+            s.iHasCash = True
             # now setting no stop loss for the moment
 
-        elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
-            logger.signal('Sell: Over 70 RSI')
+        if s.iHasBalance and s.rsi_ssignal and s.rsi_sell_flag:
+            if s.hasBalance and not s.stop_loss_flag:
+                s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+                s.prev_crossover_time = None
+                s.dollar_volume_flag = False
+                s.prev_buy_price = 0
+                s.prev_buy_time = None
+                s.rsi_sell_flag = False
+                s.rsi_sell_flag_80 = False
+                s.stop_loss_price = 0
+            elif s.stop_loss_flag:
+                s.stop_loss_flag = False
+                s.prev_crossover_time = None
+                s.dollar_volume_flag = False
+                s.prev_buy_price = 0
+                s.prev_buy_time = None
+                s.rsi_sell_flag = False
+                s.rsi_sell_flag_80 = False
+                s.stop_loss_price = 0
 
-            s.prev_crossover_time = None
-            s.dollar_volume_flag = False
-            s.prev_buy_price = 0
-            s.prev_buy_time = None
-            s.stop_loss_price = 0
-            s.rsi_sell_flag = False
-            s.rsi_sell_flag_80 = False
+            s.iHasBalance = False
+            s.iHasCash = True
 
-        elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag_80:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
-            logger.signal('Sell: Over 80 RSI')
+        if s.iHasBalance and s.rsi_ssignal and s.rsi_sell_flag_80:
+            if s.hasBalance and not s.stop_loss_flag:
+                s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+                s.prev_crossover_time = None
+                s.dollar_volume_flag = False
+                s.prev_buy_price = 0
+                s.prev_buy_time = None
+                s.rsi_sell_flag = False
+                s.rsi_sell_flag_80 = False
+                s.stop_loss_price = 0
+            elif s.stop_loss_flag:
+                s.stop_loss_flag = False
+                s.prev_crossover_time = None
+                s.dollar_volume_flag = False
+                s.prev_buy_price = 0
+                s.prev_buy_time = None
+                s.rsi_sell_flag = False
+                s.rsi_sell_flag_80 = False
+                s.stop_loss_price = 0
 
-            s.prev_crossover_time = None
-            s.dollar_volume_flag = False
-            s.prev_buy_price = 0
-            s.prev_buy_time = None
-            s.stop_loss_price = 0
-            s.rsi_sell_flag = False
-            s.rsi_sell_flag_80 = False
+            s.iHasBalance = False
+            s.iHasCash = True
 
-        elif s.hasBalance and s.rsi_ssignal and not s.macd_signal:
+        if s.iHasBalance and s.rsi_ssignal and not s.macd_signal:
         # elif s.hasBalance and s.sell_signal:
             #logger.signal("Sell at RSI: " + str(s.rsi.rsi))
 
@@ -304,14 +374,24 @@ class WMAMACDRSIStrat(Strategy):
 
             # elif timestamp - s.prev_crossover_time >= s.timelag_required:
 
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
-            logger.signal('Sell: Normal RSI + MACD')
+            if s.hasBalance and not s.stop_loss_flag:
+                s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+                s.prev_crossover_time = None
+                s.dollar_volume_flag = False
+                s.prev_buy_price = 0
+                s.prev_buy_time = None
+                s.stop_loss_price = 0
+            elif s.stop_loss_flag:
+                s.stop_loss_flag = False
+                s.prev_crossover_time = None
+                s.dollar_volume_flag = False
+                s.prev_buy_price = 0
+                s.prev_buy_time = None
+                s.stop_loss_price = 0
 
-            s.prev_crossover_time = None
-            s.dollar_volume_flag = False
-            s.prev_buy_price = 0
-            s.prev_buy_time = None
-            s.stop_loss_price = 0
+            s.iHasBalance = False
+            s.iHasCash = True
+
 
 
 
@@ -365,6 +445,7 @@ def record_indicators(strat):
         upperband.append((strat.last_timestamp, strat.bollinger.upperband))
         lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
+
 if __name__ == '__main__':
     dataset = 'bch_correct.log'
 
@@ -372,7 +453,7 @@ if __name__ == '__main__':
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
-    strat = WMAMACDRSIStrat(
+    strat = MACDTurtleStrat(
         pair=pair,
         portfolio=port,
         exchange=exchange,
@@ -388,9 +469,9 @@ if __name__ == '__main__':
     #test.readJSON(dataset)
     #test.run(strat, record_indicators)
 
-    logger.report('MACD Equity:    %.2f' % port.equity)
-    logger.report('MACD Cash:    %.2f' % port.cash)
-    logger.report('MACD Asset:    %s' % str(port.balance))
+    logger.report('RSI Equity:    %.2f' % port.equity)
+    logger.report('RSI Cash:    %.2f' % port.cash)
+    logger.report('RSI Asset:    %s' % str(port.balance))
     logger.report('Number of trades:  %d' % len(strat.trades))
     logger.report('Number of candles: %d' % len(strat.bar))
 
@@ -403,7 +484,9 @@ if __name__ == '__main__':
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
     bband = [[x[0] for x in bband], [x[1] for x in bband]]
 
-    plot(
+    # Sets a time out for plotting
+     # Plot candle functions commented out as not runnable at the moment
+    plotCandles(
         strat.bar,
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,

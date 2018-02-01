@@ -226,7 +226,6 @@ def testMACD_WMA():
 
     for tick in sine:
         candle.update(tick[0], tick[1])
-        print (macd_wma.wma3)
     assert macd_wma.wma3 - 0.5843467703997498 < 1e-5
 
 
