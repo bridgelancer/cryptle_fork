@@ -33,6 +33,27 @@ class DirectionFlag:
         self._down = value
         self._up = not value
 
+class IntensityFlag():
+
+    def __init__(self):
+        self._high = self._low = False
+
+    def setHigh(self):
+        self._high = True
+        self._low = False
+
+    def setLow(self):
+        self._high = False
+        self._low = True
+
+    @property
+    def high(self):
+        return self._high
+
+    @property
+    def low(self):
+        return self._low
+
 
 class TradeFlag:
     '''A boolean which can be accessed with specialised named attritubes.
@@ -44,6 +65,14 @@ class TradeFlag:
     def __init__(self):
         self._buy = self._sell = False
 
+    def setBuy(self):
+        self._buy = True
+        self._sell = False
+
+    def setSell(self):
+        self._buy = False
+        self._sell = True
+
     @property
     def buy(self):
         return self._buy
@@ -51,16 +80,6 @@ class TradeFlag:
     @property
     def sell(self):
         return self._sell
-
-    @buy.setter
-    def buy(self, value):
-        self._buy = value
-        self._sell = not value
-
-    @sell.setter
-    def sell(self, value):
-        self._sell = value
-        self._buy = not value
 
 
 class Portfolio:
