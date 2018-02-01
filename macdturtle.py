@@ -217,7 +217,7 @@ class MACDTurtleStrat(Strategy):
                 bar_diff = int(timestamp / s.period) - int(s.prev_buy_time / s.period)
                 bar_min = min(s.bar.bars[-1 - bar_diff][0], s.bar.bars[-1 - bar_diff][1])
                 #stop_loss_price = min(bar_min * .99, bar_min - current_atr)
-                s.stop_loss_price = bar_min * .99
+                s.stop_loss_price = bar_min * 1.00
                 #stop_loss_price = 0
 
                 s.prev_buy_time == None
@@ -246,7 +246,7 @@ class MACDTurtleStrat(Strategy):
     # Execution of signals
     # Can only buy if buy_signal and bollinger_signal both exist
     def execute(s, timestamp):
-        if s.iHasCash and not s.iHasBalance and s.bollinger_signal and s.macd_signal and s.rsi_bsignal:
+        if s.iHasCash and not s.iHasBalance and s.bollinger_signal and s.macd_signal:
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = timestamp # @Hardcode @Fix logic, do not use timestamp here
 
@@ -365,7 +365,7 @@ class MACDTurtleStrat(Strategy):
             s.iHasBalance = False
             s.iHasCash = True
 
-        if s.iHasBalance and s.rsi_ssignal and not s.macd_signal:
+        if s.iHasBalance and not s.macd_signal:
         # elif s.hasBalance and s.sell_signal:
             #logger.signal("Sell at RSI: " + str(s.rsi.rsi))
 
@@ -457,7 +457,7 @@ if __name__ == '__main__':
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=1500,
+        period=3600,
         timeframe=3600,
         bband=0.0,
         bband_period=20)
