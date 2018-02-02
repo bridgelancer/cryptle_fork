@@ -7,6 +7,14 @@ logger = logging.getLogger(__name__)
 
 
 class BitstampFeed:
+    '''Datafeed interface for bitstamp, based on websockets provided by pysher.
+
+    Provides a javascript-like interface for various types of supported bitstamp events. Details are
+    provided at https://www.bitstamp.net/websocket/
+
+    Note: Dependent on a recent version of pysher. Otherwise 4200 disconnects will lead to channels
+        being no longer recognised and requires a re-binding of callbacks.
+    '''
     key = 'de504dc5763aeef9ff52'
 
     def __init__(self, auto_connect=True, log_level=logging.INFO):
