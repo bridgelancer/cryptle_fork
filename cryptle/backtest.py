@@ -12,6 +12,7 @@ def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
     '''Wrapper function for running backtest on tick based strategy.
 
     Args:
+        dataset: Dataset to be read by the backtest. File format can be detected automatically
         pair: String representation of the trade coin pair (meta info)
         portfolio: Portfolio object to be assigned to the strategy
         exchange: Exchagne object to be assigned to the strategy and Backtest manager
@@ -41,6 +42,7 @@ def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
     '''Wrapper function for running backtest on bar based strategy.
 
     Args:
+        dataset: Dataset to be read by the backtest. File format can be detected automatically
         pair: String representation of the trade coin pair (meta info)
         portfolio: Portfolio object to be assigned to the strategy
         exchange: Exchagne object to be assigned to the strategy and Backtest manager
@@ -118,6 +120,10 @@ class Backtest:
         else:
             self.readString(fname)
 
+
+    # @Rename
+    # Give the attritubes a better name
+    # Use different names for different types of data
 
     # Store ticks as list of strings
     def readString(self, fname):

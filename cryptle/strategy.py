@@ -76,6 +76,10 @@ class Strategy:
     Metrics/Indicators that needs to be updated tick by tick has to go into the
     indicators dict. The update method will be called on the indicators.
 
+    Note:
+        When given a portfolio, Strategy(Base) assumes that it is the only
+        strategy trading on that portfolio for the given pair.
+
     Args:
         pair: String representation of the trade coin pair (meta info)
         portfolio: Portfolio managed by the strategy instance
