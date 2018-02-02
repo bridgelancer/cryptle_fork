@@ -15,7 +15,7 @@ import json
 formatter = defaultFormatter()
 
 sh = logging.StreamHandler()
-sh.setLevel(logging.REPORT)
+sh.setLevel(logging.SIGNAL)
 sh.setFormatter(formatter)
 
 fh = logging.FileHandler('livetrade.log', mode='w')
@@ -33,16 +33,18 @@ crlog.addHandler(sh)
 crlog.addHandler(fh)
 
 
-def livetrade(key, secret, cid):
+if __name__ == '__main__':
+    key = sys.argv[1]
+    secret = sys.argv[2]
+    cid = sys.argv[3]
+
     log.debug('Initialising REST private parameters...')
     exchange = Bitstamp(key, secret, cid)
     pair = 'bchusd'
 
-
     log.debug('Retrieving balance...')
     full_balance = exchange.getBalance()
     pair_value = exchange.getTicker(pair)
-
 
     log.debug('Initialising portfolio...')
     pair_available = pair[:3] + '_available'
@@ -54,7 +56,6 @@ def livetrade(key, secret, cid):
         port = Portfolio(cash, balance, balance_value)
     else:
         port = Portfolio(cash)
-
 
     log.debug('Initialising strategy...')
     wma = WMARSIOBCStrat(
@@ -69,9 +70,7 @@ def livetrade(key, secret, cid):
 
     log.debug('Initialising data feed and callbacks...')
     bs = BitstampFeed()
-    # Fix after changing bitstampfeed to output json
     bs.onTrade(pair, lambda x: wma.pushTick(*unpackTick(x)))
-
 
     log.debug('Reporting started')
     while bs.isConnected():
@@ -81,11 +80,4 @@ def livetrade(key, secret, cid):
 
         time.sleep(60)
         port.cash = exchange.getCash()
-
-
-if __name__ == '__main__':
-    key = sys.argv[1]
-    secret = sys.argv[2]
-    cid = sys.argv[3]
-    livetrade(key, secret, cid)
 
