@@ -78,6 +78,7 @@ class CandleBuffer:
 
 
     def pushTick(self, price, timestamp, volume=0, action=0):
+        '''Provides public interface for accepting ticks'''
         # initialise the candle collection
         if self._last_timestamp is None:
             self._last_timestamp = timestamp
@@ -103,6 +104,11 @@ class CandleBuffer:
             self.last_volume += volume
 
         self.prune(self._maxsize)
+
+    def pushCandle(self, o, c, h, l, t, v):
+        '''Provides public interface for accepting aggregated candles'''
+        self._bars.append(Candle(o, c, h, l, t, v))
+        self._broadcast()
 
 
     def pushFullCandle(self, o, c, h, l, t, v):
@@ -185,7 +191,7 @@ class CandleBuffer:
 
 
 class Metric:
-    '''Base class for single valued metrics'''
+    '''Base class with common functions of single valued metrics'''
 
     def __int__(self):
         return int(self._value)
@@ -217,11 +223,15 @@ class CandleMetric(Metric):
         self._value = 0
         candle.attach(self)
 
+    # @Rename
+    # Give this function a better name, consider differentiating between pushing new candles and
+    # pinging the metrics simply about new tick/close price
     def ping(self):
         raise NotImplementedError('Base class CandleMetric should not be called')
 
 
-# Ends with _new during deprecation period
+# The convention for new metrics is to use self._property for all internal attributes
+# Ends with _new during deprecation period, these will replace the existing one soon
 class SMA_new(CandleMetric):
 
     def __init__(self, candle, lookback):
@@ -235,17 +245,149 @@ class SMA_new(CandleMetric):
 
 class WMA_new(CandleMetric):
 
-    def __init__(self, candle, lookback):
+    def __init__(self, candle, lookback, openp=True):
         super().__init__(candle)
         self._lookback = lookback
         self._value = 0
         self._weight = [x + 1 / (lookback * (lookback + 1) / 2) for x in range(lookback)]
+        self._openp = openp
 
-    def ping(self, open_p=True):
-        prices = [x[0] if open_p else x[1] for x in self._candle[-self._lookback:]]
+    def ping(self):
+        prices = [x[0] if self._open_p else x[1] for x in self._candle[-self._lookback:]]
         self._value = sum(p * w for p,w in zip(prices, self._weight))
 
 
+class EMA_new(CandleMetric):
+
+    def __init__(self, candle, lookback, open_p=True):
+        super().__init__(candle)
+        self._lookback = lookback
+        self._value = None
+        self._weight = [x + 1 / (lookback * (lookback + 1) / 2) for x in range(lookback)]
+        self._openp = openp
+
+    def ping(self):
+        if self._open_p:
+            val = self._candle[-1][0]
+        else:
+            val = self._candle[-1][1]
+
+        if self._value == None:
+            self._value = val
+            return
+
+        self._value = self._weight * val + (1 - self._weight) * self._value
+
+
+class RSI_new(CandleMetric):
+
+    def __int__(self, candle, lookback):
+        super().__init__(candle)
+        self._lookback = lookback
+        self._up = []
+        self._down = []
+        self._ema_up = None
+        self._ema_down = None
+        self._weight = 1 / lookback # MODIFIED to suit our purpose
+        self._value = 0
+
+    def ping(self):
+        if len(self._candle) < 2:
+            return
+
+        if (self._candle[-1][0] > self._candle[-2][0]):
+            self._up.append(abs(self._candle[-1][0] - self._candle[-2][0]))
+            self._down.append(0)
+        else:
+            self._down.append(abs(self._candle[-2][0] - self._candle[-1][0]))
+            self._up.append(0)
+
+        if len(self._up) < self._lookback:
+            return
+
+        price_up = self._up[-1]
+        price_down = self._down[-1]
+
+        if self._ema_up == None and self._ema_down == None:
+            # Initialization of ema_up and ema_down by simple averaging the up/down lists
+            self._ema_up = sum([x for x in self._up]) / len(self._up)
+            self._ema_down = sum([x for x in self._down]) / len(self._down)
+        else:
+            # Update ema_up and ema_down according to logistic updating formula
+            self._ema_up = self._weight * price_up + (1 - self._weight) * self._ema_up
+            self._ema_down = self._weight * price_down + (1 - self._weight) * self._ema_down
+
+        # Handling edge cases and return the RSI index according to formula
+        try:
+            self._value = 100 - 100 / (1 +  self._ema_up/self._ema_down)
+        except ZeroDivisionError:
+            if self._ema_down == 0 and self._ema_up != 0:
+                self._value = 100
+            elif self._ema_up == 0 and self._ema_down != 0:
+                self._value = 0
+            elif self._ema_up == 0 and self._ema_down == 0:
+                self._value = 50
+
+
+class ATR_new:
+
+    def __init__(self, candle, lookback):
+        super().__init__(candle)
+        self._lookback = lookback
+        self._init = []
+        self._value = 100000000
+
+    def ping(self):
+        if (len(self._init) < self._lookback + 1):
+            self._init.append(self._candle[-1][2] - self._candle[-1][3]) # append bar max - bar min
+            self._value = sum(self._init) / len(self._init)
+        else:
+            t1 = self._candle[-2][2] - self._candle[-2][3]
+            t2 = abs(self._candle[-2][2] - self._candle[-3][1])
+            t3 = abs(self._candle[-2][3] - self._candle[-3][1])
+            tr = max(t1, t2, t3)
+            self._value = (self._atr * (self._lookback - 1) + tr) / self._lookback
+
+
+class CVWMA(Metric):
+
+    def __init__(self, lookback):
+        self._ticks = []
+        self._lookback = lookback
+        self._value = 0
+
+
+    def pushTick(self, price, ts, volume, action):
+        self._ticks.append((price, volume, ts, action))
+        self.prune()
+
+        try:
+            assert timestamp >= self.ticks[0][2]
+        except AssertionError:
+            return
+        except IndexError:
+            pass
+
+        self._volume += volume * action
+        self._value += price * volume * action
+
+
+    def prune(self):
+        now = self.ticks[-1][2]
+        epoch = now - self.period
+
+        while True:
+            if self.ticks[0][2] < epoch:
+                tick = self.ticks.pop(0)
+                price, volume, ts, action = tick
+
+                self._volume -= volume * action
+                self._value -= price * volume * action
+            else:
+                break
+
+
+# @Deprecated
 class ContinuousVWMA:
 
     def __init__(self, period):
@@ -313,6 +455,7 @@ class ContinuousVWMA:
         return str(self.dollar_volume)
 
 
+# @Deprecated
 class CandleBar:
 
     # bars: List of (open, close, high, low, nth minute bar)
@@ -419,6 +562,7 @@ class CandleBar:
         s.bars[-1].volume = value
 
 
+# @Deprecated
 class RSI():
 
     def __init__(self, candle, lookback):
@@ -432,6 +576,7 @@ class RSI():
         self.rsi = 0
 
         candle.metrics.append(self)
+
 
     def update(self):
 
@@ -507,6 +652,7 @@ class RSI():
         return str(self.rsi)
 
 
+# @Deprecated
 class ATR():
 
     def __init__(self, candle, lookback):
@@ -548,6 +694,7 @@ class ATR():
         return str(self.atr)
 
 
+# @Deprecated
 class SMA():
 
     def __init__(self, candle, lookback):
@@ -566,6 +713,7 @@ class SMA():
         return str(self.wma)
 
 
+# @Deprecated
 class WMA():
 
     def __init__(self, candle, lookback):
@@ -599,6 +747,7 @@ class WMA():
         return str(self.wma)
 
 
+# @Deprecated
 class EMA():
 
     def __init__(self, candle, lookback):
@@ -629,6 +778,7 @@ class EMA():
         return str(self.wma)
 
 
+# @Deprecated
 class MACD_WMA():
 
     # wma1 and wma2 needs to use the same candle instance
@@ -667,6 +817,7 @@ class MACD_WMA():
         self.diff_ma = self.wma3
 
 
+# @Deprecated
 class MACD():
 
     # ema1 and ema2 needs to use the same candle instance
@@ -700,6 +851,7 @@ class MACD():
         self.diff_ma = self.ema3
 
 
+# @Deprecated
 class BollingerBand():
 
     def __init__(self, sma, lookback):
