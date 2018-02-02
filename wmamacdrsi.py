@@ -252,7 +252,7 @@ class WMAMACDRSIStrat(Strategy):
                 bar_diff = int(timestamp / s.period) - int(s.prev_buy_time / s.period)
                 bar_min = min(s.bar.bars[-1 - bar_diff][0], s.bar.bars[-1 - bar_diff][1])
                 #stop_loss_price = min(bar_min * .99, bar_min - current_atr)
-                s.stop_loss_price = bar_min * .99
+                s.stop_loss_price = bar_min * .00
                 #stop_loss_price = 0
 
                 s.prev_buy_time == None
@@ -397,9 +397,9 @@ if __name__ == '__main__':
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=1500,
+        period=120,
         timeframe=3600,
-        bband=0.0,
+        bband=4.0,
         bband_period=20)
 
     # Can use this too

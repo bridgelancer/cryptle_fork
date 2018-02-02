@@ -12,9 +12,9 @@ class MACDTurtleStrat(Strategy):
     def __init__(s,
             message='[MACD Turtle]',
             period=180,
-            scope1=5,
-            scope2=8,
-            macd_scope=4,
+            scope1=12,
+            scope2=26,
+            macd_scope=9,
             upper_atr=0.5,
             lower_atr=0.5,
             timeframe=3600,
@@ -179,7 +179,7 @@ class MACDTurtleStrat(Strategy):
                 bar_diff = int(timestamp / s.period) - int(s.prev_buy_time / s.period)
                 bar_min = min(s.bar.bars[-1 - bar_diff][0], s.bar.bars[-1 - bar_diff][1])
                 #stop_loss_price = min(bar_min * .99, bar_min - current_atr)
-                s.stop_loss_price = bar_min * 1.00
+                s.stop_loss_price = bar_min * .9
                 #stop_loss_price = 0
 
                 s.prev_buy_time == None
@@ -236,7 +236,6 @@ class MACDTurtleStrat(Strategy):
 
             s.iHasBalance = False
             s.iHasCash = True
-            # now setting no stop loss for the moment
 
         if s.iHasBalance and s.rsi_ssignal and s.rsi_sell_flag:
             if s.hasBalance and not s.stop_loss_flag:
@@ -299,7 +298,7 @@ if __name__ == '__main__':
 
     formatter = defaultFormatter()
     fh = logging.FileHandler('macd_turtle.log', mode = 'w')
-    fh.setLevel(logging.)
+    fh.setLevel(logging.INFO)
     fh.setFormatter(formatter)
     sh = logging.StreamHandler()
     sh.setLevel(logging.REPORT)
@@ -369,6 +368,43 @@ if __name__ == '__main__':
     logger.report('Number of trades:   %d' % len(strat.trades))
     logger.report('Number of candles:  %d' % len(strat.bar))
 
+    # Calculate Sharpe Ratio - this needs to be called before the transoformation of the equity sequence for plotting
+    def calculateSP(equity):
+        equity_list = []
+        returns_list = []
+        equity_new = [x for x in equity]
+        equity_old = [x for x in equity]
+        equity_old.pop() # removed final tick
+        equity_new.pop(0) # removed initial tick
+
+        equity_list = filter(lambda tick: int(tick[1][0] / strat.period) > int(tick[0][0] / strat.period) , zip(equity_old, equity_new))
+
+        equity_list = [x[1] for x in equity_list]
+        ts, eq = zip(*equity_list)
+
+        for i, item in enumerate(eq):
+            try:
+                returns = eq[i + int(24*60*60 / strat.period)] / item #Calculate daily return
+                returns_list.append(returns)
+            except IndexError:
+                pass
+
+        returns_list = returns_list[0::int(24*60*60 / strat.period)]
+        print (returns_list)
+
+        mean_return = sum(returns_list) / len(returns_list)
+        print ("Daily mean return: {}%".format((mean_return - 1)*100))
+
+        mean_square = list(map(lambda y: ((y - mean_return)) ** 2, returns_list))
+        stdev_return = (sum(mean_square) / len(returns_list)) ** 0.5
+        print ("Standard deviation of return: {}%".format(stdev_return * 100))
+
+        sharpe_ratio = ((eq[-1] / 10000) - 1) / stdev_return
+
+        print("Sharpe ratio: {}".format(sharpe_ratio))
+
+    calculateSP(equity)
+
     vwma1 = [[x[0] for x in vwma1], [x[1] for x in vwma1]]
     vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]
     wma5 = [[x[0] for x in wma5], [x[1] for x in wma5]]
@@ -387,27 +423,6 @@ if __name__ == '__main__':
         signals=[wma5, wma8],
         indicators=[[bband], [equity]])
 
-    equity_list = []
-    returns_list = []
-    equity_list = equity[1][0::int(24*60*60 / strat.period * 400)] # this is not correct
-    for i, item in enumerate(equity_list):
-        try:
-            returns = equity_list[i + 1] / item
-            returns_list.append(returns)
-        except IndexError:
-            pass
 
-    print (returns_list)
-
-    mean_return = sum(returns_list) / len(returns_list)
-    print (mean_return)
-
-    mean_square = list(map(lambda y: ((y - mean_return)) ** 2, returns_list))
-    stdev_return = (sum(mean_square) / len(returns_list)) ** 0.5
-    print(stdev_return)
-
-    sharpe_ratio = ((equity_list[-1] / 10000) - 1) / stdev_return
-
-    print("Sharpe ratio: {}".format(sharpe_ratio))
 
     plt.show()
