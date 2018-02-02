@@ -10,6 +10,7 @@ import logging
 import sys
 import time
 import json
+from collections import OrderedDict
 
 
 formatter = defaultFormatter()
@@ -57,16 +58,27 @@ if __name__ == '__main__':
     else:
         port = Portfolio(cash)
 
+
+    config = OrderedDict()
+    config['period']        = period = 120
+    config['bband']         = bband = 6.0
+    config['bband_period']  = bband_period = 20
+    config['timelag']       = timelag_required = 0
+    config['equity@risk']   = equity_at_risk = 0.8
+
     log.debug('Initialising strategy...')
+    log.debug('Config: {}'.format(config))
+
     wma = WMARSIOBCStrat(
-            period=120,
-            bband=8.0,
-            bband_period=20,
-            timelag_required=0,
+            period=period,
+            bband=bband,
+            bband_period=bband_period,
+            timelag_required=timelag_required,
             pair=pair,
             portfolio=port,
             exchange=exchange,
-            equity_at_risk=0.8)
+            equity_at_risk=equity_at_risk)
+
 
     log.debug('Initialising data feed and callbacks...')
     bs = BitstampFeed()
