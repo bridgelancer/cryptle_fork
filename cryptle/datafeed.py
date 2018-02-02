@@ -10,7 +10,7 @@ class BitstampFeed:
     key = 'de504dc5763aeef9ff52'
 
     def __init__(self, auto_connect=True, log_level=logging.INFO):
-        self.pusher = pysher.Pusher(self.key, log_level=log_level)
+        self.pusher = pysher.Pusher(self.key, log_level=log_level, auto_sub=True)
 
         if auto_connect:
             self.connect()
