@@ -4,7 +4,7 @@ from cryptle.strategy import Portfolio
 from cryptle.loglevel import *
 from cryptle.utility  import *
 
-from wmarsiobc import WMARSIOBCStrat
+from wmamacdrsi import WMAMACDRSIStrat
 
 import logging
 import sys
@@ -59,17 +59,17 @@ if __name__ == '__main__':
     config['period']        = period = 120
     config['bband']         = bband = 6.0
     config['bband_period']  = bband_period = 20
-    config['timelag']       = timelag_required = 0
+    config['timeframe']     = timeframe = 3600
     config['equity@risk']   = equity_at_risk = 0.9
 
     log.debug('Initialising strategy...')
     log.report('Config: {}'.format(config))
 
-    wma = WMARSIOBCStrat(
+    wma = WMAMACDRSIStrat(
             period=period,
             bband=bband,
             bband_period=bband_period,
-            timelag_required=timelag_required,
+            timeframe=timeframe,
             pair=pair,
             portfolio=port,
             exchange=exchange,
