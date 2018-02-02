@@ -13,33 +13,29 @@ import json
 from collections import OrderedDict
 
 
-formatter = defaultFormatter()
-
-sh = logging.StreamHandler()
-sh.setLevel(logging.SIGNAL)
-sh.setFormatter(formatter)
-
-fh = logging.FileHandler('livetrade.log', mode='w')
-fh.setLevel(logging.TICK)
-fh.setFormatter(formatter)
-
-log = logging.getLogger('Report')
-log.setLevel(logging.TICK)
-log.addHandler(sh)
-log.addHandler(fh)
-
-crlog = logging.getLogger('cryptle')
-crlog.setLevel(logging.TICK)
-crlog.addHandler(sh)
-crlog.addHandler(fh)
-
-
 if __name__ == '__main__':
+    formatter = defaultFormatter()
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.INFO)
+    sh.setFormatter(formatter)
+    fh = logging.FileHandler('livetrade.log', mode='w')
+    fh.setLevel(logging.TICK)
+    fh.setFormatter(formatter)
+    log = logging.getLogger('Report')
+    log.setLevel(logging.TICK)
+    log.addHandler(sh)
+    log.addHandler(fh)
+    crlog = logging.getLogger('cryptle')
+    crlog.setLevel(logging.TICK)
+    crlog.addHandler(sh)
+    crlog.addHandler(fh)
+
+    log.report('Logging to ' + fh.baseFilename)
+
+    log.debug('Initialising REST private parameters...')
     key = sys.argv[1]
     secret = sys.argv[2]
     cid = sys.argv[3]
-
-    log.debug('Initialising REST private parameters...')
     exchange = Bitstamp(key, secret, cid)
     pair = 'bchusd'
 
@@ -64,10 +60,10 @@ if __name__ == '__main__':
     config['bband']         = bband = 6.0
     config['bband_period']  = bband_period = 20
     config['timelag']       = timelag_required = 0
-    config['equity@risk']   = equity_at_risk = 0.8
+    config['equity@risk']   = equity_at_risk = 0.9
 
     log.debug('Initialising strategy...')
-    log.debug('Config: {}'.format(config))
+    log.report('Config: {}'.format(config))
 
     wma = WMARSIOBCStrat(
             period=period,
