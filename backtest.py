@@ -10,7 +10,7 @@ import itertools
 import random
 
 
-formatter = defaultFormatter()
+formatter = defaultFormatter(notimestamp=True)
 
 sh = logging.StreamHandler()
 sh.setLevel(logging.REPORT)
