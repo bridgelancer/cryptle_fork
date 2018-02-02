@@ -10,7 +10,7 @@ logger = logging.getLogger('Cryptle')
 class MACDTurtleStrat(Strategy):
 
     def __init__(s,
-            message='[RSI OBC]',
+            message='[MACD Turtle]',
             period=180,
             scope1=5,
             scope2=8,
@@ -72,13 +72,16 @@ class MACDTurtleStrat(Strategy):
         s.stop_loss_flag = False
         s.price = 0
 
-        # The s.iHasCash / s.iHasBalance implementation for tracking is a temporary implementation to make it works. This is not supposed to be implemented in this way (e.g. state machine would be preferable)
+        # The s.iHasCash / s.iHasBalance implementation for tracking is a temporary implementation
+        # to make it works. This is not supposed to be implemented in this way (e.g. state machine
+        # would be preferable)
 
         # Initialize virtual tracking variables of cash and balance for "turtle" purposes
         s.iHasCash = True
         s.iHasBalance = False
 
         super().__init__(**kws)
+
 
     def handleTick(s, price, timestamp, volume, action):
 
@@ -184,10 +187,10 @@ class MACDTurtleStrat(Strategy):
             pass
 
 
-    # @Regression: Timestamp/Price/unneccesary signals shouldn't be here
-    # Execution of signals
     def execute(s, timestamp):
-        # The s.iHasCash / s.iHasBalance implementation for tracking is a temporary implementation to make it works. This is not supposed to be implemented in this way (e.g. state machine would be much elegant)
+        # The s.iHasCash / s.iHasBalance implementation for tracking is a temporary implementation
+        # to make it works. This is not supposed to be implemented in this way (e.g. state machine
+        # would be much elegant)
         if s.iHasCash and not s.iHasBalance and s.bollinger_signal and s.macd_signal:
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = timestamp # @Hardcode @Fix logic, do not use timestamp here
@@ -289,57 +292,55 @@ class MACDTurtleStrat(Strategy):
             s.iHasCash = True
 
 
-from cryptle.backtest import backtest_tick, Backtest, PaperExchange
-from cryptle.plotting import *
-import matplotlib.pyplot as plt
-
-
-formatter = defaultFormatter()
-
-fh = logging.FileHandler('rsi_new.log', mode = 'w')
-fh.setLevel(logging.INFO)
-fh.setFormatter(formatter)
-
-sh = logging.StreamHandler()
-sh.setLevel(logging.REPORT)
-sh.setFormatter(formatter)
-
-logger.addHandler(sh)
-logger.addHandler(fh)
-
-
-vwma1 = []
-vwma2 = []
-wma5 = []
-wma8 = []
-equity = []
-bband = []
-upperband = []
-lowerband = []
-
-def record_indicators(strat):
-    global vwma1
-    global vwma2
-    global wma5
-    global wma8
-    global equity
-    global bband
-    global sharpe_ratio
-
-    vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
-    vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
-    equity.append((strat.last_timestamp, strat.equity))
-
-    if len(strat.bar) > 10:
-        wma5.append((strat.last_timestamp, strat.WMA_5.wma))
-        wma8.append((strat.last_timestamp, strat.WMA_8.wma))
-    if len(strat.bar) > strat.bollinger.lookback:
-        bband.append((strat.last_timestamp, strat.bollinger.band))
-        upperband.append((strat.last_timestamp, strat.bollinger.upperband))
-        lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
-
-
 if __name__ == '__main__':
+    from cryptle.backtest import backtest_tick, Backtest, PaperExchange
+    from cryptle.plotting import *
+    import matplotlib.pyplot as plt
+
+    formatter = defaultFormatter()
+    fh = logging.FileHandler('macd_turtle.log', mode = 'w')
+    fh.setLevel(logging.)
+    fh.setFormatter(formatter)
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.REPORT)
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
+    logger.addHandler(fh)
+    base_logger = logging.getLogger('cryptle.strategy')
+    base_logger.setLevel(logging.METRIC)
+    base_logger.addHandler(fh)
+
+    vwma1 = []
+    vwma2 = []
+    wma5 = []
+    wma8 = []
+    equity = []
+    bband = []
+    upperband = []
+    lowerband = []
+
+    def record_indicators(strat):
+        global vwma1
+        global vwma2
+        global wma5
+        global wma8
+        global equity
+        global bband
+        global sharpe_ratio
+
+        vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
+        vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
+        equity.append((strat.last_timestamp, strat.equity))
+
+        if len(strat.bar) > 10:
+            wma5.append((strat.last_timestamp, strat.WMA_5.wma))
+            wma8.append((strat.last_timestamp, strat.WMA_8.wma))
+        if len(strat.bar) > strat.bollinger.lookback:
+            bband.append((strat.last_timestamp, strat.bollinger.band))
+            upperband.append((strat.last_timestamp, strat.bollinger.upperband))
+            lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
+
+
     dataset = 'bch_correct.log'
 
     pair = 'bchusd'
@@ -362,11 +363,11 @@ if __name__ == '__main__':
     #test.readJSON(dataset)
     #test.run(strat, record_indicators)
 
-    logger.report('RSI Equity:    %.2f' % port.equity)
-    logger.report('RSI Cash:    %.2f' % port.cash)
-    logger.report('RSI Asset:    %s' % str(port.balance))
-    logger.report('Number of trades:  %d' % len(strat.trades))
-    logger.report('Number of candles: %d' % len(strat.bar))
+    logger.report('MACD Turtle Equity: %.2f' % port.equity)
+    logger.report('MACD Turtle Cash:   %.2f' % port.cash)
+    logger.report('MACD Turtle Asset:  %s' % str(port.balance))
+    logger.report('Number of trades:   %d' % len(strat.trades))
+    logger.report('Number of candles:  %d' % len(strat.bar))
 
     vwma1 = [[x[0] for x in vwma1], [x[1] for x in vwma1]]
     vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]

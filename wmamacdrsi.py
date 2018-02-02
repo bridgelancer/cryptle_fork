@@ -10,7 +10,7 @@ logger = logging.getLogger('Cryptle')
 class WMAMACDRSIStrat(Strategy):
 
     def __init__(s,
-            message='[RSI OBC]',
+            message='[MACD RSI]',
             period=180,
             scope1=5,
             scope2=8,
@@ -345,7 +345,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     formatter = defaultFormatter()
-    fh = logging.FileHandler('rsi_new.log', mode = 'w')
+    fh = logging.FileHandler('macd_rsi.log', mode = 'w')
     fh.setLevel(logging.INFO)
     fh.setFormatter(formatter)
     sh = logging.StreamHandler()
@@ -353,6 +353,9 @@ if __name__ == '__main__':
     sh.setFormatter(formatter)
     logger.addHandler(sh)
     logger.addHandler(fh)
+    base_logger = logging.getLogger('cryptle.strategy')
+    base_logger.setLevel(logging.METRIC)
+    base_logger.addHandler(fh)
 
     vwma1 = []
     vwma2 = []
