@@ -38,6 +38,7 @@ class WMAMACDRSIStrat(Strategy):
         s.macd = MACD_WMA(s.WMA_5, s.WMA_8, macd_scope)
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
+        s.bnb = BNB(s.bollinger , bband_period)
         s.rsi = RSI(bar, rsi_la)
 
         # Initialize key parameters of the strategy
@@ -87,8 +88,8 @@ class WMAMACDRSIStrat(Strategy):
         # Band confirmation
         if s.bollinger.band > s.bband:
             s.bollinger_signal = True
-            s.tradable_window = ts
-        if ts > tradable_window + timeframe: # available at 1h trading window (3600s one hour)
+            s.tradable_window = timestamp
+        if timestamp > s.tradable_window + s.timeframe: # available at 1h trading window (3600s one hour)
             s.bollinger_signal = False
 
         # MACD singal generation
@@ -175,11 +176,14 @@ class WMAMACDRSIStrat(Strategy):
 
         # Band confirmation
 
-        if s.bollinger.band > s.bband: # s.bband = 3.0 by default
-            s.bollinger_signal = True
-            s.tradable_window = timestamp
+        # Band confirmation - solve logic bug
         if timestamp > s.tradable_window + s.timeframe: # available at 1h trading window (3600s one hour)
             s.bollinger_signal = False
+        if (s.bnb.upperband < s.bollinger.band and s.bollinger.band > 4.0):
+            s.bollinger_signal = True
+        if s.bollinger.band > s.bband:
+            s.bollinger_signal = True
+            s.tradable_window = timestamp
 
         # MACD singal generation
         if s.macd.wma3 < s.macd.wma1.wma - s.macd.wma2.wma :
@@ -363,6 +367,7 @@ if __name__ == '__main__':
     wma8 = []
     equity = []
     bband = []
+    bnb = []
     upperband = []
     lowerband = []
 
@@ -373,6 +378,7 @@ if __name__ == '__main__':
         global wma8
         global equity
         global bband
+        global bnb
         global sharpe_ratio
 
         vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
@@ -386,6 +392,8 @@ if __name__ == '__main__':
             bband.append((strat.last_timestamp, strat.bollinger.band))
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
+        if len(strat.bar) > 100:
+            bnb.append((strat.last_timestamp, strat.bnb.upperband))
 
     dataset = 'bch_correct.log'
 
@@ -457,12 +465,13 @@ if __name__ == '__main__':
     lowerband = [[x[0] for x in lowerband], [x[1] for x in lowerband]]
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
     bband = [[x[0] for x in bband], [x[1] for x in bband]]
+    bnb = [[x[0] for x in bnb], [x[1] for x in bnb]]
 
     plot(
         strat.bar,
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         signals=[wma5, wma8],
-        indicators=[[bband], [equity]])
+        indicators=[[bband, bnb], [equity]])
 
     plt.show()

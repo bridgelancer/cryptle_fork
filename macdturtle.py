@@ -179,7 +179,7 @@ class MACDTurtleStrat(Strategy):
                 bar_diff = int(timestamp / s.period) - int(s.prev_buy_time / s.period)
                 bar_min = min(s.bar.bars[-1 - bar_diff][0], s.bar.bars[-1 - bar_diff][1])
                 #stop_loss_price = min(bar_min * .99, bar_min - current_atr)
-                s.stop_loss_price = bar_min * .9
+                s.stop_loss_price = bar_min * .00
                 #stop_loss_price = 0
 
                 s.prev_buy_time == None
@@ -368,7 +368,7 @@ if __name__ == '__main__':
     logger.report('Number of trades:   %d' % len(strat.trades))
     logger.report('Number of candles:  %d' % len(strat.bar))
 
-    # Calculate Sharpe Ratio - this needs to be called before the transoformation of the equity sequence for plotting
+    # Calculate daily Sharpe Ratio - this needs to be called before the transoformation of the equity sequence for plotting
     def calculateSP(equity):
         equity_list = []
         returns_list = []
@@ -393,15 +393,15 @@ if __name__ == '__main__':
         print (returns_list)
 
         mean_return = sum(returns_list) / len(returns_list)
-        print ("Daily mean return: {}%".format((mean_return - 1)*100))
+        print ("Mean daily return: {}%".format((mean_return - 1)*100))
 
         mean_square = list(map(lambda y: ((y - mean_return)) ** 2, returns_list))
         stdev_return = (sum(mean_square) / len(returns_list)) ** 0.5
-        print ("Standard deviation of return: {}%".format(stdev_return * 100))
+        print ("Standard deviation of total return: {}%".format(stdev_return * 100))
 
         sharpe_ratio = ((eq[-1] / 10000) - 1) / stdev_return
 
-        print("Sharpe ratio: {}".format(sharpe_ratio))
+        print("Sharpe ratio (daily): {}".format(sharpe_ratio))
 
     calculateSP(equity)
 

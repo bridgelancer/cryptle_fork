@@ -27,7 +27,7 @@ fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 
 crylog = logging.getLogger('Cryptle')
-crylog.setLevel(logging.INDEX)
+crylog.setLevel(logging.INFO)
 crylog.addHandler(fh)
 
 
@@ -254,8 +254,21 @@ def testBollingerBand():
 
     for tick in quad:
         candle.update(tick[0], tick[1])
+        print (bb.band)
     assert bb.width - 274.36253388 < 1e-5
+    # also need to assert correct band value
 
+def testBNB():
+
+    candle = CandleBar(1)
+    sma_5 = SMA(candle, 5)
+    bb = BollingerBand(sma_5, 5)
+    bnb = BNB(bb, 5)
+
+    for tick in quad:
+        candle.update(tick[0], tick[1])
+        print(bnb.band)
+    # No valid assertion until BollingerBand is fixed
 
 @unittest
 def testRSI():
@@ -281,4 +294,4 @@ def testRSI():
     assert rsi_alt_quad.rsi - 55.48924 < 1e-5
 
 if __name__ == '__main__':
-    testMACD_WMA()
+    testBNB()
