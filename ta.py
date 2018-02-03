@@ -777,6 +777,47 @@ class EMA():
     def __repr__(self):
         return str(self.wma)
 
+# @Deprecated - this is an ad hoc instance for quick deployment, not intended to be used in the future
+class BNB():
+    # This class takes the band value of a BollingerBand object and apply a bollinger band on it (BNB)
+    def __init__(self, bollinger, lookback):
+
+        self.bollinger = bollinger # Take a BollingerBand object
+        self.lookback = lookback
+        self.sma = []
+        self.width = 0
+        self.upperband = 0
+        self.lowerband = 0
+        self.band = 0
+        self.ls = []
+
+        bollinger.sma.candle.metrics.append(self)
+
+
+    def update(self, open_p=True):
+        ls = self.ls
+        lookback = self.lookback
+
+        ls.append(self.bollinger.band)
+
+        self.sma.append(sum([x for x in ls[-self.lookback:]]) / self.lookback)
+        sma_ls = [x for x in self.sma[-self.lookback:]]
+
+        mean = sum(sma_ls) / lookback
+        mean_square = list(map(lambda y: (y - mean) ** 2, sma_ls))
+
+        self.width = ( sum(mean_square) / lookback ) ** 0.5
+
+        self.upperband = self.sma[-1] +  self.width
+        self.lowerband = self.sma[-1] -  self.width
+        try:
+            self.band = ( self.upperband / self.lowerband - 1 ) * 100
+        except ZeroDivisionError:
+            self.band = 0
+
+    def __repr__(self):
+        return str(self.wma)
+
 
 # @Deprecated
 class MACD_WMA():
@@ -851,7 +892,7 @@ class MACD():
         self.diff_ma = self.ema3
 
 
-# @Deprecated
+# @Deprecated - currently bugging
 class BollingerBand():
 
     def __init__(self, sma, lookback):
@@ -871,6 +912,7 @@ class BollingerBand():
         lookback = self.lookback
 
         ls = [x[0] for x in sma.candle[-lookback:]]
+        self.ls = ls
 
         mean = sum(ls) / lookback
         mean_square = list(map(lambda y: (y - mean) ** 2, ls))
