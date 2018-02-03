@@ -254,10 +254,12 @@ def testBollingerBand():
 
     for tick in quad:
         candle.update(tick[0], tick[1])
+        print (bb.ls)
         print (bb.band)
     assert bb.width - 274.36253388 < 1e-5
     # also need to assert correct band value
 
+@unittest
 def testBNB():
 
     candle = CandleBar(1)
@@ -267,8 +269,7 @@ def testBNB():
 
     for tick in quad:
         candle.update(tick[0], tick[1])
-        print(bnb.band)
-    # No valid assertion until BollingerBand is fixed
+    assert bnb.band - 3.0748412597815244 < 1e-5
 
 @unittest
 def testRSI():

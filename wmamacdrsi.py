@@ -387,7 +387,7 @@ if __name__ == '__main__':
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
-    dataset = 'bch_correct.log'
+    dataset = 'xrp.02.log'
 
     pair = 'bchusd'
     port = Portfolio(10000)
@@ -397,9 +397,9 @@ if __name__ == '__main__':
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=120,
+        period=45,
         timeframe=3600,
-        bband=6.0,
+        bband=8.0,
         bband_period=20)
 
     # Can use this too
@@ -448,7 +448,7 @@ if __name__ == '__main__':
 
         print("Sharpe ratio (daily): {}".format(sharpe_ratio))
 
-    calculateSP(equity)
+    #calculateSP(equity)
     vwma1 = [[x[0] for x in vwma1], [x[1] for x in vwma1]]
     vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]
     wma5 = [[x[0] for x in wma5], [x[1] for x in wma5]]
