@@ -796,22 +796,35 @@ class BNB():
 
     def update(self, open_p=True):
         ls = self.ls
-        lookback = self.lookback
 
-        ls.append(self.bollinger.band)
 
-        self.sma.append(sum([x for x in ls[-self.lookback:]]) / self.lookback)
-        sma_ls = [x for x in self.sma[-self.lookback:]]
+        if len(ls) < self.lookback:
+            lookback = len(ls)
+            ls.append(0)
+        else:
+            lookback = self.lookback
+            ls.append(self.bollinger.band)
 
-        mean = sum(sma_ls) / lookback
-        mean_square = list(map(lambda y: (y - mean) ** 2, sma_ls))
+        if len(self.sma) < self.lookback + self.bollinger.lookback:
+            self.sma.append(0)
+        else:
+            self.sma.append(sum([x for x in ls[-lookback:]]) / self.lookback)
 
-        self.width = ( sum(mean_square) / lookback ) ** 0.5
+        sma_ls = [x for x in self.sma[-lookback:]]
+        ls = [x for x in self.ls[-lookback:]]
 
-        self.upperband = self.sma[-1] +  self.width
-        self.lowerband = self.sma[-1] -  self.width
         try:
-            self.band = ( self.upperband / self.lowerband - 1 ) * 100
+            mean = sum(ls) / lookback
+            mean_square = list(map(lambda y: (y - mean) ** 2, ls))
+
+            self.width = ( sum(mean_square) / lookback ) ** 0.5
+
+            self.upperband = self.sma[-1] +  self.width
+            self.lowerband = self.sma[-1] -  self.width
+            if all(item != 0 for item in sma_ls):
+                self.band = ( self.upperband / self.lowerband - 1 ) * 100
+            else:
+                self.band = 0
         except ZeroDivisionError:
             self.band = 0
 
@@ -892,7 +905,7 @@ class MACD():
         self.diff_ma = self.ema3
 
 
-# @Deprecated - currently bugging
+# @Deprecated
 class BollingerBand():
 
     def __init__(self, sma, lookback):
@@ -909,7 +922,10 @@ class BollingerBand():
     # the default width is defined by +/- 2 sd
     def update(self):
         sma = self.sma
-        lookback = self.lookback
+        if len(sma.candle) < self.lookback:
+            lookback = len(sma.candle)
+        else:
+            lookback = self.lookback
 
         ls = [x[0] for x in sma.candle[-lookback:]]
         self.ls = ls
