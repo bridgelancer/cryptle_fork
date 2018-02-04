@@ -219,3 +219,32 @@ class CandleMetric(Metric):
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError('Base class does not register callbacks')
+
+
+class SMA(CandleMetric):
+    '''Calculate and store the latest SMA value for the attached candle'''
+
+    def __init__(self, candle, lookback, use_open=True):
+        super().__init__(candle)
+        self._use_open = use_open
+
+
+    def onCandle(self):
+        if self._use_open:
+            self._value = sma([x.open for x in self._candle[-lookback:], lookback)[0]
+        else:
+            self._value = sma([x.close for x in self._candle[-lookback:], lookback)[0]
+
+
+class EMA(CandleMetric):
+    '''Calculate and store the latest EMA value for the attached candle'''
+
+    def __init__(self, candle, lookback):
+        super().__init__(candle)
+
+
+    def onCandle(self):
+        if self._use_open:
+            self._value = ema([x.open for x in self._candle[-lookback:], lookback)[0]
+        else:
+            self._value = ema([x.close for x in self._candle[-lookback:], lookback)[0]
