@@ -1,14 +1,14 @@
-from cryptle.strategy import *
-from cryptle.loglevel import *
-from cryptle.utility  import *
+from . import strategy
+from . import loglevel
+from . import utility
 
 __all__ = [
+        'backtest',
         'datafeed',
         'exchange',
-        'strategy',
         'loglevel',
-        'utility',
-        'backtest',
-        'plotting']
+        'strategy',
+        'plotting',
+        'utility']
 
-__version__ = '1.0.0'
+__version__ = '1.2.0'
