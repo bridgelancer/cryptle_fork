@@ -2,6 +2,7 @@ from cryptle.backtest import *
 from cryptle.strategy import *
 from cryptle.utility  import *
 from cryptle.loglevel import defaultFormatter
+from metric.generic import *
 from ta import *
 
 from functools import wraps
@@ -254,8 +255,6 @@ def testBollingerBand():
 
     for tick in quad:
         candle.update(tick[0], tick[1])
-        print (bb.ls)
-        print (bb.band)
     assert bb.width - 274.36253388 < 1e-5
     # also need to assert correct band value
 
@@ -269,6 +268,7 @@ def testBNB():
 
     for tick in quad:
         candle.update(tick[0], tick[1])
+        print (bnb.band)
     assert bnb.band - 3.0748412597815244 < 1e-5
 
 @unittest
@@ -294,5 +294,70 @@ def testRSI():
         candle_alt_quad.update(tick[0], tick[1])
     assert rsi_alt_quad.rsi - 55.48924 < 1e-5
 
+@unittest
+def testBollinger_width():
+
+    price, ts = zip(*quad)
+    result = bollinger_width(price, 5)
+    assert result[-1] - 274.36253388 < 1e-5
+
+@unittest
+def testBollinger_up():
+    price, ts = zip(*quad)
+    result = bollinger_up(price, 5)
+    assert result[-1] - 10349.725067770738 < 1e-5
+
+@unittest
+def testBollinger_low():
+    price, ts = zip(*quad)
+    result = bollinger_low(price, 5)
+    assert result[-1] - 9252.274932 < 1e-5
+
+@unittest
+def testBollinger_band():
+    price, ts = zip(*quad)
+    result = bollinger_band(price, 5)
+    assert result[-1] - 11.86141 < 1e-5
+
+@unittest
+def testMacd():
+    price, ts = zip(*sine)
+    result = macd(price, 5, 8, 3)
+    assert result[-1] - 0.5843467703997498 < 1e-5
+
+@unittest
+def testSma():
+    price, ts = zip(*quad)
+    result = sma(price, 5)
+    assert result[-1] - 9411.0 < 1e-5
+
+@unittest
+def testWma():
+    price, ts = zip(*lin)
+    result = wma(price, 5)
+    assert result[-1] - (293 / 3) < 1e-5
+
+@unittest
+def testEma():
+    price, ts = zip(*lin)
+    result = ema(price, 5)
+    # No valid assertion test available for the moment
+
+@unittest
+def testBnb():
+    price, ts = zip(*quad)
+    bband = bollinger_band(price, 5, 2)
+    bnb = bollinger_band(bband, 5, 1)
+    assert bnb[-1] - 3.142433 < 1e-5
+
+
 if __name__ == '__main__':
-    testBNB()
+    testBollinger_width()
+    testBollinger_up()
+    testBollinger_low()
+    testBollinger_band()
+    testMacd()
+    testSma()
+    testWma()
+    testEma()
+    testBnb()
