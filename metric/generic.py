@@ -1,5 +1,11 @@
 # @TODO Consider numpy for potential speed up in vectorised numeric operations
 
+__doc__ = '''
+This module provides pure generic functions that are commonly used calculating
+indices and metrics related to time series. Currently avaiable functions are
+mostly concerned with transforming series with rolling windows.
+'''
+
 def sma(series, lookback):
     output_len = len(series) - lookback + 1
     return [sum(x for x in series[i : i+lookback]) / lookback for i in range(output_len)]
