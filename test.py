@@ -55,6 +55,7 @@ def FATAL(testname):
     logger.report(RED + 'ERROR  ' + RESET + testname)
 
 
+tests = []
 def unittest(func):
     @wraps(func)
     def func_wrapper(*args, **kargs):
@@ -71,7 +72,12 @@ def unittest(func):
     tests.append(func_wrapper)
     return func_wrapper
 
-tests = []
+
+def run_all_tests():
+    global tests
+    for test in tests:
+        test()
+
 
 class TestStrat(Strategy):
     def __init__(s, **kws):
@@ -268,7 +274,6 @@ def testBNB():
 
     for tick in quad:
         candle.update(tick[0], tick[1])
-        print (bnb.band)
     assert bnb.band - 3.0748412597815244 < 1e-5
 
 @unittest
@@ -352,12 +357,4 @@ def testBnb():
 
 
 if __name__ == '__main__':
-    testBollinger_width()
-    testBollinger_up()
-    testBollinger_low()
-    testBollinger_band()
-    testMacd()
-    testSma()
-    testWma()
-    testEma()
-    testBnb()
+    run_all_tests()
