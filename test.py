@@ -333,19 +333,19 @@ def testMacd():
 @unittest
 def testSma():
     price, ts = zip(*quad)
-    result = sma(price, 5)
+    result = simple_moving_average(price, 5)
     assert result[-1] - 9411.0 < 1e-5
 
 @unittest
 def testWma():
     price, ts = zip(*lin)
-    result = wma(price, 5)
+    result = weighted_moving_average(price, 5)
     assert result[-1] - (293 / 3) < 1e-5
 
 @unittest
 def testEma():
     price, ts = zip(*lin)
-    result = ema(price, 5)
+    result = exponential_moving_average(price, 5)
     # No valid assertion test available for the moment
 
 @unittest
