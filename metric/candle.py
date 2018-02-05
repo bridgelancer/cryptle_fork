@@ -23,7 +23,7 @@ class Candle:
         return self._bar[1]
 
     @property
-    def hi(self):
+    def high(self):
         return self._bar[2]
 
     @property
@@ -42,8 +42,8 @@ class Candle:
     def close(self, value):
         self._bar[1] = value
 
-    @hi.setter
-    def hi(self, value):
+    @high.setter
+    def high(self, value):
         self._bar[2] = value
 
     @low.setter
@@ -174,8 +174,8 @@ class CandleBar:
         return self.bars[-1].close
 
     @property
-    def last_hi(self):
-        return self.bars[-1].hi
+    def last_high(self):
+        return self.bars[-1].high
 
     @property
     def last_low(self):
@@ -193,9 +193,9 @@ class CandleBar:
     def last_close(self, value):
         self.bars[-1].close = value
 
-    @last_hi.setter
-    def last_hi(self, value):
-        self.bars[-1].hi = value
+    @last_high.setter
+    def last_high(self, value):
+        self.bars[-1].high = value
 
     @last_low.setter
     def last_low(self, value):
