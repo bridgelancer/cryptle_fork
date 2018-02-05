@@ -231,9 +231,9 @@ class SMA(CandleMetric):
 
     def onCandle(self):
         if self._use_open:
-            self._value = sma([x.open for x in self._candle[-lookback:]], lookback)[0]
+            self._value = simple_moving_average([x.open for x in self._candle[-lookback:]], lookback)[0]
         else:
-            self._value = sma([x.close for x in self._candle[-lookback:]], lookback)[0]
+            self._value = simple_moving_average([x.close for x in self._candle[-lookback:]], lookback)[0]
 
 
 class EMA(CandleMetric):
@@ -245,6 +245,6 @@ class EMA(CandleMetric):
 
     def onCandle(self):
         if self._use_open:
-            self._value = ema([x.open for x in self._candle[-lookback:]], lookback)[0]
+            self._value = weighted_moving_average([x.open for x in self._candle[-lookback:]], lookback)[0]
         else:
-            self._value = ema([x.close for x in self._candle[-lookback:]], lookback)[0]
+            self._value = weighted_moving_average([x.close for x in self._candle[-lookback:]], lookback)[0]
