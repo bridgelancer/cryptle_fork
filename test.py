@@ -356,5 +356,10 @@ def testBnb():
     assert bnb[-1] - 3.142433 < 1e-5
 
 
+@unittest
+def testPELT():
+    changepoints = pelt(quad, cost_normal_var)
+    # @TODO set assertions
+
 if __name__ == '__main__':
     run_all_tests()
