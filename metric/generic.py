@@ -7,20 +7,20 @@ indices and metrics related to time series. Currently avaiable functions are
 mostly concerned with transforming series with rolling windows.
 '''
 
-def sma(series, lookback):
+def simple_moving_average(series, lookback):
     '''Simple Moving Average'''
     output_len = len(series) - lookback + 1
     return [sum(x for x in series[i : i+lookback]) / lookback for i in range(output_len)]
 
 
-def wma(series, lookback):
+def weighted_moving_average(series, lookback):
     '''Weighted Moving Average'''
     output_len = len(series) - lookback + 1
     weight = [(x + 1) / (lookback * (lookback + 1) / 2) for x in range(lookback)]
     return [sum(s * w for s, w in zip(series[i : i+lookback], weight)) for i in range(output_len)]
 
 
-def ema(series, lookback):
+def exponential_moving_average(series, lookback):
     '''Exponentail Moving Average'''
     output_len = len(series) - lookback + 1
     weight =  2 / (lookback + 1)
@@ -30,7 +30,7 @@ def ema(series, lookback):
     return output
 
 
-def bollinger_width(series, lookback, roll_method=sma):
+def bollinger_width(series, lookback, roll_method=simple_moving_average):
     '''Bollinger Band bandwidth experssed in absolute value'''
     output_len = len(series) - lookback + 1
     mean = roll_method(series, lookback)
@@ -41,7 +41,7 @@ def bollinger_width(series, lookback, roll_method=sma):
     return output
 
 
-def bollinger_band(series, lookback, sd=2, roll_method=sma):
+def bollinger_band(series, lookback, sd=2, roll_method=simple_moving_average):
     '''Bollinger Band bandwidth in percentage'''
     output_len = len(series) - lookback + 1
     up = bollinger_up(series, lookback, sd)
@@ -52,7 +52,7 @@ def bollinger_band(series, lookback, sd=2, roll_method=sma):
     return output
 
 
-def bollinger_up(series, lookback, sd= 2, roll_method=sma):
+def bollinger_up(series, lookback, sd= 2, roll_method=simple_moving_average):
     '''Bollinger Band upperband'''
     output_len = len(series) - lookback + 1
     width = bollinger_width(series, lookback)
@@ -63,7 +63,7 @@ def bollinger_up(series, lookback, sd= 2, roll_method=sma):
     return output
 
 
-def bollinger_low(series, lookback, sd=2, roll_method=sma):
+def bollinger_low(series, lookback, sd=2, roll_method=simple_moving_average):
     '''Bollinger Band lowerband'''
     output_len = len(series) - lookback + 1
     width = bollinger_width(series, lookback)
@@ -74,7 +74,7 @@ def bollinger_low(series, lookback, sd=2, roll_method=sma):
     return output
 
 
-def macd(series, fast, slow, signal, roll_method=wma):
+def macd(series, fast, slow, signal, roll_method=weighted_moving_average):
     '''Moving Average Convergence Divergence'''
     fast_ma = roll_method(series, fast)
     slow_ma = roll_method(series, slow)
