@@ -1,3 +1,4 @@
+from metric.base import *
 from metric.candle import *
 from metric.generic import *
 
@@ -115,6 +116,24 @@ def test_ema():
         assert val == 3
 
     ema = exponential_moving_average(lin, 3)
+
+
+@unittest
+def test_metric_base():
+    a = Metric()
+    b = Metric()
+    a._value = 1
+    b._value = 2
+    assert a + b == 3
+    assert a - b == -1
+    assert b + a == 3
+    assert b - a == 1
+    assert a / b == 0.5
+    assert b // a == 2
+    c = Metric()
+    c._value = 5
+    assert b / c == 0.4
+    assert c % b == 1
 
 
 if __name__ == '__main__':
