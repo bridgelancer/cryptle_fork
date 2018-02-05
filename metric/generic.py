@@ -1,4 +1,5 @@
-# @TODO Consider numpy for potential speed up in vectorised numeric operations
+import numpy as np
+import math
 
 __doc__ = '''
 This module provides pure generic functions that are commonly used calculating
@@ -83,3 +84,59 @@ def macd(series, fast, slow, signal, roll_method=wma):
     output = roll_method(diff, signal)
 
     return output
+
+
+def pelt(series, cost_template, penality=None):
+    '''Pruned Exact Linear Time method
+
+    Args:
+        cost: Cost function with
+
+    Returns:
+        List of changepoints in the provided data series
+
+    Naming Convention:
+        tau: A changepoint (candidate)
+        F[t]: Optimal value of cost at time t
+        R[t]: Pruned changepoints at time t
+        cps: Unpruned changepoints at time t
+    '''
+
+    n = len(series)
+    penality = penality or np.log(n)
+    cost = cost_template(series)
+
+    F = [-np.log(penality)]
+    R = [0]
+    cps = [[]]
+
+    for t in range(1, n):
+        # Step 1, 2
+        # Try introducing changpoint at tau: 0 < tau < t, determine the new
+        # minimum cost and the tau changepoint that gave this new cost
+
+        F_buffer = {tau : F[tau] + cost(tau, t) + penality for tau in R}
+        t_min, F_min =  max(F_buffer.items(), key=lambda k: k[1])
+        F.append(F_min)
+
+        # Step 3, 4
+        # Record the optimal set of changepoints at point of view of time t
+        # Prune the remaining possible changepoints for future T > t
+
+        cps.append(cps[-1] + [t_min])
+        R = [tau for tau, f in enumerate(F) if f < F_min]
+
+    return cps[-1]
+
+
+def cost_normal_var(series, mean=0):
+    data = np.array(series)
+    cumm = np.cumsum((data - mean) ** 2)
+    np.insert(cumm, 0, 0)
+
+    def cost(start, end):
+        dist = float(end - start)
+        diff = cumm[end] - cumm[start]
+        return dist * np.log(diff/dist)
+
+    return cost
