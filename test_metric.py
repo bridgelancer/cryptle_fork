@@ -131,12 +131,23 @@ some_data = [
     5.99949843
 ]
 
+def gaussian(mu, sig, start=0, end=100, interval=1):
+    return [math.exp((x - mu) ** 2 / (2 * sig ** 2)) for x in range(start, end, interval)]
+
 
 @unittest
 def test_pelt():
-    cps = pelt(some_data, cost_normal_var)
-    cps = pelt(lin, cost_normal_var)
-    cps = pelt(quad, cost_normal_var)
+    gauss = gaussian(0, 1, start=-10, end=10, interval=1)
+    random_shit = [1, -10, 100, -1000]
+    constant = [1 for i in range(5)]
+    linear = [i+1 for i in range(5)]
+    #cps = pelt(gauss, cost_normal_var)
+    #cps = pelt(random_shit, cost_normal_var)
+    #cps = pelt(some_data, cost_normal_var)
+    #cps = pelt(constant, cost_normal_var)
+    #cps = pelt(linear, cost_normal_var)
+    #cps = pelt(lin, cost_normal_var)
+    #cps = pelt(quad, cost_normal_var)
 
 
 @unittest
