@@ -118,6 +118,27 @@ def test_ema():
     ema = exponential_moving_average(lin, 3)
 
 
+some_data = [
+    -1.82348457,
+    -0.13819782,
+    1.25618544,
+    -0.54487136,
+    -2.24769311,
+    9.82204284,
+    -1.0181088,
+    3.93764179,
+    -8.73177678,
+    5.99949843
+]
+
+
+@unittest
+def test_pelt():
+    cps = pelt(some_data, cost_normal_var)
+    cps = pelt(lin, cost_normal_var)
+    cps = pelt(quad, cost_normal_var)
+
+
 @unittest
 def test_metric_base():
     a = Metric()

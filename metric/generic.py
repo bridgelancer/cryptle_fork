@@ -102,11 +102,14 @@ def pelt(series, cost_template, penality=None):
         cps: Unpruned changepoints at time t
     '''
 
-    n = len(series)
-    penality = penality or np.log(n)
     cost = cost_template(series)
 
-    F = [-np.log(penality)]
+    # Prepend series with a dummy entry for easier indexing
+    series = [None] + series
+    n = len(series)
+    penality = penality or np.log(n)
+
+    F = [-penality]
     R = [0]
     cps = [[]]
 
@@ -115,16 +118,16 @@ def pelt(series, cost_template, penality=None):
         # Try introducing changpoint at tau: 0 < tau < t, determine the new
         # minimum cost and the tau changepoint that gave this new cost
 
-        F_buffer = {tau : F[tau] + cost(tau, t) + penality for tau in R}
-        t_min, F_min =  max(F_buffer.items(), key=lambda k: k[1])
+        F_buffer = {tau : F[tau] + cost(tau+1, t) + penality for tau in R}
+        t_min, F_min =  min(F_buffer.items(), key=lambda k: k[1])
         F.append(F_min)
 
         # Step 3, 4
         # Record the optimal set of changepoints at point of view of time t
         # Prune the remaining possible changepoints for future T > t
 
-        cps.append(cps[-1] + [t_min])
-        R = [tau for tau, f in enumerate(F) if f < F_min]
+        cps.append(cps[t_min] + [t_min])
+        R = [tau for tau in R if (F[tau] + cost(tau+1, t)) < F_min] + [t]
 
     return cps[-1]
 
@@ -132,9 +135,11 @@ def pelt(series, cost_template, penality=None):
 def cost_normal_var(series, mean=0):
     data = np.array(series)
     cumm = np.cumsum((data - mean) ** 2)
-    np.insert(cumm, 0, 0)
+    cumm = np.insert(cumm, 0, 0)
 
     def cost(start, end):
+        if start == end:
+            return 0
         dist = float(end - start)
         diff = cumm[end] - cumm[start]
         return dist * np.log(diff/dist)
