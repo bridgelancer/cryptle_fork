@@ -31,6 +31,10 @@ class Candle:
         return self._bar[3]
 
     @property
+    def timestamp(self):
+        return self._bar[4]
+
+    @property
     def volume(self):
         return self._bar[5]
 
@@ -49,6 +53,10 @@ class Candle:
     @low.setter
     def low(self, value):
         self._bar[3] = value
+
+    @timestamp.setter
+    def timestamp(self, value):
+        self._bar[4] = value
 
     @volume.setter
     def volume(self, value):
@@ -76,31 +84,31 @@ class CandleBar:
         self._bars = []
         self._metrics = []
         self._period = period
-        self._last_timestamp = None
         self._maxsize = maxcandles
+        self.last_timestamp = None
 
 
     def pushTick(self, price, timestamp, volume=0, action=0):
         '''Provides public interface for accepting ticks'''
         # initialise the candle collection
-        if self._last_timestamp is None:
-            self._last_timestamp = timestamp
+        if self.last_timestamp is None:
+            self.last_timestamp = timestamp
             self._pushInitCandle(price, timestamp, volume)
 
         # append previous n candles if no tick arrived in between
-        elif self.barIndex(timestamp) != self.barIndex(self._last_timestamp):
-            tmp_ts = self._last_timestamp + self.period
+        elif self.barIndex(timestamp) != self.barIndex(self.last_timestamp):
+            tmp_ts = self.last_timestamp + self._period
             while self.barIndex(tmp_ts) < self.barIndex(timestamp):
                 self._pushEmptyCandle(self.last_close, tmp_ts)
-                tmp_ts += self.period
+                tmp_ts += self._period
 
             self._pushInitCandle(price, timestamp, volume)
-            self._last_timestamp = timestamp
+            self.last_timestamp = timestamp
 
         # if tick arrived before next time period, update current candle
         elif self.barIndex(timestamp) == self.barIndex(self.last_timestamp):
             self.last_low = min(self.last_low , price)
-            self.last_hi = max(self.last_hi, price)
+            self.last_high = max(self.last_high, price)
             self.last_close = price
             self.last_volume += volume
 
@@ -118,7 +126,14 @@ class CandleBar:
 
 
     def barIndex(self, timestamp):
-        return int(timestamp / self.period)
+        return int(timestamp / self._period)
+
+
+    def prune(self, size):
+        try:
+            self._bars = self._bars[-size:]
+        except IndexError:
+            raise ("Empty CandleBar cannot be pruned")
 
 
     def _pushFullCandle(self, o, c, h, l, t, v):
@@ -134,13 +149,6 @@ class CandleBar:
     def _pushEmptyCandle(self, price, label):
         self._bars.append(Candle(price, price, price, price, self.barIndex(timestamp), 0))
         self._broadcastCandle()
-
-
-    def _prune(self, size):
-        try:
-            self.bars = self.bars[-size:]
-        except IndexError:
-            raise ("Empty CandleBar cannot be pruned")
 
 
     def _broadcastCandle(self):
@@ -163,47 +171,47 @@ class CandleBar:
         return self._bars[item]
 
     def __len__(self):
-        return len(self.bars)
+        return len(self._bars)
 
     @property
     def last_open(self):
-        return self.bars[-1].open
+        return self._bars[-1].open
 
     @property
     def last_close(self):
-        return self.bars[-1].close
+        return self._bars[-1].close
 
     @property
     def last_high(self):
-        return self.bars[-1].high
+        return self._bars[-1].high
 
     @property
     def last_low(self):
-        return self.bars[-1].low
+        return self._bars[-1].low
 
     @property
     def last_volume(self):
-        return self.bars[-1].volume
+        return self._bars[-1].volume
 
     @last_open.setter
     def last_open(self, value):
-        self.bars[-1].open = value
+        self._bars[-1].open = value
 
     @last_close.setter
     def last_close(self, value):
-        self.bars[-1].close = value
+        self._bars[-1].close = value
 
     @last_high.setter
     def last_high(self, value):
-        self.bars[-1].high = value
+        self._bars[-1].high = value
 
     @last_low.setter
     def last_low(self, value):
-        self.bars[-1].low = value
+        self._bars[-1].low = value
 
     @last_volume.setter
     def last_volume(self, value):
-        self.bars[-1].volume = value
+        self._bars[-1].volume = value
 
 
 class CandleMetric(Metric):

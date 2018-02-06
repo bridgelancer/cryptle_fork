@@ -157,5 +157,23 @@ def test_metric_base():
     assert c % b == 1
 
 
+@unittest
+def test_candle():
+    c = Candle(4, 7, 10, 3, 12316, 1)
+    assert c.open == 4
+    assert c.close == 7
+    assert c.high == 10
+    assert c.low == 3
+    assert c.timestamp == 12316
+    assert c.volume == 1
+
+
+@unittest
+def test_candelbar():
+    bar = CandleBar(10)
+    for i, tick in enumerate(lin):
+        bar.pushTick(tick, i)
+
+
 if __name__ == '__main__':
     run_all_tests()
