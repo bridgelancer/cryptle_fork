@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger('Cryptle')
 
 
-class WMAMACDRSIStrat(Strategy):
+class MACDVolStrat(Strategy):
 
     def __init__(s,
             message='[MACD RSI]',
@@ -36,6 +36,7 @@ class WMAMACDRSIStrat(Strategy):
         s.WMA_5 = WMA(bar, scope1)
         s.WMA_8 = WMA(bar, scope2)
         s.macd = MACD_WMA(s.WMA_5, s.WMA_8, macd_scope)
+        s.EMA_vol = EMA_NetVol(bar, 3)
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
         s.rsi = RSI(bar, rsi_la)
@@ -220,6 +221,12 @@ class WMAMACDRSIStrat(Strategy):
         s.rsi_bsignal = rsi_bsignal
         s.rsi_ssignal = rsi_ssignal
 
+        # Volume sell signal generation
+        if 50 < s.rsi.rsi and s.EMA_vol.ema < -0.5:
+            s.vol_sell_signal = True
+        else:
+            s.vol_sell_signal = False
+
         # Set prev_crossover_time = None if not belowatr
         if s.hasCash and not s.hasBalance:
             # if s.was_v_sell:
@@ -301,6 +308,18 @@ class WMAMACDRSIStrat(Strategy):
             s.stop_loss_price = 0
 
             # now setting no stop loss for the moment
+        elif s.hasBalance and not s.macd_signal and s.vol_sell_signal:
+            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            logger.signal('Sell: Triggered volume sell')
+
+            s.prev_crossover_time = None
+            s.dollar_volume_flag = False
+            s.prev_buy_price = 0
+            s.prev_buy_time = None
+
+            s.stop_loss_time = timestamp
+            s.stop_loss_flag = True
+            s.stop_loss_price = 0
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
@@ -364,6 +383,8 @@ if __name__ == '__main__':
     bband = []
     upperband = []
     lowerband = []
+    ema_vol = []
+    vol = []
 
     def record_indicators(strat):
         global vwma1
@@ -381,6 +402,8 @@ if __name__ == '__main__':
         if len(strat.bar) > 10:
             wma5.append((strat.last_timestamp, strat.WMA_5.wma))
             wma8.append((strat.last_timestamp, strat.WMA_8.wma))
+            ema_vol.append((strat.last_timestamp, strat.EMA_vol.ema))
+            vol.append((strat.last_timestamp, strat.bar[-1].volume))
         if len(strat.bar) > strat.bollinger.lookback:
             bband.append((strat.last_timestamp, strat.bollinger.band))
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
@@ -392,7 +415,7 @@ if __name__ == '__main__':
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
-    strat = WMAMACDRSIStrat(
+    strat = MACDVolStrat(
         pair=pair,
         portfolio=port,
         exchange=exchange,
@@ -456,12 +479,14 @@ if __name__ == '__main__':
     lowerband = [[x[0] for x in lowerband], [x[1] for x in lowerband]]
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
     bband = [[x[0] for x in bband], [x[1] for x in bband]]
+    ema_vol = [[x[0] for x in ema_vol], [x[1] for x in ema_vol]]
+    vol = [[x[0] for x in vol], [x[1] for x in vol]]
 
     plot(
         strat.bar,
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         signals=[wma5, wma8],
-        indicators=[[bband], [equity]])
+        indicators=[[ema_vol, vol], [equity]])
 
     plt.show()

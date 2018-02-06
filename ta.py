@@ -2,8 +2,8 @@
 class Candle:
     '''Mutable candle stick with namedtuple-like API.'''
 
-    def __init__(self, o, c, h, l, t, v):
-        self._bar = [o, c, h, l, t, v]
+    def __init__(self, o, c, h, l, t, v, nv):
+        self._bar = [o, c, h, l, t, v, nv]
 
     def __getitem__(self, item):
         return self._bar[item]
@@ -31,6 +31,10 @@ class Candle:
     def volume(s):
         return s._bar[5]
 
+    @property
+    def nv(s):
+        return s._bar[6]
+
     @open.setter
     def open(s, value):
         s._bar[0] = value
@@ -50,6 +54,10 @@ class Candle:
     @volume.setter
     def volume(s, value):
         s._bar[5] = value
+
+    @nv.setter
+    def nv(s, value):
+        s._bar[6] = value
 
 
 class CandleBuffer:
@@ -473,13 +481,14 @@ class CandleBar:
     def __len__(self):
         return len(self.bars)
 
-    def update(self, price, timestamp, volume=0, action=0):
+    def update(self, price, timestamp, volume, action=0):
 
         if self.last_timestamp == None:
             self.volume = volume
             self.last_timestamp = timestamp
+            self.net_volume = volume
 
-            self.bars.append(Candle(price, price, price, price, int(timestamp/self.period), volume))
+            self.bars.append(Candle(price, price, price, price, int(timestamp/self.period), volume, volume))
 
             for metric in self.metrics:
                 metric.update()
@@ -491,7 +500,7 @@ class CandleBar:
             # append the in between bars if the next tick arrives 1+ bar after the previous one, if there is any
             while int(timestamp_tmp / self.period) < int(timestamp / self.period):
                 self.bars.append(Candle(self.last_close, self.last_close, self.last_close,
-                    self.last_close, int(timestamp_tmp/self.period), 0))
+                    self.last_close, int(timestamp_tmp/self.period), 0, 0))
 
                 for metric in self.metrics:
                     metric.update()
@@ -499,7 +508,7 @@ class CandleBar:
                 timestamp_tmp = timestamp_tmp + self.period
 
             # append the new bar that contains the newly arrived tick
-            self.bars.append(Candle(price, price, price, price, int(timestamp/self.period), volume))
+            self.bars.append(Candle(price, price, price, price, int(timestamp/self.period), volume, volume * action))
 
             for metric in self.metrics:
                 metric.update()
@@ -512,6 +521,7 @@ class CandleBar:
             self.last_hi = max(self.last_hi, price)
             self.last_close = price
             self.last_volume += volume
+            self.net_volume += volume * action
 
         self.last = price
 
@@ -541,6 +551,10 @@ class CandleBar:
     def last_volume(s):
         return s.bars[-1].volume
 
+    @property
+    def last_nv(s):
+        return s.bars[-1].nv
+
     @last_open.setter
     def last_open(s, value):
         s.bars[-1].open = value
@@ -560,6 +574,10 @@ class CandleBar:
     @last_volume.setter
     def last_volume(s, value):
         s.bars[-1].volume = value
+
+    @last_nv.setter
+    def last_nv(s, value):
+        s.bars[-1].nv = value
 
 
 # @Deprecated
@@ -766,6 +784,34 @@ class EMA():
             val = self.candle[-1][0]
         else:
             val = self.candle[-1][1] # the [-1] is the current bar close (i.e. changing, not intended)
+
+        if self.ema == None:
+            self.ema = val
+            return
+
+        self.ema = self.weight*val + (1-self.weight)*self.ema
+
+
+    def __repr__(self):
+        return str(self.wma)
+
+class EMA_NetVol():
+
+    def __init__(self, candle, lookback):
+
+        self.candle = candle
+        self.lookback = lookback
+        self.ema = None
+        self.weight =  2 / (lookback + 1)
+
+        candle.metrics.append(self)
+
+
+    def update(self):
+        if len(self.candle) < 2:
+            return
+
+        val = self.candle[-2][6]
 
         if self.ema == None:
             self.ema = val
