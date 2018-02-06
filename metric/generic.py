@@ -87,7 +87,7 @@ def macd(series, fast, slow, signal, roll_method=weighted_moving_average):
     return zip(diff, output)
 
 
-def pelt(series, cost_template, penality=None):
+def pelt(series, cost_template, penality=None, K=0):
     '''Pruned Exact Linear Time method
 
     Args:
@@ -103,22 +103,20 @@ def pelt(series, cost_template, penality=None):
         cps: Unpruned changepoints at time t
     '''
 
-    cost = cost_template(series)
 
     # Prepend series with a dummy entry for easier indexing
-    series = [None] + series
-    n = len(series)
-    penality = penality or np.log(n)
+    penality = penality or np.log(len(series))
+    series = [0] + series
+    cost = cost_template(series)
 
     F = [-penality]
     R = [0]
     cps = [[]]
 
-    for t in range(1, n):
+    for t in range(1, len(series)):
         # Step 1, 2
         # Try introducing changpoint at tau: 0 < tau < t, determine the new
         # minimum cost and the tau changepoint that gave this new cost
-
         F_buffer = {tau : F[tau] + cost(tau+1, t) + penality for tau in R}
         t_min, F_min =  min(F_buffer.items(), key=lambda k: k[1])
         F.append(F_min)
@@ -126,9 +124,8 @@ def pelt(series, cost_template, penality=None):
         # Step 3, 4
         # Record the optimal set of changepoints at point of view of time t
         # Prune the remaining possible changepoints for future T > t
-
         cps.append(cps[t_min] + [t_min])
-        R = [tau for tau in R if (F[tau] + cost(tau+1, t)) < F_min] + [t]
+        R = [tau for tau in R if (F[tau] + cost(tau+1, t) + K) <= F_min] + [t]
 
     return cps[-1]
 
@@ -136,13 +133,10 @@ def pelt(series, cost_template, penality=None):
 def cost_normal_var(series, mean=0):
     data = np.array(series)
     cumm = np.cumsum((data - mean) ** 2)
-    cumm = np.insert(cumm, 0, 0)
 
     def cost(start, end):
-        if start == end:
-            return 0
-        dist = float(end - start)
-        diff = cumm[end] - cumm[start]
-        return dist * np.log(diff/dist)
+        dist = float(end - start + 1)
+        diff = cumm[end] - cumm[start-1]
+        return dist * (np.log(2 * np.pi) + np.log(diff/dist) + 1)
 
     return cost
