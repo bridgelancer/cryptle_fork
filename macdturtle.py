@@ -179,7 +179,7 @@ class MACDTurtleStrat(Strategy):
                 bar_diff = int(timestamp / s.period) - int(s.prev_buy_time / s.period)
                 bar_min = min(s.bar.bars[-1 - bar_diff][0], s.bar.bars[-1 - bar_diff][1])
                 #stop_loss_price = min(bar_min * .99, bar_min - current_atr)
-                s.stop_loss_price = bar_min * .00
+                s.stop_loss_price = bar_min * .99
                 #stop_loss_price = 0
 
                 s.prev_buy_time == None
@@ -340,9 +340,9 @@ if __name__ == '__main__':
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
 
-    dataset = 'bch_correct.log'
+    dataset = 'eth.02.log'
 
-    pair = 'bchusd'
+    pair = 'ethusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
@@ -350,7 +350,7 @@ if __name__ == '__main__':
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=3600,
+        period=450,
         timeframe=3600,
         bband=0.0,
         bband_period=20)
@@ -403,7 +403,7 @@ if __name__ == '__main__':
 
         print("Sharpe ratio (daily): {}".format(sharpe_ratio))
 
-    calculateSP(equity)
+    #calculateSP(equity)
 
     vwma1 = [[x[0] for x in vwma1], [x[1] for x in vwma1]]
     vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]
@@ -422,7 +422,5 @@ if __name__ == '__main__':
         trades=strat.trades,
         signals=[wma5, wma8],
         indicators=[[bband], [equity]])
-
-
 
     plt.show()

@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger('Cryptle')
 
 
-class WMAMACDRSIStrat(Strategy):
+class MACDBNBStrat(Strategy):
 
     def __init__(s,
             message='[MACD RSI]',
@@ -38,7 +38,7 @@ class WMAMACDRSIStrat(Strategy):
         s.macd = MACD_WMA(s.WMA_5, s.WMA_8, macd_scope)
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
-        s.bnb = BNB(s.bollinger , bband_period)
+        s.bnb = BNB(s.bollinger , 10)
         s.rsi = RSI(bar, rsi_la)
 
         # Initialize key parameters of the strategy
@@ -179,7 +179,7 @@ class WMAMACDRSIStrat(Strategy):
         # Band confirmation - solve logic bug
         if timestamp > s.tradable_window + s.timeframe: # available at 1h trading window (3600s one hour)
             s.bollinger_signal = False
-        if (s.bnb.upperband < s.bollinger.band and s.bollinger.band > 4.0):
+        if (s.bnb.sma[-1] > s.bollinger.band and s.bollinger.band > 0.0):
             s.bollinger_signal = True
         if s.bollinger.band > s.bband:
             s.bollinger_signal = True
@@ -270,7 +270,7 @@ class WMAMACDRSIStrat(Strategy):
 
     # If the strategy works with candleBar, there should be no prev_crossover_time
     def execute(s, timestamp):
-        if s.hasCash and not s.hasBalance and s.bollinger_signal and s.rsi_bsignal and s.macd_signal:
+        if s.hasCash and not s.hasBalance and s.rsi_bsignal and s.bollinger_signal and s.macd_signal:
             if s.prev_crossover_time is None:
                 s.prev_crossover_time = timestamp # @Hardcode @Fix logic, do not use timestamp here
 
@@ -368,8 +368,12 @@ if __name__ == '__main__':
     equity = []
     bband = []
     bnb = []
+    bnb_ma = []
     upperband = []
     lowerband = []
+    rsi = []
+    macd_diff = []
+    macd_signal = []
 
     def record_indicators(strat):
         global vwma1
@@ -379,7 +383,9 @@ if __name__ == '__main__':
         global equity
         global bband
         global bnb
+        global bnb_ma
         global sharpe_ratio
+        global rsi
 
         vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
         vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
@@ -392,16 +398,23 @@ if __name__ == '__main__':
             bband.append((strat.last_timestamp, strat.bollinger.band))
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
+            rsi.append((strat.last_timestamp, strat.rsi.rsi))
+            macd_diff.append((strat.last_timestamp, strat.macd.wma1.wma - strat.macd.wma2.wma))
+            macd_signal.append((strat.last_timestamp, strat.macd.wma3))
+
         if len(strat.bar) > 100:
             bnb.append((strat.last_timestamp, strat.bnb.upperband))
+            bnb_ma.append((strat.last_timestamp, strat.bnb.sma[-1]))
 
-    dataset = 'xrp.02.log'
 
-    pair = 'bchusd'
+
+    dataset = 'eth.02.log'
+
+    pair = 'ethusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
-    strat = WMAMACDRSIStrat(
+    strat = MACDBNBStrat(
         pair=pair,
         portfolio=port,
         exchange=exchange,
@@ -456,7 +469,7 @@ if __name__ == '__main__':
 
         print("Sharpe ratio (daily): {}".format(sharpe_ratio))
 
-    #calculateSP(equity)
+    # calculateSP(equity)
     vwma1 = [[x[0] for x in vwma1], [x[1] for x in vwma1]]
     vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]
     wma5 = [[x[0] for x in wma5], [x[1] for x in wma5]]
@@ -466,12 +479,16 @@ if __name__ == '__main__':
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
     bband = [[x[0] for x in bband], [x[1] for x in bband]]
     bnb = [[x[0] for x in bnb], [x[1] for x in bnb]]
+    bnb_ma = [[x[0] for x in bnb_ma], [x[1] for x in bnb_ma]]
+    rsi = [[x[0] for x in rsi], [x[1] for x in rsi]]
+    macd_diff = [[x[0] for x in macd_diff], [x[1] for x in macd_diff]]
+    macd_signal = [[x[0] for x in macd_signal], [x[1] for x in macd_signal]]
 
     plot(
         strat.bar,
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         signals=[wma5, wma8],
-        indicators=[[bband, bnb], [equity]])
+        indicators=[[bband, bnb, bnb_ma], [equity], [macd_diff, macd_signal]])
 
     plt.show()

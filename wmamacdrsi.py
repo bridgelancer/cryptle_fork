@@ -174,7 +174,6 @@ class WMAMACDRSIStrat(Strategy):
         #     s.dollar_volume_flag = False
 
         # Band confirmation
-
         if s.bollinger.band > s.bband: # s.bband = 3.0 by default
             s.bollinger_signal = True
             s.tradable_window = timestamp
@@ -387,9 +386,9 @@ if __name__ == '__main__':
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
-    dataset = 'xrp.02.log'
+    dataset = 'eth.02.log'
 
-    pair = 'bchusd'
+    pair = 'ethusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
