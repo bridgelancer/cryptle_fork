@@ -819,8 +819,8 @@ class BNB():
 
             self.width = ( sum(mean_square) / lookback ) ** 0.5
 
-            self.upperband = self.sma[-1] +  self.width
-            self.lowerband = self.sma[-1] -  self.width
+            self.upperband = self.sma[-1] + 0.5* self.width
+            self.lowerband = self.sma[-1] - 0.5* self.width
             if all(item != 0 for item in sma_ls):
                 self.band = ( self.upperband / self.lowerband - 1 ) * 100
             else:
