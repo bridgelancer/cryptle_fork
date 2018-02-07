@@ -514,8 +514,6 @@ class CandleBar:
                 metric.update()
 
             self.last_timestamp = timestamp
-            print("Start of bar volume: "+ str(self.last_volume))
-            print("Start of bar Net volume: "+ str(self.last_nv))
 
 
         elif int(timestamp / self.period) == int(self.last_timestamp / self.period):
@@ -524,8 +522,6 @@ class CandleBar:
             self.last_close = price
             self.last_volume += volume
             self.last_nv += volume * action
-            print("Interbar volume: "+ str(self.last_volume))
-            print("Intrabar Net volume: "+ str(self.last_nv))
 
         self.last = price
 
@@ -816,7 +812,6 @@ class EMA_NetVol():
             return
 
         val = self.candle[-2][6]
-        print("Last net vol:" + str(val))
         if self.ema == None:
             self.ema = val
             return

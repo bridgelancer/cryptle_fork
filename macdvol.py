@@ -222,7 +222,7 @@ class MACDVolStrat(Strategy):
         s.rsi_ssignal = rsi_ssignal
 
         # Volume sell signal generation
-        if 50 < s.rsi.rsi and s.EMA_vol.ema < -100:
+        if 50 < s.rsi.rsi and s.EMA_vol.ema < -20:
             s.vol_sell_signal = True
         else:
             s.vol_sell_signal = False
@@ -385,6 +385,7 @@ if __name__ == '__main__':
     lowerband = []
     ema_vol = []
     vol = []
+    net_vol = []
 
     def record_indicators(strat):
         global vwma1
@@ -404,14 +405,15 @@ if __name__ == '__main__':
             wma8.append((strat.last_timestamp, strat.WMA_8.wma))
             ema_vol.append((strat.last_timestamp, strat.EMA_vol.ema))
             vol.append((strat.last_timestamp, strat.bar[-1].volume))
+            net_vol.append((strat.last_timestamp, strat.bar[-1].nv))
         if len(strat.bar) > strat.bollinger.lookback:
             bband.append((strat.last_timestamp, strat.bollinger.band))
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
-    dataset = 'xrp.02.log'
+    dataset = 'bch_correct.log'
 
-    pair = 'xrpusd'
+    pair = 'bchusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
@@ -419,9 +421,9 @@ if __name__ == '__main__':
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=45,
+        period=120,
         timeframe=3600,
-        bband=3.0,
+        bband=8.0,
         bband_period=20)
 
     # Can use this too
@@ -480,6 +482,7 @@ if __name__ == '__main__':
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
     bband = [[x[0] for x in bband], [x[1] for x in bband]]
     ema_vol = [[x[0] for x in ema_vol], [x[1] for x in ema_vol]]
+    net_vol = [[x[0] for x in net_vol], [x[1] for x in net_vol]]
     vol = [[x[0] for x in vol], [x[1] for x in vol]]
 
     plot(
@@ -487,6 +490,6 @@ if __name__ == '__main__':
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         signals=[wma5, wma8],
-        indicators=[[ema_vol, vol], [equity]])
+        indicators=[[ema_vol, net_vol, vol], [equity]])
 
     plt.show()
