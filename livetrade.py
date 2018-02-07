@@ -15,18 +15,27 @@ from collections import OrderedDict
 
 if __name__ == '__main__':
     formatter = defaultFormatter()
+
     sh = logging.StreamHandler()
     sh.setLevel(logging.INFO)
     sh.setFormatter(formatter)
+
     fh = logging.FileHandler('livetrade.log', mode='w')
     fh.setLevel(logging.TICK)
     fh.setFormatter(formatter)
+
     log = logging.getLogger('Report')
     log.setLevel(logging.TICK)
     log.addHandler(sh)
     log.addHandler(fh)
+
+    stlog = logging.getLogger('Strategy')
+    stlog.setLevel(logging.DEBUG)
+    stlog.addHandler(sh)
+    stlog.addHandler(fh)
+
     crlog = logging.getLogger('cryptle')
-    crlog.setLevel(logging.TICK)
+    crlog.setLevel(logging.DEBUG)
     crlog.addHandler(sh)
     crlog.addHandler(fh)
 
