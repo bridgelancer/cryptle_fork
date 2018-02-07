@@ -1,6 +1,8 @@
 from .base import Metric
 from .generic import *
 
+from collections import UserList
+
 
 class Candle:
     '''Mutable candle stick with namedtuple-like API.'''
@@ -77,6 +79,8 @@ class CandleBar:
 
     Attributes:
         _bars: List of all the Candle objects
+        _metrics: Metrics that are attached to the CandleBar instance
+        _period: Length (time span) of each candlestick
         _maxsize: Maximum number of historic candles to keep around
     '''
 
@@ -153,9 +157,10 @@ class CandleBar:
 
     def _broadcastCandle(self):
         for metric in self._metrics:
+            metric.onCandle
             try:
                 metric.onCandle()
-            except AttributeError:
+            except NotImplementedError:
                 pass
 
 
@@ -163,15 +168,14 @@ class CandleBar:
         for metric in self._metrics:
             try:
                 metric.onTick(price, ts, volume, action)
-            except AttributeError:
+            except NotImplementedError:
                 pass
 
+    def __len__(self, ):
+        return len(self._bars)
 
     def __getitem__(self, item):
         return self._bars[item]
-
-    def __len__(self):
-        return len(self._bars)
 
     @property
     def last_open(self):
@@ -218,8 +222,8 @@ class CandleMetric(Metric):
     '''Base class for candle dependent metrics'''
 
     def __init__(self, candle):
-        self._candle = candle
-        self._value = 0
+        self.candle = candle
+        self.value = 0
         candle.attach(self)
 
     def onCandle(self):
@@ -237,14 +241,14 @@ class SMA(CandleMetric):
         self._use_open = use_open
         self._lookback = lookback
 
-
     def onCandle(self):
-        if self._use_open:
-            self._value = simple_moving_average([x.open for x in self._candle[-lookback:]], lookback)[0]
-        else:
-            self._value = simple_moving_average([x.close for x in self._candle[-lookback:]], lookback)[0]
+        if len(self.candle) < self._lookback:
+            return
+        prices = [x.open if self._use_open else x.close for x in self.candle[-self._lookback:]]
+        self.value = simple_moving_average(prices, self._lookback)[0]
+
     def onTick(self, price, ts, volume, action):
-        return # Not yet implemented
+        raise NotImplementedError # Not yet implemented
 
 
 class EMA(CandleMetric):
@@ -255,14 +259,15 @@ class EMA(CandleMetric):
         self._use_open = use_open
         self._lookback = lookback
 
-
     def onCandle(self):
-        if self._use_open:
-            self._value = ema([x.open for x in self._candle[-self._lookback:]], self._lookback)[0]
-        else:
-            self._value = ema([x.close for x in self._candle[-self._lookback:]], self._lookback)[0]
+        if len(self.candle) < self._lookback:
+            return
+        prices = [x.open if self._use_open else x.close for x in self.candle[-self._lookback:]]
+        self.value = exponential_moving_average(prices, self._lookback)[0]
+
     def onTick(self, price, ts, volume, action):
-        return # Not yet implemented
+        raise NotImplementedError # Not yet implemented
+
 
 class WMA(CandleMetric):
     '''Calculate and store the latest WMA value for the attached candle'''
@@ -273,12 +278,14 @@ class WMA(CandleMetric):
         self._lookback = lookback
 
     def onCandle(self):
-        if self._use_open:
-            self._value = wma([x.open for x in self._candle[-self._lookback:]], self._lookback)[0]
-        else:
-            self._value = wma([x.close for x in self._candle[-self._lookback:]], self._lookback)[0]
+        if len(self.candle) < self._lookback:
+            return
+        prices = [x.open if self._use_open else x.close for x in self.candle[-self._lookback:]]
+        self.value = weighted_moving_average(prices, self._lookback)[0]
+
     def onTick(self, price, ts, volume, action):
-        return # Not yet implemented
+        raise NotImplementedError # Not yet implemented
+
 
 # Not validated
 class RSI(CandleMetric):
@@ -293,7 +300,6 @@ class RSI(CandleMetric):
         self.ema_up = None
         self.ema_down = None
         self.weight = 1 / lookback # MODIFIED to suit our purpose
-        self.rsi = 0
 
     def onCandle(self):
         if len(self._candle.bars) < 2:
@@ -318,8 +324,6 @@ class RSI(CandleMetric):
 
         if len(self.up) < self.lookback:
             return
-        else:
-            pass
 
         price_up = self.up[-1]
         price_down = self.down[-1]
@@ -339,8 +343,6 @@ class RSI(CandleMetric):
                 elif self.ema_up == 0 and self.ema_down == 0:
                     self.rsi = 50
             return
-        else:
-            pass
 
         # Update ema_up and ema_down according to logistic updating formula
         self.ema_up = self.weight * price_up + (1 - self.weight) * self.ema_up
@@ -356,13 +358,15 @@ class RSI(CandleMetric):
                 self.rsi = 0
             elif self.ema_up == 0 and self.ema_down == 0:
                 self.rsi = 50
+
     def onTick(self, price, ts, volume, action):
         return # Not yet implemented
 
 # Not validated
 class MACD(CandleMetric):
 
-    def __init__(self, candle, fast, slow, signal, use_open=True, roll_method=wma):
+    def __init__(self, candle, fast, slow, signal, use_open=True,
+            roll_method=weighted_moving_average):
         super().__init__(candle)
         self._use_open = use_open
         self._roll_method = roll_method
@@ -386,6 +390,7 @@ class MACD(CandleMetric):
             diff, output = zip(*result)
             self.diff = diff
             self.output = output
+
     def onTick(self, price, ts, volume, action):
         return # Not yet implemented
 
@@ -408,6 +413,7 @@ class ATR(CandleMetric):
             t3 = abs(self._candle[-2].min - self._candle[-3].close)
             tr = max(t1, t2, t3)
             self._value = (self._value * (self._lookback - 1) + tr) / self._lookback
+
     def onTick(self, price, ts, volume, action):
         return # Not yet implemented
 
@@ -425,21 +431,14 @@ class BollingerBand(CandleMetric):
     def onCandle(self):
         if len(self._candle) < self._lookback:
             return
-        else:
-            pass
 
-        if self._use_open:
-            ls = [x.open for x in self._candle[-self._lookback:]]
-            self.width = bollinger_width(ls, self._lookback, roll_method = sma)
-            self.upperband = bollinger_up(ls, self._lookback, sd = 2, roll_method = sma)
-            self.lowerband = bollinger_low(ls, self._lookback, sd = 2, roll_method = sma)
-            self.band = bollinger_band(ls, self._lookback, sd = 2, roll_method = sma)
-        else:
-            ls = [x.close for x in self._candle[-self._lookback:]]
-            self.width = bollinger_width(ls, self._lookback, roll_method = sma)
-            self.upperband = bollinger_up(ls, self._lookback, sd = 2, roll_method = sma)
-            self.lowerband = bollinger_low(ls, self._lookback, sd = 2, roll_method = sma)
-            self.band = bollinger_band(ls, self._lookback, sd = 2, roll_method = sma)
+        prices = [x.open if self._use_open else x.close for x in self._candle[-self._lookback:]]
+        self.width = bollinger_width(price, self._lookback, roll_method=simple_moving_average)
+        self.upperband = bollinger_up(price, self._lookback, sd = 2, roll_method=simple_moving_average)
+        self.lowerband = bollinger_low(price, self._lookback, sd = 2, roll_method=simple_moving_average)
+        self.band = bollinger_band(price, self._lookback, sd = 2, roll_method=simple_moving_average)
+        self._value = self.band
+
     def onTick(self, price, ts, volume, action):
         return # Not yet implemented
 
@@ -455,8 +454,6 @@ class BNB(CandleMetric):
     def onCandle(self):
         if len(self._candle) < self._primary:
             return
-        else:
-            pass
 
         if self._use_open:
             ls = [x.open for x in self._candle[-self._primary:]]
@@ -474,8 +471,6 @@ class BNB(CandleMetric):
             else:
                 self.bnb = bollinger_up(self._band, self._lookback, sd = 1, roll_method=sma)
                 self._band.pop()
+
     def onTick(self, price, ts, volume, action):
         return # Not yet implemented
-
-
-

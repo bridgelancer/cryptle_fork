@@ -84,7 +84,7 @@ sine        = [(100 + (i/4) * (2* math.sin(i) ** 3 * i - math.sin(i) ** 5) / 2 /
 
 
 @unittest
-def test_sma():
+def test_generic_sma():
     sma = simple_moving_average(const, 3)
     for val in sma:
         assert val == 3
@@ -95,7 +95,7 @@ def test_sma():
 
 
 @unittest
-def test_wma():
+def test_generic_wma():
     wma = weighted_moving_average(const, 5)
     for val in wma:
         assert val == 3
@@ -110,12 +110,14 @@ def test_wma():
 
 
 @unittest
-def test_ema():
+def test_generic_ema():
     ema = exponential_moving_average(const, 3)
     for val in ema:
         assert val == 3
 
     ema = exponential_moving_average(lin, 3)
+    for i, val in enumerate(ema):
+        assert val/(i + 3) < 1
 
 
 some_data = [
@@ -136,7 +138,7 @@ def gaussian(mu, sig, start=0, end=100, interval=1):
 
 
 @unittest
-def test_pelt():
+def test_generic_pelt():
     gauss = gaussian(0, 1, start=-10, end=10, interval=1)
     random_shit = [1, -10, 100, -1000]
     constant = [1 for i in range(5)]
@@ -154,16 +156,16 @@ def test_pelt():
 def test_metric_base():
     a = Metric()
     b = Metric()
-    a._value = 1
-    b._value = 2
+    a.value = 1
+    b.value = 2
     assert a + b == 3
     assert a - b == -1
     assert b + a == 3
     assert b - a == 1
     assert a / b == 0.5
-    assert b // a == 2
+    assert b // a == 2.0
     c = Metric()
-    c._value = 5
+    c.value = 5
     assert b / c == 0.4
     assert c % b == 1
 
@@ -182,8 +184,73 @@ def test_candle():
 @unittest
 def test_candelbar():
     bar = CandleBar(10)
+
+    for i, tick in enumerate(const):
+        bar.pushTick(tick, i)
+        assert bar.last_close == const[0]
+        assert bar.last_open == const[0]
+        assert bar.last_high == const[0]
+        assert bar.last_low == const[0]
+
     for i, tick in enumerate(lin):
         bar.pushTick(tick, i)
+        assert bar.last_close == tick
+        assert bar.last_high == tick
+
+    assert isinstance(bar[-1].open, int)
+    assert isinstance(bar[-1].close, int)
+    assert isinstance(bar[-1].high, int)
+    assert isinstance(bar[-1].low, int)
+    assert isinstance(bar[-1].timestamp, int)
+    assert bar[-1].volume == 0
+
+
+@unittest
+def test_candle_sma():
+    bar = CandleBar(4)
+    ma = SMA(bar, 5)
+
+    for i, price in enumerate(const):
+        bar.pushTick(price, i)
+        if i >= 20:
+            assert ma == const[0]
+
+    for i, price in enumerate(lin):
+        bar.pushTick(price, i)
+        if i >= 120:
+            assert ma == i - 2
+
+
+@unittest
+def test_candle_wma():
+    bar = CandleBar(4)
+    ma = WMA(bar, 5)
+
+    for i, price in enumerate(const):
+        bar.pushTick(price, i)
+        if i >= 21:
+            assert ma == 3.0
+
+    for i, price in enumerate(lin):
+        bar.pushTick(price, i)
+        if i >= 120:
+            assert ma - i + 1
+
+
+@unittest
+def test_candle_ema():
+    bar = CandleBar(4)
+    ma = EMA(bar, 5)
+
+    for i, price in enumerate(const):
+        bar.pushTick(price, i)
+        if i >= 20:
+            assert ma - 3 < 1e-6
+
+    for i, price in enumerate(lin):
+        bar.pushTick(price, i)
+        if i >= 120:
+            assert ma - 3 < 1e-6
 
 
 if __name__ == '__main__':
