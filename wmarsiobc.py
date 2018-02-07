@@ -4,7 +4,7 @@ from cryptle.utility  import *
 from ta import *
 
 import logging
-logger = logging.getLogger('Cryptle')
+logger = logging.getLogger('Strategy')
 
 
 class WMARSIOBCStrat(Strategy):
@@ -234,7 +234,7 @@ class WMARSIOBCStrat(Strategy):
         #     s.prev_crossover_time = None
         #     s.dollar_volume_flag = False
         elif s.hasBalance and s.price < s.stop_loss_price and int(timestamp / s.period) > int(s.prev_buy_time / s.period):
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Triggered stoploss')
 
             s.prev_crossover_time = None
@@ -245,7 +245,7 @@ class WMARSIOBCStrat(Strategy):
             # now setting no stop loss for the moment
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Over 70 RSI')
 
             s.prev_crossover_time = None
@@ -256,7 +256,7 @@ class WMARSIOBCStrat(Strategy):
             s.rsi_sell_flag_80 = False
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag_80:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Over 80 RSI')
 
             s.prev_crossover_time = None
@@ -274,7 +274,7 @@ class WMARSIOBCStrat(Strategy):
                 s.prev_crossover_time = timestamp
 
             elif timestamp - s.prev_crossover_time >= s.timelag_required:
-                s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+                s.marketSell(s.maxSellAmount)
 
                 s.prev_crossover_time = None
                 s.dollar_volume_flag = False

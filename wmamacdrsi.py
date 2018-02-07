@@ -4,7 +4,7 @@ from cryptle.utility  import *
 from ta import *
 
 import logging
-logger = logging.getLogger('Cryptle')
+logger = logging.getLogger('Strategy')
 
 
 class WMAMACDRSIStrat(Strategy):
@@ -288,7 +288,7 @@ class WMAMACDRSIStrat(Strategy):
 
         elif s.hasBalance and s.price < s.stop_loss_price:
             logger.info("Stop lost triggered")
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Triggered stoploss')
 
             s.prev_crossover_time = None
@@ -303,7 +303,7 @@ class WMAMACDRSIStrat(Strategy):
             # now setting no stop loss for the moment
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Over 70 RSI')
 
             s.prev_crossover_time = None
@@ -328,7 +328,7 @@ class WMAMACDRSIStrat(Strategy):
 
         elif s.hasBalance and s.rsi_ssignal and not s.macd_signal:
 
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Normal RSI + MACD')
 
             s.prev_crossover_time = None
