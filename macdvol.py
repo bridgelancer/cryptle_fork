@@ -222,7 +222,7 @@ class MACDVolStrat(Strategy):
         s.rsi_ssignal = rsi_ssignal
 
         # Volume sell signal generation
-        if 50 < s.rsi.rsi and s.EMA_vol.ema < -0.5:
+        if 50 < s.rsi.rsi and s.EMA_vol.ema < -100:
             s.vol_sell_signal = True
         else:
             s.vol_sell_signal = False
@@ -409,9 +409,9 @@ if __name__ == '__main__':
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
-    dataset = 'eth.02.log'
+    dataset = 'xrp.02.log'
 
-    pair = 'ethusd'
+    pair = 'xrpusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 

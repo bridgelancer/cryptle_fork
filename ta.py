@@ -486,9 +486,9 @@ class CandleBar:
         if self.last_timestamp == None:
             self.volume = volume
             self.last_timestamp = timestamp
-            self.net_volume = volume
+            self.net_volume = volume * action
 
-            self.bars.append(Candle(price, price, price, price, int(timestamp/self.period), volume, volume))
+            self.bars.append(Candle(price, price, price, price, int(timestamp/self.period), volume, volume * action))
 
             for metric in self.metrics:
                 metric.update()
@@ -508,12 +508,14 @@ class CandleBar:
                 timestamp_tmp = timestamp_tmp + self.period
 
             # append the new bar that contains the newly arrived tick
-            self.bars.append(Candle(price, price, price, price, int(timestamp/self.period), volume, volume * action))
+            self.bars.append(Candle(price, price, price, price, int(timestamp/self.period), volume,self.net_volume))
 
             for metric in self.metrics:
                 metric.update()
 
             self.last_timestamp = timestamp
+            print("Start of bar volume: "+ str(self.last_volume))
+            print("Start of bar Net volume: "+ str(self.last_nv))
 
 
         elif int(timestamp / self.period) == int(self.last_timestamp / self.period):
@@ -521,7 +523,9 @@ class CandleBar:
             self.last_hi = max(self.last_hi, price)
             self.last_close = price
             self.last_volume += volume
-            self.net_volume += volume * action
+            self.last_nv += volume * action
+            print("Interbar volume: "+ str(self.last_volume))
+            print("Intrabar Net volume: "+ str(self.last_nv))
 
         self.last = price
 
@@ -802,7 +806,7 @@ class EMA_NetVol():
         self.candle = candle
         self.lookback = lookback
         self.ema = None
-        self.weight =  2 / (lookback + 1)
+        self.weight =  1 / lookback
 
         candle.metrics.append(self)
 
@@ -812,7 +816,7 @@ class EMA_NetVol():
             return
 
         val = self.candle[-2][6]
-
+        print("Last net vol:" + str(val))
         if self.ema == None:
             self.ema = val
             return

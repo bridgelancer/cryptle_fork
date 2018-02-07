@@ -386,9 +386,9 @@ if __name__ == '__main__':
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
-    dataset = 'eth.02.log'
+    dataset = 'xrp.02.log'
 
-    pair = 'ethusd'
+    pair = 'xrpusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
