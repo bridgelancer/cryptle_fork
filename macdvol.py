@@ -59,6 +59,7 @@ class MACDVolStrat(Strategy):
         s.rsi_bsignal = None
         s.rsi_ssignal = None
         # s.was_v_sell = False
+        s.vol_sell_flag = False
 
         # Initialize flags and states related to the processing of incoming tick / bar
         s.rsi_sell_flag = False
@@ -141,7 +142,7 @@ class MACDVolStrat(Strategy):
                 bar_diff = int(ts / s.period) - int(s.prev_buy_time / s.period)
                 bar_min = min(s.bar.bars[-1 - bar_diff][0], s.bar.bars[-1 - bar_diff][1])
                 #stop_loss_price = min(bar_min * .99, bar_min - current_atr)
-                s.stop_loss_price = bar_min * .99
+                s.stop_loss_price = bar_min * 0
                 #stop_loss_price = 0
 
                 s.prev_buy_time == None
@@ -180,7 +181,7 @@ class MACDVolStrat(Strategy):
         rsi_bsignal = False # local variable
         rsi_ssignal = False # local variable
 
-        if s.rsi.rsi > 50:
+        if not s.vol_sell_flag and s.rsi.rsi > 50:
             if s.rsi.rsi > 70:
                 rsi_bsignal = True
                 rsi_ssignal = False
@@ -206,6 +207,7 @@ class MACDVolStrat(Strategy):
             rsi_bsignal = False
             s.rsi_sell_flag = False
             s.rsi_sell_flag_80 = False
+            s.vol_sell_flag = False
 
         s.rsi_bsignal = rsi_bsignal
         s.rsi_ssignal = rsi_ssignal
@@ -292,6 +294,7 @@ class MACDVolStrat(Strategy):
             s.stop_loss_time = timestamp
             s.stop_loss_flag = True
             s.stop_loss_price = 0
+            s.vol_sell_flag = True
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
             s.marketSell(s.maxSellAmount)
@@ -381,7 +384,7 @@ if __name__ == '__main__':
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
-    dataset = 'bch_correct.log'
+    dataset = 'bch.log'
 
     pair = 'bchusd'
     port = Portfolio(10000)

@@ -487,6 +487,7 @@ class EMA_NetVol():
     def __repr__(self):
         return str(self.wma)
 
+
 # @Deprecated - this is an ad hoc instance for quick deployment, not intended to be used in the future
 class BNB():
     # This class takes the band value of a BollingerBand object and apply a bollinger band on it (BNB)
@@ -540,6 +541,42 @@ class BNB():
 
     def __repr__(self):
         return str(self.wma)
+
+class SNB():
+    # This class takes the band value of a BollingerBand object and apply a bollinger band on it (BNB)
+    def __init__(self, bollinger, lookback):
+
+        self.bollinger = bollinger # Take a BollingerBand object
+        self.lookback = lookback
+        self.sma = []
+        self.width = 0
+        self.ls = []
+
+        bollinger.sma.candle.metrics.append(self)
+
+
+    def update(self, open_p=True):
+        ls = self.ls
+
+
+        if len(ls) < self.lookback:
+            lookback = len(ls)
+            ls.append(0)
+        else:
+            lookback = self.lookback
+            ls.append(self.bollinger.band)
+
+        if len(self.sma) < self.lookback + self.bollinger.lookback:
+            self.sma.append(0)
+        else:
+            self.sma.append(sum([x for x in ls[-lookback:]]) / self.lookback)
+
+        sma_ls = [x for x in self.sma[-lookback:]] # storing sma of raw values of bollinger band
+        ls = [x for x in self.ls[-lookback:]] # storing raw values of bollinger band
+
+    def __repr__(self):
+        return str(self.wma)
+
 
 
 # @Deprecated

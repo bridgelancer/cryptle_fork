@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger('Cryptle')
 
 
-class MACDBNBStrat(Strategy):
+class MACDSNBStrat(Strategy):
 
     def __init__(s,
             message='[MACD RSI]',
@@ -38,7 +38,7 @@ class MACDBNBStrat(Strategy):
         s.macd = MACD_WMA(s.WMA_5, s.WMA_8, macd_scope)
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
-        s.bnb = BNB(s.bollinger , 10)
+        s.snb = SNB(s.bollinger , 10)
         s.rsi = RSI(bar, rsi_la)
 
         # Initialize key parameters of the strategy
@@ -179,7 +179,7 @@ class MACDBNBStrat(Strategy):
         # Band confirmation - solve logic bug
         if timestamp > s.tradable_window + s.timeframe: # available at 1h trading window (3600s one hour)
             s.bollinger_signal = False
-        if (s.bnb.sma[-1] > s.bollinger.band and s.bollinger.band > 0.0):
+        if s.snb.sma[-1] * 1.25 < s.bollinger.band and s.bollinger.band > 3:
             s.bollinger_signal = True
         if s.bollinger.band > s.bband:
             s.bollinger_signal = True
@@ -367,8 +367,8 @@ if __name__ == '__main__':
     wma8 = []
     equity = []
     bband = []
-    bnb = []
-    bnb_ma = []
+    snb = []
+    snb_ma = []
     upperband = []
     lowerband = []
     rsi = []
@@ -382,8 +382,8 @@ if __name__ == '__main__':
         global wma8
         global equity
         global bband
-        global bnb
-        global bnb_ma
+        global snb
+        global snb_ma
         global sharpe_ratio
         global rsi
 
@@ -403,24 +403,23 @@ if __name__ == '__main__':
             macd_signal.append((strat.last_timestamp, strat.macd.wma3))
 
         if len(strat.bar) > 100:
-            bnb.append((strat.last_timestamp, strat.bnb.upperband))
-            bnb_ma.append((strat.last_timestamp, strat.bnb.sma[-1]))
+            snb_ma.append((strat.last_timestamp, strat.snb.sma[-1]))
 
 
 
-    dataset = 'eth.02.log'
+    dataset = 'bch.log'
 
-    pair = 'ethusd'
+    pair = 'bchusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
-    strat = MACDBNBStrat(
+    strat = MACDSNBStrat(
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=45,
+        period=120,
         timeframe=3600,
-        bband=8.0,
+        bband=6.0,
         bband_period=20)
 
     # Can use this too
@@ -478,8 +477,7 @@ if __name__ == '__main__':
     lowerband = [[x[0] for x in lowerband], [x[1] for x in lowerband]]
     equity = [[x[0] for x in equity], [x[1] for x in equity]]
     bband = [[x[0] for x in bband], [x[1] for x in bband]]
-    bnb = [[x[0] for x in bnb], [x[1] for x in bnb]]
-    bnb_ma = [[x[0] for x in bnb_ma], [x[1] for x in bnb_ma]]
+    snb_ma = [[x[0] for x in snb_ma], [x[1] for x in snb_ma]]
     rsi = [[x[0] for x in rsi], [x[1] for x in rsi]]
     macd_diff = [[x[0] for x in macd_diff], [x[1] for x in macd_diff]]
     macd_signal = [[x[0] for x in macd_signal], [x[1] for x in macd_signal]]
@@ -489,6 +487,6 @@ if __name__ == '__main__':
         title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         signals=[wma5, wma8],
-        indicators=[[bband, bnb, bnb_ma], [equity], [macd_diff, macd_signal]])
+        indicators=[[bband, snb_ma], [equity], [macd_diff, macd_signal]])
 
     plt.show()
