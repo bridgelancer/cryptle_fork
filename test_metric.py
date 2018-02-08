@@ -1,3 +1,4 @@
+from cryptle.loglevel import *
 from metric.base import *
 from metric.candle import *
 from metric.generic import *
@@ -38,15 +39,15 @@ GREY    = COLOR % 90
 
 
 def PASS(testname):
-    logger.info(GREEN + 'Passed ' + GREY + testname + RESET)
+    logger.report(GREEN + 'Passed ' + GREY + testname + RESET)
 
 
 def FAIL(testname):
-    logger.info(YELLOW + 'Failed ' + RESET + testname)
+    logger.report(YELLOW + 'Failed ' + RESET + testname)
 
 
 def FATAL(testname):
-    logger.info(RED + 'ERROR  ' + RESET + testname)
+    logger.report(RED + 'ERROR  ' + RESET + testname)
 
 
 # Unittest testsuite setup
@@ -81,6 +82,22 @@ quad        = [i**2 for i in range(1, 100)]
 alt_quad    = [(100+ ((-1) ** i) * (i/4)**2) for i in range (1, 100)]
 logistic    = [(10 / (1 + 100 * math.exp(-i/10))) for i in range(1, 100)]
 sine        = [(100 + (i/4) * (2* math.sin(i) ** 3 * i - math.sin(i) ** 5) / 2 / (i / 1.5)) for i in range(1, 100)]
+
+some_data = [
+    -1.82348457,
+    -0.13819782,
+    1.25618544,
+    -0.54487136,
+    -2.24769311,
+    9.82204284,
+    -1.0181088,
+    3.93764179,
+    -8.73177678,
+    5.99949843
+]
+
+def gaussian(mu, sig, start=0, end=100, interval=1):
+    return [math.exp((x - mu) ** 2 / (2 * sig ** 2)) for x in range(start, end, interval)]
 
 
 @unittest
@@ -120,21 +137,10 @@ def test_generic_ema():
         assert val/(i + 3) < 1
 
 
-some_data = [
-    -1.82348457,
-    -0.13819782,
-    1.25618544,
-    -0.54487136,
-    -2.24769311,
-    9.82204284,
-    -1.0181088,
-    3.93764179,
-    -8.73177678,
-    5.99949843
-]
-
-def gaussian(mu, sig, start=0, end=100, interval=1):
-    return [math.exp((x - mu) ** 2 / (2 * sig ** 2)) for x in range(start, end, interval)]
+@unittest
+def test_generic_bollinger_width():
+    result = bollinger_width(quad, 5)
+    assert result[-1] - 274.36253388 < 1e-5
 
 
 @unittest
