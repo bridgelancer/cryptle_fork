@@ -321,5 +321,15 @@ def test_candle_rsi():
     assert rsi == 100
 
 
+@unittest
+def test_candle_macd():
+    bar = CandleBar(1)
+    macd = MACD(bar, 5, 8, 3, roll_method=weighted_moving_average)
+
+    for i, price in enumerate(sine):
+        bar.pushTick(price, i)
+    assert macd.diff_ma - 0.5843467703997498 < 1e-5
+
+
 if __name__ == '__main__':
     run_all_tests()
