@@ -1,8 +1,6 @@
 from .base import Metric
 from .generic import *
 
-from collections import UserList
-
 
 class Candle:
     '''Mutable candle stick with namedtuple-like API.'''
@@ -463,35 +461,31 @@ class BollingerBand(CandleMetric):
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
 
-# Not validated
-class BNB(CandleMetric):
-    def __init__(self, candle, primary, lookback, use_open=True):
-        super().__init__(candle)
+
+class MANB(CandleMetric):
+    def __init__(self,
+            bband,
+            lookback,
+            use_open=True,
+            roll_method=simple_moving_average):
+
+        super().__init__(bband.candle)
         self._use_open = use_open
-        self._primary = primary
         self._lookback = lookback
-        self._band = []
+        self._roll_method = roll_method
+        self._bband = bband
+        self._bands = []
 
     def onCandle(self):
-        if len(self._candle) < self._primary:
+        if self._bband == 0:
             return
 
-        if self._use_open:
-            ls = [x.open for x in self._candle[-self._primary:]]
-            self._band.append(bollinger_band(ls, self._primary, sd = 2, roll_method=sma))
-            if len(self._band) < self._lookback:
-                return
-            else:
-                self.bnb = bollinger_up(self._band, self._lookback, sd = 1, roll_method=sma)
-                self._band.pop()
-        else:
-            ls = [x.close for x in self._candle[-self._primary:]]
-            self._band.append(bollinger_band(ls, self._primary, sd = 2, roll_method=sma))
-            if len(self._band) < self._lookback:
-                return
-            else:
-                self.bnb = bollinger_up(self._band, self._lookback, sd = 1, roll_method=sma)
-                self._band.pop()
+        self._bands.append(self._bband.value)
+
+        if len(self._bands) < self._lookback:
+            return
+
+        self.value = self._roll_method(self._bands, self._lookback)[-1]
 
     def onTick(self, price, ts, volume, action):
-        return # Not yet implemented
+        raise NotImplementedError # Not yet implemented
