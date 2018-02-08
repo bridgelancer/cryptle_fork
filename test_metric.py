@@ -144,6 +144,32 @@ def test_generic_bollinger_width():
 
 
 @unittest
+def test_generic_bollinger_up():
+    result = bollinger_up(quad, 5)
+    assert result[-1] - 10349.725067770738 < 1e-5
+
+
+@unittest
+def test_generic_bollinger_low():
+    result = bollinger_up(quad, 5)
+    assert result[-1] - 10349.725067770738 < 1e-5
+
+
+@unittest
+def test_generic_bollinger_band():
+    result = bollinger_band(quad, 5)
+    assert result[-1] - 11.86141 < 1e-5
+
+
+@unittest
+def test_generic_macd():
+    diff, diff_ma  = macd(sine, 5, 8, 3)
+    assert abs(diff[-1] + 3.08097455232022) < 1e-6
+    assert abs(diff_ma[-1] - 0.5843467703997498) < 1e-6
+    assert len(diff) == len(diff_ma)
+
+
+@unittest
 def test_generic_pelt():
     gauss = gaussian(0, 1, start=-10, end=10, interval=1)
     random_shit = [1, -10, 100, -1000]
@@ -257,6 +283,11 @@ def test_candle_ema():
         bar.pushTick(price, i)
         if i >= 120:
             assert ma - 3 < 1e-6
+
+
+@unittest
+def test_candle_bollinger():
+    pass
 
 
 if __name__ == '__main__':
