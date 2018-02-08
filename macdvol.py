@@ -4,7 +4,7 @@ from cryptle.utility  import *
 from ta import *
 
 import logging
-logger = logging.getLogger('Cryptle')
+logger = logging.getLogger('Strategy')
 
 
 class MACDVolStrat(Strategy):
@@ -21,6 +21,7 @@ class MACDVolStrat(Strategy):
             bband=3.5,
             bband_period=20,
             vol_multipler=30,
+            vwma_ema_lb=4,
             vwma_lb=40,
             rsi_la=14,
             **kws):
@@ -36,7 +37,7 @@ class MACDVolStrat(Strategy):
         s.WMA_5 = WMA(bar, scope1)
         s.WMA_8 = WMA(bar, scope2)
         s.macd = MACD_WMA(s.WMA_5, s.WMA_8, macd_scope)
-        s.EMA_vol = EMA_NetVol(bar, 3)
+        s.EMA_vol = EMA_NetVol(bar, vwma_ema_lb)
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
         s.rsi = RSI(bar, rsi_la)
@@ -364,14 +365,18 @@ if __name__ == '__main__':
 
     formatter = defaultFormatter()
     fh = logging.FileHandler('macd_rsi.log', mode = 'w')
-    fh.setLevel(logging.INFO)
+    fh.setLevel(logging.METRIC)
     fh.setFormatter(formatter)
+
     sh = logging.StreamHandler()
     sh.setLevel(logging.REPORT)
     sh.setFormatter(formatter)
+
+    logger.setLevel(logging.DEBUG)
     logger.addHandler(sh)
     logger.addHandler(fh)
-    base_logger = logging.getLogger('cryptle.strategy')
+
+    base_logger = logging.getLogger('cryptle')
     base_logger.setLevel(logging.METRIC)
     base_logger.addHandler(fh)
 
@@ -411,33 +416,37 @@ if __name__ == '__main__':
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
-    dataset = 'xrp_correct.log'
+    dataset = 'bch_correct.log'
 
-    pair = 'xrpusd'
+    pair = 'bchusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
+
+    period          = 120
+    timeframe       = 3600
+    bband_thresh    = 6.0
+    bband_period    = 20
+    vwma_lb         = 100
 
     strat = MACDVolStrat(
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=45,
-        timeframe=3600,
-        bband=8.0,
-        bband_period=20)
+        period=period,
+        timeframe=timeframe,
+        bband=bband_thresh,
+        bband_period=bband_period)
 
-    # Can use this too
     backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
 
-    #test = Backtest(exchange)
-    #test.readJSON(dataset)
-    #test.run(strat, record_indicators)
-
+    logger.report('Config: {} {} {} {} {}'.format(
+        period, bband_thresh, bband_period, timeframe, vwma_lb))
     logger.report('MACD Equity:    %.2f' % port.equity)
     logger.report('MACD Cash:    %.2f' % port.cash)
     logger.report('MACD Asset:    %s' % str(port.balance))
     logger.report('Number of trades:  %d' % len(strat.trades))
     logger.report('Number of candles: %d' % len(strat.bar))
+
     def calculateSP(equity):
         equity_list = []
         returns_list = []
