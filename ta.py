@@ -467,7 +467,7 @@ class EMA_NetVol():
         self.candle = candle
         self.lookback = lookback
         self.ema = None
-        self.weight =  1 / lookback
+        self.weight =  1 / (lookback)
 
         candle.metrics.append(self)
 

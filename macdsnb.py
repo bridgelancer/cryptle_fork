@@ -407,9 +407,9 @@ if __name__ == '__main__':
 
 
 
-    dataset = 'bch.log'
+    dataset = 'xrp.log'
 
-    pair = 'bchusd'
+    pair = 'xrpusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
@@ -417,8 +417,11 @@ if __name__ == '__main__':
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=120,
+        period=60,
         timeframe=3600,
+        scope1=8,
+        scope2=12,
+        macd_scope=6,
         bband=6.0,
         bband_period=20)
 

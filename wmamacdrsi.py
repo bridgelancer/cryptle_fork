@@ -386,9 +386,9 @@ if __name__ == '__main__':
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
-    dataset = 'bch.log'
+    dataset = 'xrp.log'
 
-    pair = 'bchusd'
+    pair = 'xrpusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
@@ -396,9 +396,12 @@ if __name__ == '__main__':
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=120,
+        period=60,
         timeframe=3600,
         bband=6.0,
+        scope1=8,
+        scope2=12,
+        macd_scope=6,
         bband_period=20)
 
     # Can use this too

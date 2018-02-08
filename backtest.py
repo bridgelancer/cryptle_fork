@@ -37,13 +37,13 @@ def snoop(Strat, dataset, pair, **kws):
     '''
 
     # Parameters to snoop
-    period          = range(90, 181, 30)
-    bband           = range(400, 1201, 50)  # need to divide by 100
-    timeframe       = range(30, 91, 30)     # need to multiply by 60
-    delay           = range(0, 31, 10)
+    period          = range(45, 181, 45)
+    bband           = range(400, 1201, 100)  # need to divide by 100
+    timeframe       = range(30, 121, 30)     # need to multiply by 60
+    delay           = range(10, 11, 10)
     upperatr        = range(50, 51, 15)     # need to divide by 100
     loweratr        = range(50, 51, 15)     # need to divide by 100
-    bband_period    = range(5, 41, 5)
+    bband_period    = range(10, 31, 5)
     vol_multiplier  = range(30, 31, 20)
 
     timeframe_60    = [x * 60 for x in timeframe]
@@ -210,6 +210,6 @@ def demoMACDStrat(dataset, pair):
 
 
 if __name__ == '__main__':
-    #snoop(WMARSIOBCStrat, 'data/bch_correct.log', 'bchusd')
-    demoMACDStrat('data/bch_correct.log',  'bchusd')
+    snoop(WMAMACDRSIStrat, 'eth.log', 'ethusd')
+    #demoMACDStrat('data/bch_correct.log',  'bchusd')
     plt.show()
