@@ -359,8 +359,14 @@ class RSI(CandleMetric):
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
 
-# Not validated
+
 class MACD(CandleMetric):
+    '''Calculate and store the latest MACD value for the attached candle.
+
+    The value of self.value (inherited from Metric) is set to be the difference
+    between the difference of two moving averages and the moving average of this
+    difference.
+    '''
 
     def __init__(self, candle, fast, slow, signal, use_open=True,
             roll_method=weighted_moving_average):
@@ -371,25 +377,26 @@ class MACD(CandleMetric):
         self._slow = slow
         self._signal = signal
         self.diff = None
-        self.output = None
+        self.diff_ma = None
 
     def onCandle(self):
-        if len(self.candle.bars) < self._slow:
+        if len(self.candle) < (self._slow + self._signal):
             return
-        else:
-            pass
 
-        if self._use_open:
-            series = [x.open for x in self._candle[-self._slow:]]
-
-            result = macd(series, self._fast, self._slow, self._signal, roll_method = weighted_moving_average)
-
-            diff, output = zip(*result)
-            self.diff = diff
-            self.output = output
+        candles = self.candle[-(self._slow + self._signal):]
+        series = [x.open if self._use_open else x.close for x in candles]
+        diff, diff_ma = macd(
+                series,
+                self._fast,
+                self._slow,
+                self._signal,
+                roll_method=self._roll_method)
+        self.diff = diff[-1]
+        self.diff_ma = diff_ma[-1]
+        self.value = diff[-1] - diff_ma[-1]
 
     def onTick(self, price, ts, volume, action):
-        return # Not yet implemented
+        raise NotImplementedError # Not yet implemented
 
 
 class ATR(CandleMetric):
