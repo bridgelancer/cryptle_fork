@@ -287,7 +287,6 @@ class WMA(CandleMetric):
         raise NotImplementedError # Not yet implemented
 
 
-# Not validated
 class RSI(CandleMetric):
     '''Calculate and store the latest RSI value for the attached candle'''
 
@@ -295,34 +294,32 @@ class RSI(CandleMetric):
         super().__init__(candle)
         self._use_open = use_open
         self._lookback = lookback
+        self._weight = 1 / lookback # MODIFIED to suit our purpose
         self.up = []
         self.down = []
         self.ema_up = None
         self.ema_down = None
-        self.weight = 1 / lookback # MODIFIED to suit our purpose
 
     def onCandle(self):
-        if len(self._candle.bars) < 2:
+        if len(self.candle) < 2:
             return
-        else:
-            pass
 
         if self._use_open:
-            if (self._candle[-1].open > self._candle[-2].open):
-                self.up.append(abs(self._candle[-1].open - self._candle[-2].open))
+            if (self.candle.last_open > self.candle[-2].open):
+                self.up.append(abs(self.candle.last_open - self.candle[-2].open))
                 self.down.append(0)
             else:
-                self.down.append(abs(self._candle[-2].open - self._candle[-1].open))
+                self.down.append(abs(self.candle[-2].open - self.candle.last_open))
                 self.up.append(0)
         else:
-            if (self._candle[-1].open > self._candle[-2].open):
-                self.up.append(abs(self._candle[-1].open - self._candle[-2].open))
+            if (self.candle.last_open > self.candle[-2].open):
+                self.up.append(abs(self.candle.last_open - self.candle[-2].open))
                 self.down.append(0)
             else:
-                self.down.append(abs(self._candle[-2].open - self._candle[-1].open))
+                self.down.append(abs(self.candle[-2].open - self.candle.last_open))
                 self.up.append(0)
 
-        if len(self.up) < self.lookback:
+        if len(self.up) < self._lookback:
             return
 
         price_up = self.up[-1]
@@ -334,33 +331,33 @@ class RSI(CandleMetric):
             self.ema_down = sum([x for x in self.down]) / len(self.down)
 
             try:
-                self.rsi = 100 - 100 / (1 +  self.ema_up/self.ema_down)
+                self.value = 100 - 100 / (1 +  self.ema_up/self.ema_down)
             except ZeroDivisionError:
                 if self.ema_down == 0 and self.ema_up != 0:
-                    self.rsi = 100
+                    self.value = 100
                 elif self.ema_up == 0 and self.ema_down != 0:
-                    self.rsi = 0
+                    self.value = 0
                 elif self.ema_up == 0 and self.ema_down == 0:
-                    self.rsi = 50
+                    self.value = 50
             return
 
         # Update ema_up and ema_down according to logistic updating formula
-        self.ema_up = self.weight * price_up + (1 - self.weight) * self.ema_up
-        self.ema_down = self.weight * price_down + (1 - self.weight) * self.ema_down
+        self.ema_up = self._weight * price_up + (1 - self._weight) * self.ema_up
+        self.ema_down = self._weight * price_down + (1 - self._weight) * self.ema_down
 
         # Handling edge cases and return the RSI index according to formula
         try:
-            self.rsi = 100 - 100 / (1 +  self.ema_up/self.ema_down)
+            self.value = 100 - 100 / (1 +  self.ema_up/self.ema_down)
         except ZeroDivisionError:
             if self.ema_down == 0 and self.ema_up != 0:
-                self.rsi = 100
+                self.value = 100
             elif self.ema_up == 0 and self.ema_down != 0:
-                self.rsi = 0
+                self.value = 0
             elif self.ema_up == 0 and self.ema_down == 0:
-                self.rsi = 50
+                self.value = 50
 
     def onTick(self, price, ts, volume, action):
-        return # Not yet implemented
+        raise NotImplementedError # Not yet implemented
 
 # Not validated
 class MACD(CandleMetric):
@@ -394,31 +391,33 @@ class MACD(CandleMetric):
     def onTick(self, price, ts, volume, action):
         return # Not yet implemented
 
-# Not validated
+
 class ATR(CandleMetric):
+
     def __init__(self, candle, lookback, use_open=True):
         super().__init__(candle)
         self._use_open = use_open
         self._lookback = lookback
-        self._value = 1000000000
         self._init = []
+        self.value = 1000000000
 
     def onCandle(self):
         if len(self._init) < self._lookback + 1:
-            self._init.append(self)
-            self._value = sum(self._init) / len(self._init)
+            self._init.append(self.candle.last_high - self.candle.last_low)
+            self.value = sum(self._init) / len(self._init)
         else:
-            t1 = self._candle[-2].max - self._candle[-2].min
-            t2 = abs(self._candle[-2].max - self._candle[-3].close)
-            t3 = abs(self._candle[-2].min - self._candle[-3].close)
+            t1 = self.candle[-2].high - self.candle[-2].low
+            t2 = abs(self.candle[-2].high - self.candle[-3].close)
+            t3 = abs(self.candle[-2].low - self.candle[-3].close)
             tr = max(t1, t2, t3)
-            self._value = (self._value * (self._lookback - 1) + tr) / self._lookback
+            self.value = (self.value * (self._lookback - 1) + tr) / self._lookback
 
     def onTick(self, price, ts, volume, action):
-        return # Not yet implemented
+        raise NotImplementedError # Not yet implemented
 
 
 class BollingerBand(CandleMetric):
+
     def __init__(
             self,
             candle,
@@ -452,7 +451,7 @@ class BollingerBand(CandleMetric):
         self.upperband = upperband[-1]
         self.lowerband = lowerband[-1]
         self.band = bollinger_band(upperband, lowerband)[-1]
-        self._value = self.band
+        self.value = self.band
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
