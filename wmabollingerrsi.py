@@ -238,11 +238,11 @@ class WMAForceBollingerRSIStrat(Strategy):
 
         elif s.hasBalance and s.rsi_sell_flag and s.rsi_ssignal:
             #logger.signal("Sell at max - 20:" + str(s.rsi.rsi))
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
         elif s.hasBalance and s.price < s.stop_loss_price:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -252,7 +252,7 @@ class WMAForceBollingerRSIStrat(Strategy):
             s.stop_loss_time = timestamp
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -269,7 +269,7 @@ class WMAForceBollingerRSIStrat(Strategy):
 
             # elif timestamp - s.prev_crossover_time >= s.timelag_required:
 
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False

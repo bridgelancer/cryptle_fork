@@ -315,7 +315,7 @@ class WMAMACDRSIStrat(Strategy):
             s.rsi_sell_flag_80 = False
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag_80:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Over 80 RSI')
 
             s.prev_crossover_time = None

@@ -295,7 +295,7 @@ class MACDVolStrat(Strategy):
 
         elif s.hasBalance and s.price < s.stop_loss_price:
             logger.info("Stop lost triggered")
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Triggered stoploss')
 
             s.prev_crossover_time = None
@@ -309,7 +309,7 @@ class MACDVolStrat(Strategy):
 
             # now setting no stop loss for the moment
         elif s.hasBalance and not s.macd_signal and s.vol_sell_signal:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Triggered volume sell')
 
             s.prev_crossover_time = None
@@ -322,7 +322,7 @@ class MACDVolStrat(Strategy):
             s.stop_loss_price = 0
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Over 70 RSI')
 
             s.prev_crossover_time = None
@@ -334,7 +334,7 @@ class MACDVolStrat(Strategy):
             s.rsi_sell_flag_80 = False
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag_80:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Over 80 RSI')
 
             s.prev_crossover_time = None
@@ -347,7 +347,7 @@ class MACDVolStrat(Strategy):
 
         elif s.hasBalance and s.rsi_ssignal and not s.macd_signal:
 
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Normal RSI + MACD')
 
             s.prev_crossover_time = None
@@ -411,9 +411,9 @@ if __name__ == '__main__':
             upperband.append((strat.last_timestamp, strat.bollinger.upperband))
             lowerband.append((strat.last_timestamp, strat.bollinger.lowerband))
 
-    dataset = 'bch_correct.log'
+    dataset = 'xrp_correct.log'
 
-    pair = 'bchusd'
+    pair = 'xrpusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
 
@@ -421,7 +421,7 @@ if __name__ == '__main__':
         pair=pair,
         portfolio=port,
         exchange=exchange,
-        period=120,
+        period=45,
         timeframe=3600,
         bband=8.0,
         bband_period=20)
@@ -487,7 +487,7 @@ if __name__ == '__main__':
 
     plot(
         strat.bar,
-        title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
+        title='MACDVol Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
         trades=strat.trades,
         signals=[wma5, wma8],
         indicators=[[ema_vol, net_vol, vol], [equity]])

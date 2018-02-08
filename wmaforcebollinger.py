@@ -131,7 +131,7 @@ class WMAForceBollingerStrat(Strategy):
                 s.prev_crossover_time = s.timestamp # @Hardcode @Fix logic, do not use timestamp here
 
             elif s.timestamp - s.prev_crossover_time >= s.timelag_required:
-                s.marketBuy(s.maxBuyAmount, appendTimestamp(s.message, s.timestamp))
+                s.marketBuy(s.maxBuyAmount)
 
                 s.prev_crossover_time = None
                 # setting can_sell flag for preventing premature exit
@@ -142,7 +142,7 @@ class WMAForceBollingerStrat(Strategy):
 
         # Sell immediately if v_sell signal is present, do not enter the position before next uptrend
         elif s.hasBalance and s.v_sell_signal:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, s.timestamp))
+            s.marketSell(s.maxSellAmount)
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -156,7 +156,7 @@ class WMAForceBollingerStrat(Strategy):
 
             elif s.timestamp - s.prev_crossover_time >= s.timelag_required:
 
-                s.marketSell(s.maxSellAmount, appendTimestamp(s.message, s.timestamp))
+                s.marketSell(s.maxSellAmount)
 
                 s.prev_crossover_time = None
                 s.dollar_volume_flag = False
