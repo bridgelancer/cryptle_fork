@@ -465,4 +465,3 @@ if __name__ == '__main__':
         indicators=[[bband], [equity]])
 
     plt.show()
-a
