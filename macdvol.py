@@ -21,6 +21,7 @@ class MACDVolStrat(Strategy):
             bband=3.5,
             bband_period=20,
             vol_multipler=30,
+            vol_threshold=0,
             vwma_ema_lb=4,
             vwma_lb=40,
             rsi_la=14,
@@ -51,6 +52,7 @@ class MACDVolStrat(Strategy):
         s.bband = bband
         s.timeframe = timeframe
         s.vol_multipler = vol_multipler
+        s.vol_threshold = vol_threshold
 
         # Initialize class storage of local instances of signals for execution
         s.tradable_window = 0
@@ -223,7 +225,7 @@ class MACDVolStrat(Strategy):
         s.rsi_ssignal = rsi_ssignal
 
         # Volume sell signal generation
-        if 50 < s.rsi.rsi and s.EMA_vol.ema < -20:
+        if 50 < s.rsi.rsi and s.EMA_vol.ema < s.vol_threshold and s.bar.last_volume < 100:
             s.vol_sell_signal = True
         else:
             s.vol_sell_signal = False
@@ -295,9 +297,8 @@ class MACDVolStrat(Strategy):
         #     s.was_v_sell = True
 
         elif s.hasBalance and s.price < s.stop_loss_price:
-            logger.info("Stop lost triggered")
             s.marketSell(s.maxSellAmount)
-            logger.signal('Sell: Triggered stoploss')
+            logger.signal('Sell: Stoploss')
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -311,7 +312,7 @@ class MACDVolStrat(Strategy):
             # now setting no stop loss for the moment
         elif s.hasBalance and not s.macd_signal and s.vol_sell_signal:
             s.marketSell(s.maxSellAmount)
-            logger.signal('Sell: Triggered volume sell')
+            logger.signal('Sell: Volume sell')
 
             s.prev_crossover_time = None
             s.dollar_volume_flag = False
@@ -426,7 +427,7 @@ if __name__ == '__main__':
     timeframe       = 3600
     bband_thresh    = 6.0
     bband_period    = 20
-    vwma_lb         = 100
+    vol_threshold   = -20
 
     strat = MACDVolStrat(
         pair=pair,
@@ -435,12 +436,13 @@ if __name__ == '__main__':
         period=period,
         timeframe=timeframe,
         bband=bband_thresh,
-        bband_period=bband_period)
+        bband_period=bband_period,
+        vol_threshold=vol_threshold)
 
     backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
 
     logger.report('Config: {} {} {} {} {}'.format(
-        period, bband_thresh, bband_period, timeframe, vwma_lb))
+        period, bband_thresh, bband_period, timeframe, vol_threshold))
     logger.report('MACD Equity:    %.2f' % port.equity)
     logger.report('MACD Cash:    %.2f' % port.cash)
     logger.report('MACD Asset:    %s' % str(port.balance))
