@@ -417,30 +417,45 @@ class ATR(CandleMetric):
     def onTick(self, price, ts, volume, action):
         return # Not yet implemented
 
-# Not validated
+
 class BollingerBand(CandleMetric):
-    def __init__(self, candle, lookback, use_open=True):
+    def __init__(
+            self,
+            candle,
+            lookback,
+            use_open=True,
+            sd=2,
+            roll_method=simple_moving_average,
+            upper_sd=None,
+            lower_sd=None):
+
         super().__init__(candle)
         self._use_open = use_open
         self._lookback = lookback
+        self._roll_method = roll_method
+        self._upper_sd = upper_sd or sd
+        self._lower_sd = lower_sd or sd
         self.width = None
         self.upperband = None
         self.lowerband = None
         self.band = None
 
     def onCandle(self):
-        if len(self._candle) < self._lookback:
+        if len(self.candle) < self._lookback:
             return
+        price = [x.open if self._use_open else x.close for x in self.candle[-self._lookback:]]
+        width = bollinger_width(price, self._lookback, roll_method=self._roll_method)
+        upperband = bollinger_up(price, self._lookback, sd=self._upper_sd, roll_method=self._roll_method)
+        lowerband = bollinger_low(price, self._lookback, sd=self._lower_sd, roll_method=self._roll_method)
 
-        prices = [x.open if self._use_open else x.close for x in self._candle[-self._lookback:]]
-        self.width = bollinger_width(price, self._lookback, roll_method=simple_moving_average)
-        self.upperband = bollinger_up(price, self._lookback, sd = 2, roll_method=simple_moving_average)
-        self.lowerband = bollinger_low(price, self._lookback, sd = 2, roll_method=simple_moving_average)
-        self.band = bollinger_band(price, self._lookback, sd = 2, roll_method=simple_moving_average)
+        self.width = width[-1]
+        self.upperband = upperband[-1]
+        self.lowerband = lowerband[-1]
+        self.band = bollinger_band(upperband, lowerband)[-1]
         self._value = self.band
 
     def onTick(self, price, ts, volume, action):
-        return # Not yet implemented
+        raise NotImplementedError # Not yet implemented
 
 # Not validated
 class BNB(CandleMetric):

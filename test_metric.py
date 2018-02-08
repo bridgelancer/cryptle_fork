@@ -151,13 +151,15 @@ def test_generic_bollinger_up():
 
 @unittest
 def test_generic_bollinger_low():
-    result = bollinger_up(quad, 5)
-    assert result[-1] - 10349.725067770738 < 1e-5
+    result = bollinger_low(quad, 5)
+    assert result[-1] - 9252.274932 < 1e-5
 
 
 @unittest
 def test_generic_bollinger_band():
-    result = bollinger_band(quad, 5)
+    up = bollinger_up(quad, 5)
+    low = bollinger_low(quad, 5)
+    result = bollinger_band(up, low)
     assert result[-1] - 11.86141 < 1e-5
 
 
@@ -287,7 +289,12 @@ def test_candle_ema():
 
 @unittest
 def test_candle_bollinger():
-    pass
+    bar = CandleBar(1)
+    boll = BollingerBand(bar, 5)
+
+    for i, price in enumerate(quad):
+        bar.pushTick(price, i)
+    assert boll.width - 274.36253388 < 1e-5
 
 
 if __name__ == '__main__':
