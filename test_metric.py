@@ -331,5 +331,15 @@ def test_candle_macd():
     assert macd.diff_ma - 0.5843467703997498 < 1e-5
 
 
+@unittest
+def test_candle_manb():
+    bar = CandleBar(5)
+    boll = BollingerBand(bar, 5)
+    snb = MANB(boll, 5, roll_method=simple_moving_average)
+    for i, price in enumerate(const):
+        bar.pushTick(price, i)
+    assert snb == 0
+
+
 if __name__ == '__main__':
     run_all_tests()
