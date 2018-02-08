@@ -22,23 +22,20 @@ class MACDVolStrat(Strategy):
             bband_period=20,
             vol_multipler=30,
             vol_threshold=0,
-            vwma_ema_lb=4,
-            vwma_lb=40,
+            vol_ema_lb=4,
             rsi_la=14,
             **kws):
 
         s.indicators = {}
 
         s.indicators['bar'] = bar = CandleBar(period)
-        s.indicators['vwma1'] = ContinuousVWMA(period * 3) # @HARDCODE
-        s.indicators['vwma2'] = ContinuousVWMA(period * vwma_lb) # @HARDCODE
 
         # Initialize appropriate TAs
         s.ATR_5 = ATR(bar, scope1)
         s.WMA_5 = WMA(bar, scope1)
         s.WMA_8 = WMA(bar, scope2)
         s.macd = MACD_WMA(s.WMA_5, s.WMA_8, macd_scope)
-        s.EMA_vol = EMA_NetVol(bar, vwma_ema_lb)
+        s.EMA_vol = EMA_NetVol(bar, vol_ema_lb)
         s.sma_20 = SMA(bar, bband_period)
         s.bollinger = BollingerBand(s.sma_20, bband_period)
         s.rsi = RSI(bar, rsi_la)
@@ -166,17 +163,6 @@ class MACDVolStrat(Strategy):
         s.uptrend   = s.WMA_5.wma > s.WMA_8.wma
         s.downtrend = s.WMA_5.wma < s.WMA_8.wma
 
-        # @TODO should not trade the first signal if we enter the bollinger_signal with an uptrend?
-
-        # Dollar volume signal # hard code threshold for the moment
-        # norm_vol1 = s.vwma1.dollar_volume / s.vwma1.period
-        # norm_vol2 = s.vwma2.dollar_volume / s.vwma2.period
-
-        # if s.hasBalance and  norm_vol1 > norm_vol2 * s.vol_multipler:
-        #     s.dollar_volume_flag = True
-        # else:
-        #     s.dollar_volume_flag = False
-
         # Band confirmation
         if s.bollinger.band > s.bband: # s.bband = 3.0 by default
             s.bollinger_signal = True
@@ -242,12 +228,6 @@ class MACDVolStrat(Strategy):
             else:
                 s.prev_crossover_time = None
 
-        elif s.hasBalance:
-            # if s.dollar_volume_flag and s.vwma1.dollar_volume <= 0: # Currently no use
-            #     v_sell_signal = True
-            #     #logger.signal("VWMA Indicate sell at: " + str(timestamp))
-                pass
-
         else:
             s.prev_crossover_time = None
 
@@ -285,16 +265,6 @@ class MACDVolStrat(Strategy):
                 s.prev_crossover_time = None
                 s.prev_buy_time = timestamp
                 s.prev_buy_price = s.price
-
-        #Sell immediately if v_sell signal is present, do not enter the position before next uptrend
-        #Currently commented out because of lack of valid snooping mechanism
-        # elif s.hasBalance and s.v_sell_signal:
-        #     s.marketSell(s.maxSellAmount)
-
-        #     s.prev_crossover_time = None
-        #     s.dollar_volume_flag = False
-
-        #     s.was_v_sell = True
 
         elif s.hasBalance and s.price < s.stop_loss_price:
             s.marketSell(s.maxSellAmount)
@@ -381,8 +351,6 @@ if __name__ == '__main__':
     base_logger.setLevel(logging.METRIC)
     base_logger.addHandler(fh)
 
-    vwma1 = []
-    vwma2 = []
     wma5 = []
     wma8 = []
     equity = []
@@ -394,16 +362,12 @@ if __name__ == '__main__':
     net_vol = []
 
     def record_indicators(strat):
-        global vwma1
-        global vwma2
         global wma5
         global wma8
         global equity
         global bband
         global sharpe_ratio
 
-        vwma1.append((strat.last_timestamp, strat.vwma1.dollar_volume / strat.vwma1.period))
-        vwma2.append((strat.last_timestamp, strat.vwma2.dollar_volume / strat.vwma2.period))
         equity.append((strat.last_timestamp, strat.equity))
 
         if len(strat.bar) > 10:
@@ -484,8 +448,6 @@ if __name__ == '__main__':
         print("Sharpe ratio (daily): {}".format(sharpe_ratio))
 
     #calculateSP(equity)
-    vwma1 = [[x[0] for x in vwma1], [x[1] for x in vwma1]]
-    vwma2 = [[x[0] for x in vwma2], [x[1] for x in vwma2]]
     wma5 = [[x[0] for x in wma5], [x[1] for x in wma5]]
     wma8 = [[x[0] for x in wma8], [x[1] for x in wma8]]
     upperband = [[x[0] for x in upperband], [x[1] for x in upperband]]
