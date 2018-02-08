@@ -297,5 +297,29 @@ def test_candle_bollinger():
     assert boll.width - 274.36253388 < 1e-5
 
 
+@unittest
+def test_candle_atr():
+    bar = CandleBar(4)
+    atr = ATR(bar, 5)
+
+    for i, price in enumerate(const):
+        bar.pushTick(price, i)
+    assert atr == 0
+
+    for i, price in enumerate(lin):
+        bar.pushTick(price, i)
+    assert atr - 3.9799 < 1e-3
+
+
+@unittest
+def test_candle_rsi():
+    bar = CandleBar(1)
+    rsi = RSI(bar, 14)
+
+    for i, price in enumerate(lin):
+        bar.pushTick(price, i)
+    assert rsi == 100
+
+
 if __name__ == '__main__':
     run_all_tests()
