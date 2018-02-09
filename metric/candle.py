@@ -85,7 +85,7 @@ class CandleBar:
     def __init__(self, period, maxcandles=500):
         self._bars = []
         self._metrics = []
-        self._period = period
+        self.period = period
         self._maxsize = maxcandles
         self.last_timestamp = None
 
@@ -99,10 +99,10 @@ class CandleBar:
 
         # append previous n candles if no tick arrived in between
         elif self.barIndex(timestamp) != self.barIndex(self.last_timestamp):
-            tmp_ts = self.last_timestamp + self._period
+            tmp_ts = self.last_timestamp + self.period
             while self.barIndex(tmp_ts) < self.barIndex(timestamp):
                 self._pushEmptyCandle(self.last_close, tmp_ts)
-                tmp_ts += self._period
+                tmp_ts += self.period
 
             self._pushInitCandle(price, timestamp, volume)
             self.last_timestamp = timestamp
@@ -128,7 +128,7 @@ class CandleBar:
 
 
     def barIndex(self, timestamp):
-        return int(timestamp / self._period)
+        return int(timestamp / self.period)
 
 
     def prune(self, size):
@@ -148,7 +148,7 @@ class CandleBar:
         self._broadcastCandle()
 
 
-    def _pushEmptyCandle(self, price, label):
+    def _pushEmptyCandle(self, price, timestamp):
         self._bars.append(Candle(price, price, price, price, self.barIndex(timestamp), 0))
         self._broadcastCandle()
 
@@ -214,6 +214,14 @@ class CandleBar:
     @last_volume.setter
     def last_volume(self, value):
         self._bars[-1].volume = value
+
+
+def last_close_price(candle, lookback):
+    return [x.close for x in candle[-lookback:]]
+
+
+def last_open_price(candle, lookbac):
+    return [x.open for x in candle[-lookback:]]
 
 
 class CandleMetric(Metric):
@@ -364,6 +372,12 @@ class MACD(CandleMetric):
     The value of self.value (inherited from Metric) is set to be the difference
     between the difference of two moving averages and the moving average of this
     difference.
+
+    Args:
+        candle: The underlying CandleBar instance
+        fast: Lookback of the shorter moving average
+        slow: Lookback of the longer moving average
+        signal: Lookback of the difference moving average
     '''
 
     def __init__(self, candle, fast, slow, signal, use_open=True,
