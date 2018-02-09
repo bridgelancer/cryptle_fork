@@ -144,26 +144,6 @@ def test_generic_bollinger_width():
 
 
 @unittest
-def test_generic_bollinger_up():
-    result = bollinger_up(quad, 5)
-    assert result[-1] - 10349.725067770738 < 1e-5
-
-
-@unittest
-def test_generic_bollinger_low():
-    result = bollinger_low(quad, 5)
-    assert result[-1] - 9252.274932 < 1e-5
-
-
-@unittest
-def test_generic_bollinger_band():
-    up = bollinger_up(quad, 5)
-    low = bollinger_low(quad, 5)
-    result = bollinger_band(up, low)
-    assert result[-1] - 11.86141 < 1e-5
-
-
-@unittest
 def test_generic_macd():
     diff, diff_ma  = macd(sine, 5, 8, 3)
     assert abs(diff[-1] + 3.08097455232022) < 1e-6
