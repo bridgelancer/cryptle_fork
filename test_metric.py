@@ -301,6 +301,10 @@ def test_candle_rsi():
         bar.pushTick(price, i)
     assert rsi == 100
 
+    for i, price in enumerate(alt_quad):
+        bar.pushTick(price, i)
+    assert rsi - 55.48924 < 1e-5
+
 
 @unittest
 def test_candle_macd():
