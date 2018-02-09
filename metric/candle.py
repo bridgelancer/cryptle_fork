@@ -84,11 +84,10 @@ class CandleBar:
         _maxsize: Maximum number of historic candles to keep around
     '''
 
-    def __init__(self, period, maxcandles=500):
+    def __init__(self, period):
         self._bars = []
         self._metrics = []
         self.period = period
-        self._maxsize = maxcandles
         self.last_timestamp = None
 
 
@@ -117,7 +116,6 @@ class CandleBar:
             self.last_volume += volume
 
         self._broadcastTick(price, timestamp, volume, action)
-        self.prune(self._maxsize)
 
 
     def pushCandle(self, o, c, h, l, t, v):
