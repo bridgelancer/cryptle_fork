@@ -1,7 +1,7 @@
 from cryptle.backtest import *
 from cryptle.strategy import Portfolio
 from cryptle.loglevel import *
-from cryptle.plotting import *
+#from cryptle.plotting import *
 
 import logging
 import time
@@ -16,7 +16,7 @@ sh = logging.StreamHandler()
 sh.setLevel(logging.REPORT)
 sh.setFormatter(formatter)
 
-fh = logging.FileHandler('backtest.log', mode='w')
+fh = logging.FileHandler('backtest.1.log', mode='w')
 fh.setLevel(logging.METRIC)
 fh.setFormatter(formatter)
 
@@ -24,6 +24,10 @@ logger = logging.getLogger('Backtest')
 logger.setLevel(logging.DEBUG)
 logger.addHandler(sh)
 logger.addHandler(fh)
+
+stratlog = logging.getLogger('Strategy')
+stratlog.setLevel(logging.METRIC)
+stratlog.addHandler(fh)
 
 baselog = logging.getLogger('cryptle')
 baselog.setLevel(logging.METRIC)
@@ -37,22 +41,16 @@ def snoop(Strat, dataset, pair, **kws):
     '''
 
     # Parameters to snoop
-    period          = range(45, 181, 45)
-    bband           = range(400, 1201, 100)  # need to divide by 100
-    timeframe       = range(30, 121, 30)     # need to multiply by 60
-    delay           = range(10, 11, 10)
-    upperatr        = range(50, 51, 15)     # need to divide by 100
-    loweratr        = range(50, 51, 15)     # need to divide by 100
-    bband_period    = range(10, 31, 5)
-    vol_multiplier  = range(30, 31, 20)
+    period          = range(30, 60, 10)
+    bband           = range(850, 1201, 50)  # need to divide by 100
+    timeframe       = range(60, 121, 30)     # need to multiply by 60
+    bband_period    = range(10, 41, 10)
 
     timeframe_60    = [x * 60 for x in timeframe]
     bband_100       = [x / 100 for x in bband]
-    upperatr_100    = [x / 100 for x in upperatr]
-    loweratr_100    = [x / 100 for x in loweratr]
     # @TODO also snoop type of ma used for bars, bollinger band
 
-    configs = itertools.product(period, bband_100, timeframe_60, delay, upperatr_100, loweratr_100, bband_period, vol_multiplier)
+    configs = itertools.product(period, bband_100, timeframe_60, bband_period)
 
     paper = PaperExchange(commission=0.0012, slippage=0)
     test = Backtest(paper)
@@ -60,18 +58,16 @@ def snoop(Strat, dataset, pair, **kws):
 
     # Run the config of strategies
     for i, config in enumerate(configs):
-        period, bband, timeframe, delay, uatr, latr, bband_period, vol_multiplier = config
+        period, bband, timeframe, bband_period = config
 
         port = Portfolio(10000)
         strat = Strat(
                 period=period,
-                upper_atr=uatr,
-                lower_atr=latr,
+                upper_atr=0.5,
+                lower_atr=0.5,
                 timeframe=timeframe,
                 bband=bband,
                 bband_period=bband_period,
-                vol_multiplier=vol_multiplier,
-                timelag_required=delay,
                 pair=pair,
                 portfolio=port,
                 exchange=paper,
@@ -128,7 +124,7 @@ from wmabollingerrsi import WMAForceBollingerRSIStrat
 from wmamacdrsi import WMAMACDRSIStrat
 from wmarsiobc import WMARSIOBCStrat
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 
 def demoRSIOBC(dataset, pair):
@@ -210,6 +206,6 @@ def demoMACDStrat(dataset, pair):
 
 
 if __name__ == '__main__':
-    snoop(WMAMACDRSIStrat, 'eth.log', 'ethusd')
+    snoop(WMAMACDRSIStrat, 'xrp.log', 'xrpusd')
     #demoMACDStrat('data/bch_correct.log',  'bchusd')
-    plt.show()
+    #plt.show()
