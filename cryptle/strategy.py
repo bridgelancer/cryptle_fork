@@ -116,7 +116,10 @@ class Strategy:
         self.last_price = price
         self.last_timestamp = timestamp
         for k, v in self.indicators.items():
-            v.update(price, timestamp, volume, action)
+            try:
+                v.update(price, timestamp, volume, action)
+            except:
+                v.pushTick(price, timestamp, volume, action)
 
         #Prepare for new TA interface
         #for k, metric in self.tick_metrics.items():
@@ -136,7 +139,10 @@ class Strategy:
         self.last_price = cl
         self.last_timestamp = ts
         for k, v in self.indicators.items():
-            v.update(op, cl, hi, lo, ts, vol)
+            try:
+                v.update(op, cl, hi, lo, ts, vol)
+            except:
+                v.pushTick(price, timestamp, volume, action)
 
         #Prepare for new TA interface
         #for k, metric in self.candle_metrics.items():
