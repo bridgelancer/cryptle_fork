@@ -270,7 +270,8 @@ def test_candle_ema():
 @unittest
 def test_candle_bollinger():
     bar = CandleBar(1)
-    boll = BollingerBand(bar, 5)
+    sma = SMA(bar, 5)
+    boll = BollingerBand(sma, 5)
 
     for i, price in enumerate(quad):
         bar.pushTick(price, i)
@@ -314,8 +315,9 @@ def test_candle_macd():
 @unittest
 def test_candle_manb():
     bar = CandleBar(5)
-    boll = BollingerBand(bar, 5)
-    snb = MANB(boll, 5, roll_method=simple_moving_average)
+    sma = SMA(bar, 4)
+    boll = BollingerBand(sma, 5)
+    snb = MANB(boll, 5)
     for i, price in enumerate(const):
         bar.pushTick(price, i)
     assert snb == 0

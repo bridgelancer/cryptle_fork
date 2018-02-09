@@ -1,6 +1,8 @@
 from .base import Metric
 from .generic import *
 
+import numpy as np
+
 
 class Candle:
     '''Mutable candle stick with namedtuple-like API.'''
@@ -138,6 +140,14 @@ class CandleBar:
             raise ("Empty CandleBar cannot be pruned")
 
 
+    def open_prices(self, num_candles):
+        return [x.open for x in self[-num_candles:]]
+
+
+    def close_prices(self, num_candles):
+        return [x.close for x in self[-num_candles:]]
+
+
     def _pushFullCandle(self, o, c, h, l, t, v):
         self._bars.append(Candle(o, c, h, l, t, v))
         self._broadcastCandle()
@@ -216,14 +226,6 @@ class CandleBar:
         self._bars[-1].volume = value
 
 
-def last_close_price(candle, lookback):
-    return [x.close for x in candle[-lookback:]]
-
-
-def last_open_price(candle, lookbac):
-    return [x.open for x in candle[-lookback:]]
-
-
 class CandleMetric(Metric):
     '''Base class for candle dependent metrics'''
 
@@ -250,8 +252,33 @@ class SMA(CandleMetric):
     def onCandle(self):
         if len(self.candle) < self._lookback:
             return
-        prices = [x.open if self._use_open else x.close for x in self.candle[-self._lookback:]]
-        self.value = simple_moving_average(prices, self._lookback)[0]
+        if self._use_open:
+            prices = self.candle.open_prices(self._lookback)
+        else:
+            prices = self.candle.close_prices(self._lookback)
+        self.value = np.mean(prices)
+
+    def onTick(self, price, ts, volume, action):
+        raise NotImplementedError # Not yet implemented
+
+
+class WMA(CandleMetric):
+    '''Calculate and store the latest WMA value for the attached candle'''
+
+    def __init__(self, candle, lookback, use_open=True, weight=None):
+        super().__init__(candle)
+        self._use_open = use_open
+        self._lookback = lookback
+        self._weight = weight or [2 * (i + 1)/(lookback * (lookback + 1)) for i in range(lookback)]
+
+    def onCandle(self):
+        if len(self.candle) < self._lookback:
+            return
+        if self._use_open:
+            prices = self.candle.open_prices(self._lookback)
+        else:
+            prices = self.candle.close_prices(self._lookback)
+        self.value = np.average(prices, axis=0, weights=self._weight)
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
@@ -264,30 +291,14 @@ class EMA(CandleMetric):
         super().__init__(candle)
         self._use_open = use_open
         self._lookback = lookback
+        self._weight = 2 / (lookback + 1)
 
     def onCandle(self):
-        if len(self.candle) < self._lookback:
-            return
-        prices = [x.open if self._use_open else x.close for x in self.candle[-self._lookback:]]
-        self.value = exponential_moving_average(prices, self._lookback)[0]
-
-    def onTick(self, price, ts, volume, action):
-        raise NotImplementedError # Not yet implemented
-
-
-class WMA(CandleMetric):
-    '''Calculate and store the latest WMA value for the attached candle'''
-
-    def __init__(self, candle, lookback, use_open=True):
-        super().__init__(candle)
-        self._use_open = use_open
-        self._lookback = lookback
-
-    def onCandle(self):
-        if len(self.candle) < self._lookback:
-            return
-        prices = [x.open if self._use_open else x.close for x in self.candle[-self._lookback:]]
-        self.value = weighted_moving_average(prices, self._lookback)[0]
+        price = self.candle.last_open if self._use_open else self.candle.last_close
+        if self.value == 0:
+            self.value = price
+        else:
+            self.value = price * self._weight + (1 - self._weight) * self.value
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
@@ -436,37 +447,50 @@ class ATR(CandleMetric):
 
 
 class BollingerBand(CandleMetric):
+    '''Bollinger band
+
+    Args:
+        ma: Moving average to based upon
+        upper_sd: Upper band standard deviation
+        lower_sd: Lower band standard deviation
+        lookback: Number of historic bars to consider for standard deviation
+
+    Attributes:
+        width: Standard deviation
+        upperband: Price at top of the bollinger band
+        lowerband: Price at bottom of the bollinger band
+        band: Percent difference between price of the top of band and bottom of band
+        value: Proxy for the band attribute
+    '''
 
     def __init__(
             self,
-            candle,
+            ma,
             lookback,
             use_open=True,
             sd=2,
-            roll_method=simple_moving_average,
             upper_sd=None,
             lower_sd=None):
 
-        super().__init__(candle)
+        super().__init__(ma.candle)
+        self.ma = ma
         self._use_open = use_open
         self._lookback = lookback
-        self._roll_method = roll_method
         self._upper_sd = upper_sd or sd
         self._lower_sd = lower_sd or sd
-        self.width = None
-        self.upperband = None
-        self.lowerband = None
-        self.band = None
 
     def onCandle(self):
         if len(self.candle) < self._lookback:
             return
-        price = [x.open if self._use_open else x.close for x in self.candle[-self._lookback:]]
-        width = bollinger_width(price, self._lookback, roll_method=self._roll_method)
 
-        self.width = width[-1]
-        self.upperband = price[-1] + self._upper_sd * self.width
-        self.lowerband = price[-1] - self._lower_sd * self.width
+        if self._use_open:
+            prices = self.candle.open_prices(self._lookback)
+        else:
+            prices = self.candle.close_prices(self._lookback)
+
+        self.width = np.std(prices)
+        self.upperband = self.ma + self._upper_sd * self.width
+        self.lowerband = self.ma - self._lower_sd * self.width
         self.band = ((self.upperband / self.lowerband) - 1) * 100
         self.value = self.band
 
@@ -475,16 +499,24 @@ class BollingerBand(CandleMetric):
 
 
 class MANB(CandleMetric):
+    '''Moving average impose on bollinger band
+
+    Args:
+        bband: An instance of BollingerBand
+        lookback: Lookback of the moving average
+        avg_method: Averging method used for the moving average
+    '''
+
     def __init__(self,
             bband,
             lookback,
             use_open=True,
-            roll_method=simple_moving_average):
+            weights=None):
 
         super().__init__(bband.candle)
         self._use_open = use_open
         self._lookback = lookback
-        self._roll_method = roll_method
+        self._weights = weights
         self._bband = bband
         self._bands = []
 
@@ -494,10 +526,10 @@ class MANB(CandleMetric):
 
         self._bands.append(self._bband.value)
 
-        if len(self._bands) < self._lookback:
-            return
-
-        self.value = self._roll_method(self._bands, self._lookback)[-1]
+        if self._weights is None:
+            self.value = np.mean(self._bands[-self._lookback:])
+        else:
+            self.value = np.average(self._weights, axis=0, weights=self._weight)
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
