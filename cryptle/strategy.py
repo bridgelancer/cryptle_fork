@@ -271,7 +271,7 @@ class Strategy:
         self.portfolio.cash -= amount * price
         self.trades.append([timestamp, price])
 
-        msg = 'Bought {:.7g} {} @${:<.6g} at {:%Y-%m-%d %H:%M:%S} {}'
+        msg = 'Bought {:7.6g} {} @${:<7.6g} at {:%Y-%m-%d %H:%M:%S} {}'
         logger.info(msg.format(
                 amount,
                 self.pair.upper(),
@@ -293,7 +293,7 @@ class Strategy:
         self.portfolio.cash += amount * price
         self.trades[-1] += [timestamp, price]
 
-        msg = 'Sold   {:.7g} {} @${:<.6g} at {:%Y-%m-%d %H:%M:%S} {}'
+        msg = 'Sold   {:7.6g} {} @${:<7.6g} at {:%Y-%m-%d %H:%M:%S} {}'
         logger.info(msg.format(
                 amount,
                 self.pair.upper(),
