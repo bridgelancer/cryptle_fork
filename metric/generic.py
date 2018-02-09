@@ -55,8 +55,8 @@ def bollinger_width(series, lookback, roll_method=simple_moving_average):
     return output
 
 
-def bollinger_band(up, low):
-    '''Bollinger Band bandwidth in percentage
+def percent_diff(up, low):
+    '''Percentage difference between two series of numbers
 
     Args:
         up: A list of floats
@@ -65,26 +65,8 @@ def bollinger_band(up, low):
     return [((u / l) - 1) * 100 for u, l in zip(up, low)]
 
 
-def bollinger_up(series, lookback, sd= 2, roll_method=simple_moving_average):
-    '''Bollinger Band upperband'''
-    output_len = len(series) - lookback + 1
-    width = bollinger_width(series, lookback)
-    mean = roll_method(series, lookback)
-    output = []
-    for i in range(output_len):
-        output.append(series[i + lookback - 1] + sd* width[i])
-    return output
-
-
-def bollinger_low(series, lookback, sd=2, roll_method=simple_moving_average):
-    '''Bollinger Band lowerband'''
-    output_len = len(series) - lookback + 1
-    width = bollinger_width(series, lookback)
-    mean = roll_method(series, lookback)
-    output = []
-    for i in range(output_len):
-        output.append(series[i + lookback - 1] - sd* width[i])
-    return output
+def translate(width, lookback, sd= 2, roll_method=simple_moving_average):
+    raise NotImplementedError('Use numpy arrays instead')
 
 
 def macd(series, fast, slow, signal, roll_method=weighted_moving_average):

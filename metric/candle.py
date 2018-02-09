@@ -463,13 +463,11 @@ class BollingerBand(CandleMetric):
             return
         price = [x.open if self._use_open else x.close for x in self.candle[-self._lookback:]]
         width = bollinger_width(price, self._lookback, roll_method=self._roll_method)
-        upperband = bollinger_up(price, self._lookback, sd=self._upper_sd, roll_method=self._roll_method)
-        lowerband = bollinger_low(price, self._lookback, sd=self._lower_sd, roll_method=self._roll_method)
 
         self.width = width[-1]
-        self.upperband = upperband[-1]
-        self.lowerband = lowerband[-1]
-        self.band = bollinger_band(upperband, lowerband)[-1]
+        self.upperband = price[-1] + self._upper_sd * self.width
+        self.lowerband = price[-1] - self._lower_sd * self.width
+        self.band = ((self.upperband / self.lowerband) - 1) * 100
         self.value = self.band
 
     def onTick(self, price, ts, volume, action):
