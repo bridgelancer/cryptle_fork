@@ -49,8 +49,7 @@ class SNBStrat(Strategy):
         s.wma1 = WMA(bar, scope1)
         s.wma2 = WMA(bar, scope2)
         s.macd = MACD(s.wma1, s.wma2, macd_scope)
-        s.sma = SMA(bar, bband_period)
-        s.boll = BollingerBand(s.sma, bband_period)
+        s.boll = BollingerBand(bar, bband_period)
         s.snb = MABollinger(s.boll, snb_period)
         s.rsi = RSI(bar, rsi_period)
 
@@ -58,10 +57,12 @@ class SNBStrat(Strategy):
         s.init_time = 0
         s.init_bar = max(scope1, scope2, macd_scope, bband_period, snb_period, rsi_period)
         s.tradable_window = 0
+        s.atr_signal = False
         s.bollinger_signal = False
+        s.snb_signal = False
+        s.macd_signal = False
+        s.rsi_signal = False
         s.rsi_sell_flag = False
-        s.rsi_sell_flag_80 = False
-        s.rsi_signal = None
         s.prev_crossover_time = None
 
 
@@ -84,9 +85,9 @@ class SNBStrat(Strategy):
     def signifyATR(s, price, timestamp):
         s.belowatr = max(s.wma1, s.wma2) < price - s.lower_atr * s.atr
         s.downtrend = s.wma1 < s.wma2
-        s.atr_signal = False
 
         if not s.belowatr:
+            s.atr_signal = False
             s.prev_crossover_time = None
         else:
             s.prev_crossover_time = s.prev_crossover_time or timestamp
@@ -96,47 +97,46 @@ class SNBStrat(Strategy):
 
     def signifyBoll(s, timestamp):
         if s.boll > s.bband:
+            s.tradable_window = timestamp
             if not s.bollinger_signal:
+                s.bollinger_signal = True
                 logger.metric('Bollinger window opened')
-            s.bollinger_signal = True
-            s.tradable_window = timestamp
-        elif s.snb * s.snb_factor < s.boll and s.boll > s.snb_boll:
-            if not s.bollinger_signal:
-                logger.metric('Bollinger window opened with snb')
-            s.bollinger_signal = True
-            s.tradable_window = timestamp
+
         elif timestamp > s.tradable_window + s.boll_window:
             if s.bollinger_signal:
                 logger.metric('Bollinger window closed')
-            s.bollinger_signal = False
+                s.bollinger_signal = False
+
+            new_snb_signal = s.snb * s.snb_factor < s.boll and s.boll > s.snb_boll
+            if new_snb_signal and not s.snb_signal:
+                logger.metric('SNB upcorss')
+            elif not new_snb_signal and s.snb_signal:
+                logger.metric('SNB downcross')
+            s.snb_signal = new_snb_signal
 
 
     def signifyMACD(s):
-        s.macd_signal = s.macd < 0
+        new_macd_signal = s.macd > 0
+        if new_macd_signal and not s.macd_signal:
+            logger.metric('MACD upcross')
+        elif not new_macd_signal and s.macd_signal:
+            logger.metric('MACD downcross')
+        s.macd_signal = new_macd_signal
 
 
     def signifyRSI(s):
-        if s.rsi > 80:
-            if not s.rsi_sell_flag_80:
-                logger.metric('RSI over 80')
-            s.rsi_sell_flag_80 = True
-
-        elif s.rsi > 70:
-            if not s.rsi_sell_flag:
-                logger.metric('RSI over 70')
+        if s.rsi > 70:
             s.rsi_sell_flag = True
-
+            s.rsi_signal = True
         elif s.rsi > 50:
             s.rsi_signal = True
 
-        if s.rsi_sell_flag_80 and s.rsi < 70:
+        if s.rsi_sell_flag and s.downtrend:
             s.rsi_signal = False
 
-        elif s.rsi_sell_flag and s.downtrend:
+        if s.rsi < 50:
             s.rsi_signal = False
-
-        elif s.rsi < 50:
-            s.rsi_signal = False
+            s.rsi_sell_flag = False
 
 
     def execute(s, timestamp):
@@ -144,7 +144,7 @@ class SNBStrat(Strategy):
                 s.hasCash
                 and not s.hasBalance
                 and s.rsi_signal
-                and s.bollinger_signal
+                and (s.bollinger_signal or s.snb_signal)
                 and s.macd_signal
                 and s.atr_signal
            ):
@@ -155,11 +155,6 @@ class SNBStrat(Strategy):
             s.marketSell(s.maxSellAmount)
             s.reset_params()
             logger.signal('Sell: Over 70 RSI')
-
-        elif s.hasBalance and not s.rsi_signal and s.rsi_sell_flag_80:
-            s.marketSell(s.maxSellAmount)
-            s.reset_params()
-            logger.signal('Sell: Over 80 RSI')
 
         elif s.hasBalance and not s.rsi_signal and not s.macd_signal:
             s.marketSell(s.maxSellAmount)
@@ -219,21 +214,24 @@ if __name__ == '__main__':
         boll_window=3600,
         snb_period=10,
         snb_factor=1.25,
+        snb_boll=3,
         rsi_period=14,
         pair=pair,
         portfolio=port,
         exchange=exchange)
 
-    backtest_tick(strat, dataset, exchange=exchange) #, callback=record_indicators)
+    backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
 
+    logger.report('Equity:  %.2f' % port.equity)
     logger.report('Cash:    %.2f' % port.cash)
     logger.report('Asset:    %s' % str(port.balance))
     logger.report('No. of trades:  %d' % len(strat.trades))
     logger.report('No. of candles:  %d' % len(strat.bar))
 
-    #plot(
-    #    strat.bar,
-    #    title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
-    #    trades=strat.trades)
+    plot(
+        strat.bar,
+        title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
+        trades=strat.trades,
+        indicators=[[equity]])
 
-    #plt.show()
+    plt.show()
