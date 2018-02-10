@@ -65,6 +65,7 @@ class Candle:
         self._bar[5] = value
 
 
+
 class CandleBar:
     '''Container for candlesticks of a given length.
 
@@ -74,25 +75,30 @@ class CandleBar:
     from the buffer and update themselves accordingly.
 
     Args:
-        period: Length of each candlestick of this collection
-        maxcandles: Maximum number of historic candles to keep around
+        period (int): Length of each candlestick of this collection
+        maxsize (int): Maximum number of historic candles to keep around
+        auto_prune (int): Flag for auto-removal of histoic candles
 
     Attributes:
-        _bars: List of all the Candle objects
-        _metrics: Metrics that are attached to the CandleBar instance
-        _period: Length (time span) of each candlestick
-        _maxsize: Maximum number of historic candles to keep around
+        period (int): Length in seconds of each candlestick
+        _bars (list): List of all the Candle objects
+        _metrics (list): Metrics that are attached to the CandleBar instance
+        _maxsize (int): Maximum number of historic candles to keep around
+            (ignored if auto_prune is False)
+        _auto_prune (bool): Flag for auto-removal of historic candles
     '''
 
-    def __init__(self, period):
+    def __init__(self, period, auto_prune=False, maxsize=500):
+        self.period = period
         self._bars = []
         self._metrics = []
-        self.period = period
+        self._auto_prune = auto_prune
+        self._maxsize = maxsize
         self.last_timestamp = None
 
 
     def pushTick(self, price, timestamp, volume=0, action=0):
-        '''Provides public interface for accepting ticks'''
+        '''Provides public interface for accepting ticks.'''
         # initialise the candle collection
         if self.last_timestamp is None:
             self.last_timestamp = timestamp
@@ -117,18 +123,22 @@ class CandleBar:
 
         # No one uses it yet so removed for reducing overhead
         #self._broadcastTick(price, timestamp, volume, action)
+        #if self._auto_prune:
+        #    self.prune(self._maxsize)
 
 
     def pushCandle(self, o, c, h, l, t, v):
-        '''Provides public interface for accepting aggregated candles'''
+        '''Provides public interface for accepting aggregated candles.'''
         self._pushFullCandle(o, c, h, l, t, v)
 
 
     def attach(self, metric):
+        '''Allow a candlemetric to subscribe for updates of candles.'''
         self._metrics.append(metric)
 
 
     def barIndex(self, timestamp):
+        '''Helper to retrieve label of a candle with given timestamp.'''
         return int(timestamp / self.period)
 
 
@@ -225,23 +235,36 @@ class CandleBar:
         self._bars[-1].volume = value
 
 
+
 class CandleMetric(Metric):
-    '''Base class for candle dependent metrics'''
+    '''Base class for candle dependent metrics.
+
+    Metrics which are derived from an underlying candlestick chart should
+    inherit from this class. Implementation of CandleMetric must call the parent
+    constructor and pass an instance of CandleBar in their own constructors.
+
+    Implementation class should also at least implement one of:
+        - onCandle()
+        - onTick(price, timestamp, volume, action)
+    such that the metrics can properly subscribe to updates from the CandleBar.
+
+    Example:
+        def onCandle(self):
+            pass
+
+        def onTick(self, price, ts, volume, action):
+            pass
+    '''
+
 
     def __init__(self, candle):
         self.candle = candle
         self.value = 0
         candle.attach(self)
 
-    def onCandle(self):
-        raise NotImplementedError('Base class does not register callbacks')
-
-    def onTick(self, price, ts, volume, action):
-        raise NotImplementedError('Base class does not register callbacks')
 
 
 class SMA(CandleMetric):
-    '''Calculate and store the latest SMA value for the attached candle'''
 
     def __init__(self, candle, lookback, use_open=True):
         super().__init__(candle)
@@ -261,8 +284,8 @@ class SMA(CandleMetric):
         raise NotImplementedError # Not yet implemented
 
 
+
 class WMA(CandleMetric):
-    '''Calculate and store the latest WMA value for the attached candle'''
 
     def __init__(self, candle, lookback, use_open=True, weight=None):
         super().__init__(candle)
@@ -283,8 +306,8 @@ class WMA(CandleMetric):
         raise NotImplementedError # Not yet implemented
 
 
+
 class EMA(CandleMetric):
-    '''Calculate and store the latest EMA value for the attached candle'''
 
     def __init__(self, candle, lookback, use_open=True):
         super().__init__(candle)
@@ -301,6 +324,7 @@ class EMA(CandleMetric):
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
+
 
 
 class ATR(CandleMetric):
@@ -325,6 +349,7 @@ class ATR(CandleMetric):
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
+
 
 
 class MACD(CandleMetric):
@@ -369,21 +394,21 @@ class MACD(CandleMetric):
         raise NotImplementedError # Not yet implemented
 
 
+
 class BollingerBand(CandleMetric):
-    '''Bollinger band
+    '''Bollinger band, with value set to be the band percentage difference.
 
     Args:
         ma: Moving average to based upon
+        lookback: Number of historic bars to consider for standard deviation
         upper_sd: Upper band standard deviation
         lower_sd: Lower band standard deviation
-        lookback: Number of historic bars to consider for standard deviation
 
     Attributes:
-        width: Standard deviation
+        width: Volatility of recent candles
         upperband: Price at top of the bollinger band
         lowerband: Price at bottom of the bollinger band
         band: Percent difference between price of the top of band and bottom of band
-        value: Proxy for the band attribute
     '''
 
     def __init__(
@@ -421,8 +446,9 @@ class BollingerBand(CandleMetric):
         raise NotImplementedError # Not yet implemented
 
 
+
 class MABollinger(CandleMetric):
-    '''Moving average impose on bollinger band
+    '''Moving average impose on bollinger band.
 
     Args:
         bband: An instance of BollingerBand
@@ -456,6 +482,7 @@ class MABollinger(CandleMetric):
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
+
 
 
 class RSI(CandleMetric):
