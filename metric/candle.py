@@ -115,7 +115,8 @@ class CandleBar:
             self.last_close = price
             self.last_volume += volume
 
-        self._broadcastTick(price, timestamp, volume, action)
+        # No one uses it yet so removed for reducing overhead
+        #self._broadcastTick(price, timestamp, volume, action)
 
 
     def pushCandle(self, o, c, h, l, t, v):
@@ -384,37 +385,34 @@ class MACD(CandleMetric):
 
     Args:
         candle: The underlying CandleBar instance
-        fast: Lookback of the shorter moving average
-        slow: Lookback of the longer moving average
-        signal: Lookback of the difference moving average
+        fast: Instance of moving average with shorter lookback
+        slow: Instance of moving average with longer lookback
+        lookbac: Number of bars to consider for the difference moving average
+        weights: Weighting to average the MA difference. Defaults to linear sequence
     '''
 
-    def __init__(self, candle, fast, slow, signal, use_open=True,
-            roll_method=weighted_moving_average):
-        super().__init__(candle)
-        self._use_open = use_open
-        self._roll_method = roll_method
+    def __init__(
+            self,
+            fast,
+            slow,
+            lookback,
+            weights=None):
+        assert fast.candle == slow.candle # @Use proper error
+        super().__init__(fast.candle)
         self._fast = fast
         self._slow = slow
-        self._signal = signal
-        self.diff = None
-        self.diff_ma = None
+        self._lookback = lookback
+        self._weights = weights or [2 * (i + 1) / (lookback * (lookback + 1)) for i in range(lookback)]
+        self._past = []
 
     def onCandle(self):
-        if len(self.candle) < (self._slow + self._signal):
-            return
+        self.diff = self._fast - self._slow
+        self._past.append(self.diff)
+        self._past = self._past[-self._lookback:]
 
-        candles = self.candle[-(self._slow + self._signal):]
-        series = [x.open if self._use_open else x.close for x in candles]
-        diff, diff_ma = macd(
-                series,
-                self._fast,
-                self._slow,
-                self._signal,
-                roll_method=self._roll_method)
-        self.diff = diff[-1]
-        self.diff_ma = diff_ma[-1]
-        self.value = diff[-1] - diff_ma[-1]
+        if len(self._past) == self._lookback:
+            self.diff_ma = np.average(self._past, axis=0, weights=self._weights)
+            self.value = self.diff - self.diff_ma
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
@@ -496,13 +494,13 @@ class BollingerBand(CandleMetric):
         raise NotImplementedError # Not yet implemented
 
 
-class MANB(CandleMetric):
+class MABollinger(CandleMetric):
     '''Moving average impose on bollinger band
 
     Args:
         bband: An instance of BollingerBand
         lookback: Lookback of the moving average
-        avg_method: Averging method used for the moving average
+        weights: Weighting for averaging the Bollinger Band. Defaults to None (simple average).
     '''
 
     def __init__(self,
