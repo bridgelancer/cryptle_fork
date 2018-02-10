@@ -75,17 +75,17 @@ class CandleBar:
     from the buffer and update themselves accordingly.
 
     Args:
-        period (int): Length of each candlestick of this collection
-        maxsize (int): Maximum number of historic candles to keep around
-        auto_prune (int): Flag for auto-removal of histoic candles
+        period (int): Length of each candlestick of this collection.
+        maxsize (int): Maximum number of historic candles to keep around.
+        auto_prune (int): Flag for auto-removal of histoic candles.
 
     Attributes:
-        period (int): Length in seconds of each candlestick
-        _bars (list): List of all the Candle objects
-        _metrics (list): Metrics that are attached to the CandleBar instance
-        _maxsize (int): Maximum number of historic candles to keep around
-            (ignored if auto_prune is False)
-        _auto_prune (bool): Flag for auto-removal of historic candles
+        period (int): Length in seconds of each candlestick.
+        _bars (list): List of all the Candle objects.
+        _metrics (list): Metrics that are attached to the CandleBar instance.
+        _auto_prune (bool): Flag for auto-removal of historic candles.
+        _maxsize (int): Maximum number of historic candles to keep around.
+            Ignored if auto_prune is False.
     '''
 
     def __init__(self, period, auto_prune=False, maxsize=500):
@@ -359,12 +359,17 @@ class MACD(CandleMetric):
     between the difference of two moving averages and the moving average of this
     difference.
 
+    Value:
+        difference - MA of difference
+
     Args:
-        candle: The underlying CandleBar instance
-        fast: Instance of moving average with shorter lookback
-        slow: Instance of moving average with longer lookback
-        lookbac: Number of bars to consider for the difference moving average
-        weights: Weighting to average the MA difference. Defaults to linear sequence
+        fast (CandleMetric): Instance of moving average with shorter lookback.
+        slow (CandleMetric): Instance of moving average with longer lookback.
+        lookback (int): Number of bars to consider for the difference moving average.
+        weights (list): Weighting to average the MA difference. Defaults to linear.
+
+    Attributes:
+        diff (float):
     '''
 
     def __init__(
@@ -396,21 +401,23 @@ class MACD(CandleMetric):
 
 
 class BollingerBand(CandleMetric):
-    '''Bollinger band, with value set to be the band percentage difference.
+    '''Bollinger band.
+
+    Value:
+        Band percentage difference.
 
     Args:
-        Candle: CandleBar instance to base upon
-        lookback (int): Number of bars to consider
-        use_open (bool): Flag for using open/close price
+        lookback (int): Number of bars to consider.
+        use_open (bool): Flag for using open/close price.
         sd (float): Standard deviations. Can be override by upper_sd/lower_sd.
-        upper_sd (float): Upper band standard deviation
-        lower_sd (float): Lower band standard deviation
+        upper_sd (float): Upper band standard deviation.
+        lower_sd (float): Lower band standard deviation.
 
     Attributes:
-        width: Volatility of recent candles
-        upperband: Price at top of the bollinger band
-        lowerband: Price at bottom of the bollinger band
-        band: Percent difference between price of the top of band and bottom of band
+        width: Volatility of recent candles.
+        upperband: Price at top of the bollinger band.
+        lowerband: Price at bottom of the bollinger band.
+        band: Percent difference between top and bottom band.
     '''
 
     def __init__(
@@ -452,9 +459,9 @@ class MABollinger(CandleMetric):
     '''Moving average impose on bollinger band.
 
     Args:
-        bband: An instance of BollingerBand
-        lookback: Lookback of the moving average
-        weights: Weighting for averaging the Bollinger Band. Defaults to None (simple average).
+        bband (BollingerBand): Underlying bollinger band
+        lookback (int): Lookback of the moving average
+        weights (list): Weighting for averaging. Defaults to None (simple average).
     '''
 
     def __init__(self,
