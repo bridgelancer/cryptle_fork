@@ -10,7 +10,7 @@ import logging
 # Define new log levels
 logging.REPORT  = 25
 logging.SIGNAL  = 15
-logging.METRIC  = 8
+logging.METRIC  = 13
 logging.TICK    = 5
 
 logging.addLevelName(logging.REPORT, 'REPORT')

@@ -355,7 +355,7 @@ if __name__ == '__main__':
 
     formatter = defaultFormatter()
     fh = logging.FileHandler('macd_rsi.log', mode = 'w')
-    fh.setLevel(logging.INFO)
+    fh.setLevel(logging.TICK)
     fh.setFormatter(formatter)
 
     sh = logging.StreamHandler()
@@ -367,7 +367,7 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
 
     base_logger = logging.getLogger('cryptle.strategy')
-    base_logger.setLevel(logging.METRIC)
+    base_logger.setLevel(logging.DEBUG)
     base_logger.addHandler(fh)
 
     vwma1 = []

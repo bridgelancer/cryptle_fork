@@ -127,7 +127,6 @@ class SNBStrat(Strategy):
             s.rsi_sell_flag = True
 
         elif s.rsi > 50:
-            logger.metric('RSI over 50')
             s.rsi_signal = True
 
         if s.rsi_sell_flag_80 and s.rsi < 70:
@@ -191,10 +190,10 @@ if __name__ == '__main__':
 
     logger.addHandler(sh)
     logger.addHandler(fh)
-    logger.setLevel(logging.METRIC)
+    logger.setLevel(logging.DEBUG)
 
     base_logger = logging.getLogger('cryptle.strategy')
-    base_logger.setLevel(logging.METRIC)
+    base_logger.setLevel(logging.DEBUG)
     base_logger.addHandler(fh)
 
     equity = [[], []]
