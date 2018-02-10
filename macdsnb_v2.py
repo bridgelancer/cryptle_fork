@@ -20,6 +20,7 @@ class SNBStrat(Strategy):
             boll_window=3600,
             snb_period=10,
             snb_factor=1.25,
+            snb_boll=3,
             rsi_period=14,
             timelag=10,
             upper_atr=0.5,
@@ -37,6 +38,7 @@ class SNBStrat(Strategy):
         s.boll_window = boll_window
         s.bband = bband
         s.snb_factor = snb_factor
+        s.snb_boll = snb_boll
 
         # Initialize metrics
         s.indicators = {}
@@ -46,9 +48,10 @@ class SNBStrat(Strategy):
         s.atr = ATR(bar, scope1)
         s.wma1 = WMA(bar, scope1)
         s.wma2 = WMA(bar, scope2)
-        s.macd = MACD(bar, scope1, scope2, macd_scope)
-        s.boll = BollingerBand(bar, bband_period, roll_method=simple_moving_average)
-        s.snb = MANB(s.boll, snb_period, roll_method=simple_moving_average)
+        s.macd = MACD(s.wma1, s.wma2, macd_scope)
+        s.sma = SMA(bar, bband_period)
+        s.boll = BollingerBand(s.sma, bband_period)
+        s.snb = MABollinger(s.boll, snb_period)
         s.rsi = RSI(bar, rsi_period)
 
         # Initialize flags and states
@@ -66,7 +69,7 @@ class SNBStrat(Strategy):
         if not s.doneInit(timestamp):
             return -1
 
-        s.signifyATR(price)
+        s.signifyATR(price, timestamp)
         s.signifyBoll(timestamp)
         s.signifyMACD()
         s.signifyRSI()
@@ -78,27 +81,33 @@ class SNBStrat(Strategy):
         return timestamp > s.init_time + s.init_bar * s.bar.period
 
 
-    def signifyATR(s, price):
-        belowatr = max(s.wma1, s.wma2) < price - s.lower_atr * s.atr
+    def signifyATR(s, price, timestamp):
+        s.belowatr = max(s.wma1, s.wma2) < price - s.lower_atr * s.atr
         s.downtrend = s.wma1 < s.wma2
+        s.atr_signal = False
 
-        if not belowatr:
+        if not s.belowatr:
             s.prev_crossover_time = None
+        else:
+            s.prev_crossover_time = s.prev_crossover_time or timestamp
+            if timestamp - s.prev_crossover_time >= s.timelag:
+                s.atr_signal = True
 
 
     def signifyBoll(s, timestamp):
         if s.boll > s.bband:
             if not s.bollinger_signal:
-                logger.signal('Bollinger window opened')
+                logger.metric('Bollinger window opened')
             s.bollinger_signal = True
             s.tradable_window = timestamp
-        elif s.snb * s.snb_factor < s.boll and s.boll > 6:
+        elif s.snb * s.snb_factor < s.boll and s.boll > s.snb_boll:
             if not s.bollinger_signal:
-                logger.signal('Bollinger window opened with snb')
+                logger.metric('Bollinger window opened with snb')
             s.bollinger_signal = True
             s.tradable_window = timestamp
         elif timestamp > s.tradable_window + s.boll_window:
-            logger.signal('Bollinger window closed')
+            if s.bollinger_signal:
+                logger.metric('Bollinger window closed')
             s.bollinger_signal = False
 
 
@@ -107,36 +116,41 @@ class SNBStrat(Strategy):
 
 
     def signifyRSI(s):
-        if s.rsi > 50:
-            s.rsi_signal = True
-
-        if s.rsi > 70:
-            s.rsi_sell_flag = True
-            logger.signal('RSI over 70')
-
         if s.rsi > 80:
+            if not s.rsi_sell_flag_80:
+                logger.metric('RSI over 80')
             s.rsi_sell_flag_80 = True
-            logger.signal('RSI over 80')
+
+        elif s.rsi > 70:
+            if not s.rsi_sell_flag:
+                logger.metric('RSI over 70')
+            s.rsi_sell_flag = True
+
+        elif s.rsi > 50:
+            logger.metric('RSI over 50')
+            s.rsi_signal = True
 
         if s.rsi_sell_flag_80 and s.rsi < 70:
             s.rsi_signal = False
-            logger.signal('RSI dropped from 80 to 70')
 
-        if s.rsi_sell_flag and s.downtrend:
+        elif s.rsi_sell_flag and s.downtrend:
             s.rsi_signal = False
 
-        if s.rsi < 50:
+        elif s.rsi < 50:
             s.rsi_signal = False
 
 
     def execute(s, timestamp):
-        if s.hasCash and not s.hasBalance and s.rsi_signal and s.bollinger_signal and s.macd_signal:
-            if s.prev_crossover_time is None:
-                s.prev_crossover_time = timestamp # @Hardcode @Fix logic, do not use timestamp here
-
-            elif timestamp - s.prev_crossover_time >= s.timelag:
-                s.marketBuy(s.maxBuyAmount)
-                s.reset_params()
+        if (
+                s.hasCash
+                and not s.hasBalance
+                and s.rsi_signal
+                and s.bollinger_signal
+                and s.macd_signal
+                and s.atr_signal
+           ):
+            s.marketBuy(s.maxBuyAmount)
+            s.reset_params()
 
         elif s.hasBalance and not s.rsi_signal and s.rsi_sell_flag:
             s.marketSell(s.maxSellAmount)
@@ -167,8 +181,8 @@ if __name__ == '__main__':
 
     formatter = defaultFormatter(notimestamp=True)
 
-    fh = logging.FileHandler('macd_snb.log', mode = 'w')
-    fh.setLevel(logging.DEBUG)
+    fh = logging.FileHandler('snb.log', mode = 'w')
+    fh.setLevel(logging.TICK)
     fh.setFormatter(formatter)
 
     sh = logging.StreamHandler()
@@ -177,7 +191,7 @@ if __name__ == '__main__':
 
     logger.addHandler(sh)
     logger.addHandler(fh)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.METRIC)
 
     base_logger = logging.getLogger('cryptle.strategy')
     base_logger.setLevel(logging.METRIC)
@@ -213,14 +227,14 @@ if __name__ == '__main__':
 
     backtest_tick(strat, dataset, exchange=exchange) #, callback=record_indicators)
 
-    logger.report('MACD Cash:    %.2f' % port.cash)
-    logger.report('MACD Asset:    %s' % str(port.balance))
-    logger.report('Number of trades:  %d' % len(strat.trades))
+    logger.report('Cash:    %.2f' % port.cash)
+    logger.report('Asset:    %s' % str(port.balance))
+    logger.report('No. of trades:  %d' % len(strat.trades))
+    logger.report('No. of candles:  %d' % len(strat.bar))
 
-    plot(
-        strat.bar,
-        title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
-        trades=strat.trades,
-        indicators=[[equity]])
+    #plot(
+    #    strat.bar,
+    #    title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
+    #    trades=strat.trades)
 
-    plt.show()
+    #plt.show()
