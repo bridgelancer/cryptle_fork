@@ -158,3 +158,69 @@ class SNBStrat(Strategy):
         s.prev_crossover_time = None
         s.rsi_sell_flag = False
         s.rsi_sell_flag_80 = False
+
+
+if __name__ == '__main__':
+    from cryptle.backtest import backtest_tick, Backtest, PaperExchange
+    from cryptle.strategy import Portfolio
+    from cryptle.plotting import *
+
+    formatter = defaultFormatter(notimestamp=True)
+
+    fh = logging.FileHandler('macd_snb.log', mode = 'w')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.REPORT)
+    sh.setFormatter(formatter)
+
+    logger.addHandler(sh)
+    logger.addHandler(fh)
+    logger.setLevel(logging.DEBUG)
+
+    base_logger = logging.getLogger('cryptle.strategy')
+    base_logger.setLevel(logging.METRIC)
+    base_logger.addHandler(fh)
+
+    equity = [[], []]
+    def record_indicators(strat):
+        global equity
+        equity[0].append(strat.last_timestamp)
+        equity[1].append(strat.equity)
+
+    dataset = 'bch.log'
+
+    pair = 'bchusd'
+    port = Portfolio(10000)
+    exchange = PaperExchange(commission=0.0012, slippage=0)
+
+    strat = SNBStrat(
+        message='[MACD SNB]',
+        period=120,
+        scope1=5,
+        scope2=8,
+        macd_scope=4,
+        bband=6.0,
+        bband_period=20,
+        boll_window=3600,
+        snb_period=10,
+        snb_factor=1.25,
+        rsi_period=14,
+        pair=pair,
+        portfolio=port,
+        exchange=exchange)
+
+    backtest_tick(strat, dataset, exchange=exchange) #, callback=record_indicators)
+
+    logger.report('MACD Cash:    %.2f' % port.cash)
+    logger.report('MACD Asset:    %s' % str(port.balance))
+    logger.report('Number of trades:  %d' % len(strat.trades))
+
+    plot(
+        strat.bar,
+        title='Final equity: ${} Trades: {}'.format(strat.equity, len(strat.trades)),
+        trades=strat.trades,
+        indicators=[[equity]])
+
+    plt.show()
