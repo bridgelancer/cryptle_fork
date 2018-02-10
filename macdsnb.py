@@ -298,7 +298,7 @@ class MACDSNBStrat(Strategy):
         #     s.was_v_sell = True
 
         elif s.hasBalance and s.price < s.stop_loss_price:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Triggered stoploss')
 
             s.prev_crossover_time = None
@@ -313,7 +313,7 @@ class MACDSNBStrat(Strategy):
             # now setting no stop loss for the moment
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Over 70 RSI')
 
             s.prev_crossover_time = None
@@ -325,7 +325,7 @@ class MACDSNBStrat(Strategy):
             s.rsi_sell_flag_80 = False
 
         elif s.hasBalance and s.rsi_ssignal and s.rsi_sell_flag_80:
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Over 80 RSI')
 
             s.prev_crossover_time = None
@@ -338,7 +338,7 @@ class MACDSNBStrat(Strategy):
 
         elif s.hasBalance and s.rsi_ssignal and not s.macd_signal:
 
-            s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
+            s.marketSell(s.maxSellAmount)
             logger.signal('Sell: Normal RSI + MACD')
 
             s.prev_crossover_time = None
