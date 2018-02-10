@@ -205,7 +205,74 @@ def demoMACDStrat(dataset, pair):
         indicators=[[bband], [equity]])
 
 
+from macdsnb_v2 import SNBStrat
+
+def snoop_macdsnb(Strat, dataset, pair, **kws):
+    '''Snoop necessary parameters for a paritcular strategy on a single run.
+
+    Caution: This function may run in extended period of time.
+    '''
+
+    # Parameters to snoop
+    period          = [30, 40, 45, 50, 60, 90, 120]
+    bband           = range(800, 1801, 200)     # need to divide by 100
+    bband_period    = range(10, 41, 10)
+    bwindow         = range(60, 121, 30)        # need to multiply by 60
+    snb_period      = range(5, 21, 5)
+    snb_factor      = range(100, 151, 10)       # need to divide by 100
+    snb_bband       = range(400, 800, 100)      # need to divide by 100
+    rsi_period      = [14, 20]
+
+    bwindow         = [x * 60 for x in bwindow]
+    bband           = [x / 100 for x in bband]
+    snb_bband       = [x / 100 for x in snb_bband]
+    snb_factor      = [x / 100 for x in snb_factor]
+
+    configs = itertools.product(
+            period,
+            bband,
+            bband_period,
+            bwindow,
+            snb_period,
+            snb_factor,
+            snb_bband,
+            rsi_period)
+
+    paper = PaperExchange(commission=0.0012, slippage=0)
+    test = Backtest(paper)
+    test.readJSON(dataset)
+
+    # Run the config of strategies
+    for i, config in enumerate(configs):
+        period, bband, bband_period, bwindow, snb_period, snb_factor, snb_bband, rsi_period = config
+
+        port = Portfolio(10000)
+        strat = SNBStrat(
+                period=period,
+                scope1=5,
+                scope2=8,
+                macd_scope=4,
+                bband=bband,
+                bband_period=bband_period,
+                boll_window=bwindow,
+                snb_period=snb_period,
+                snb_factor=snb_factor,
+                snb_boll=snb_bband,
+                rsi_period=rsi_period,
+                pair=pair,
+                portfolio=port,
+                exchange=paper,
+                equity_at_risk=1.0)
+        test.run(strat)
+
+        fmt = 'Port{} Equity: {:.2f} Trades: {}'
+        logger.report(fmt.format(config, port.equity, len(strat.trades)))
+
+        if i % 10 == 0:
+            print('%i configs' % i + ' finished running')
+
+
 if __name__ == '__main__':
-    snoop(WMAMACDRSIStrat, 'xrp.log', 'xrpusd')
+    snoop_macdsnb('xrp.log', 'xrpusd')
     #demoMACDStrat('data/bch_correct.log',  'bchusd')
     #plt.show()
