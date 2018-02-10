@@ -303,74 +303,25 @@ class EMA(CandleMetric):
         raise NotImplementedError # Not yet implemented
 
 
-class RSI(CandleMetric):
-    '''Calculate and store the latest RSI value for the attached candle'''
+class ATR(CandleMetric):
 
     def __init__(self, candle, lookback, use_open=True):
         super().__init__(candle)
         self._use_open = use_open
         self._lookback = lookback
-        self._weight = 1 / lookback # MODIFIED to suit our purpose
-        self.up = []
-        self.down = []
-        self.ema_up = None
-        self.ema_down = None
+        self._init = []
+        self.value = 1000000000
 
     def onCandle(self):
-        if len(self.candle) < 2:
-            return
-
-        if self._use_open:
-            if (self.candle.last_open > self.candle[-2].open):
-                self.up.append(abs(self.candle.last_open - self.candle[-2].open))
-                self.down.append(0)
-            else:
-                self.down.append(abs(self.candle[-2].open - self.candle.last_open))
-                self.up.append(0)
+        if len(self._init) < self._lookback + 1:
+            self._init.append(self.candle.last_high - self.candle.last_low)
+            self.value = sum(self._init) / len(self._init)
         else:
-            if (self.candle.last_open > self.candle[-2].open):
-                self.up.append(abs(self.candle.last_open - self.candle[-2].open))
-                self.down.append(0)
-            else:
-                self.down.append(abs(self.candle[-2].open - self.candle.last_open))
-                self.up.append(0)
-
-        if len(self.up) < self._lookback:
-            return
-
-        price_up = self.up[-1]
-        price_down = self.down[-1]
-
-        # Initialization of ema_up and ema_down by simple averaging the up/down lists
-        if self.ema_up == None and self.ema_down == None:
-            self.ema_up = sum([x for x in self.up]) / len(self.up)
-            self.ema_down = sum([x for x in self.down]) / len(self.down)
-
-            try:
-                self.value = 100 - 100 / (1 +  self.ema_up/self.ema_down)
-            except ZeroDivisionError:
-                if self.ema_down == 0 and self.ema_up != 0:
-                    self.value = 100
-                elif self.ema_up == 0 and self.ema_down != 0:
-                    self.value = 0
-                elif self.ema_up == 0 and self.ema_down == 0:
-                    self.value = 50
-            return
-
-        # Update ema_up and ema_down according to logistic updating formula
-        self.ema_up = self._weight * price_up + (1 - self._weight) * self.ema_up
-        self.ema_down = self._weight * price_down + (1 - self._weight) * self.ema_down
-
-        # Handling edge cases and return the RSI index according to formula
-        try:
-            self.value = 100 - 100 / (1 +  self.ema_up/self.ema_down)
-        except ZeroDivisionError:
-            if self.ema_down == 0 and self.ema_up != 0:
-                self.value = 100
-            elif self.ema_up == 0 and self.ema_down != 0:
-                self.value = 0
-            elif self.ema_up == 0 and self.ema_down == 0:
-                self.value = 50
+            t1 = self.candle[-2].high - self.candle[-2].low
+            t2 = abs(self.candle[-2].high - self.candle[-3].close)
+            t3 = abs(self.candle[-2].low - self.candle[-3].close)
+            tr = max(t1, t2, t3)
+            self.value = (self.value * (self._lookback - 1) + tr) / self._lookback
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
@@ -413,30 +364,6 @@ class MACD(CandleMetric):
         if len(self._past) == self._lookback:
             self.diff_ma = np.average(self._past, axis=0, weights=self._weights)
             self.value = self.diff - self.diff_ma
-
-    def onTick(self, price, ts, volume, action):
-        raise NotImplementedError # Not yet implemented
-
-
-class ATR(CandleMetric):
-
-    def __init__(self, candle, lookback, use_open=True):
-        super().__init__(candle)
-        self._use_open = use_open
-        self._lookback = lookback
-        self._init = []
-        self.value = 1000000000
-
-    def onCandle(self):
-        if len(self._init) < self._lookback + 1:
-            self._init.append(self.candle.last_high - self.candle.last_low)
-            self.value = sum(self._init) / len(self._init)
-        else:
-            t1 = self.candle[-2].high - self.candle[-2].low
-            t2 = abs(self.candle[-2].high - self.candle[-3].close)
-            t3 = abs(self.candle[-2].low - self.candle[-3].close)
-            tr = max(t1, t2, t3)
-            self.value = (self.value * (self._lookback - 1) + tr) / self._lookback
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
@@ -526,6 +453,79 @@ class MABollinger(CandleMetric):
             self.value = np.mean(self._bands[-self._lookback:])
         else:
             self.value = np.average(self._weights, axis=0, weights=self._weight)
+
+    def onTick(self, price, ts, volume, action):
+        raise NotImplementedError # Not yet implemented
+
+
+class RSI(CandleMetric):
+    '''Calculate and store the latest RSI value for the attached candle'''
+
+    def __init__(self, candle, lookback, use_open=True):
+        super().__init__(candle)
+        self._use_open = use_open
+        self._lookback = lookback
+        self._weight = 1 / lookback # MODIFIED to suit our purpose
+        self.up = []
+        self.down = []
+        self.ema_up = None
+        self.ema_down = None
+
+    def onCandle(self):
+        if len(self.candle) < 2:
+            return
+
+        if self._use_open:
+            if (self.candle.last_open > self.candle[-2].open):
+                self.up.append(abs(self.candle.last_open - self.candle[-2].open))
+                self.down.append(0)
+            else:
+                self.down.append(abs(self.candle[-2].open - self.candle.last_open))
+                self.up.append(0)
+        else:
+            if (self.candle.last_open > self.candle[-2].open):
+                self.up.append(abs(self.candle.last_open - self.candle[-2].open))
+                self.down.append(0)
+            else:
+                self.down.append(abs(self.candle[-2].open - self.candle.last_open))
+                self.up.append(0)
+
+        if len(self.up) < self._lookback:
+            return
+
+        price_up = self.up[-1]
+        price_down = self.down[-1]
+
+        # Initialization of ema_up and ema_down by simple averaging the up/down lists
+        if self.ema_up == None and self.ema_down == None:
+            self.ema_up = sum([x for x in self.up]) / len(self.up)
+            self.ema_down = sum([x for x in self.down]) / len(self.down)
+
+            try:
+                self.value = 100 - 100 / (1 +  self.ema_up/self.ema_down)
+            except ZeroDivisionError:
+                if self.ema_down == 0 and self.ema_up != 0:
+                    self.value = 100
+                elif self.ema_up == 0 and self.ema_down != 0:
+                    self.value = 0
+                elif self.ema_up == 0 and self.ema_down == 0:
+                    self.value = 50
+            return
+
+        # Update ema_up and ema_down according to logistic updating formula
+        self.ema_up = self._weight * price_up + (1 - self._weight) * self.ema_up
+        self.ema_down = self._weight * price_down + (1 - self._weight) * self.ema_down
+
+        # Handling edge cases and return the RSI index according to formula
+        try:
+            self.value = 100 - 100 / (1 +  self.ema_up/self.ema_down)
+        except ZeroDivisionError:
+            if self.ema_down == 0 and self.ema_up != 0:
+                self.value = 100
+            elif self.ema_up == 0 and self.ema_down != 0:
+                self.value = 0
+            elif self.ema_up == 0 and self.ema_down == 0:
+                self.value = 50
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
