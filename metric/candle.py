@@ -399,10 +399,12 @@ class BollingerBand(CandleMetric):
     '''Bollinger band, with value set to be the band percentage difference.
 
     Args:
-        ma: Moving average to based upon
-        lookback: Number of historic bars to consider for standard deviation
-        upper_sd: Upper band standard deviation
-        lower_sd: Lower band standard deviation
+        Candle: CandleBar instance to base upon
+        lookback (int): Number of bars to consider
+        use_open (bool): Flag for using open/close price
+        sd (float): Standard deviations. Can be override by upper_sd/lower_sd.
+        upper_sd (float): Upper band standard deviation
+        lower_sd (float): Lower band standard deviation
 
     Attributes:
         width: Volatility of recent candles
@@ -413,15 +415,14 @@ class BollingerBand(CandleMetric):
 
     def __init__(
             self,
-            ma,
+            candle,
             lookback,
             use_open=True,
             sd=2,
             upper_sd=None,
             lower_sd=None):
 
-        super().__init__(ma.candle)
-        self.ma = ma
+        super().__init__(candle)
         self._use_open = use_open
         self._lookback = lookback
         self._upper_sd = upper_sd or sd
@@ -437,8 +438,8 @@ class BollingerBand(CandleMetric):
             prices = self.candle.close_prices(self._lookback)
 
         self.width = np.std(prices)
-        self.upperband = self.ma + self._upper_sd * self.width
-        self.lowerband = self.ma - self._lower_sd * self.width
+        self.upperband = prices[-1] + self._upper_sd * self.width
+        self.lowerband = prices[-1] - self._lower_sd * self.width
         self.band = ((self.upperband / self.lowerband) - 1) * 100
         self.value = self.band
 
