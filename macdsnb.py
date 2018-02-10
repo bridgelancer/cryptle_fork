@@ -4,7 +4,7 @@ from cryptle.utility  import *
 from ta import *
 
 import logging
-logger = logging.getLogger('Cryptle')
+logger = logging.getLogger('Strategy')
 
 
 class MACDSNBStrat(Strategy):
@@ -206,10 +206,14 @@ class MACDSNBStrat(Strategy):
 
         if s.rsi.rsi > 50:
             if s.rsi.rsi > 70:
+                if not s.rsi_sell_flag:
+                    logger.metric('RSI Over 70')
                 rsi_bsignal = True
                 rsi_ssignal = False
                 s.rsi_sell_flag = True
             elif s.rsi.rsi > 80:
+                if not s.rsi_sell_flag_80:
+                    logger.metric('RSI Over 80')
                 rsi_bsignal = True
                 rsi_ssignal = False
                 s.rsi_sell_flag_80 = True
