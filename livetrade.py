@@ -30,12 +30,12 @@ if __name__ == '__main__':
     log.addHandler(fh)
 
     stlog = logging.getLogger('Strategy')
-    stlog.setLevel(logging.METRIC)
+    stlog.setLevel(logging.DEBUG)
     stlog.addHandler(sh)
     stlog.addHandler(fh)
 
     crlog = logging.getLogger('cryptle')
-    crlog.setLevel(logging.METRIC)
+    crlog.setLevel(logging.DEBUG)
     crlog.addHandler(sh)
     crlog.addHandler(fh)
 
