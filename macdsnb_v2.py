@@ -124,6 +124,8 @@ class SNBStrat(Strategy):
         s.macd_signal = new_macd_signal
 
 
+    # @Fix dodgy logic, though data snooping gives better return
+    # RSI over 80 sell leads to 5% less return
     def signifyRSI(s):
         if s.rsi > 70:
             s.rsi_sell_flag = True
@@ -135,31 +137,31 @@ class SNBStrat(Strategy):
             s.rsi_signal = False
 
         if s.rsi < 50:
-            s.rsi_signal = False
             s.rsi_sell_flag = False
+            s.rsi_signal = False
 
 
     def execute(s, timestamp):
-        if (
-                s.hasCash
-                and not s.hasBalance
-                and s.rsi_signal
-                and (s.bollinger_signal or s.snb_signal)
-                and s.macd_signal
-                and s.atr_signal
-           ):
-            s.marketBuy(s.maxBuyAmount)
-            s.reset_params()
+        if s.hasCash and not s.hasBalance:
+            if (
+                    s.rsi_signal
+                    and (s.bollinger_signal or s.snb_signal)
+                    and s.macd_signal
+                    and s.atr_signal
+               ):
+                s.marketBuy(s.maxBuyAmount)
+                s.reset_params()
 
-        elif s.hasBalance and not s.rsi_signal and s.rsi_sell_flag:
-            s.marketSell(s.maxSellAmount)
-            s.reset_params()
-            logger.signal('Sell: Over 70 RSI')
+        elif s.hasBalance:
+            if not s.rsi_signal and s.rsi_sell_flag:
+                s.marketSell(s.maxSellAmount)
+                s.reset_params()
+                logger.signal('Sell: Over 70 RSI')
 
-        elif s.hasBalance and not s.rsi_signal and not s.macd_signal:
-            s.marketSell(s.maxSellAmount)
-            s.reset_params()
-            logger.signal('Sell: RSI + MACD')
+            elif not s.rsi_signal and not s.macd_signal:
+                s.marketSell(s.maxSellAmount)
+                s.reset_params()
+                logger.signal('Sell: RSI + MACD')
 
 
     def reset_params(s):
