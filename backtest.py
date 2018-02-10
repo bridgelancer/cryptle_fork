@@ -207,14 +207,14 @@ def demoMACDStrat(dataset, pair):
 
 from macdsnb_v2 import SNBStrat
 
-def snoop_macdsnb(Strat, dataset, pair, **kws):
+def snoop_macdsnb(dataset, pair, **kws):
     '''Snoop necessary parameters for a paritcular strategy on a single run.
 
     Caution: This function may run in extended period of time.
     '''
 
     # Parameters to snoop
-    period          = [30, 40, 45, 50, 60, 90, 120]
+    period          = [40]
     bband           = range(800, 1801, 200)     # need to divide by 100
     bband_period    = range(10, 41, 10)
     bwindow         = range(60, 121, 30)        # need to multiply by 60
@@ -254,10 +254,10 @@ def snoop_macdsnb(Strat, dataset, pair, **kws):
                 macd_scope=4,
                 bband=bband,
                 bband_period=bband_period,
-                boll_window=bwindow,
+                bwindow=bwindow,
                 snb_period=snb_period,
                 snb_factor=snb_factor,
-                snb_boll=snb_bband,
+                snb_bband=snb_bband,
                 rsi_period=rsi_period,
                 pair=pair,
                 portfolio=port,

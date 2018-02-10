@@ -25,7 +25,7 @@ if __name__ == '__main__':
     fh.setFormatter(formatter)
 
     log = logging.getLogger('Report')
-    log.setLevel(logging.INFO)
+    log.setLevel(logging.DEBUG)
     log.addHandler(sh)
     log.addHandler(fh)
 
@@ -65,21 +65,21 @@ if __name__ == '__main__':
     config['period']        = period = 120
     config['bband']         = bband = 6.0
     config['bband_period']  = bband_period = 20
+    config['bband_window']  = bband_window = 3600
     config['snb_factor']    = snb_factor = 1.25
     config['snb_bband']     = snb_bband = 3.0
-    config['timeframe']     = timeframe = 3600
     config['equity@risk']   = equity_at_risk = 0.95
 
     log.debug('Initialising strategy...')
-    log.report('Config: {}'.format(config))
+    log.report('Config: \n{}'.format(json.dumps(config, indent=4)))
 
     strat = SNBStrat(
             period=period,
             bband=bband,
             bband_period=bband_period,
+            bwindow=bband_window,
             snb_factor=snb_factor,
-            snb_boll=snb_bband,
-            boll_window=timeframe,
+            snb_bband=snb_bband,
             pair=pair,
             portfolio=port,
             exchange=exchange,
