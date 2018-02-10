@@ -58,10 +58,7 @@ if __name__ == '__main__':
     balance = {pair: float(full_balance[pair_available])}
     balance_value = {pair: balance[pair] * float(pair_value['last'])}
 
-    if balance[pair] != 0:
-        port = Portfolio(cash, balance, balance_value)
-    else:
-        port = Portfolio(cash)
+    port = Portfolio(cash, balance, balance_value)
 
 
     config = OrderedDict()
