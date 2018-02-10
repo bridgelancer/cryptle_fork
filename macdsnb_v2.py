@@ -17,10 +17,10 @@ class SNBStrat(Strategy):
             macd_scope=4,
             bband=6.0,
             bband_period=20,
-            boll_window=3600,
+            bwindow=3600,
             snb_period=10,
             snb_factor=1.25,
-            snb_boll=3,
+            snb_bband=3.0,
             rsi_period=14,
             timelag=10,
             upper_atr=0.5,
@@ -35,10 +35,10 @@ class SNBStrat(Strategy):
         s.upper_atr = upper_atr
         s.lower_atr = lower_atr
         s.timelag = timelag
-        s.boll_window = boll_window
+        s.bwindow = bwindow
         s.bband = bband
         s.snb_factor = snb_factor
-        s.snb_boll = snb_boll
+        s.snb_bband = snb_bband
 
         # Initialize metrics
         s.indicators = {}
@@ -102,12 +102,12 @@ class SNBStrat(Strategy):
                 s.bollinger_signal = True
                 logger.metric('Bollinger window opened')
 
-        elif timestamp > s.tradable_window + s.boll_window:
+        elif timestamp > s.tradable_window + s.bwindow:
             if s.bollinger_signal:
                 logger.metric('Bollinger window closed')
                 s.bollinger_signal = False
 
-            new_snb_signal = s.snb * s.snb_factor < s.boll and s.boll > s.snb_boll
+            new_snb_signal = s.snb * s.snb_factor < s.boll and s.boll > s.snb_bband
             if new_snb_signal and not s.snb_signal:
                 logger.metric('SNB upcorss')
             elif not new_snb_signal and s.snb_signal:
@@ -213,10 +213,10 @@ if __name__ == '__main__':
         macd_scope=4,
         bband=6.0,
         bband_period=20,
-        boll_window=3600,
+        bwindow=3600,
         snb_period=10,
         snb_factor=1.25,
-        snb_boll=3,
+        snb_bband=3,
         rsi_period=14,
         pair=pair,
         portfolio=port,
