@@ -178,10 +178,19 @@ class MACDSNBStrat(Strategy):
 
         # Band confirmation - solve logic bug
         if timestamp > s.tradable_window + s.timeframe: # available at 1h trading window (3600s one hour)
+            if s.bollinger_signal:
+                logger.metric('Bollinger window closed')
             s.bollinger_signal = False
+
         if s.snb.sma[-1] * 1.25 < s.bollinger.band and s.bollinger.band > 3:
+            if not s.bollinger_signal:
+                logger.metric('Bollinger window opened with snb')
             s.bollinger_signal = True
+
         if s.bollinger.band > s.bband:
+            if not s.bollinger_signal:
+                logger.metric('Bollinger window opened')
+            s.bollinger_signal = True
             s.bollinger_signal = True
             s.tradable_window = timestamp
 
@@ -292,7 +301,6 @@ class MACDSNBStrat(Strategy):
         #     s.was_v_sell = True
 
         elif s.hasBalance and s.price < s.stop_loss_price:
-            logger.info("Stop lost triggered")
             s.marketSell(s.maxSellAmount, appendTimestamp(s.message, timestamp))
             logger.signal('Sell: Triggered stoploss')
 
@@ -352,11 +360,15 @@ if __name__ == '__main__':
     fh = logging.FileHandler('macd_rsi.log', mode = 'w')
     fh.setLevel(logging.INFO)
     fh.setFormatter(formatter)
+
     sh = logging.StreamHandler()
     sh.setLevel(logging.REPORT)
     sh.setFormatter(formatter)
+
     logger.addHandler(sh)
     logger.addHandler(fh)
+    logger.setLevel(logging.DEBUG)
+
     base_logger = logging.getLogger('cryptle.strategy')
     base_logger.setLevel(logging.METRIC)
     base_logger.addHandler(fh)
