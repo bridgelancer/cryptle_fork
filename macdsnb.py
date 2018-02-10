@@ -178,19 +178,12 @@ class MACDSNBStrat(Strategy):
 
         # Band confirmation - solve logic bug
         if timestamp > s.tradable_window + s.timeframe: # available at 1h trading window (3600s one hour)
-            if s.bollinger_signal:
-                logger.metric('Bollinger window closed')
             s.bollinger_signal = False
 
         if s.snb.sma[-1] * 1.25 < s.bollinger.band and s.bollinger.band > 3:
-            if not s.bollinger_signal:
-                logger.metric('Bollinger window opened with snb')
             s.bollinger_signal = True
 
         if s.bollinger.band > s.bband:
-            if not s.bollinger_signal:
-                logger.metric('Bollinger window opened')
-            s.bollinger_signal = True
             s.bollinger_signal = True
             s.tradable_window = timestamp
 
