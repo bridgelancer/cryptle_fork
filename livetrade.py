@@ -4,7 +4,7 @@ from cryptle.strategy import Portfolio
 from cryptle.loglevel import *
 from cryptle.utility  import *
 
-from wmamacdrsi import WMAMACDRSIStrat
+from macdsnb import MACDSNBStrat
 
 import logging
 import sys
@@ -25,17 +25,17 @@ if __name__ == '__main__':
     fh.setFormatter(formatter)
 
     log = logging.getLogger('Report')
-    log.setLevel(logging.TICK)
+    log.setLevel(logging.INFO)
     log.addHandler(sh)
     log.addHandler(fh)
 
     stlog = logging.getLogger('Strategy')
-    stlog.setLevel(logging.DEBUG)
+    stlog.setLevel(logging.METRIC)
     stlog.addHandler(sh)
     stlog.addHandler(fh)
 
     crlog = logging.getLogger('cryptle')
-    crlog.setLevel(logging.DEBUG)
+    crlog.setLevel(logging.METRIC)
     crlog.addHandler(sh)
     crlog.addHandler(fh)
 
@@ -69,12 +69,12 @@ if __name__ == '__main__':
     config['bband']         = bband = 6.0
     config['bband_period']  = bband_period = 20
     config['timeframe']     = timeframe = 3600
-    config['equity@risk']   = equity_at_risk = 0.9
+    config['equity@risk']   = equity_at_risk = 0.95
 
     log.debug('Initialising strategy...')
     log.report('Config: {}'.format(config))
 
-    wma = WMAMACDRSIStrat(
+    strat = MACDSNBStrat(
             period=period,
             bband=bband,
             bband_period=bband_period,
@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
     log.debug('Initialising data feed and callbacks...')
     bs = BitstampFeed()
-    bs.onTrade(pair, lambda x: wma.pushTick(*unpackTick(x)))
+    bs.onTrade(pair, lambda x: strat.pushTick(*unpackTick(x)))
 
     log.debug('Reporting started')
     while bs.isConnected():
@@ -96,5 +96,8 @@ if __name__ == '__main__':
         log.report('Balance: {}'.format(port.balance))
 
         time.sleep(60)
-        port.cash = exchange.getCash()
 
+        pair_value = exchange.getTicker(pair)
+        full_balance = exchange.getBalance()
+        port.cash = float(full_balance['usd_available'])
+        port.balance_value = {pair: port.balance[pair] * float(pair_value['last'])}
