@@ -4,7 +4,7 @@ from cryptle.strategy import Portfolio
 from cryptle.loglevel import *
 from cryptle.utility  import *
 
-from macdsnb import MACDSNBStrat
+from macdsnb_v2 import SNBStrat
 
 import logging
 import sys
@@ -65,17 +65,21 @@ if __name__ == '__main__':
     config['period']        = period = 120
     config['bband']         = bband = 6.0
     config['bband_period']  = bband_period = 20
+    config['snb_factor']    = snb_factor = 1.25
+    config['snb_bband']     = snb_bband = 3.0
     config['timeframe']     = timeframe = 3600
     config['equity@risk']   = equity_at_risk = 0.95
 
     log.debug('Initialising strategy...')
     log.report('Config: {}'.format(config))
 
-    strat = MACDSNBStrat(
+    strat = SNBStrat(
             period=period,
             bband=bband,
             bband_period=bband_period,
-            timeframe=timeframe,
+            snb_factor=snb_factor,
+            snb_boll=snb_bband,
+            boll_window=timeframe,
             pair=pair,
             portfolio=port,
             exchange=exchange,
