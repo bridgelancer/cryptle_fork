@@ -93,11 +93,18 @@ class Strategy:
         equity_at_risk: The maximum proportion of
     '''
 
-    def __init__(self, pair=None, portfolio=None, exchange=None, equity_at_risk=1):
+    def __init__( self,
+            pair=None,
+            portfolio=None,
+            exchange=None,
+            equity_at_risk=1,
+            print_timestamp=True):
+
         self.pair = pair
         self.portfolio = portfolio
         self.exchange = exchange
         self.equity_at_risk = equity_at_risk
+        self.print_timestamp = print_timestamp
 
         self.trades = []
         if self.indicators:
@@ -121,10 +128,6 @@ class Strategy:
             except:
                 v.pushTick(price, timestamp, volume, action)
 
-        #Prepare for new TA interface
-        #for k, metric in self.tick_metrics.items():
-            #metric.pushTick(price, timestamp, volume, action)
-
         if self.handleTick(price, timestamp, volume, action) is None:
             self.execute(timestamp)
 
@@ -143,10 +146,6 @@ class Strategy:
                 v.update(op, cl, hi, lo, ts, vol)
             except:
                 v.pushTick(price, timestamp, volume, action)
-
-        #Prepare for new TA interface
-        #for k, metric in self.candle_metrics.items():
-            #metric.pushCandle(op, cl, hi, lo, ts, vol)
 
         if self.handleCandle(op, cl, hi, lo, ts, vol) is None:
             self.execute(ts)
@@ -277,13 +276,15 @@ class Strategy:
         self.portfolio.cash -= amount * price
         self.trades.append([timestamp, price])
 
-        msg = 'Bought {:7.6g} {} @${:<7.6g} at {:%Y-%m-%d %H:%M:%S} {}'
+        msg = 'Bought {:7.6g} {} @${:<7.6g} {:s}'
+        if self.print_timestamp:
+            msg =+ ' at {:%Y-%m-%d %H:%M:%S}'
         logger.info(msg.format(
                 amount,
                 self.pair.upper(),
                 price,
-                datetime.fromtimestamp(timestamp),
-                message))
+                message,
+                datetime.fromtimestamp(timestamp)))
 
 
     def _cleanupSell(self, res, message=None):
@@ -299,18 +300,21 @@ class Strategy:
         self.portfolio.cash += amount * price
         self.trades[-1] += [timestamp, price]
 
-        msg = 'Sold   {:7.6g} {} @${:<7.6g} at {:%Y-%m-%d %H:%M:%S} {}'
+        msg = 'Sold   {:7.6g} {} @${:<7.6g} {:s}'
+        if self.print_timestamp:
+            msg =+ ' at {:%Y-%m-%d %H:%M:%S}'
         logger.info(msg.format(
                 amount,
                 self.pair.upper(),
                 price,
-                datetime.fromtimestamp(timestamp),
-                message))
+                message,
+                datetime.fromtimestamp(timestamp)))
 
 
     def _checkHasExchange(self):
         if self.exchange is None:
             raise AttributeError('An exchange has to be associated before strategy runs')
+
 
 # @Consider using Enum instead?
 class DirectionFlag:
