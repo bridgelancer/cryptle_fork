@@ -1,58 +1,146 @@
-from cryptle.datafeed import *
-from cryptle.exchange import *
+from cryptle.datafeed import BitstampFeed
+from cryptle.backtest import Backtest, PaperExchange
 from cryptle.strategy import Portfolio
 from cryptle.loglevel import *
-from wmamacdrsi import WMAMACDRSIStrat
+from cryptle.utility import *
 
-import time
+from macdsnb_v2 import SNBStrat
+
+import pprint
 import logging
-logger = logging.getLogger('Cryptle')
-formatter = defaultFormatter()
+import sys
+import time
+import threading
+from collections import OrderedDict
 
-sh = logging.StreamHandler()
-sh.setLevel(logging.REPORT)
-sh.setFormatter(formatter)
+terminated = False
+help_text = (
+    '\n'
+    'Cryptle live trade\n'
+    'h   Print this help\n'
+    'l   List available strategy attributes\n'
+    'q   Stop trading\n'
+    '<attribute> Print the value of <attribute>\n'
+)
 
-fh = logging.FileHandler('papertrade.log', mode='w')
-fh.setLevel(logging.TICK)
-fh.setFormatter(formatter)
 
-logger = logging.getLogger('Backtest')
-logger.setLevel(logging.DEBUG)
-logger.addHandler(sh)
-logger.addHandler(fh)
+def handle_input(line, strat):
+    line = line[:-1]
+    if line == 'h':
+        return help_text
 
-baselog = logging.getLogger('cryptle')
-baselog.setLevel(logging.METRIC)
-baselog.addHandler(fh)
+    # @Use memotization
+    elif line == 'l':
+        return pprint.pformat(strat.__dict__, indent=4)
+
+    elif line == 'exit' or line == 'quit' or line == 'q':
+        raise KeyboardInterrupt
+
+    else:
+        try:
+            return strat.__dict__[line]
+        except KeyError:
+            return 'Attribute does not exist'
+
+
+def main_loop(port, log):
+    s = 0
+    while bs.isConnected() and not terminated:
+        time.sleep(1)
+        s += 1
+        s %= 60
+        if s == 0:
+            log.report('Equity:  {}'.format(port.equity))
+            log.report('Cash:    {}'.format(port.cash))
+            log.report('Balance: {}'.format(port.balance))
+
+
+def setup_loggers(fname):
+    formatter = defaultFormatter()
+
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.INFO)
+    sh.setFormatter(formatter)
+
+    fh = logging.FileHandler(fname, mode='w')
+    fh.setLevel(logging.TICK)
+    fh.setFormatter(formatter)
+
+    log = logging.getLogger('Report')
+    log.setLevel(logging.DEBUG)
+    log.addHandler(sh)
+    log.addHandler(fh)
+
+    stlog = logging.getLogger('Strategy')
+    stlog.setLevel(logging.DEBUG)
+    stlog.addHandler(sh)
+    stlog.addHandler(fh)
+
+    crlog = logging.getLogger('cryptle')
+    crlog.setLevel(logging.DEBUG)
+    crlog.addHandler(sh)
+    crlog.addHandler(fh)
+
+    return log
 
 
 if __name__ == '__main__':
-    logger.debug("Initialising BitstampFeed")
-    bs = BitstampFeed()
+    pair     = 'bchusd'
+    log_file = 'papertrade.log'
 
-    logger.debug("Initialising portfolio")
+    log = setup_loggers(log_file)
+    log.report('Logging to ' + log_file)
+
+    log.debug('Initialising exchange...')
+    exchange = PaperExchange(commission=0.12, slippage=0)
+
+    log.debug('Initialising portfolio...')
     port = Portfolio(10000)
 
-    logger.debug("Initialising strategies")
-    strat = WMAMACDRSIStrat(
-            period=120,
-            timeframe=3600,
-            bband=6.0,
-            bband_period=20,
-            pair='bchusd',
+    log.debug('Initialising strategy...')
+    config = OrderedDict()
+    config['period']        = period = 120
+    config['bband']         = bband = 6.0
+    config['bband_period']  = bband_period = 20
+    config['bband_window']  = bband_window = 3600
+    config['snb_factor']    = snb_factor = 1.25
+    config['snb_bband']     = snb_bband = 3.0
+    config['equity@risk']   = equity_at_risk = 0.95
+    log.report('Config: \n{}'.format(pprint.pformat(config, indent=4)))
+
+    strat = SNBStrat(
+            period=period,
+            bband=bband,
+            bband_period=bband_period,
+            bwindow=bband_window,
+            snb_factor=snb_factor,
+            snb_bband=snb_bband,
+            pair=pair,
             portfolio=port,
-            message='[MACD]')
+            exchange=exchange,
+            equity_at_risk=equity_at_risk)
 
-    logger.debug("Setting up callbacks")
-    bs.onTrade('bchusd', strat.pushTick)
+    log.debug('Initialising data feed and callbacks...')
+    bs = BitstampFeed()
+    bs.onTrade(pair, lambda x: strat.pushTick(*unpackTick(x)))
 
-    logger.debug("Reporting...")
-    while bs.isConnected():
-        logger.report('MACD Equity:    %.2f' % port.equity)
-        logger.report('MACD Cash:    %.2f' % port.cash)
-        logger.report('MACD Asset:    %s' % str(port.balance))
+    log.debug('Reporting started')
+    print(help_text)
+    log.report('Equity:  {}'.format(port.equity))
+    log.report('Cash:    {}'.format(port.cash))
+    log.report('Balance: {}'.format(port.balance))
 
-        time.sleep(120)
+    main_thread = threading.Thread(target=main_loop, args=(port, log))
+    main_thread.start()
 
-
+    try:
+        for line in sys.stdin:
+            if line:
+                s = handle_input(line, strat)
+                print(s)
+    except KeyboardInterrupt:
+        print('Termination request received')
+    finally:
+        print('Terminating main loop...')
+        terminated = True
+        main_thread.join()
