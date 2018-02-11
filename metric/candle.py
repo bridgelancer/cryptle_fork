@@ -287,11 +287,11 @@ class SMA(CandleMetric):
 
 class WMA(CandleMetric):
 
-    def __init__(self, candle, lookback, use_open=True, weight=None):
+    def __init__(self, candle, lookback, use_open=True, weights=None):
         super().__init__(candle)
         self._use_open = use_open
         self._lookback = lookback
-        self._weight = weight or [2 * (i + 1)/(lookback * (lookback + 1)) for i in range(lookback)]
+        self._weights = weights or [2 * (i + 1)/(lookback * (lookback + 1)) for i in range(lookback)]
 
     def onCandle(self):
         if len(self.candle) < self._lookback:
@@ -300,7 +300,7 @@ class WMA(CandleMetric):
             prices = self.candle.open_prices(self._lookback)
         else:
             prices = self.candle.close_prices(self._lookback)
-        self.value = np.average(prices, axis=0, weights=self._weight)
+        self.value = np.average(prices, axis=0, weights=self._weights)
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
@@ -486,7 +486,7 @@ class MABollinger(CandleMetric):
         if self._weights is None:
             self.value = np.mean(self._bands[-self._lookback:])
         else:
-            self.value = np.average(self._weights, axis=0, weights=self._weight)
+            self.value = np.average(self._weights, axis=0, weights=self._weights)
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
@@ -518,11 +518,11 @@ class RSI(CandleMetric):
                 self.down.append(abs(self.candle[-2].open - self.candle.last_open))
                 self.up.append(0)
         else:
-            if (self.candle.last_open > self.candle[-2].open):
-                self.up.append(abs(self.candle.last_open - self.candle[-2].open))
+            if (self.candle.last_close > self.candle[-2].close):
+                self.up.append(abs(self.candle.last_close - self.candle[-2].close))
                 self.down.append(0)
             else:
-                self.down.append(abs(self.candle[-2].open - self.candle.last_open))
+                self.down.append(abs(self.candle[-2].close - self.candle.last_close))
                 self.up.append(0)
 
         if len(self.up) < self._lookback:

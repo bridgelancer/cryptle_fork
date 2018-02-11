@@ -84,13 +84,15 @@ class Strategy:
         pair: String representation of the trade coin pair (meta info)
         portfolio: Portfolio managed by the strategy instance
         exchange: Exchange to be used by the strategy for order placements
-        equity_at_risk: The maximum proportion of
+        equity_at_risk: The maximum proportion of equity that will be traded
+        print_timestamp: Flag for printing timestamp at buy/sell confirmation
 
     Attributs:
         pair: String representation of the trade coin pair (meta info)
         portfolio: Portfolio managed by the strategy instance
         exchange: Exchange to be used by the strategy for order placements
-        equity_at_risk: The maximum proportion of
+        equity_at_risk: The maximum proportion of equity that will be traded
+        print_timestamp: Flag for printing timestamp at buy/sell confirmation
     '''
 
     def __init__( self,
@@ -124,6 +126,7 @@ class Strategy:
         self.last_timestamp = timestamp
         for k, v in self.indicators.items():
             try:
+                # @Deprecated
                 v.update(price, timestamp, volume, action)
             except:
                 v.pushTick(price, timestamp, volume, action)
@@ -143,6 +146,7 @@ class Strategy:
         self.last_timestamp = ts
         for k, v in self.indicators.items():
             try:
+                # @Deprecated
                 v.update(op, cl, hi, lo, ts, vol)
             except:
                 v.pushTick(price, timestamp, volume, action)
@@ -278,7 +282,7 @@ class Strategy:
 
         msg = 'Bought {:7.6g} {} @${:<7.6g} {:s}'
         if self.print_timestamp:
-            msg =+ ' at {:%Y-%m-%d %H:%M:%S}'
+            msg += ' at {:%Y-%m-%d %H:%M:%S}'
         logger.info(msg.format(
                 amount,
                 self.pair.upper(),
@@ -302,7 +306,7 @@ class Strategy:
 
         msg = 'Sold   {:7.6g} {} @${:<7.6g} {:s}'
         if self.print_timestamp:
-            msg =+ ' at {:%Y-%m-%d %H:%M:%S}'
+            msg += ' at {:%Y-%m-%d %H:%M:%S}'
         logger.info(msg.format(
                 amount,
                 self.pair.upper(),
