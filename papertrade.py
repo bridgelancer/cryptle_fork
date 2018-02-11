@@ -31,7 +31,7 @@ def handle_input(line, strat):
 
     # @Use memotization
     elif line == 'l':
-        return pprint.pformat(strat.__dict__, indent=4)
+        return pprint.pformat(list(strat.__dict__.keys()), indent=4)
 
     elif line == 'exit' or line == 'quit' or line == 'q':
         raise KeyboardInterrupt
