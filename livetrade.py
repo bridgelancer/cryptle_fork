@@ -91,14 +91,19 @@ if __name__ == '__main__':
     bs.onTrade(pair, lambda x: strat.pushTick(*unpackTick(x)))
 
     log.debug('Reporting started')
-    while bs.isConnected():
-        log.report('Equity:  {}'.format(port.equity))
-        log.report('Cash:    {}'.format(port.cash))
-        log.report('Balance: {}'.format(port.balance))
+    log.report('Equity:  {}'.format(port.equity))
+    log.report('Cash:    {}'.format(port.cash))
+    log.report('Balance: {}'.format(port.balance))
 
+    while bs.isConnected():
         time.sleep(60)
 
         pair_value = exchange.getTicker(pair)
         full_balance = exchange.getBalance()
-        port.cash = float(full_balance['usd_available'])
-        port.balance_value = {pair: port.balance[pair] * float(pair_value['last'])}
+        new_cash = float(full_balance['usd_available'])
+        new_balance_value = {pair: port.balance[pair] * float(pair_value['last'])}
+
+        if new_balance_value != port.balance_value:
+            log.report('Equity:  {}'.format(port.equity))
+            log.report('Cash:    {}'.format(port.cash))
+            log.report('Balance: {}'.format(port.balance))
