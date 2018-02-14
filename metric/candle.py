@@ -24,6 +24,10 @@ class CandleBar:
         _auto_prune (bool): Flag for auto-removal of historic candles.
         _maxsize (int): Maximum number of historic candles to keep around.
             Ignored if auto_prune is False.
+
+    Note:
+        New changes for automatic adding of empty candles might decrease
+        stability of some candlemetrics
     '''
 
     def __init__(self, period, auto_prune=False, maxsize=500):
@@ -37,27 +41,27 @@ class CandleBar:
 
     def pushTick(self, price, timestamp, volume=0, action=0):
         '''Provides public interface for accepting ticks.'''
+
+        self.last_timestamp = timestamp
+
         # initialise the candle collection
-        if self.last_timestamp is None:
-            self.last_timestamp = timestamp
-            self._pushInitCandle(price, timestamp, volume)
+        if self.last_bar is None:
+            self._pushInitCandle(price, timestamp, volume, action)
+            return
 
-        # append previous n candles if no tick arrived in between
-        elif self.barIndex(timestamp) != self.barIndex(self.last_timestamp):
-            tmp_ts = self.last_timestamp + self.period
-            while self.barIndex(tmp_ts) < self.barIndex(timestamp):
-                self._pushEmptyCandle(self.last_close, tmp_ts)
-                tmp_ts += self.period
-
-            self._pushInitCandle(price, timestamp, volume)
-            self.last_timestamp = timestamp
-
-        # if tick arrived before next time period, update current candle
-        elif self.barIndex(timestamp) == self.barIndex(self.last_timestamp):
+        # if tick arrived before next bar, update current candle
+        if self._is_updated(timestamp):
             self.last_low = min(self.last_low , price)
             self.last_high = max(self.last_high, price)
             self.last_close = price
             self.last_volume += volume
+            self.last_netvol += volume * action
+
+        # if no tick arrived in between, append previous empty candles
+        else:
+            while not self._is_updated(timestamp):
+                self._pushEmptyCandle(self.last_close, self.last_bar_timestamp + self.period)
+            self._pushInitCandle(price, timestamp, volume, action)
 
         # No one uses it yet so removed for reducing overhead
         #self._broadcastTick(price, timestamp, volume, action)
@@ -65,19 +69,21 @@ class CandleBar:
         #    self.prune(self._maxsize)
 
 
-    def pushCandle(self, o, c, h, l, t, v):
+    def pushCandle(self, o, c, h, l, t, v, nv):
         '''Provides public interface for accepting aggregated candles.'''
-        self._pushFullCandle(o, c, h, l, t, v)
+        self._pushFullCandle(o, c, h, l, t, v, nv)
+
+
+    def ping(self, timestamp):
+        if self.last_bar is None:
+            return
+        while not self._is_current_candle(timestamp - self.period):
+            self._pushEmptyCandle(self.last_close, self.last_bar_timestamp + self.period)
 
 
     def attach(self, metric):
         '''Allow a candlemetric to subscribe for updates of candles.'''
         self._metrics.append(metric)
-
-
-    def barIndex(self, timestamp):
-        '''Helper to retrieve label of a candle with given timestamp.'''
-        return int(timestamp / self.period)
 
 
     def prune(self, size):
@@ -95,24 +101,30 @@ class CandleBar:
         return [x.close for x in self[-num_candles:]]
 
 
-    def _pushFullCandle(self, o, c, h, l, t, v):
-        self._bars.append(Candle(o, c, h, l, t, v))
+    def _is_updated(self, timestamp):
+        return timestamp < self.last_bar_timestamp + self.period
+
+
+    def _pushFullCandle(self, o, c, h, l, t, v, nv):
+        t = t - t % self.period
+        self._bars.append(Candle(o, c, h, l, t, v, nv))
         self._broadcastCandle()
 
 
-    def _pushInitCandle(self, price, timestamp, volume):
-        self._bars.append(Candle(price, price, price, price, self.barIndex(timestamp), volume))
+    def _pushInitCandle(self, price, timestamp, volume, action):
+        round_ts = timestamp - timestamp % self.period
+        self._bars.append(Candle(price, price, price, price, round_ts, volume, volume*action))
         self._broadcastCandle()
 
 
     def _pushEmptyCandle(self, price, timestamp):
-        self._bars.append(Candle(price, price, price, price, self.barIndex(timestamp), 0))
+        round_ts = timestamp - timestamp % self.period
+        self._bars.append(Candle(price, price, price, price, round_ts, 0, 0))
         self._broadcastCandle()
 
 
     def _broadcastCandle(self):
         for metric in self._metrics:
-            metric.onCandle
             try:
                 metric.onCandle()
             except NotImplementedError:
@@ -126,51 +138,73 @@ class CandleBar:
             except NotImplementedError:
                 pass
 
+    # Sequence overloads
     def __len__(self, ):
         return len(self._bars)
 
     def __getitem__(self, item):
         return self._bars[item]
 
+    # Getters
+    @property
+    def last_bar(self):
+        try:
+            return self._bars[-1]
+        except IndexError:
+            return None
+
     @property
     def last_open(self):
-        return self._bars[-1].open
+        return self.last_bar.open
 
     @property
     def last_close(self):
-        return self._bars[-1].close
+        return self.last_bar.close
 
     @property
     def last_high(self):
-        return self._bars[-1].high
+        return self.last_bar.high
 
     @property
     def last_low(self):
-        return self._bars[-1].low
+        return self.last_bar.low
+
+    @property
+    def last_bar_timestamp(self):
+        return self.last_bar.timestamp
 
     @property
     def last_volume(self):
-        return self._bars[-1].volume
+        return self.last_bar.volume
 
+    @property
+    def last_netvol(self):
+        return self.last_bar.netvol
+
+    # Setters
     @last_open.setter
     def last_open(self, value):
-        self._bars[-1].open = value
+        self.last_bar.open = value
 
     @last_close.setter
     def last_close(self, value):
-        self._bars[-1].close = value
+        self.last_bar.close = value
 
     @last_high.setter
     def last_high(self, value):
-        self._bars[-1].high = value
+        self.last_bar.high = value
 
     @last_low.setter
     def last_low(self, value):
-        self._bars[-1].low = value
+        self.last_bar.low = value
 
     @last_volume.setter
     def last_volume(self, value):
-        self._bars[-1].volume = value
+        self.last_bar.volume = value
+
+    @last_netvol.setter
+    def last_netvol(self, value):
+        self._bars[-1].netvol = value
 
 
 
