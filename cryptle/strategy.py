@@ -197,7 +197,17 @@ class Strategy:
 
     @property
     def equity(self):
+        '''Return value of portfolio as of latest buy'''
         return self.portfolio.equity
+
+
+    @property
+    def adjusted_equity(self):
+        '''Return market price adjusted latest value of portfolio'''
+        try:
+            return self.portfolio.cash + self.portfolio.balance[self.pair] * self.last_price
+        except (AttributeError, KeyError):
+            return self.portfolio.equity
 
 
     @property
