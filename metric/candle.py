@@ -1,69 +1,7 @@
-from .base import Metric
+from .base import Metric, Candle
 from .generic import *
 
 import numpy as np
-
-
-class Candle:
-    '''Mutable candle stick with namedtuple-like API.'''
-
-    def __init__(self, o, c, h, l, t, v):
-        self._bar = [o, c, h, l, t, v]
-
-    def __getitem__(self, item):
-        return self._bar[item]
-
-    def __repr__(self):
-        return self._bar.__repr__()
-
-    @property
-    def open(self):
-        return self._bar[0]
-
-    @property
-    def close(self):
-        return self._bar[1]
-
-    @property
-    def high(self):
-        return self._bar[2]
-
-    @property
-    def low(self):
-        return self._bar[3]
-
-    @property
-    def timestamp(self):
-        return self._bar[4]
-
-    @property
-    def volume(self):
-        return self._bar[5]
-
-    @open.setter
-    def open(self, value):
-        self._bar[0] = value
-
-    @close.setter
-    def close(self, value):
-        self._bar[1] = value
-
-    @high.setter
-    def high(self, value):
-        self._bar[2] = value
-
-    @low.setter
-    def low(self, value):
-        self._bar[3] = value
-
-    @timestamp.setter
-    def timestamp(self, value):
-        self._bar[4] = value
-
-    @volume.setter
-    def volume(self, value):
-        self._bar[5] = value
-
 
 
 class CandleBar:
