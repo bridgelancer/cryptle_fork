@@ -197,7 +197,7 @@ if __name__ == '__main__':
     def record_indicators(strat):
         global equity
         equity[0].append(strat.last_timestamp)
-        equity[1].append(strat.equity)
+        equity[1].append(strat.adjusted_equity)
 
     dataset = 'bch.log'
 
