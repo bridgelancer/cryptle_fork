@@ -66,9 +66,12 @@ def unittest(func):
         except Exception as e:
             _, _, tb = sys.exc_info()
             tb_info = traceback.extract_tb(tb)
-            _, line, _, text = tb_info[-1]
+            filename, line, funcname, text = tb_info[-1]
             FATAL('{}: Line {} {}'.format(func.__name__, line, type(e).__name__))
-            traceback.print_tb(tb)
+            for tb in tb_info[1:]:
+                filename, line, funcname, text = tb
+                print('  File "{}", line {}, in {}'.format(filename, line, funcname))
+                print('    {}'.format(text))
 
     tests.append(func_wrapper)
     return func_wrapper
@@ -199,12 +202,23 @@ def test_candle():
     assert c.timestamp == 12316
     assert c.volume == 1
     assert c.netvol == 1
+    c.open += 2
+    c.close -= 4
+    c.high += 3
+    c.low -= 2
+    c.volume += 3
+    c.netvol -= 1
+    assert c.open == 6
+    assert c.close == 3
+    assert c.high == 13
+    assert c.low == 1
+    assert c.volume == 4
+    assert c.netvol == 0
 
 
 @unittest
 def test_candelbar():
     bar = CandleBar(10)
-
     for i, tick in enumerate(const):
         bar.pushTick(tick, i)
         assert bar.last_close == const[0]
@@ -212,6 +226,7 @@ def test_candelbar():
         assert bar.last_high == const[0]
         assert bar.last_low == const[0]
 
+    # Linear 1 tick per second
     bar = CandleBar(10)
     for i, tick in enumerate(lin):
         bar.pushTick(tick, i)
@@ -224,6 +239,14 @@ def test_candelbar():
     assert isinstance(bar[-1].low, int)
     assert isinstance(bar[-1].timestamp, int)
     assert bar[-1].volume == 0
+
+    # 1 tick per 10 seconds
+    bar = CandleBar(5)
+    for i, tick in enumerate(lin):
+        bar.pushTick(tick, i * 10)
+        assert bar.last_close == tick
+        assert bar.last_high == tick
+        assert len(bar) == i * 2 + 1
 
 
 @unittest
