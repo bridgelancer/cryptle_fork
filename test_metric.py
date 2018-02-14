@@ -62,9 +62,14 @@ def unittest(func):
             _, _, tb = sys.exc_info()
             tb_info = traceback.extract_tb(tb)
             _, line, _, text = tb_info[-1]
-            FAIL('{}: Line {}: {}'.format(func.__name__, line, text))
+            FAIL('{}: Line {} {}'.format(func.__name__, line, text))
         except Exception as e:
-            FATAL('{}: {}: {}'.format(func.__name__, type(e).__name__, e))
+            _, _, tb = sys.exc_info()
+            tb_info = traceback.extract_tb(tb)
+            _, line, _, text = tb_info[-1]
+            FATAL('{}: Line {} {}'.format(func.__name__, line, type(e).__name__))
+            traceback.print_tb(tb)
+
     tests.append(func_wrapper)
     return func_wrapper
 
@@ -186,13 +191,14 @@ def test_metric_base():
 
 @unittest
 def test_candle():
-    c = Candle(4, 7, 10, 3, 12316, 1)
+    c = Candle(4, 7, 10, 3, 12316, 1, 1)
     assert c.open == 4
     assert c.close == 7
     assert c.high == 10
     assert c.low == 3
     assert c.timestamp == 12316
     assert c.volume == 1
+    assert c.netvol == 1
 
 
 @unittest
@@ -206,6 +212,7 @@ def test_candelbar():
         assert bar.last_high == const[0]
         assert bar.last_low == const[0]
 
+    bar = CandleBar(10)
     for i, tick in enumerate(lin):
         bar.pushTick(tick, i)
         assert bar.last_close == tick
@@ -270,8 +277,7 @@ def test_candle_ema():
 @unittest
 def test_candle_bollinger():
     bar = CandleBar(1)
-    sma = SMA(bar, 5)
-    boll = BollingerBand(sma, 5)
+    boll = BollingerBand(bar, 5)
 
     for i, price in enumerate(quad):
         bar.pushTick(price, i)
@@ -301,6 +307,7 @@ def test_candle_rsi():
         bar.pushTick(price, i)
     assert rsi == 100
 
+    rsi = RSI(bar, 14)
     for i, price in enumerate(alt_quad):
         bar.pushTick(price, i)
     assert rsi - 55.48924 < 1e-5
@@ -309,7 +316,9 @@ def test_candle_rsi():
 @unittest
 def test_candle_macd():
     bar = CandleBar(1)
-    macd = MACD(bar, 5, 8, 3, roll_method=weighted_moving_average)
+    wma1 = WMA(bar, 5)
+    wma2 = WMA(bar, 8)
+    macd = MACD(wma1, wma2, 3)
 
     for i, price in enumerate(sine):
         bar.pushTick(price, i)
@@ -319,9 +328,8 @@ def test_candle_macd():
 @unittest
 def test_candle_manb():
     bar = CandleBar(5)
-    sma = SMA(bar, 4)
-    boll = BollingerBand(sma, 5)
-    snb = MANB(boll, 5)
+    boll = BollingerBand(bar, 5)
+    snb = MABollinger(boll, 5)
     for i, price in enumerate(const):
         bar.pushTick(price, i)
     assert snb == 0
