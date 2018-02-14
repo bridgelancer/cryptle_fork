@@ -67,7 +67,7 @@ class CandleStickChart:
         bottom = [min(bar[0], bar[1]) for bar in candle]
         hi = [bar[2] for bar in candle]
         lo = [bar[3] for bar in candle]
-        ts = [bar[4] * candle.period for bar in candle]
+        ts = [bar[4] for bar in candle]
 
         color = ['g' if bar[0] < bar[1] else 'r' for bar in candle]
         fill  = [c == 'r' for c in color]
@@ -88,7 +88,7 @@ class CandleStickChart:
         time_format = '%m-%d %H:%M'
 
         # Candle timestamps were used as x-axis labels
-        ticks = [candle[x][4] * candle.period for x in range(0, n, int(n / numxlabels))]
+        ticks = [candle[x][4] for x in range(0, n, int(n / numxlabels))]
         dates = [datetime.fromtimestamp(t).strftime(time_format) for t in ticks]
         self._axes[0].set_xticks(ticks)
         self._axes[0].set_xticklabels(dates, rotation=30)
