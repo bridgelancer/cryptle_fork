@@ -59,7 +59,7 @@ class CandleBar:
 
         # if no tick arrived in between, append previous empty candles
         else:
-            while not self._is_updated(timestamp):
+            while not self._is_updated(timestamp - self.period):
                 self._pushEmptyCandle(self.last_close, self.last_bar_timestamp + self.period)
             self._pushInitCandle(price, timestamp, volume, action)
 
@@ -77,7 +77,7 @@ class CandleBar:
     def ping(self, timestamp):
         if self.last_bar is None:
             return
-        while not self._is_current_candle(timestamp - self.period):
+        while not self._is_updated(timestamp - self.period):
             self._pushEmptyCandle(self.last_close, self.last_bar_timestamp + self.period)
 
 
