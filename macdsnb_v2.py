@@ -22,6 +22,8 @@ class SNBStrat(Strategy):
             snb_factor=1.25,
             snb_bband=3.0,
             rsi_period=14,
+            rsi_thresh=40,
+            rsi_upper_thresh=70,
             timelag=10,
             upper_atr=0.5,
             lower_atr=0.5,
@@ -39,6 +41,8 @@ class SNBStrat(Strategy):
         s.bband = bband
         s.snb_factor = snb_factor
         s.snb_bband = snb_bband
+        s.rsi_thresh = rsi_thresh
+        s.rsi_upper_thresh = rsi_upper_thresh
 
         # Initialize metrics
         s.indicators = {}
@@ -127,16 +131,16 @@ class SNBStrat(Strategy):
     # @Fix dodgy logic, though data snooping gives better return
     # RSI over 80 sell leads to 5% less return
     def signifyRSI(s):
-        if s.rsi > 70:
+        if s.rsi > s.rsi_upper_thresh:
             s.rsi_sell_flag = True
             s.rsi_signal = True
-        elif s.rsi > 50:
+        elif s.rsi > s.rsi_thresh:
             s.rsi_signal = True
 
         if s.rsi_sell_flag and s.downtrend:
             s.rsi_signal = False
 
-        if s.rsi < 50:
+        if s.rsi < s.rsi_thresh:
             s.rsi_sell_flag = False
             s.rsi_signal = False
 
