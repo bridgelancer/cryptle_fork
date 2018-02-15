@@ -4,6 +4,7 @@
 *.json
 *.xlsx
 *.txt
+*.config
 
 *.png
 *.jpg
