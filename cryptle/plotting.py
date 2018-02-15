@@ -1,4 +1,5 @@
 from datetime import datetime
+from colorsys import *
 import matplotlib.pyplot as plt
 
 # @Temporary wrapper for transitioning
@@ -13,6 +14,7 @@ def plot(candle=None,
         indicators=[],
         plot_volume=False,
         volume_title=None,
+        trade_color_mid_pt=0.025,
         fig=None):
     '''Wrapper function for OO interface of CandleStickChart
 
@@ -35,7 +37,7 @@ def plot(candle=None,
     chart = CandleStickChart(numplots, title)
 
     chart.plotCandle(candle, plot_volume)
-    chart.plotTrade(trades)
+    chart.plotTrade(trades, trade_color_mid_pt=trade_color_mid_pt)
     for sign in signals:
         chart.plotSignal(sign)
     for index in indicators:
@@ -59,8 +61,15 @@ class CandleStickChart:
         self._axcounter = 0
 
 
-    # @Refactor Use Candle class interface?
     def plotCandle(self, candle, plot_volume=False, numxlabels=10):
+        '''Plot green/red ochl candlesticks onto the chart
+
+        Args:
+            candle (list): Each element is a tuple with 7 elements. In the order
+                (open, close, high, low, unix timestamp, volume, net volume)
+            plot_volume (bool): Flag to create a volume subplot
+            numxlabels (int): No. of datetime labels on the x-axis
+        '''
         n = len(candle)
 
         barlen = [abs(bar[0] - bar[1]) for bar in candle]
@@ -94,7 +103,7 @@ class CandleStickChart:
         self._axes[0].set_xticklabels(dates, rotation=30)
 
 
-    def plotTrade(self, trades):
+    def plotTrade(self, trades, trade_color_mid_pt=0.025):
         for trade in trades:
             try:
                 entry = int(trade[0]) # entry time (buy)
@@ -107,29 +116,26 @@ class CandleStickChart:
                 exit = self._axes[0].get_xbound()[1]
                 p_and_l = 0
 
-            color = '#ffffad'
+            color = '#ffff96'
 
-            # winning trade colors
+            # winning trade greater than 0.5%
             if p_and_l > 0.005:
-                color = '#97ED8A'
-            if p_and_l > 0.01:
-                color = '#45BF55'
-            if p_and_l > 0.015:
-                color = '#167F39'
-            if p_and_l > 0.02:
-                color = '#044C29'
+                inv_pl = trade_color_mid_pt / (p_and_l + trade_color_mid_pt)
+                h = 0.38
+                s = 1 - inv_pl * 0.95
+                v = 0.1 + inv_pl * 0.9
+                color = hsv_to_rgb(h, s, v)
 
-            # losing trade colors
+            # losing trade greater than -0.5%
             if p_and_l < -0.005:
-                color = '#D40D12'
-            if p_and_l < -0.01:
-                color = '#94090D'
-            if p_and_l < -0.015:
-                color = '#5C0002'
-            if p_and_l < -0.02:
-                color = '#450003'
+                p_and_l *= -1
+                inv_pl = trade_color_mid_pt / (p_and_l + trade_color_mid_pt)
+                h = 0.998
+                s = 1 - inv_pl * 0.95
+                v = 0.1 + inv_pl * 0.9
+                color = hsv_to_rgb(h, s, v)
 
-            self._axes[0].axvspan(entry, exit, facecolor=color, alpha=0.35)
+            self._axes[0].axvspan(entry, exit, facecolor=color, alpha=0.4)
 
 
     def plotSignal(self, signal):
