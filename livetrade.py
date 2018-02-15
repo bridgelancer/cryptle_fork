@@ -18,6 +18,7 @@ help_text = (
     '\n'
     'Cryptle live trade\n'
     'h   Print this help\n'
+    'r   Report current portfolio status\n'
     'l   List available strategy attributes\n'
     'q   Stop trading\n'
     '<attribute> Print the value of <attribute>\n'
@@ -30,7 +31,10 @@ def handle_input(line, strat):
     if line == 'h':
         return help_text
 
-    # @Use memotization
+    elif line == 'r':
+        p = strat.portfolio
+        return 'Equity:  {}\nCash:    {}\nBalance: {}\n'.format(p.equity, p.cash, p.balance)
+
     elif line == 'l':
         return pprint.pformat(list(strat.__dict__.keys()), indent=4)
 
@@ -94,6 +98,15 @@ def setup_loggers(fname):
 if __name__ == '__main__':
     pair     = 'bchusd'
     log_file = 'livetrade.log'
+    config_file = 'livetrade.config'
+
+    config_fh = logging.FileHandler(config_file, mode='w')
+    config_fh.setLevel(logging.INFO)
+    config_fh.setFormatter(logging.Formatter(fmt='%(message)s'))
+
+    cfglog = logging.getLogger('config')
+    cfglog.setLevel(logging.DEBUG)
+    cfglog.addHandler(config_fh)
 
     log = setup_loggers(log_file)
     log.report('Logging to ' + log_file)
@@ -125,7 +138,7 @@ if __name__ == '__main__':
     config['snb_factor']    = snb_factor = 1.25
     config['snb_bband']     = snb_bband = 3.0
     config['equity@risk']   = equity_at_risk = 0.95
-    log.report('Config: \n{}'.format(pprint.pformat(config, indent=4)))
+    cfglog.report('Config: \n{}'.format(pprint.pformat(config, indent=4)))
 
     strat = SNBStrat(
             period=period,
