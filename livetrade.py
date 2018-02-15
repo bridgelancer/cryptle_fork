@@ -132,11 +132,12 @@ if __name__ == '__main__':
     log.debug('Initialising strategy...')
     config = OrderedDict()
     config['period']        = period = 120
-    config['bband']         = bband = 6.0
+    config['bband']         = bband = 6.5
     config['bband_period']  = bband_period = 20
     config['bband_window']  = bband_window = 3600
     config['snb_factor']    = snb_factor = 1.25
     config['snb_bband']     = snb_bband = 3.0
+    config['rsi_thresh']    = rsi_thresh = 40
     config['equity@risk']   = equity_at_risk = 0.95
     cfglog.report('Config: \n{}'.format(pprint.pformat(config, indent=4)))
 
@@ -147,6 +148,7 @@ if __name__ == '__main__':
             bwindow=bband_window,
             snb_factor=snb_factor,
             snb_bband=snb_bband,
+            rsi_thresh=rsi_thresh,
             pair=pair,
             portfolio=port,
             exchange=exchange,
