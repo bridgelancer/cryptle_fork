@@ -10,19 +10,15 @@ log = logging.getLogger(__name__)
 
 
 class Bitstamp:
+    url = 'https://www.bitstamp.net/api/v2'
 
     def __init__(self, key=None, secret=None, customer_id=None):
         self.key = key
         self.secret = secret
         self.id = customer_id
-        self.url = 'https://www.bitstamp.net/api/v2'
 
 
-    def getCash(self):
-        balance = self.getBalance()
-        return float(balance['usd_available'])
-
-
+    # [Application level interface]
     def getTicker(self, pair):
         checkType(pair, str)
         return self._get('/ticker/' + pair)
@@ -37,41 +33,29 @@ class Bitstamp:
         if pair != '':
             pair += '/'
 
-        params = self._authParams()
-        return self._post('/balance/' + pair, params=params)
+        return self._post('/balance/' + pair)
 
 
     def getOrderStatus(self, order_id):
         checkType(order_id, int)
 
-        params = self._authParams()
-        params['id'] = order_id
-
-        res = self._post('/order_status/', params=params)
+        res = self._post('/order_status/', params={'id': order_id})
         self.handleBitstampErrors(res, 'Open order query failed')
         return res
 
 
     def getOpenOrders(self, pair='all/'):
-        checkType(pair, str)
-
-        params = self._authParams()
-
-        res = self_post('/open_orders/' + pair, params=params)
+        res = self_post('/open_orders/' + pair)
         self.handleBitstampErrors(res, 'Open orders query failed')
         return res
 
 
     def marketBuy(self, pair, amount):
-        '''Places marketbuy on bitstamp. Returns python dict when order terminates'''
-        checkType(pair, str)
+        '''Place marketbuy on bitstamp. Returns python dict when order terminates'''
         checkType(amount, int, float)
         assert amount > 0
 
-        params = self._authParams()
-        params['amount'] = truncate(amount, 8)
-
-        res = self._post('/buy/market/' + pair + '/', params=params)
+        res = self._post('/buy/market/' + pair + '/', params={'amount': truncate(amount, 8)})
         res['timestamp'] = now()
 
         self.handleBitstampErrors(res, 'Market buy {} failed'.format(pair.upper()))
@@ -79,15 +63,11 @@ class Bitstamp:
 
 
     def marketSell(self, pair, amount):
-        '''Places marketsell on bitstamp. Returns python dict when order terminates'''
-        checkType(pair, str)
+        '''Place marketsell on bitstamp. Returns python dict when order terminates'''
         checkType(amount, int, float)
         assert amount > 0
 
-        params = self._authParams()
-        params['amount'] = truncate(amount, 8)
-
-        res = self._post('/sell/market/' + pair + '/', params=params)
+        res = self._post('/sell/market/' + pair + '/', params={'amount': truncate(amount, 8)})
         res['timestamp'] = now()
 
         self.handleBitstampErrors(res, 'Market sell {} failed'.format(pair.upper()))
@@ -95,14 +75,17 @@ class Bitstamp:
 
 
     def limitBuy(self, pair, amount, price):
-        '''Places limitbuy on bitstamp. Returns python dict when order terminates'''
-        checkType(pair, str)
+        '''Place limitbuy on bitstamp. Returns python dict when order terminates
+
+        Note:
+            This method is not fully implemented yet
+        '''
         checkType(amount, int, float)
         checkType(price, int, float)
         assert amount > 0
         assert price > 0
 
-        params = self._authParams()
+        params = {}
         params['amount'] = truncate(amount, 8)
         params['price'] = truncate(price)
 
@@ -114,14 +97,17 @@ class Bitstamp:
 
 
     def limitSell(self, pair, amount, price):
-        '''Places limitsell on bitstamp. Returns python dict when order terminates'''
-        checkType(pair, str)
+        '''Place limitsell on bitstamp. Returns python dict when order terminates
+
+        Note:
+            This method is not fully implemented yet
+        '''
         checkType(amount, int, float)
         checkType(price, int, float)
         assert amount > 0
         assert price > 0
 
-        params = self._authParams()
+        params = {}
         params['amount'] = truncate(amount, 8)
         params['price'] = truncate(price)
 
@@ -133,25 +119,23 @@ class Bitstamp:
 
 
     def cancnelOrder(self, order_id):
+        '''Cancel an open limit order'''
         checkType(order_id, int)
-
-        params = self._authParams()
-        params['id'] = price
-        return self._post('/cancel_order/', params=parms)
+        return self._post('/cancel_order/', params={'id': order_id})
 
 
     def cancnelAllOrder(self):
-        params = self._authParams()
-        return self._post('/cancel_all_orders/', params=parms)
+        return self._post('/cancel_all_orders/')
 
 
+    # [Low level requests interfae]
     def _get(self, endpoint, params=None):
-        '''Sends HTTP GET request to bitstamp. Returns python object.'''
+        '''Send GET request to bitstamp. Returns python dictionary.'''
         checkType(endpoint, str)
         checkType(params, dict, type(None))
 
         try:
-            res = req.post(self.url + endpoint, params)
+            res = req.get(self.url + endpoint, params)
             self.handleConnectionErrors(res)
         except ConnectionError:
             return {'status': 'error', 'reason': 'ConnectionError'}
@@ -160,10 +144,13 @@ class Bitstamp:
         return res
 
 
-    def _post(self, endpoint, params):
-        '''Sends HTTP POST request to bitstamp. Returns python object.'''
+    def _post(self, endpoint, params=None):
+        '''Send POST request to bitstamp. Returns python dictionary.'''
         checkType(endpoint, str)
-        checkType(params, dict)
+        checkType(params, dict, type(None))
+
+        params = params or {}
+        params = {**self._authParams(), **params}
 
         try:
             res = req.post(self.url + endpoint, params)
@@ -231,4 +218,3 @@ class Bitstamp:
             log.error(message + ': ' + str(res['reason']))
             res['price'] = 0
             res['amount'] = 0
-
