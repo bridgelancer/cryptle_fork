@@ -1,4 +1,4 @@
-from .utility import *
+from cryptle.utility import *
 
 from time import time as now
 import hashlib

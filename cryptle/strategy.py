@@ -1,4 +1,4 @@
-from .utility import *
+from cryptle.utility import *
 
 import logging
 logger = logging.getLogger(__name__)
