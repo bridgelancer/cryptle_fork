@@ -126,33 +126,24 @@ if __name__ == '__main__':
     cash = float(full_balance['usd_available'])
     balance = {pair: float(full_balance[pair_available])}
     balance_value = {pair: balance[pair] * float(pair_value['last'])}
-
     port = Portfolio(cash, balance, balance_value)
 
     log.debug('Initialising strategy...')
     config = OrderedDict()
-    config['period']        = period = 120
-    config['bband']         = bband = 6.5
-    config['bband_period']  = bband_period = 20
-    config['bband_window']  = bband_window = 3600
-    config['snb_factor']    = snb_factor = 1.25
-    config['snb_bband']     = snb_bband = 3.0
-    config['rsi_thresh']    = rsi_thresh = 40
-    config['equity@risk']   = equity_at_risk = 0.95
-    cfglog.report('Config: \n{}'.format(pprint.pformat(config, indent=4)))
+    config = {
+        'period': 120,
+        'bband': 6.5,
+        'bband_period': 20,
+        'bband_window': 3600,
+        'snb_factor': 1.25,
+        'snb_bband': 1.25,
+        'rsi_thresh': 40,
+        'equity_at_risk': 0.95
+    }
+    strat = SNBStrat(**config, pair=pair, portfolio=port, exchange=exchange)
 
-    strat = SNBStrat(
-            period=period,
-            bband=bband,
-            bband_period=bband_period,
-            bwindow=bband_window,
-            snb_factor=snb_factor,
-            snb_bband=snb_bband,
-            rsi_thresh=rsi_thresh,
-            pair=pair,
-            portfolio=port,
-            exchange=exchange,
-            equity_at_risk=equity_at_risk)
+    ordered_config = OrderedDict(sorted(config.items(), keys=lambda k: k[0]))
+    cfglog.report('Config: \n{}'.format(pprint.pformat(ordered_config, indent=4)))
 
     log.debug('Initialising data feed and callbacks...')
     bs = BitstampFeed()
