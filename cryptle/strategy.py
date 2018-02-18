@@ -1,6 +1,8 @@
+import logging
+
 from cryptle.utility import *
 
-import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -346,5 +348,3 @@ class Strategy:
     def _checkHasExchange(self):
         if self.exchange is None:
             raise AttributeError('An exchange has to be associated before strategy runs')
-
-
