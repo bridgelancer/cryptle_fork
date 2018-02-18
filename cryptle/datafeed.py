@@ -37,65 +37,54 @@ class BitstampFeed:
     def isConnected(self):
         return self.pusher.connection.is_alive()
 
+    @staticmethod
+    def _encode_pair(asset, base_currency):
+        if asset == 'btc' and base_currency == 'usd':
+            return ''
+        else:
+            return asset + '_' + base_currency
 
-    def onTrade(self, pair, callback):
-        assert isinstance(pair, str)
+
+    def onTrade(self, asset, base_currency, callback):
         assert callable(callback)
 
-        if pair == 'btcusd':
-            self._bindSocket('live_trades', 'trade', lambda x: callback(json.loads(x)))
-        else:
-            self._bindSocket('live_trades_' + pair, 'trade', lambda x: callback(json.loads(x)))
+        channel = 'live_trades' + self._encode_pair(asset, base_currency)
+        self._bindSocket(channel, 'trade', lambda x: callback(json.loads(x)))
 
 
-    def onOrderCreate(self, pair, callback):
-        assert isinstance(pair, str)
+    def onOrderCreate(self, asset, base_currency, callback):
         assert callable(callback)
 
-        if pair == 'btcusd':
-            self._bindSocket('live_trades', 'order_created', lambda x: callback(json.loads(x)))
-        else:
-            self._bindSocket('live_orders_' + pair, 'order_created', lambda x: callback(json.loads(x)))
+        channel = 'live_orders' + self._encode_pair(asset, base_currency)
+        self._bindSocket(channel, 'order_created', lambda x: callback(json.loads(x)))
 
 
-    def onOrderChanged(self, pair, callback):
-        assert isinstance(pair, str)
+    def onOrderChanged(self, asset, base_currency, callback):
         assert callable(callback)
 
-        if pair == 'btcusd':
-            self._bindSocket('live_trades', 'order_changed', lambda x: callback(json.loads(x)))
-        else:
-            self._bindSocket('live_orders_' + pair, 'order_changed', lambda x: callback(json.loads(x)))
+        channel = 'live_orders' + self._encode_pair(asset, base_currency)
+        self._bindSocket(channel, 'order_changed', lambda x: callback(json.loads(x)))
 
 
-    def onOrderDeleted(self, pair, callback):
-        assert isinstance(pair, str)
+    def onOrderDeleted(self, asset, base_currency, callback):
         assert callable(callback)
 
-        if pair == 'btcusd':
-            self._bindSocket('live_orders', 'order_deleted', lambda x: callback(json.loads(x)))
-        else:
-            self._bindSocket('live_orders_' + pair, 'order_deleted', lambda x: callback(json.loads(x)))
+        channel = 'live_orders' + self._encode_pair(asset, base_currency)
+        self._bindSocket(channel, 'order_deleted', lambda x: callback(json.loads(x)))
 
 
-    def onOrderBookUpdate(self, pair, callback):
-        assert isinstance(pair, str)
+    def onOrderBookUpdate(self, asset, base_currency, callback):
         assert callable(callback)
 
-        if pair == 'btcusd':
-            self._bindSocket('order_book', 'data', lambda x: callback(json.loads(x)))
-        else:
-            self._bindSocket('order_book_' + pair, 'data', lambda x: callback(json.loads(x)))
+        channel = 'order_book' + self._encode_pair(asset, base_currency)
+        self._bindSocket(channel, 'data', lambda x: callback(json.loads(x)))
 
 
-    def onOrderBookDiff(self, pair, callback):
-        assert isinstance(pair, str)
+    def onOrderBookDiff(self, asset, base_currency, callback):
         assert callable(callback)
 
-        if pair == 'btcusd':
-            self._bindSocket('diff_order_book', 'data', lambda x: callback(json.loads(x)))
-        else:
-            self._bindSocket('diff_order_book_' + pair, 'data', lambda x: callback(json.loads(x)))
+        channel = 'diff_order_book' + self._encode_pair(asset, base_currency)
+        self._bindSocket(channel, 'data', lambda x: callback(json.loads(x)))
 
 
     def _bindSocket(self, channel_name, event, callback):

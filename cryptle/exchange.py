@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 
 class Bitstamp:
+
     url = 'https://www.bitstamp.net/api/v2'
 
     def __init__(self, key=None, secret=None, customer_id=None):
@@ -19,24 +20,33 @@ class Bitstamp:
 
 
     # [Application level interface]
-    def getTicker(self, pair):
-        checkType(pair, str)
-        return self._get('/ticker/' + pair)
+    def getTicker(self, *, asset, base_currency):
+        endpoint = '/ticker/'
+        return self._get(endpoint + self._encode_pair(asset, base_currency))
 
 
-    def getOrderbook(self, pair):
-        checkType(pair, str)
-        return self._get('/order_book/' + pair)
+    def getOrderbook(self, *, asset, base_currency):
+        endpoint = '/order_book/'
+        return self._get(endpoint + self._encode_pair(asset, base_currency))
 
 
-    def getBalance(self, pair=''):
-        if pair != '':
-            pair += '/'
+    # @Hardcode: base_currecy
+    def getBalance(self, *, asset='', base_currency=''):
+        '''Request account balance from bitstamp.
 
-        return self._post('/balance/' + pair)
+        Args:
+            asset (str): Optional argument to request only part of the balance
+                related to the specified pair.
+            base_currency (str):
+
+        Returns:
+            The full balance, keyed by asset names
+        '''
+        balance = self._post('/balance/' + self._encode_pair(asset, base_currency))
+        return self._decode_balance(balance)
 
 
-    def getOrderStatus(self, order_id):
+    def getOrderStatus(self, *, order_id):
         checkType(order_id, int)
 
         res = self._post('/order_status/', params={'id': order_id})
@@ -44,37 +54,47 @@ class Bitstamp:
         return res
 
 
-    def getOpenOrders(self, pair='all/'):
-        res = self_post('/open_orders/' + pair)
+    def getOpenOrders(self, *, asset='all/', base_currency='usd'):
+        res = self_post('/open_orders/' + self._encode_pair(asset, base_currency))
         self.handleBitstampErrors(res, 'Open orders query failed')
         return res
 
 
-    def marketBuy(self, pair, amount):
+    def marketBuy(self, *, asset, currency, amount):
         '''Place marketbuy on bitstamp. Returns python dict when order terminates'''
         checkType(amount, int, float)
         assert amount > 0
 
-        res = self._post('/buy/market/' + pair + '/', params={'amount': truncate(amount, 8)})
+        params = {
+            'amount': truncate(amount, 8)
+        }
+
+        endpoint = '/buy/market/'
+        res = self._post(endpoint + self._encode_pair(asset, currency), params=params)
         res['timestamp'] = now()
 
-        self.handleBitstampErrors(res, 'Market buy {} failed'.format(pair.upper()))
+        self.handleBitstampErrors(res, 'Market buy {} failed'.format(pair[0].upper()))
         return res
 
 
-    def marketSell(self, pair, amount):
+    def marketSell(self, *, asset, currency, amount):
         '''Place marketsell on bitstamp. Returns python dict when order terminates'''
         checkType(amount, int, float)
         assert amount > 0
 
-        res = self._post('/sell/market/' + pair + '/', params={'amount': truncate(amount, 8)})
+        params = {
+            'amount': truncate(amount, 8)
+        }
+
+        endpoint = '/sell/market/'
+        res = self._post(endpoint + self._encode_pair(asset, currency), params=params)
         res['timestamp'] = now()
 
-        self.handleBitstampErrors(res, 'Market sell {} failed'.format(pair.upper()))
+        self.handleBitstampErrors(res, 'Market sell {} failed'.format(pair[0].upper()))
         return res
 
 
-    def limitBuy(self, pair, amount, price):
+    def limitBuy(self, *, asset, currency, amount, price):
         '''Place limitbuy on bitstamp. Returns python dict when order terminates
 
         Note:
@@ -85,18 +105,20 @@ class Bitstamp:
         assert amount > 0
         assert price > 0
 
-        params = {}
-        params['amount'] = truncate(amount, 8)
-        params['price'] = truncate(price)
+        params = {
+            'amount': truncate(amount, 8),
+            'price': truncate(price, 8)
+        }
 
-        res = self._post('/buy/' + pair + '/', params=params)
+        endpoint = '/buy/'
+        res = self._post(endpoint + self._encode_pair(asset, currency), params=params)
         res['timestamp'] = now()
 
-        self.handleBitstampErrors(res, 'Limit buy {} failed'.format(pair.upper()))
+        self.handleBitstampErrors(res, 'Limit buy {} failed'.format(pair[0].upper()))
         return res
 
 
-    def limitSell(self, pair, amount, price):
+    def limitSell(self, *, asset, currency, amount, price):
         '''Place limitsell on bitstamp. Returns python dict when order terminates
 
         Note:
@@ -107,14 +129,16 @@ class Bitstamp:
         assert amount > 0
         assert price > 0
 
-        params = {}
-        params['amount'] = truncate(amount, 8)
-        params['price'] = truncate(price)
+        params = {
+            'amount': truncate(amount, 8),
+            'price': truncate(price, 8)
+        }
 
-        res = self._post('/sell/' + pair + '/', params=params)
+        endpoint = '/sell/'
+        res = self._post(endpoint + self._encode_pair(asset, currency), params=params)
         res['timestamp'] = now()
 
-        self.handleBitstampErrors(res, 'Limit sell {} failed'.format(pair.upper()))
+        self.handleBitstampErrors(res, 'Limit sell {} failed'.format(pair[0].upper()))
         return res
 
 
@@ -129,13 +153,15 @@ class Bitstamp:
 
 
     # [Low level requests interfae]
-    def _get(self, endpoint, params=None):
-        '''Send GET request to bitstamp. Returns python dictionary.'''
+    def _get(self, endpoint):
+        '''Send GET request to bitstamp. Return python dict.'''
         checkType(endpoint, str)
-        checkType(params, dict, type(None))
+
+        url = self.url + endpoint
 
         try:
-            res = req.get(self.url + endpoint, params)
+            log.debug('Sending GET request: ' + url)
+            res = req.get(url)
             self.handleConnectionErrors(res)
         except ConnectionError:
             return {'status': 'error', 'reason': 'ConnectionError'}
@@ -145,15 +171,18 @@ class Bitstamp:
 
 
     def _post(self, endpoint, params=None):
-        '''Send POST request to bitstamp. Returns python dictionary.'''
+        '''Send POST request to bitstamp. Return python dict.'''
         checkType(endpoint, str)
         checkType(params, dict, type(None))
 
         params = params or {}
         params = {**self._authParams(), **params}
 
+        url = self.url + endpoint
+
         try:
-            res = req.post(self.url + endpoint, params)
+            log.debug('Sending POST request: ' + url)
+            res = req.post(url, params)
             self.handleConnectionErrors(res)
         except ConnectionError:
             return {'status': 'error', 'reason': 'ConnectionError'}
@@ -184,6 +213,21 @@ class Bitstamp:
 
 
     @staticmethod
+    def _encode_pair(asset, base_currency):
+        '''Format a traded asset/base_currency pair into bitstamp representation'''
+        return asset + base_currency
+
+
+    @staticmethod
+    def _decode_balance(balance):
+        '''Format balance entries in the json loaded python dict'''
+        # @Hardcode: For optimization
+        return {
+            k[:3]: float(v) for k, v in balance.items() if k.endswith('available') and float(v) > 1e-8
+        }
+
+
+    @staticmethod
     def handleConnectionErrors(res):
         c = res.status_code
 
@@ -208,6 +252,7 @@ class Bitstamp:
             raise ConnectionError
 
 
+    # @Fix
     @staticmethod
     def handleBitstampErrors(res, message):
         if 'status' not in res:
