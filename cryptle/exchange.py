@@ -9,6 +9,35 @@ import logging
 log = logging.getLogger(__name__)
 
 
+class ExchangeError(Exception):
+    pass
+
+
+class OrderError(ExchangeError):
+    pass
+
+
+def logHTTPError(res):
+    '''
+    Args:
+        res: Response object from requests
+    '''
+    if code == 400:
+        msg = '400 Bad Request'
+    elif code == 401:
+        msg = '401 Unauthorized Request'
+    elif code == 403:
+        msg = '403 Forbidden Request'
+    elif code == 404:
+        msg = '404 Page Not Found'
+    elif code == 500:
+        msg = '500 Internal Server Error'
+    else:
+        msg = '{} Error'.format(code)
+
+    log.error(msg + '\n' + res.text)
+
+
 class Bitstamp:
 
     url = 'https://www.bitstamp.net/api/v2'
@@ -19,7 +48,7 @@ class Bitstamp:
         self.id = customer_id
 
 
-    # [Application level interface]
+    # [Public Functions]
     def getTicker(self, *, asset, base_currency):
         endpoint = '/ticker/'
         return self._get(endpoint + self._encode_pair(asset, base_currency))
@@ -30,7 +59,7 @@ class Bitstamp:
         return self._get(endpoint + self._encode_pair(asset, base_currency))
 
 
-    # @Hardcode: base_currecy
+    # [Private Functions]
     def getBalance(self, *, asset='', base_currency=''):
         '''Request account balance from bitstamp.
 
@@ -41,70 +70,94 @@ class Bitstamp:
 
         Returns:
             The full balance, keyed by asset names
+
+        Raises:
+            ConnectionError: For non 200 HTTP status code, raised by _post()
         '''
-        balance = self._post('/balance/' + self._encode_pair(asset, base_currency))
-        return self._decode_balance(balance)
+        res = self._post('/balance/' + self._encode_pair(asset, base_currency))
+
+        if self.hasBitstampError(res):
+            log.error('Balance request failed')
+            raise ExchangeError
+
+        return self._decode_balance(res)
 
 
     def getOrderStatus(self, *, order_id):
-        checkType(order_id, int)
-
         res = self._post('/order_status/', params={'id': order_id})
-        self.handleBitstampErrors(res, 'Open order query failed')
+
+        if self.hasBitstampError(res):
+            log.error('Open orders request failed')
+            raise ExchangeError
+
         return res
 
 
     def getOpenOrders(self, *, asset='all/', base_currency='usd'):
         res = self_post('/open_orders/' + self._encode_pair(asset, base_currency))
-        self.handleBitstampErrors(res, 'Open orders query failed')
+
+        if self.hasBitstampError(res):
+            log.error('Open orders request failed')
+            raise ExchangeError
+
         return res
 
 
-    def marketBuy(self, *, asset, currency, amount):
-        '''Place marketbuy on bitstamp. Returns python dict when order terminates'''
-        checkType(amount, int, float)
-        assert amount > 0
+    def sendMarketBuy(self, *, asset, currency, amount):
+        '''Place marketbuy on bitstamp. Returns python dict when order terminates.
 
+        Raises:
+            ConnectionError: For non 200 HTTP status code, raised by _post()
+            OrderError: If bitsatmp respone contains {'status': error}
+        '''
         params = {
             'amount': truncate(amount, 8)
         }
 
         endpoint = '/buy/market/'
         res = self._post(endpoint + self._encode_pair(asset, currency), params=params)
-        res['timestamp'] = now()
 
-        self.handleBitstampErrors(res, 'Market buy {} failed'.format(pair[0].upper()))
+        if self.hasBitstampError(res):
+            log.error('Market buy {} failed: {}'.format(asset.upper(), res['reason']))
+            raise OrderError
+
+        res['timestamp'] = now()
         return res
 
 
-    def marketSell(self, *, asset, currency, amount):
-        '''Place marketsell on bitstamp. Returns python dict when order terminates'''
-        checkType(amount, int, float)
-        assert amount > 0
+    def sendMarketSell(self, *, asset, currency, amount):
+        '''Place marketsell on bitstamp. Returns python dict when order terminates
 
+        Raises:
+            ConnectionError: For non 200 HTTP status code, raised by _post()
+            OrderError: If bitsatmp respone contains {'status': error}
+        '''
         params = {
             'amount': truncate(amount, 8)
         }
 
         endpoint = '/sell/market/'
         res = self._post(endpoint + self._encode_pair(asset, currency), params=params)
-        res['timestamp'] = now()
 
-        self.handleBitstampErrors(res, 'Market sell {} failed'.format(pair[0].upper()))
+        if self.hasBitstampError(res):
+            log.error('Market sell {} failed: {}'.format(asset.upper(), res['reason']))
+            raise OrderError
+
+        res['timestamp'] = now()
         return res
 
 
-    def limitBuy(self, *, asset, currency, amount, price):
+    def sendLimitBuy(self, *, asset, currency, amount, price):
         '''Place limitbuy on bitstamp. Returns python dict when order terminates
 
-        Note:
-            This method is not fully implemented yet
-        '''
-        checkType(amount, int, float)
-        checkType(price, int, float)
-        assert amount > 0
-        assert price > 0
+        Raises:
+            ConnectionError: For non 200 HTTP status code, raised by _post()
+            OrderError: If bitsatmp respone contains {'status': error}
 
+        Note:
+            This method is not fully implemented yet. A proper version should either be
+            async, or returns the ordreId.
+        '''
         params = {
             'amount': truncate(amount, 8),
             'price': truncate(price, 8)
@@ -112,23 +165,26 @@ class Bitstamp:
 
         endpoint = '/buy/'
         res = self._post(endpoint + self._encode_pair(asset, currency), params=params)
-        res['timestamp'] = now()
 
-        self.handleBitstampErrors(res, 'Limit buy {} failed'.format(pair[0].upper()))
+        if self.hasBitstampError(res):
+            log.error('Limit buy {} failed: {}'.format(asset.upper(), res['reason']))
+            raise OrderError
+
+        res['timestamp'] = now()
         return res
 
 
-    def limitSell(self, *, asset, currency, amount, price):
+    def sendLimitSell(self, *, asset, currency, amount, price):
         '''Place limitsell on bitstamp. Returns python dict when order terminates
 
-        Note:
-            This method is not fully implemented yet
-        '''
-        checkType(amount, int, float)
-        checkType(price, int, float)
-        assert amount > 0
-        assert price > 0
+        Raises:
+            ConnectionError: For non 200 HTTP status code, raised by _post()
+            OrderError: If bitsatmp respone contains {'status': error}
 
+        Note:
+            This method is not fully implemented yet. A proper version should either be
+            async, or returns the ordreId.
+        '''
         params = {
             'amount': truncate(amount, 8),
             'price': truncate(price, 8)
@@ -136,18 +192,21 @@ class Bitstamp:
 
         endpoint = '/sell/'
         res = self._post(endpoint + self._encode_pair(asset, currency), params=params)
-        res['timestamp'] = now()
 
-        self.handleBitstampErrors(res, 'Limit sell {} failed'.format(pair[0].upper()))
+        if self.hasBitstampError(res):
+            log.error('Limit sell {} failed: {}'.format(asset.upper(), res['reason']))
+            raise OrderError
+
+        res['timestamp'] = now()
         return res
 
-
-    def cancnelOrder(self, order_id):
+    # @Document
+    def sendOrderCancel(self, order_id):
         '''Cancel an open limit order'''
-        checkType(order_id, int)
         return self._post('/cancel_order/', params={'id': order_id})
 
 
+    # @Document
     def cancnelAllOrder(self):
         return self._post('/cancel_all_orders/')
 
@@ -159,12 +218,12 @@ class Bitstamp:
 
         url = self.url + endpoint
 
-        try:
-            log.debug('Sending GET request: ' + url)
-            res = req.get(url)
-            self.handleConnectionErrors(res)
-        except ConnectionError:
-            return {'status': 'error', 'reason': 'ConnectionError'}
+        log.debug('Sending GET request: ' + url)
+        res = req.get(url)
+
+        if res.status_code // 100 != 2:
+            logHTTPError(res)
+            raise ConnectionError
 
         res = json.loads(res.text)
         return res
@@ -177,15 +236,14 @@ class Bitstamp:
 
         params = params or {}
         params = {**self._authParams(), **params}
-
         url = self.url + endpoint
 
-        try:
-            log.debug('Sending POST request: ' + url)
-            res = req.post(url, params)
-            self.handleConnectionErrors(res)
-        except ConnectionError:
-            return {'status': 'error', 'reason': 'ConnectionError'}
+        log.debug('Sending POST request: ' + url)
+        res = req.post(url, params)
+
+        if res.status_code // 100 != 2:
+            logHTTPError(res)
+            raise ConnectionError
 
         res = json.loads(res.text)
         return res
@@ -228,38 +286,8 @@ class Bitstamp:
 
 
     @staticmethod
-    def handleConnectionErrors(res):
-        c = res.status_code
-
-        if c == 400:
-            log.error('Bitstamp: 400 Bad Request Error')
-            log.error(res.text)
-            raise ConnectionError
-        elif c == 401:
-            log.error('Bitstamp: 401 Unauthorized Error')
-            log.error(res.text)
-            raise ConnectionError
-        elif c == 403:
-            log.error('Bitstamp: 403 Bad Request Error')
-            log.error(res.text)
-            raise ConnectionError
-        elif c == 404:
-            log.error('Bitstamp: 404 Page Not Found')
-            raise ConnectionError
-        elif c != 200:
-            log.error('Bitstamp: Error {}'.format(c))
-            log.error(res.text)
-            raise ConnectionError
-
-
-    # @Fix
-    @staticmethod
-    def handleBitstampErrors(res, message):
-        if 'status' not in res:
-            res['status'] = 'success'
-            return
-
-        if res['status'] == 'error':
-            log.error(message + ': ' + str(res['reason']))
-            res['price'] = 0
-            res['amount'] = 0
+    def hasBitstampError(res):
+        try:
+            return res['status'] == 'error'
+        except KeyError:
+            pass
