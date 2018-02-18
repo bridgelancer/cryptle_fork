@@ -1,4 +1,4 @@
-from .utility import *
+from cryptle.utility import *
 
 import json
 import time
