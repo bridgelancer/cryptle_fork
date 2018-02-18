@@ -249,7 +249,7 @@ class Strategy:
 
         msg = 'Placing market buy for {:.6g} {} {:s}'
         logger.debug(msg.format(amount, self.asset.upper(), message))
-        res = self.exchange.marketBuy(self.asset, amount)
+        res = self.exchange.sendMarketBuy(self.asset, amount)
 
         self._cleanupBuy(res, message)
 
@@ -261,7 +261,7 @@ class Strategy:
 
         msg = 'Placing market sell for {:.6g} {} {:s}'
         logger.debug(msg.format(amount, self.asset.upper(), message))
-        res = self.exchange.marketSell(self.asset, amount)
+        res = self.exchange.sendMarketSell(self.asset, amount)
 
         self._cleanupSell(res, message)
 
@@ -275,7 +275,7 @@ class Strategy:
 
         msg = 'Placing limit buy for {:.6g} {} @${:.6g} {:s}'
         logger.debug(msg.format(amount, self.asset.upper(), price, message))
-        res = self.exchange.limitBuy(self.asset, amount, price)
+        res = self.exchange.sendLimitBuy(self.asset, amount, price)
 
         self._cleanupBuy(res, message)
 
@@ -289,7 +289,7 @@ class Strategy:
 
         msg = 'Placing limit sell for {:.6g} {} @${:.6g} {:s}'
         logger.debug(msg.format(amount, self.asset.upper(), price, message))
-        res = self.exchange.limitSell(self.asset, amount, price)
+        res = self.exchange.sendLimitSell(self.asset, amount, price)
 
         self._cleanupSell(res, message)
 
