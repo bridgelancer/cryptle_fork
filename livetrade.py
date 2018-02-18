@@ -47,23 +47,28 @@ def handle_input(line, strat):
         except KeyError:
             return 'Attribute does not exist'
 
-
-def main_loop(port, log):
+# @Shit design @Bad dependence
+def main_loop(pair, port, log, feed, exchange):
     s = 0
-    while bs.isConnected() and not terminated:
+    while feed.isConnected() and not terminated:
         time.sleep(1)
         s += 1
-        s %= 60
+        s %= 3
         if s == 0:
-            pair_value = exchange.getTicker(pair)
-            full_balance = exchange.getBalance()
-            new_cash = float(full_balance['usd_available'])
-            new_balance_value = {pair: port.balance[pair] * float(pair_value['last'])}
+            # @Shit code: Think of new interface
+            prices = {pair['asset']: float(exchange.getTicker(**pair)['last'])}
+            balance = exchange.getBalance()
 
-            if new_balance_value != port.balance_value:
-                log.report('Equity:  {}'.format(port.equity))
-                log.report('Cash:    {}'.format(port.cash))
-                log.report('Balance: {}'.format(port.balance))
+#            if (port.cash != balance[pair[1]]
+#                or balance[pair[1]] != port.balance[pair[1]]
+#            ):
+                #port.cash = pair_value['last']
+                #port.balance[pair[1]] = balance[pair[1]]
+            port.updateEquity(prices)
+            port.balance.update(balance)
+            log.report('Equity:  {}'.format(port.equity))
+            log.report('Cash:    {}'.format(port.cash))
+            log.report('Balance: {}'.format(port.balance))
 
 
 def setup_loggers(fname):
@@ -96,7 +101,11 @@ def setup_loggers(fname):
 
 
 if __name__ == '__main__':
-    pair     = 'bchusd'
+    pair = {
+        'asset': 'bch',
+        'base_currency': 'usd'
+    }
+
     log_file = 'livetrade.log'
     config_file = 'livetrade.config'
 
@@ -111,22 +120,18 @@ if __name__ == '__main__':
     log = setup_loggers(log_file)
     log.report('Logging to ' + log_file)
 
-    log.debug('Initialising REST private parameters...')
+    log.debug('Initialising private keys...')
     key     = sys.argv[1]
     secret  = sys.argv[2]
     cid     = sys.argv[3]
     exchange = Bitstamp(key, secret, cid)
 
     log.debug('Retrieving balance...')
-    full_balance = exchange.getBalance()
-    pair_value = exchange.getTicker(pair)
+    balance = exchange.getBalance()
+    pair_value = exchange.getTicker(**pair)
 
     log.debug('Initialising portfolio...')
-    pair_available = pair[:3] + '_available'
-    cash = float(full_balance['usd_available'])
-    balance = {pair: float(full_balance[pair_available])}
-    balance_value = {pair: balance[pair] * float(pair_value['last'])}
-    port = Portfolio(cash, balance, balance_value)
+    port = Portfolio(balance=balance, base_currency=pair['base_currency'])
 
     log.debug('Initialising strategy...')
     config = OrderedDict()
@@ -134,20 +139,19 @@ if __name__ == '__main__':
         'period': 120,
         'bband': 6.5,
         'bband_period': 20,
-        'bband_window': 3600,
+        'bwindow': 3600,
         'snb_factor': 1.25,
         'snb_bband': 1.25,
         'rsi_thresh': 40,
         'equity_at_risk': 0.95
     }
-    strat = SNBStrat(**config, pair=pair, portfolio=port, exchange=exchange)
-
-    ordered_config = OrderedDict(sorted(config.items(), keys=lambda k: k[0]))
+    strat = SNBStrat(**config, **pair, portfolio=port, exchange=exchange)
+    ordered_config = OrderedDict(sorted(config.items(), key=lambda k: k[0]))
     cfglog.report('Config: \n{}'.format(pprint.pformat(ordered_config, indent=4)))
 
     log.debug('Initialising data feed and callbacks...')
-    bs = BitstampFeed()
-    bs.onTrade(pair, lambda x: strat.pushTick(*unpackTick(x)))
+    feed = BitstampFeed()
+    feed.onTrade(pair['asset'], pair['base_currency'], lambda x: strat.pushTick(*unpackTick(x)))
 
     log.debug('Reporting started')
     print(help_text)
@@ -155,7 +159,7 @@ if __name__ == '__main__':
     log.report('Cash:    {}'.format(port.cash))
     log.report('Balance: {}'.format(port.balance))
 
-    main_thread = threading.Thread(target=main_loop, args=(port, log))
+    main_thread = threading.Thread(target=main_loop, args=(pair, port, log, feed, exchange))
     main_thread.start()
 
     try:

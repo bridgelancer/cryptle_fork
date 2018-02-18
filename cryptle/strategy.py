@@ -7,53 +7,77 @@ logger = logging.getLogger(__name__)
 class Portfolio:
     '''A proxy data structure for keeping track of balance in an account.'''
 
-    def __init__(self, cash, balance=None, balance_value=None):
-        checkType(cash, int, float)
+    def __init__(self, cash=0, balance=None, base_currency='usd'):
+        self.base_currency = base_currency
+        self.balance = balance or {base_currency: cash}
+        self.balance_value = {}
 
-        self.cash = cash
-        self.balance = balance or {}
-        self.balance_value = balance_value or {}
+        try:
+            self.cash = self.balance[base_currency]
+        except KeyError:
+            self.cash = cash
 
 
-    def deposit(self, pair, amount, price=0):
-        checkType(pair, str)
+    def deposit(self, asset, amount, price=0):
+        checkType(asset, str)
         checkType(amount, int, float)
         checkType(price, int, float)
 
         try:
-            self.balance[pair] += amount
-            self.balance_value[pair] += amount * price
+            self.balance[asset] += amount
+            self.balance_value[asset] += amount * price
         except KeyError:
-            self.balance[pair] = amount
-            self.balance_value[pair] = amount * price
-        logger.debug('Deposited {} {}'.format(amount, pair))
+            self.balance[asset] = amount
+            self.balance_value = amount * price
+        logger.debug('Deposited {} {}'.format(amount, asset))
 
 
-    def withdraw(self, pair, amount):
-        checkType(pair, str)
+    def withdraw(self, asset, amount):
+        checkType(asset, str)
         checkType(amount, int, float)
 
         try:
-            self.balance_value[pair] *= ((self.balance[pair] - amount) / self.balance[pair])
-            self.balance[pair] -= amount
-            logger.debug('Withdrew {} {}'.format(amount, pair))
-        except (KeyError, ZeroDivisionError):
+            self.balance_value *= (self.balance[asset] - amount) / self.balance[asset]
+            self.balance[asset] -= amount
+            logger.debug('Withdrew {} {}'.format(amount, asset))
+        except KeyError:
             raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
 
 
-    def clear(self, pair):
-        checkType(pair, str)
-        self.balance[pair] = 0
+    def clear(self, asset):
+        self.balance[asset] = 0
 
 
     def clearAll(self):
         self.balance = {}
 
-
     @property
     def equity(self):
-        asset = sum(self.balance_value.values())
-        return self.cash + asset
+        return sum(self.balance_value.values()) + self.cash
+
+    @property
+    def cash(self):
+        return self.balance[self.base_currency]
+
+    @cash.setter
+    def cash(self, value):
+        self.balance[self.base_currency] = value
+
+
+    def updateEquity(self, price):
+        '''Update the total equity value for a given portfolio.
+
+        Args:
+            prices (dict): Reference price of various assets The user is
+                responsible for making sure the prices are in the correct units.
+        '''
+        for asset, amount in filter(lambda x: x[0] != self.base_currency, self.balance.items()):
+            try:
+                self.balance_value[asset] = amount * price[asset]
+            except KeyError:
+                pass
+        return self.equity
+
 
 
 class Strategy:
@@ -96,13 +120,16 @@ class Strategy:
     '''
 
     def __init__( self,
-            pair=None,
-            portfolio=None,
-            exchange=None,
+            *,
+            asset,
+            base_currency,
+            portfolio,
+            exchange,
             equity_at_risk=1,
             print_timestamp=True):
 
-        self.pair = pair
+        self.asset = asset
+        self.base_currency = base_currency
         self.portfolio = portfolio
         self.exchange = exchange
         self.equity_at_risk = equity_at_risk
@@ -185,7 +212,7 @@ class Strategy:
     @property
     def hasBalance(self):
         try:
-            return self.portfolio.balance[self.pair] > 0
+            return self.portfolio.balance[self.asset] > 0
         except:
             return False
 
@@ -202,15 +229,6 @@ class Strategy:
 
 
     @property
-    def adjusted_equity(self):
-        '''Return market price adjusted latest value of portfolio'''
-        try:
-            return self.portfolio.cash + self.portfolio.balance[self.pair] * self.last_price
-        except (AttributeError, KeyError):
-            return self.portfolio.equity
-
-
-    @property
     def maxBuyAmount(self):
         max_equi = self.equity_at_risk * self.equity / self.last_price
         max_cash = self.portfolio.cash / self.last_price
@@ -219,7 +237,7 @@ class Strategy:
 
     @property
     def maxSellAmount(self):
-        return self.portfolio.balance[self.pair]
+        return self.portfolio.balance[self.asset]
 
 
     # [Exchange interface]
@@ -230,8 +248,8 @@ class Strategy:
         assert amount > 0
 
         msg = 'Placing market buy for {:.6g} {} {:s}'
-        logger.debug(msg.format(amount, self.pair.upper(), message))
-        res = self.exchange.marketBuy(self.pair, amount)
+        logger.debug(msg.format(amount, self.asset.upper(), message))
+        res = self.exchange.marketBuy(self.asset, amount)
 
         self._cleanupBuy(res, message)
 
@@ -242,8 +260,8 @@ class Strategy:
         assert amount > 0
 
         msg = 'Placing market sell for {:.6g} {} {:s}'
-        logger.debug(msg.format(amount, self.pair.upper(), message))
-        res = self.exchange.marketSell(self.pair, amount)
+        logger.debug(msg.format(amount, self.asset.upper(), message))
+        res = self.exchange.marketSell(self.asset, amount)
 
         self._cleanupSell(res, message)
 
@@ -256,8 +274,8 @@ class Strategy:
         assert price > 0
 
         msg = 'Placing limit buy for {:.6g} {} @${:.6g} {:s}'
-        logger.debug(msg.format(amount, self.pair.upper(), price, message))
-        res = self.exchange.limitBuy(self.pair, amount, price)
+        logger.debug(msg.format(amount, self.asset.upper(), price, message))
+        res = self.exchange.limitBuy(self.asset, amount, price)
 
         self._cleanupBuy(res, message)
 
@@ -270,23 +288,23 @@ class Strategy:
         assert price > 0
 
         msg = 'Placing limit sell for {:.6g} {} @${:.6g} {:s}'
-        logger.debug(msg.format(amount, self.pair.upper(), price, message))
-        res = self.exchange.limitSell(self.pair, amount, price)
+        logger.debug(msg.format(amount, self.asset.upper(), price, message))
+        res = self.exchange.limitSell(self.asset, amount, price)
 
         self._cleanupSell(res, message)
 
 
     # Reconcile actions made on the exchange with the portfolio
-    def _cleanupBuy(self, res, message=None, pair=None):
+    def _cleanupBuy(self, res, message=None):
         if res['status'] == 'error':
-            logger.error('Buy failed {} {}'.format(self.pair.upper(), message))
+            logger.error('Buy failed {} {}'.format(self.asset.upper(), message))
             return
 
         price = float(res['price'])
         amount = float(res['amount'])
         timestamp = int(res['timestamp'])
 
-        self.portfolio.deposit(self.pair, amount, price)
+        self.portfolio.deposit(self.asset, amount, price)
         self.portfolio.cash -= amount * price
         self.trades.append([timestamp, price])
 
@@ -295,7 +313,7 @@ class Strategy:
             msg += ' at {:%Y-%m-%d %H:%M:%S}'
         logger.info(msg.format(
                 amount,
-                self.pair.upper(),
+                self.asset.upper(),
                 price,
                 message,
                 datetime.fromtimestamp(timestamp)))
@@ -303,14 +321,14 @@ class Strategy:
 
     def _cleanupSell(self, res, message=None):
         if res['status'] == 'error':
-            logger.error('Sell failed {} {}'.format(self.pair.upper(), message))
+            logger.error('Sell failed {} {}'.format(self.asset.upper(), message))
             return
 
         price = float(res['price'])
         amount = float(res['amount'])
         timestamp = int(res['timestamp'])
 
-        self.portfolio.withdraw(self.pair, amount)
+        self.portfolio.withdraw(self.asset, amount)
         self.portfolio.cash += amount * price
         self.trades[-1] += [timestamp, price]
 
@@ -319,7 +337,7 @@ class Strategy:
             msg += ' at {:%Y-%m-%d %H:%M:%S}'
         logger.info(msg.format(
                 amount,
-                self.pair.upper(),
+                self.asset.upper(),
                 price,
                 message,
                 datetime.fromtimestamp(timestamp)))
