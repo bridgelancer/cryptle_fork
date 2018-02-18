@@ -1,11 +1,13 @@
+import hashlibimport hmac
+import logging
+import json
+from time import time as now
+
+import requests as req
+
 from cryptle.utility import *
 
-from time import time as now
-import hashlib
-import hmac
-import json
-import requests as req
-import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -106,6 +108,11 @@ class Bitstamp:
     def sendMarketBuy(self, *, asset, currency, amount):
         '''Place marketbuy on bitstamp. Returns python dict when order terminates.
 
+        Args:
+            asset: Name of asset to buy
+            currency: Base currency to be used for the transaction
+            amount: Number of assets to buy
+
         Raises:
             ConnectionError: For non 200 HTTP status code, raised by _post()
             OrderError: If bitsatmp respone contains {'status': error}
@@ -128,6 +135,11 @@ class Bitstamp:
     def sendMarketSell(self, *, asset, currency, amount):
         '''Place marketsell on bitstamp. Returns python dict when order terminates
 
+        Args:
+            asset: Name of asset to sell
+            currency: Base currency to be gained from this transaction
+            amount: Number of assets to sell
+
         Raises:
             ConnectionError: For non 200 HTTP status code, raised by _post()
             OrderError: If bitsatmp respone contains {'status': error}
@@ -149,6 +161,12 @@ class Bitstamp:
 
     def sendLimitBuy(self, *, asset, currency, amount, price):
         '''Place limitbuy on bitstamp. Returns python dict when order terminates
+
+        Args:
+            asset: Name of asset to buy
+            currency: Base currency to be used for the transaction
+            amount: Number of assets to buy
+            price: Price (in base currency) for the order to be placed
 
         Raises:
             ConnectionError: For non 200 HTTP status code, raised by _post()
@@ -176,6 +194,12 @@ class Bitstamp:
 
     def sendLimitSell(self, *, asset, currency, amount, price):
         '''Place limitsell on bitstamp. Returns python dict when order terminates
+
+        Args:
+            asset: Name of asset to buy
+            currency: Base currency to be used for the transaction
+            amount: Number of assets to buy
+            price: Price (in base currency) for the order to be placed
 
         Raises:
             ConnectionError: For non 200 HTTP status code, raised by _post()

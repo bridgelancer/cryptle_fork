@@ -1,9 +1,11 @@
+import logging
+import time
+import json
+
+import pysher
+
 from cryptle.utility import *
 
-import json
-import time
-import pysher
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -88,7 +90,6 @@ class BitstampFeed:
 
 
     def _bindSocket(self, channel_name, event, callback):
-
         if channel_name not in self.pusher.channels:
             self.pusher.subscribe(channel_name)
 
