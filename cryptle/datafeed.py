@@ -44,7 +44,7 @@ class BitstampFeed:
         if asset == 'btc' and base_currency == 'usd':
             return ''
         else:
-            return asset + '_' + base_currency
+            return '_' + asset + base_currency
 
 
     def onTrade(self, asset, base_currency, callback):
