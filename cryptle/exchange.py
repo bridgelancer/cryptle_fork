@@ -1,4 +1,5 @@
-import hashlibimport hmac
+import hashlib
+import hmac
 import logging
 import json
 from time import time as now
@@ -51,18 +52,18 @@ class Bitstamp:
 
 
     # [Public Functions]
-    def getTicker(self, *, asset, base_currency):
+    def getTicker(self, asset, base_currency):
         endpoint = '/ticker/'
         return self._get(endpoint + self._encode_pair(asset, base_currency))
 
 
-    def getOrderbook(self, *, asset, base_currency):
+    def getOrderbook(self, asset, base_currency):
         endpoint = '/order_book/'
         return self._get(endpoint + self._encode_pair(asset, base_currency))
 
 
     # [Private Functions]
-    def getBalance(self, *, asset='', base_currency=''):
+    def getBalance(self, asset='', base_currency=''):
         '''Request account balance from bitstamp.
 
         Args:
@@ -85,7 +86,7 @@ class Bitstamp:
         return self._decode_balance(res)
 
 
-    def getOrderStatus(self, *, order_id):
+    def getOrderStatus(self, order_id):
         res = self._post('/order_status/', params={'id': order_id})
 
         if self.hasBitstampError(res):
@@ -95,7 +96,7 @@ class Bitstamp:
         return res
 
 
-    def getOpenOrders(self, *, asset='all/', base_currency='usd'):
+    def getOpenOrders(self, asset='all/', base_currency='usd'):
         res = self_post('/open_orders/' + self._encode_pair(asset, base_currency))
 
         if self.hasBitstampError(res):
@@ -105,7 +106,7 @@ class Bitstamp:
         return res
 
 
-    def sendMarketBuy(self, *, asset, currency, amount):
+    def sendMarketBuy(self, asset, currency, amount):
         '''Place marketbuy on bitstamp. Returns python dict when order terminates.
 
         Args:
@@ -132,7 +133,7 @@ class Bitstamp:
         return res
 
 
-    def sendMarketSell(self, *, asset, currency, amount):
+    def sendMarketSell(self, asset, currency, amount):
         '''Place marketsell on bitstamp. Returns python dict when order terminates
 
         Args:
@@ -159,7 +160,7 @@ class Bitstamp:
         return res
 
 
-    def sendLimitBuy(self, *, asset, currency, amount, price):
+    def sendLimitBuy(self, asset, currency, amount, price):
         '''Place limitbuy on bitstamp. Returns python dict when order terminates
 
         Args:
@@ -192,7 +193,7 @@ class Bitstamp:
         return res
 
 
-    def sendLimitSell(self, *, asset, currency, amount, price):
+    def sendLimitSell(self, asset, currency, amount, price):
         '''Place limitsell on bitstamp. Returns python dict when order terminates
 
         Args:
