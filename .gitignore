@@ -16,6 +16,9 @@
 *.exe
 
 livetrade
+livebch
+liveeth
+livexrp
 my*
 snooped-script.py
 snoop.ipynb
