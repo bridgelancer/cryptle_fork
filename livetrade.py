@@ -1,4 +1,4 @@
-from cryptle.datafeed import BitstampFeed
+from cryptle.datafeed import connect
 from cryptle.exchange import Bitstamp
 from cryptle.strategy import Portfolio
 from cryptle.loglevel import *
@@ -86,9 +86,10 @@ if __name__ == '__main__':
     ordered_config = OrderedDict(sorted(config.items(), key=lambda k: k[0]))
     log.report('Config: \n{}'.format(pprint.pformat(ordered_config, indent=4)))
 
-    log.debug('Initialising data feed and callbacks...')
-    feed = BitstampFeed()
-    feed.onTrade(asset, base_currency, lambda x: strat.pushTick(*unpackTick(x)))
 
-    loop = Runtime(strat, exchange, log)
-    loop.run_forever()
+    with connect('bitstamp') as feed:
+        log.debug('Initialising data feed and callbacks...')
+        feed.onTrade(asset, base_currency, lambda x: strat.pushTick(*unpackTick(x)))
+
+        loop = Runtime(strat, exchange, log)
+        loop.run_forever()
