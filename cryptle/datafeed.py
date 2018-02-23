@@ -1,6 +1,7 @@
 import logging
 import time
 import json
+from contextlib import contextmanager
 
 import pysher
 
@@ -9,7 +10,24 @@ from cryptle.utility import *
 logger = logging.getLogger(__name__)
 
 
-class BitstampFeed:
+@contextmanager
+def connect(feed_name):
+    try:
+        if feed_name == 'bitstamp':
+            feed = BitstampFeed()
+            feed.connect()
+        else:
+            raise ValueError(f'No datafeed named {feed_name}')
+        yield feed
+    finally:
+        feed.close()
+
+
+class Datafeed:
+    pass
+
+
+class BitstampFeed(Datafeed):
     '''Datafeed interface for bitstamp, based on websockets provided by pysher.
 
     Provides a javascript-like interface for various types of supported bitstamp events. Details are
@@ -20,11 +38,8 @@ class BitstampFeed:
     '''
     key = 'de504dc5763aeef9ff52'
 
-    def __init__(self, auto_connect=True, log_level=logging.INFO):
+    def __init__(self, log_level=logging.INFO):
         self.pusher = pysher.Pusher(self.key, log_level=log_level, auto_sub=True)
-
-        if auto_connect:
-            self.connect()
 
 
     def connect(self):
@@ -32,7 +47,7 @@ class BitstampFeed:
         time.sleep(1)
 
 
-    def disconnect(self):
+    def close(self):
         self.pusher.disconnect()
 
 
@@ -48,43 +63,31 @@ class BitstampFeed:
 
 
     def onTrade(self, asset, base_currency, callback):
-        assert callable(callback)
-
         channel = 'live_trades' + self._encode_pair(asset, base_currency)
         self._bindSocket(channel, 'trade', lambda x: callback(json.loads(x)))
 
 
     def onOrderCreate(self, asset, base_currency, callback):
-        assert callable(callback)
-
         channel = 'live_orders' + self._encode_pair(asset, base_currency)
         self._bindSocket(channel, 'order_created', lambda x: callback(json.loads(x)))
 
 
     def onOrderChanged(self, asset, base_currency, callback):
-        assert callable(callback)
-
         channel = 'live_orders' + self._encode_pair(asset, base_currency)
         self._bindSocket(channel, 'order_changed', lambda x: callback(json.loads(x)))
 
 
     def onOrderDeleted(self, asset, base_currency, callback):
-        assert callable(callback)
-
         channel = 'live_orders' + self._encode_pair(asset, base_currency)
         self._bindSocket(channel, 'order_deleted', lambda x: callback(json.loads(x)))
 
 
     def onOrderBookUpdate(self, asset, base_currency, callback):
-        assert callable(callback)
-
         channel = 'order_book' + self._encode_pair(asset, base_currency)
         self._bindSocket(channel, 'data', lambda x: callback(json.loads(x)))
 
 
     def onOrderBookDiff(self, asset, base_currency, callback):
-        assert callable(callback)
-
         channel = 'diff_order_book' + self._encode_pair(asset, base_currency)
         self._bindSocket(channel, 'data', lambda x: callback(json.loads(x)))
 
