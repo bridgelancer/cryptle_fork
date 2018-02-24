@@ -7,24 +7,36 @@ logger = logging.getLogger(__name__)
 
 
 class Portfolio:
-    '''A proxy data structure for keeping track of balance in an account.'''
+    '''A Portfolio object is a collection of assets.
 
-    def __init__(self, cash=0, balance=None, base_currency='usd'):
-        self.base_currency = base_currency
+    Note:
+        The value of balance[base_currency] will be overwritten by cash when
+        cash is not None. Only default __init__ allows custom balance_value.
+    '''
+
+    def __init__(self, cash=None, balance=None, base_currency='usd', balance_value=None):
+        if cash is None and balance is None:
+            raise ValueError('Both cash and balance were None')
+
         self.balance = balance or {base_currency: cash}
-        self.balance_value = {}
+        self.balance[base_currency] = cash or self.balance[base_currency]
+        self.base_currency = base_currency
+        self.balance_value = balance_value or {}
 
-        try:
-            self.cash = self.balance[base_currency]
-        except KeyError:
-            self.cash = cash
+
+    @classmethod
+    def from_cash(cls, cash, base_currency='usd'):
+        return cls(balance={base_currency: cash}, base_currency=base_currency)
+
+
+    @classmethod
+    def from_balance(cls, balance, base_currency='usd'):
+        if base_currency not in balance:
+            raise ValueError('No entry with base_currency in balance.')
+        return cls(balance=balance, base_currency=base_currency)
 
 
     def deposit(self, asset, amount, price=0):
-        checkType(asset, str)
-        checkType(amount, int, float)
-        checkType(price, int, float)
-
         try:
             self.balance[asset] += amount
             self.balance_value[asset] += amount * price
@@ -35,9 +47,6 @@ class Portfolio:
 
 
     def withdraw(self, asset, amount):
-        checkType(asset, str)
-        checkType(amount, int, float)
-
         try:
             self.balance_value *= (self.balance[asset] - amount) / self.balance[asset]
             self.balance[asset] -= amount
@@ -46,20 +55,15 @@ class Portfolio:
             raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
 
 
-    def clear(self, asset):
-        self.balance[asset] = 0
-
-
-    def clearAll(self):
-        self.balance = {}
-
     @property
     def equity(self):
         return sum(self.balance_value.values()) + self.cash
 
+
     @property
     def cash(self):
         return self.balance[self.base_currency]
+
 
     @cash.setter
     def cash(self, value):
@@ -67,12 +71,6 @@ class Portfolio:
 
 
     def updateEquity(self, price):
-        '''Update the total equity value for a given portfolio.
-
-        Args:
-            prices (dict): Reference price of various assets The user is
-                responsible for making sure the prices are in the correct units.
-        '''
         for asset, amount in filter(lambda x: x[0] != self.base_currency, self.balance.items()):
             try:
                 self.balance_value[asset] = amount * price[asset]
