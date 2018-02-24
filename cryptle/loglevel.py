@@ -1,25 +1,20 @@
+'''
+Defines custom log levels, as well as provides logging helper functions.
+'''
 import logging
 
-# CRITICAL = 50
-# ERROR    = 40
-# WARNING  = 30
-# INFO     = 20
-# DEBUG    = 10
-# NOTSET   = 0
 
-# Define new log levels
 logging.REPORT  = 25
 logging.SIGNAL  = 15
 logging.METRIC  = 13
 logging.TICK    = 5
-
 logging.addLevelName(logging.REPORT, 'REPORT')
 logging.addLevelName(logging.SIGNAL, 'SIGNAL')
 logging.addLevelName(logging.METRIC, 'METRIC')
 logging.addLevelName(logging.TICK, 'TICK')
 
 
-# Add convenience functions to the default Logger and it's children instances
+# Add named log functions to Logger base class
 def _report(self, message, *args, **kargs):
     if self.isEnabledFor(logging.REPORT):
         self._log(logging.REPORT, message, args, **kargs)
@@ -42,9 +37,8 @@ logging.Logger.metric = _metric
 logging.Logger.tick   = _tick
 
 
-# Define a unified formatter for cross module use
-def defaultFormatter(notimestamp=False):
-
+# Standardised formatter
+def std_formatter(notimestamp=False):
     if notimestamp:
         fmt = '%(name)-10s [%(levelname)-8s] %(message)s'
     else:
@@ -53,3 +47,17 @@ def defaultFormatter(notimestamp=False):
     datefmt = '%Y-%m-%d %H:%M:%S'
     return logging.Formatter(fmt=fmt, datefmt=datefmt)
 
+
+def std_logger(name, *file_handlers, loglevel=logging.DEBUG):
+    logger = logging.getLogger(name)
+    logger.setLevel(loglevel)
+    for fh in file_handlers:
+        logger.addHandler(fh)
+    return logger
+
+
+def std_filehandler(fname, loglevel=logging.DEBUG, formatter=std_formatter()):
+    fh = logger.FileHandler(fname)
+    fh.setLevel(loglevel)
+    fh.setFormatter(formatter)
+    return fh
