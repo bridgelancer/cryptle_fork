@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 @contextmanager
-def connect(feed_name):
+def connect(feed_name, *args, **kwargs):
     try:
         if feed_name == 'bitstamp':
             feed = BitstampFeed()
-            feed.connect()
+            feed.connect(*args, **kwargs)
         else:
             raise ValueError(f'No datafeed named {feed_name}')
         yield feed
@@ -53,13 +53,6 @@ class BitstampFeed(Datafeed):
 
     def isConnected(self):
         return self.pusher.connection.is_alive()
-
-    @staticmethod
-    def _encode_pair(asset, base_currency):
-        if asset == 'btc' and base_currency == 'usd':
-            return ''
-        else:
-            return '_' + asset + base_currency
 
 
     def onTrade(self, asset, base_currency, callback):
@@ -99,3 +92,10 @@ class BitstampFeed(Datafeed):
         channel = self.pusher.channels[channel_name]
         channel.bind(event, callback)
 
+
+    @staticmethod
+    def _encode_pair(asset, base_currency):
+        if asset == 'btc' and base_currency == 'usd':
+            return ''
+        else:
+            return '_' + asset + base_currency
