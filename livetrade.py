@@ -15,7 +15,7 @@ from collections import OrderedDict
 
 
 def setup_loggers(fname):
-    formatter = defaultFormatter()
+    formatter = std_formatter()
 
     sh = logging.StreamHandler()
     sh.setLevel(logging.INFO)
