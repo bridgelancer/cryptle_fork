@@ -1,6 +1,6 @@
 from cryptle.backtest import *
 from cryptle.strategy import *
-from cryptle.utility  import *
+
 from cryptle.loglevel import defaultFormatter
 from metric.generic import *
 from ta import *

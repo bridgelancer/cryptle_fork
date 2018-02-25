@@ -1,6 +1,6 @@
 from cryptle.strategy import Strategy, Portfolio
 from cryptle.loglevel import defaultFormatter
-from cryptle.utility  import *
+
 from ta import *
 
 import logging
