@@ -201,7 +201,7 @@ class PaperExchange:
         price *= (1 + self.slippage)
 
         logger.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
-        logger.info('Paid {:.5g} commission'.format(._price * self.commission))
+        logger.info('Paid {:.5g} commission'.format(_price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
 
