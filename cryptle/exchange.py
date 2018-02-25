@@ -6,8 +6,6 @@ from time import time as now
 
 import requests as req
 
-from cryptle.utility import *
-
 
 log = logging.getLogger(__name__)
 
@@ -119,7 +117,7 @@ class Bitstamp:
             OrderError: If bitsatmp respone contains {'status': error}
         '''
         params = {
-            'amount': truncate(amount, 8)
+            'amount': _truncate(amount, 8)
         }
 
         endpoint = '/buy/market/'
@@ -146,7 +144,7 @@ class Bitstamp:
             OrderError: If bitsatmp respone contains {'status': error}
         '''
         params = {
-            'amount': truncate(amount, 8)
+            'amount': _truncate(amount, 8)
         }
 
         endpoint = '/sell/market/'
@@ -178,8 +176,8 @@ class Bitstamp:
             async, or returns the ordreId.
         '''
         params = {
-            'amount': truncate(amount, 8),
-            'price': truncate(price, 8)
+            'amount': _truncate(amount, 8),
+            'price': _truncate(price, 8)
         }
 
         endpoint = '/buy/'
@@ -211,8 +209,8 @@ class Bitstamp:
             async, or returns the ordreId.
         '''
         params = {
-            'amount': truncate(amount, 8),
-            'price': truncate(price, 8)
+            'amount': _truncate(amount, 8),
+            'price': _truncate(price, 8)
         }
 
         endpoint = '/sell/'
@@ -239,7 +237,6 @@ class Bitstamp:
     # [Low level requests interfae]
     def _get(self, endpoint):
         '''Send GET request to bitstamp. Return python dict.'''
-        checkType(endpoint, str)
 
         url = self.url + endpoint
 
@@ -256,8 +253,6 @@ class Bitstamp:
 
     def _post(self, endpoint, params=None):
         '''Send POST request to bitstamp. Return python dict.'''
-        checkType(endpoint, str)
-        checkType(params, dict, type(None))
 
         params = params or {}
         params = {**self._authParams(), **params}
@@ -316,3 +311,9 @@ class Bitstamp:
             return res['status'] == 'error'
         except KeyError:
             pass
+
+
+def _truncate(f, dp):
+    fmt = '{:.' + str(dp) + 'f}'
+    s = fmt.format(f)
+    return float(s)
