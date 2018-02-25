@@ -1,7 +1,5 @@
 import logging
 
-from cryptle.utility import *
-
 
 logger = logging.getLogger(__name__)
 
@@ -242,55 +240,37 @@ class Strategy:
 
     # [Exchange interface]
     # Wrappers of exchange object for fine grain control/monitor over buy/sell process
-    def marketBuy(self, amount, message='', timestamp=None):
-        checkType(amount, int, float)
-        checkType(message, str)
-        assert amount > 0
-
+    def marketBuy(self, amount, message=''):
+        if amount > 0: raise ValueError("Amount must be larger than zero")
         msg = 'Placing market buy for {:.6g} {} {:s}'
         logger.debug(msg.format(amount, self.asset.upper(), message))
         res = self.exchange.sendMarketBuy(self.asset, amount)
-
         self._cleanupBuy(res, message)
 
 
-    def marketSell(self, amount, message='', timestamp=None):
-        checkType(amount, int, float)
-        checkType(message, str)
-        assert amount > 0
-
+    def marketSell(self, amount, message=''):
+        if amount > 0: raise ValueError("Amount must be larger than zero")
         msg = 'Placing market sell for {:.6g} {} {:s}'
         logger.debug(msg.format(amount, self.asset.upper(), message))
         res = self.exchange.sendMarketSell(self.asset, amount)
-
         self._cleanupSell(res, message)
 
 
-    def limitBuy(self, amount, price, message='', timestamp=None):
-        checkType(amount, int, float)
-        checkType(price, int, float)
-        checkType(message, str)
-        assert amount > 0
-        assert price > 0
-
+    def limitBuy(self, amount, price, message=''):
+        if amount > 0: raise ValueError("Amount must be larger than zero")
+        if price  > 0: raise ValueError("Price must be larger than zero")
         msg = 'Placing limit buy for {:.6g} {} @${:.6g} {:s}'
         logger.debug(msg.format(amount, self.asset.upper(), price, message))
         res = self.exchange.sendLimitBuy(self.asset, amount, price)
-
         self._cleanupBuy(res, message)
 
 
-    def limitSell(self, amount, price, message='', timestamp=None):
-        checkType(amount, int, float)
-        checkType(price, int, float)
-        checkType(message, str)
-        assert amount > 0
-        assert price > 0
-
+    def limitSell(self, amount, price, message=''):
+        if amount > 0: raise ValueError("Amount must be larger than zero")
+        if price  > 0: raise ValueError("Price must be larger than zero")
         msg = 'Placing limit sell for {:.6g} {} @${:.6g} {:s}'
         logger.debug(msg.format(amount, self.asset.upper(), price, message))
         res = self.exchange.sendLimitSell(self.asset, amount, price)
-
         self._cleanupSell(res, message)
 
 

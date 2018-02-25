@@ -108,15 +108,6 @@ def test_equity():
 
 
 @unittest
-def test_truncate():
-    assert 0.123 == truncate(0.123198211212, 3)
-    assert 0.1231982 == truncate(0.123198211212, 7)
-
-    assert 0.231 != truncate(0.9121, 21)
-    assert 0.3121 == truncate(0.3121, 12)
-
-
-@unittest
 def test_unpack():
     tick = {'price': 123, 'amount': 10, 'timestamp': 151221231, 'type': 0}
     price, timestamp, volume, action = unpackTick(tick)
