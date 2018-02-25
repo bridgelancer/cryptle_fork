@@ -1,4 +1,7 @@
-from .utility  import *
+'''
+@Incomplete data format is hardwired for bitstamp (or are we?)
+@Incomplete candle formatted data is not properly implemented
+'''
 from .strategy import Portfolio
 
 import json
@@ -36,6 +39,7 @@ def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
     test = Backtest(exchange)
     test.read(dataset)
     test.run(strat, callback)
+
 
 def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
         commission=0.0012, slippage=0, callback=None):
@@ -86,7 +90,7 @@ class Backtest:
             Does not raise exceptions.
         '''
         for tick in self.ticks:
-            price, timestamp, volume, action= unpackTick(tick)
+            price, timestamp, volume, action= _unpack(tick)
             self.exchange.price = price
             self.exchange.volume = volume
             self.exchange.timestamp = timestamp
@@ -190,64 +194,44 @@ class PaperExchange:
         self.commission = commission
         self.slippage = slippage
 
-
-    def marketBuy(self, pair, amount):
-        checkType(pair, str)
-        checkType(amount, int, float)
-        assert amount > 0
-
-        price = self.price
+    # @Cleanup too much code replication
+    def sendMarketBuy(self, pair, amount):
+        _price = self.price
         price *= (1 + self.commission)
         price *= (1 + self.slippage)
 
         logger.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
-        logger.info('Paid {:.5g} commission'.format(self.price * self.commission))
+        logger.info('Paid {:.5g} commission'.format(._price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
 
-    def marketSell(self, pair, amount):
-        checkType(pair, str)
-        checkType(amount, int, float)
-        assert amount > 0
-
-        price = self.price
+    def sendMarketSell(self, pair, amount):
+        _price = self.price
         price *= (1 - self.commission)
         price *= (1 - self.slippage)
 
         logger.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
-        logger.info('Paid {:.5g} commission'.format(self.price * self.commission))
+        logger.info('Paid {:.5g} commission'.format(_price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
 
-    def limitBuy(self, pair, amount, price):
-        checkType(pair, str)
-        checkType(amount, int, float)
-        checkType(price, int, float)
-        assert amount > 0
-        assert price > 0
-
-        price0 = price
+    def sendLimitBuy(self, pair, amount, price):
+        _price = price
         price *= (1 + self.commission)
         price *= (1 + self.slippage)
 
         logger.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
-        logger.info('Paid {:.5g} commission'.format(price0 * self.commission))
+        logger.info('Paid {:.5g} commission'.format(_price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
 
-    def limitSell(self, pair, amount, price):
-        checkType(pair, str)
-        checkType(amount, int, float)
-        checkType(price, int, float)
-        assert amount > 0
-        assert price > 0
-
-        price0 = price
+    def sendLimitSell(self, pair, amount, price):
+        _price = price
         price *= (1 - self.commission)
         price *= (1 - self.slippage)
 
         logger.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
-        logger.info('Paid {:.5g} commission'.format(price0 * self.commission))
+        logger.info('Paid {:.5g} commission'.format(_price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
 
@@ -273,3 +257,11 @@ class PaperExchange:
 
     def getOpenOrders(self, *args, **kws):
         raise NotImplementedError
+
+
+def _unpack(tick):
+    price = tick['price']
+    volume = tick['amount']
+    timestamp = float(tick['timestamp'])
+    action = 1 - tick['type'] * 2
+    return price, timestamp, volume, action
