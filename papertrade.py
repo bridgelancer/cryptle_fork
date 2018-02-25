@@ -2,7 +2,7 @@ from cryptle.datafeed import BitstampFeed
 from cryptle.backtest import Backtest, PaperExchange
 from cryptle.strategy import Portfolio
 from cryptle.loglevel import *
-from cryptle.utility import *
+
 
 from macdsnb_v2 import SNBStrat
 

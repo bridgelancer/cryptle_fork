@@ -2,7 +2,7 @@ from cryptle.datafeed import connect
 from cryptle.exchange import Bitstamp
 from cryptle.strategy import Portfolio
 from cryptle.loglevel import *
-from cryptle.utility  import unpackTick
+
 from cryptle.runtime  import Runtime
 
 from macdsnb_v2 import SNBStrat

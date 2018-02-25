@@ -1,7 +1,7 @@
 from cryptle.backtest import *
 from cryptle.exchange import Bitstamp
 from cryptle.strategy import *
-from cryptle.utility  import *
+
 
 from functools import wraps
 import logging

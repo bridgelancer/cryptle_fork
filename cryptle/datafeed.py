@@ -1,13 +1,8 @@
-import logging
 import time
 import json
 from contextlib import contextmanager
 
 import pysher
-
-from cryptle.utility import *
-
-logger = logging.getLogger(__name__)
 
 
 @contextmanager
