@@ -26,16 +26,15 @@ class Runtime:
             istream=sys.stdin,
             ostream=print):
 
-        self.terminated = False
         self.strat = strat
         self.port = strat.portfolio
         self.exchange = exchange
-        self.log = logger
+        self.logger = logger
         self.reporting_time = reporting_time
         self.interval = interval
-        self.input = istream
-        self.output = ostream
-        self.terminated = False
+        self._input = istream
+        self._output = ostream
+        self._terminated = False
 
         self.asset = self.strat.asset
         self.base_currency = self.strat.base_currency
@@ -47,22 +46,19 @@ class Runtime:
 
         if line == 'h':
             return self.help_text
-
         elif line == 'r':
             p = self.port
+            self._report()
             s = (
                 'Equity:  {}\n'
                 'Cash:    {}\n'
                 'Balance: {}\n'
             )
             return s.format(p.equity, p.cash, p.balance)
-
         elif line == 'l':
             return pprint.pformat(list(self.strat.__dict__.keys()), indent=4)
-
         elif line == 'q' or line == 'quit' or line == 'exit':
             raise KeyboardInterrupt
-
         else:
             try:
                 return self.strat.__dict__[line]
@@ -72,48 +68,46 @@ class Runtime:
 
     def report_loop(self):
         s = 0
-        while not self.terminated:
+        while not self._terminated:
             time.sleep(self.interval)
             s += self.interval
             s %= self.reporting_time
-
-            # Hardcoded for bitstamp
-            prices = {self.asset: float(self.exchange.getTicker(self.asset, self.base_currency)['last'])}
-            balance = self.exchange.getBalance()
-
-            if s == 0:
-                #if new_balance_value != port.balance_value:
-                self.log_report()
-
-            else:
-                # @Dependence on Bitstamp API
+            try:
+                # @Hardcode: only work for bitstamp
+                price = self.strat.last_price
+                balance = self.exchange.getBalance()
+                if s == 0:
+                    # @Incomplete: report only when the balance has changed
+                    self._report()
+            except:
+                # @Incomplete: Handle connection issues
                 pass
 
+
     def init(self):
-        self.output(help_text)
-        self.log.debug('Reporting started')
-        self.log_report()
-
-
-    def log_report(self):
-            self.log.report('Equity:  {}'.format(self.port.equity))
-            self.log.report('Cash:    {}'.format(self.port.cash))
-            self.log.report('Balance: {}'.format(self.port.balance))
+        self._output(help_text)
+        self.logger.debug('Reporting started')
+        self._report()
 
 
     def run_forever(self):
         report_thread = threading.Thread(target=self.report_loop)
         report_thread.start()
-
         try:
-            for line in self.input:
+            for line in self._input:
                 if line:
                     s = self.handle_input(line)
-                    self.output(s)
+                    self._output(s)
         except KeyboardInterrupt:
-            self.output('Received termination request')
+            self._output('Received termination request')
         except Exception as e:
-            self.output('Caught unhandled exception {}'.format(e))
+            self._output('Caught unhandled exception {}'.format(e))
         finally:
-            self.output('Terminating main loop...')
-            self.terminated = True
+            self._output('Terminating main loop...')
+            self._terminated = True
+
+
+    def _report(self):
+            self.logger.report('Equity:  {}'.format(self.port.equity))
+            self.logger.report('Cash:    {}'.format(self.port.cash))
+            self.logger.report('Balance: {}'.format(self.port.balance))
