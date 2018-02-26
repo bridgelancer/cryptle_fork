@@ -1,14 +1,14 @@
-from cryptle.backtest import *
-from cryptle.exchange import Bitstamp
-from cryptle.strategy import *
-
-
-from functools import wraps
 import logging
 import math
 import time
 import sys
 import traceback
+from functools import wraps
+
+from cryptle.backtest import *
+from cryptle.exchange import Bitstamp
+from cryptle.strategy import Portfolio, Strategy
+import cryptle.loglevel
 
 
 formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')
