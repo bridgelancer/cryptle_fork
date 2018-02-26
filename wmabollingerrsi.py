@@ -1,3 +1,5 @@
+'''@Deprecated'''
+
 from cryptle.strategy import Strategy
 from cryptle.loglevel import *
 

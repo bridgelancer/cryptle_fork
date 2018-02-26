@@ -1,3 +1,5 @@
+'''@Deprecated'''
+
 # @Consider using recordclass API from MIT
 class Candle:
     '''Mutable candle stick with namedtuple-like API.'''

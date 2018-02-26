@@ -1,3 +1,5 @@
+'''@Deprecated'''
+
 from cryptle.backtest import *
 from cryptle.strategy import *
 

@@ -1,9 +1,12 @@
-from cryptle.strategy import Strategy, Portfolio
-from cryptle.loglevel import *
-
-from ta import *
+'''@Deprecated'''
 
 import logging
+
+from cryptle.strategy import Strategy, Portfolio
+from cryptle.loglevel import *
+from ta import *
+
+
 logger = logging.getLogger('Strategy')
 
 
