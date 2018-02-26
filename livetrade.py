@@ -91,5 +91,5 @@ if __name__ == '__main__':
         log.debug('Initialising data feed and callbacks...')
         feed.onTrade(asset, base_currency, lambda x: strat.pushTick(*unpackTick(x)))
 
-        loop = Runtime(strat, exchange, log)
+        loop = Runtime(strat, exchange)
         loop.run_forever()
