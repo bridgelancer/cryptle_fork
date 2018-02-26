@@ -1,14 +1,14 @@
-from cryptle.loglevel import *
-from metric.base import *
-from metric.candle import *
-from metric.generic import *
-
 from functools import wraps
 import logging
 import math
 import time
 import sys
 import traceback
+
+from cryptle.loglevel import *
+from metric.base import *
+from metric.candle import *
+from metric.generic import *
 
 
 formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')
