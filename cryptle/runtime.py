@@ -1,18 +1,27 @@
 import pprint
+import sys
 import time
 import threading
-import sys
 
 
 class Runtime:
-    '''Execution device for strategy, providing online diagnostics through CLI.'''
+    '''Live execution environment for strategies.
 
-    help_text = (
+    This class provides an interface to query runtime information of a strategy.
+    Updates are also performed through querying an exchange. All read/write is
+    done through the Unix stdio.
+
+    This class can act as base for more specialized I/O sources. Subclasses may
+    read from any inputs and write to any outputs by overwriting the methods:
+        run_forever()
+        read_forever()
+        handle_input()
+    '''
+    help_str = (
         '\n'
-        'Cryptle live trade\n'
-        'h                  Print this help\n'
-        'r                  Report current portfolio status\n'
-        'l                  List available strategy attributes\n'
+        'h | help           Print this help\n'
+        'r | report         Report current portfolio status\n'
+        'l | list           List available strategy attributes\n'
         'q | quit | exit    Terminate runtime\n'
         '<attribute>        Print the value of <attribute>\n'
     )
@@ -21,42 +30,38 @@ class Runtime:
             strat,
             exchange,
             reporting_time=60,
-            interval=1,
-            istream=sys.stdin,
-            ostream=print):
+            interval=1):
 
         self.strat = strat
         self.port = strat.portfolio
         self.exchange = exchange
         self.reporting_time = reporting_time
         self.interval = interval
-        self._input = istream
-        self._output = ostream
         self._terminated = False
 
         self.asset = self.strat.asset
         self.base_currency = self.strat.base_currency
 
 
-
     def run_forever(self):
         report_thread = threading.Thread(target=self._report_loop)
         report_thread.start()
+        print(self.help_str)
+        self.report()
+        self.read_forever()
 
-        self._output(self.help_text)
-        self._report()
 
+    def read_forever(self):
         try:
-            for line in self._input:
+            for line in sys.stdin:
                 if line:
-                    s = self._handle_input(line)
-                    self._output(s)
+                    s = self.handle_input(line)
         except KeyboardInterrupt:
-            self._output('Received termination request')
+            print('Received termination request')
         except Exception as e:
-            self._output('Caught unhandled exception {}'.format(e))
+            print('Caught unhandled exception {}'.format(e))
         finally:
-            self._output('Terminating main loop...')
+            print('Terminating main loop...')
             self._terminated = True
 
 
@@ -72,43 +77,51 @@ class Runtime:
                 balance = self.exchange.getBalance()
                 if s == 0:
                     # @Incomplete: report only when the balance has changed
-                    self._report()
+                    self.report()
             except:
                 # @Incomplete: Handle connection issues
                 pass
 
 
-    def _handle_input(self, line):
-        '''Return string result of processed commaned'''
+    def handle_input(self, line):
+        s = self.process_command(line)
+        print(s)
 
+
+    def process_command(self, line):
+        '''Return a string result after processing the commaned'''
         line = line.strip()
 
-        if line == 'h':
-            return self.help_text
-        elif line == 'r':
-            p = self.port
-            self._report()
-            return s.format(p.equity, p.cash, p.balance)
-        elif line == 'l':
+        if line == 'h' or line == 'help':
+            return self.help_str
+        elif line == 'r' or line == 'report':
+            return self._get_report_str()
+        elif line == 'l' or line == 'list':
+            # @Incomplete: Put last square bracket on new line
             return pprint.pformat(list(self.strat.__dict__.keys()), indent=4)
         elif line == 'q' or line == 'quit' or line == 'exit':
             raise KeyboardInterrupt
         else:
+            # @Refactor: Wrap try around the conditional, return better message
             try:
                 return self.strat.__dict__[line]
             except KeyError:
                 return 'Attribute does not exist'
 
 
-    def _report(self):
-        self._output(self._get_report_string())
+    def report(self):
+        print(self._get_report_str())
 
 
-    def _get_report_string(self):
+    def _get_report_str(self):
         s = (
             'Equity:  {}\n'
             'Cash:    {}\n'
             'Balance: {}\n'
         )
-        s.format(self.port.equity, self.port.cash, self.port.balance)
-        return s
+        p = self.port
+        return s.format(p.equity, p.cash, p.balance)
+
+
+    def _get_help_str(self):
+        return self.help_str
