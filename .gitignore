@@ -23,11 +23,12 @@ my*
 snooped-script.py
 snoop.ipynb
 
-run/
 log/
 data/
 sample/
 pysher/
+build-tree/
+run-tree/
 
 __pycache__/
 .DS_Store/
