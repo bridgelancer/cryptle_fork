@@ -109,7 +109,7 @@ class Strategy:
         equity_at_risk: The maximum proportion of equity that will be traded
         print_timestamp: Flag for printing timestamp at buy/sell confirmation
 
-    Attributs:
+    Attributes:
         pair: String representation of the trade coin pair (meta info)
         portfolio: Portfolio managed by the strategy instance
         exchange: Exchange to be used by the strategy for order placements

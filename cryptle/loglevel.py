@@ -3,10 +3,10 @@ This module defines log levels, functions, and formatters for cryptle.
 
 The custom log levels are trading related events. They are all defined with
 severity below WARNING, described as follows:
-    - REPORT  25
-    - SIGNAL  15
-    - METRIC  13
-    - TICK    5
+- REPORT  25
+- SIGNAL  15
+- METRIC  13
+- TICK    5
 
 When imported to other modules, loggers created from logging.getLogger will have
 a log method for each corresponding new log level.

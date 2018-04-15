@@ -13,7 +13,7 @@ def connect(feed_name, *args, **kwargs):
             feed = BitstampFeed()
             feed.connect(*args, **kwargs)
         else:
-            raise ValueError(f'No datafeed named {feed_name}')
+            raise ValueError('No datafeed named {}'.format(feed_name))
         yield feed
     finally:
         feed.close()
@@ -26,11 +26,13 @@ class Datafeed:
 class BitstampFeed(Datafeed):
     '''Datafeed interface for bitstamp, based on websockets provided by pysher.
 
-    Provides a javascript-like interface for various types of supported bitstamp events. Details are
-    provided at https://www.bitstamp.net/websocket/
+    Provides a javascript-like interface for various types of supported bitstamp
+    events. Details are provided at https://www.bitstamp.net/websocket/
 
-    Note: Dependent on a recent version of pysher. Otherwise 4200 disconnects will lead to channels
-        being no longer recognised and requires a re-binding of callbacks.
+    Note:
+        Dependent on a recent version of pysher. Otherwise 4200 disconnects
+        will lead to channels being no longer recognised and requires a re-binding
+        of callbacks.
     '''
     key = 'de504dc5763aeef9ff52'
 

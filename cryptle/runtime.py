@@ -13,9 +13,9 @@ class Runtime:
 
     This class can act as base for more specialized I/O sources. Subclasses may
     read from any inputs and write to any outputs by overwriting the methods:
-        run_forever()
-        read_forever()
-        handle_input()
+    - run_forever()
+    - read_forever()
+    - handle_input()
     '''
     help_str = (
         '\n'
