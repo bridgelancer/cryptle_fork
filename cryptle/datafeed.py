@@ -6,8 +6,10 @@ from contextlib import contextmanager
 import pysher
 
 
+# @Todo refactor this into a method of each feed class
 @contextmanager
 def connect(feed_name, *args, **kwargs):
+    '''Datafeed as context manager.'''
     try:
         if feed_name == 'bitstamp':
             feed = BitstampFeed()
@@ -20,11 +22,12 @@ def connect(feed_name, *args, **kwargs):
 
 
 class Datafeed:
+    '''Base class for datafeed objects'''
     pass
 
 
 class BitstampFeed(Datafeed):
-    '''Datafeed interface for bitstamp, based on websockets provided by pysher.
+    '''Datafeed for bitstamp, has dependency on pysher websockets.
 
     Provides a javascript-like interface for various types of supported bitstamp
     events. Details are provided at https://www.bitstamp.net/websocket/
