@@ -1,7 +1,7 @@
-'''
-@Incomplete data format is hardwired for bitstamp (or are we?)
-@Incomplete candle formatted data is not properly implemented
-'''
+# @Incomplete data format is hardwired for bitstamp (or are we?)
+# @Incomplete candle formatted data is not properly implemented
+# @Todo refactor dependancy of backtest on paperexchange
+
 from .strategy import Portfolio
 
 import json
@@ -24,7 +24,7 @@ def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
         callback: Function to be called at the end of each tick
 
     Returns:
-        The strategy object that was passed as argument
+        Strategy object from input.
 
     Raise:
         Exceptions that may be raised by the strategy
@@ -55,7 +55,7 @@ def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
         callback: Function to be called at the end of each bar
 
     Returns:
-        The strategy object that was passed as argument
+        Strategy object from input.
 
     Raise:
         Exceptions that may be raised by the strategy
@@ -85,9 +85,6 @@ class Backtest:
 
         Args:
             callback: A function taking (price, volume, timestamp, action) as parameter
-
-        Raises:
-            Does not raise exceptions.
         '''
         for tick in self.ticks:
             price, timestamp, volume, action= _unpack(tick)
@@ -181,11 +178,13 @@ class Backtest:
 
 
 class PaperExchange:
-    '''A stub for exchange objects. Exposes only buy/sell interfaces.
+    '''Stub for exchange objects. Only supports market/limit orders.
 
-    When used with the OO backtest interface, it should be passed to the Backtest object such that
-    the market price is updated while the strategy processeses incoming market information.
+    When used with the OO backtest interface, it should be passed to the
+    Backtest object such that the market price is updated while the strategy
+    processeses incoming market information.
     '''
+
 
     def __init__(self, commission=0, slippage=0):
         self.price = 0

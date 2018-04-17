@@ -1,3 +1,5 @@
+# @Todo Module level doc
+
 import logging
 
 
@@ -10,6 +12,11 @@ class Portfolio:
     Note:
         The value of balance[base_currency] will be overwritten by cash when
         cash is not None. Only default __init__ allows custom balance_value.
+
+    Attributes:
+        base_currency: The base currency that denominates the account balance.
+        balance: A dictionary with the portfolio balance values of each asset.
+        equity: Net balance value.
     '''
 
     def __init__(self, cash=None, balance=None, base_currency='usd', balance_value=None):
@@ -79,28 +86,18 @@ class Portfolio:
 
 
 class Strategy:
-    '''Base class of strategies implementation/realisations.
+    '''Base class of strategies.
 
-    Defines the interfaces for external data to be relaid to the strategy for
-    processing.
+    To create a new strategy, subclass from :class:`Strategy` and implement at
+    least one of the data handling callback methods, and the execute method. The
+    callback functions are:
 
-    Also provides wrapper functions for order placements, portfolio management,
-    most recent input data, and other meta info.
-
-    Realisation classes should implement at least one of the data handling
-    functions. These are invoked whenever the corresponding push function are
-    called by external code.
-
-    Realisation classes must also implement the execute function. This function w
-    is called at the end of every data handling, provided that the handle
-    function returned None.
+    - :meth:`handleTick`
+    - :meth:`handleCandle`
+    - :meth:`handleText`
 
     Metrics/Indicators that needs to be updated tick by tick has to go into the
     indicators dict. The update method will be called on the indicators.
-
-    Note:
-        When given a portfolio, Strategy(Base) assumes that it is the only
-        strategy trading on that portfolio for the given pair.
 
     Args:
         pair: String representation of the trade coin pair (meta info)
@@ -109,15 +106,12 @@ class Strategy:
         equity_at_risk: The maximum proportion of equity that will be traded
         print_timestamp: Flag for printing timestamp at buy/sell confirmation
 
-    Attributes:
-        pair: String representation of the trade coin pair (meta info)
-        portfolio: Portfolio managed by the strategy instance
-        exchange: Exchange to be used by the strategy for order placements
-        equity_at_risk: The maximum proportion of equity that will be traded
-        print_timestamp: Flag for printing timestamp at buy/sell confirmation
+    Note:
+        When given a portfolio, Strategy(Base) assumes that it is the only
+        strategy trading on that portfolio for the given pair.
     '''
 
-    def __init__( self,
+    def __init__(self,
             *,
             asset,
             base_currency,
@@ -195,13 +189,13 @@ class Strategy:
         raise NotImplementedError
 
 
-    def pushNews(self, string, timestamp):
+    def pushText(self, string, timestamp):
         '''Stub method as example of future possible data types.'''
         raise NotImplementedError
 
 
-    def handlNews(self, string, timestamp):
-        '''Stub method as example of future possible data types.'''
+    def handleText(self, string, timestamp):
+        '''Process textmethod as example of future possible data types.'''
         raise NotImplementedError
 
 
@@ -222,7 +216,6 @@ class Strategy:
 
     @property
     def equity(self):
-        '''Return value of portfolio as of latest buy'''
         return self.portfolio.equity
 
 
