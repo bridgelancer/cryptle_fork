@@ -15,6 +15,8 @@
 *.out
 *.exe
 
+*.sqlite
+
 livetrade
 livebch
 liveeth
