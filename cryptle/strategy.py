@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class Portfolio:
-    '''A Portfolio object is a collection of assets.
+    """A Portfolio object is a collection of assets.
 
     Note:
         The value of balance[base_currency] will be overwritten by cash when
@@ -17,7 +17,7 @@ class Portfolio:
         base_currency: The base currency that denominates the account balance.
         balance: A dictionary with the portfolio balance values of each asset.
         equity: Net balance value.
-    '''
+    """
 
     def __init__(self, cash=None, balance=None, base_currency='usd', balance_value=None):
         if cash is None and balance is None:
@@ -86,7 +86,7 @@ class Portfolio:
 
 
 class Strategy:
-    '''Base class of strategies.
+    """Base class of strategies.
 
     To create a new strategy, subclass from :class:`Strategy` and implement at
     least one of the data handling callback methods, and the execute method. The
@@ -109,7 +109,7 @@ class Strategy:
     Note:
         When given a portfolio, Strategy(Base) assumes that it is the only
         strategy trading on that portfolio for the given pair.
-    '''
+    """
 
     def __init__(self,
             *,
@@ -136,7 +136,7 @@ class Strategy:
     # [Data input interface]
     # Wrappers for trade logical steps
     def pushTick(self, price, timestamp, volume, action):
-        '''Public inferface for tick data'''
+        """Public inferface for tick data"""
 
         self._checkHasExchange()
         logger.tick('Received tick')
@@ -155,7 +155,7 @@ class Strategy:
 
 
     def pushCandle(self, op, cl, hi, lo, ts, vol):
-        '''Public inferface for aggregated candlestick'''
+        """Public inferface for aggregated candlestick"""
 
         self._checkHasExchange()
         logger.tick('Received candle')
@@ -175,27 +175,27 @@ class Strategy:
 
 
     def handleTick(self):
-        '''Process tick data and generate trade signals.'''
+        """Process tick data and generate trade signals."""
         raise NotImplementedError
 
 
     def handleCandle(self):
-        '''Process candlestick data and generate trade signals.'''
+        """Process candlestick data and generate trade signals."""
         raise NotImplementedError
 
 
     def execute(self):
-        '''Execute the trade signals raised by handling new data'''
+        """Execute the trade signals raised by handling new data"""
         raise NotImplementedError
 
 
     def pushText(self, string, timestamp):
-        '''Stub method as example of future possible data types.'''
+        """Stub method as example of future possible data types."""
         raise NotImplementedError
 
 
     def handleText(self, string, timestamp):
-        '''Process textmethod as example of future possible data types.'''
+        """Process textmethod as example of future possible data types."""
         raise NotImplementedError
 
 

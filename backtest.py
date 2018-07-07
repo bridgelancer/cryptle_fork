@@ -35,10 +35,10 @@ baselog.addHandler(fh)
 
 
 def snoop(Strat, dataset, pair, **kws):
-    '''Snoop necessary parameters for a paritcular strategy on a single run.
+    """Snoop necessary parameters for a paritcular strategy on a single run.
 
     Caution: This function may run in extended period of time.
-    '''
+    """
 
     # Parameters to snoop
     period          = range(30, 60, 10)
@@ -82,7 +82,7 @@ def snoop(Strat, dataset, pair, **kws):
 
 
 def snoop_random(Strat, dataset, pair, runs, **kws):
-    '''Randomly sample configurations of all ranges'''
+    """Randomly sample configurations of all ranges"""
 
     paper = PaperExchange(commission=0.0012, slippage=0)
     test = Backtest(paper)
@@ -208,10 +208,10 @@ def demoMACDStrat(dataset, pair):
 from macdsnb_v2 import SNBStrat
 
 def snoop_macdsnb(dataset, pair, **kws):
-    '''Snoop necessary parameters for a paritcular strategy on a single run.
+    """Snoop necessary parameters for a paritcular strategy on a single run.
 
     Caution: This function may run in extended period of time.
-    '''
+    """
 
     # Parameters to snoop
     period          = [40]

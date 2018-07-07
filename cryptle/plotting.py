@@ -16,23 +16,18 @@ def plot(candle=None,
         volume_title=None,
         trade_color_mid_pt=0.025,
         fig=None):
-    '''Wrapper function for OO interface of CandleStickChart
+    """Wrapper function for OO interface of CandleStickChart
 
     Args:
         candledata: A filled Candlebar
-
         title: An optional title for the chart
-
         plot_volume: If True, plot volume bars
-
         signals: Sequence of metrics to be plotted over (on top of) the candlestick chart
-
         indicators: Sequence of sequence of metrics to plotted below the candlestick chart in
             subplots. The number of subplots is deteremined by len(indicators)
-
         trades: A list of tuples in the following format
             (entry_time, entry_price, exit_time, exit_price)
-    '''
+    """
     numplots = 1 + len(indicators) + plot_volume
     chart = CandleStickChart(numplots, title)
 
@@ -62,14 +57,14 @@ class CandleStickChart:
 
 
     def plotCandle(self, candle, plot_volume=False, numxlabels=10):
-        '''Plot green/red ochl candlesticks onto the chart
+        """Plot green/red ochl candlesticks onto the chart
 
         Args:
             candle (list): Each element is a tuple with 7 elements. In the order
                 (open, close, high, low, unix timestamp, volume, net volume)
             plot_volume (bool): Flag to create a volume subplot
             numxlabels (int): No. of datetime labels on the x-axis
-        '''
+        """
         n = len(candle)
 
         barlen = [abs(bar[0] - bar[1]) for bar in candle]
@@ -139,21 +134,21 @@ class CandleStickChart:
 
 
     def plotSignal(self, signal):
-        '''Plot metrics over the candlestick chart
+        """Plot metrics over the candlestick chart
 
         Args:
             signal: A (2 x N) series; (1, :) are unix timestamps; and (2, :) are signal values
-        '''
+        """
         self._axes[0].plot(signal[0], signal[1])
 
 
     # @Bad interface @Fix
     def plotIndicator(self, indicator):
-        '''Plot indicators below the candlestick chart
+        """Plot indicators below the candlestick chart
 
         Args:
             indicator: A (2 x N) series; (1, :) are unix timestamps; and (2, :) are indicator values
-        '''
+        """
         self._axcounter += 1
         ax = self._axes[-self._axcounter]
         for i in indicator:
