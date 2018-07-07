@@ -1,6 +1,29 @@
 import bisect
 
 
+class OrderRecord:
+    """An entry in the orderbook. Not to be confused with an order.
+    
+    OrderRecord is an immutable dataclass for representing a row in the orderbook.
+
+    Args:
+        price: Unit price.
+        volume: Volume.
+    """
+
+    def __init__(self, price, volume):
+        self._price  = price
+        self._volume = volume
+
+    @property
+    def price(self):
+        return self._price
+
+    @property
+    def volume(self):
+        return self._volume
+
+
 class Orderbook:
     """In memory orderbook.
 
@@ -14,6 +37,7 @@ class Orderbook:
         self._time = -1
 
         # Duplicate data of order prices as list for sorted lookup performance
+        # These lists are to be mainted sorted after modifications
         self._bid_prices = []
         self._ask_prices = []
 
@@ -106,6 +130,29 @@ class Orderbook:
             
         self._time = timestamp
 
+    def top_bid(n=1):
+        """Returns top n number of bid prices."""
+        return self._bid_prices[n:]
+
+    def top_bid_volume(n=1):
+        """Returns top n number of bid prices."""
+        return [self._bids[price] for price in self._bid_prices[n:]]
+
+    def top_bid_order(n=1):
+        """Returns top n number of bid prices."""
+        return [OrderRecord(price, self._bids[price]) for price in self._bid_prices[n:]]
+
+    def top_ask(n=1):
+        """Returns top n number of ask prices."""
+        return self._ask_prices[n:]
+
+    def top_ask_volume(n=1):
+        """Returns top n number of ask prices."""
+        return [self._asks[price] for price in self._ask_prices[n:]]
+
+    def top_ask_order(n=1):
+        """Returns top n number of ask prices."""
+        return [OrderRecord(price, self._asks[price]) for price in self._ask_prices[n:]]
+
     def _order_exist(self, price):
         return price in self._bids or price in self._asks
-
