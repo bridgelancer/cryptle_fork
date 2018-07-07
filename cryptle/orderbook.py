@@ -10,7 +10,6 @@ class OrderRecord:
         price: Unit price.
         volume: Volume.
     """
-
     def __init__(self, price, volume):
         self._price  = price
         self._volume = volume
@@ -153,6 +152,27 @@ class Orderbook:
     def top_ask_order(self, n=1):
         """Returns top n number of ask prices."""
         return [OrderRecord(price, self._asks[price]) for price in self._ask_prices[:n]]
+
+    @classmethod
+    def fromstring(cls, bids, asks, time=-1):
+        """Type flexible version of __init__. 
+        
+        Convert all values to float before putting them into internal storage.
+        """
+        self = cls()
+        self._time = time
+
+        for price, volume in bids:
+            self._bid_prices.append(float(price))
+            self._bids[float(price)] = float(volume)
+        self._bid_prices.sort(reverse=True)
+
+        for price, volume, in asks:
+            self._ask_prices.append(float(price))
+            self._asks[float(price)] = float(volume)
+        self._ask_prices.sort()
+
+        return self
 
     def _order_exist(self, price):
         return price in self._bids or price in self._asks
