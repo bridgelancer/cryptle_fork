@@ -31,10 +31,10 @@ class Orderbook:
         bids: An array of tuples as [(price, volume), ...]
         asks: Same as bids
     """
-    def __init__(self, bids=None, asks=None):
+    def __init__(self, bids=None, asks=None, time=-1):
         self._bids = {}
         self._asks = {}
-        self._time = -1
+        self._time = time
 
         # Duplicate data of order prices as list for sorted lookup performance
         # These lists are to be mainted sorted after modifications
@@ -45,7 +45,7 @@ class Orderbook:
             for price, volume in bids:
                 self._bid_prices.append(price)
                 self._bids[price] = volume
-            self._bid_prices.sort()
+            self._bid_prices.sort(reverse=True)
 
         if asks:
             for price, volume, in asks:
@@ -127,32 +127,32 @@ class Orderbook:
                 self.take_ask(price, amount)
             elif diff_type == 'delete':
                 self.delete_ask(price, amount)
-            
+
         self._time = timestamp
 
-    def top_bid(n=1):
+    def top_bid(self, n=1):
         """Returns top n number of bid prices."""
-        return self._bid_prices[n:]
+        return self._bid_prices[:n]
 
-    def top_bid_volume(n=1):
+    def top_bid_volume(self, n=1):
         """Returns top n number of bid prices."""
-        return [self._bids[price] for price in self._bid_prices[n:]]
+        return [self._bids[price] for price in self._bid_prices[:n]]
 
-    def top_bid_order(n=1):
+    def top_bid_order(self, n=1):
         """Returns top n number of bid prices."""
-        return [OrderRecord(price, self._bids[price]) for price in self._bid_prices[n:]]
+        return [OrderRecord(price, self._bids[price]) for price in self._bid_prices[:n]]
 
-    def top_ask(n=1):
+    def top_ask(self, n=1):
         """Returns top n number of ask prices."""
-        return self._ask_prices[n:]
+        return self._ask_prices[:n]
 
-    def top_ask_volume(n=1):
+    def top_ask_volume(self, n=1):
         """Returns top n number of ask prices."""
-        return [self._asks[price] for price in self._ask_prices[n:]]
+        return [self._asks[price] for price in self._ask_prices[:n]]
 
-    def top_ask_order(n=1):
+    def top_ask_order(self, n=1):
         """Returns top n number of ask prices."""
-        return [OrderRecord(price, self._asks[price]) for price in self._ask_prices[n:]]
+        return [OrderRecord(price, self._asks[price]) for price in self._ask_prices[:n]]
 
     def _order_exist(self, price):
         return price in self._bids or price in self._asks
