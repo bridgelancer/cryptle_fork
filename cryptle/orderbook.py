@@ -39,6 +39,7 @@ class Orderbook:
         self._bids = {}
         self._asks = {}
         self._time = time
+        self._diff = 0
 
         # Duplicate data of order prices as list for sorted lookup performance
         # These lists are to be mainted sorted after modifications
@@ -84,52 +85,77 @@ class Orderbook:
 
     def create_bid(self, price, amount):
         """Place new bid order."""
-        self.create(price, amount, 'bid')
+        if price not in self._bids:
+            bisect.insort(self._bid_prices, price)
+            self._bids[price] = amount
+        else:
+            self._bids[price] += amount
 
     def create_ask(self, price, amount):
         """Place new ask order."""
-        self.create(price, amount, 'ask')
-    
+        if price not in self._asks:
+            bisect.insort(self._ask_prices, price)
+            self._asks[price] = amount
+        else:
+            self._asks[price] += amount
+
     def take_bid(self, price, amount):
         """Remove a bid order as taken by a market order."""
-        self.take(price, amount, 'bid')
+        if price not in self._bids:
+            raise ValueError('No existing bid order at ${}'.format(price))
+        else:
+            self._bids[price] -= amount
+            if self._bid[price] < 0.0001:
+                self._bids.pop(price)
+                self._bid_prices.remove(price)
 
     def take_ask(self, price, amount):
         """Remove an ask order as taken by a market order."""
-        self.take(price, amount, 'ask')
+        if price not in self._asks:
+            raise ValueError('No existing ask order at ${}'.format(price))
+        else:
+            self._asks[price] -= amount
+            if self._asks[price] < 0.0001:
+                self._asks.pop(price)
+                self._ask_prices.remove(price)
 
     def delete_bid(self, price, amount):
         """Remove a bid order as deleted."""
-        self.delete(price, amount, 'bid')
+        if price not in self._bids:
+            raise ValueError('No existing bid order at ${}'.format(price))
+        else:
+            self._bids[price] -= amount
+            if self._bids[price] < 0.001:
+                self._bids.pop(price)
+                self._bid_prices.remove(price)
 
     def delete_ask(self, price, amount):
         """Remove an ask order as deleted."""
-        self.delete(price, amount, 'ask')
+        if price not in self._asks:
+            raise ValueError('No existing ask order at ${}'.format(price))
+        else:
+            self._asks[price] -= amount
+            if self._asks[price] < 0.0001:
+                self._asks.pop(price)
+                self._ask_prices.remove(price)
 
     def create(self, price, amount, otype):
         if otype == 'bid':
-            if price not in self._bid_price:
-                bisect.insort(self._bid_prices, price)
-                self._bids[price] = amount
-            else:
-                self._bids[price] += amount
+            self.create_bid(price, amount)
         elif otype == 'ask':
-            if price not in self._asks:
-                bisect.insort(self._ask_prices, price)
-                self._asks[price] = amount
-            else:
-                self._asks[price] += amount
+            self.create_ask(price, amount)
 
     def take(self, price, amount, otype):
         if otype == 'bid':
-            if price not in self._bids:
-                raise ValueError('')
+            self.take_bid(price, amount)
         elif otype == 'ask':
-            if price not in self._asks:
-                raise ValueError('')
+            self.take_ask(price, amount)
 
     def delete(self, price, amount, otype):
-        pass
+        if otype == 'bid':
+            self.delete_bid(price, amount)
+        elif otype == 'ask':
+            self.delete_ask(price, amount)
 
     def apply_diff(self, price, amount, diff_type, order_type, time=None):
         """Apply an orderdiff to the orderbook.
@@ -137,14 +163,11 @@ class Orderbook:
         Args:
             diff_type: Type of diff. Accepted values are 'create', 'take', 'delete'.
             order_type: Type of diffed order. Accepted values are 'bid', 'ask.
-            
-        Todo:
-            - Consider using keyword args instead of dict arg
         """
         if order_type == 'bid':
             if diff_type == 'create':
                 self.create_bid(price, amount)
-            elif diff_type == 'take':
+            elif diff_type == 'take' or diff_type == 'change':
                 self.take_bid(price, amount)
             elif diff_type == 'delete':
                 self.delete_bid(price, amount)
@@ -152,12 +175,13 @@ class Orderbook:
         elif order_type == 'ask':
             if diff_type == 'create':
                 self.create_ask(price, amount)
-            elif diff_type == 'take':
+            elif diff_type == 'take' or diff_type == 'change':
                 self.take_ask(price, amount)
             elif diff_type == 'delete':
                 self.delete_ask(price, amount)
 
         self._time = time or self._time
+        self._diff += 1
 
     def top_bid(self):
         """Returns top bid price."""
