@@ -1,10 +1,11 @@
 import bisect
+from datetime import datetime
 
 
-class OrderRecord:
+class OrderEntry:
     """An entry in the orderbook. Not to be confused with an order.
     
-    OrderRecord is an immutable dataclass for representing a row in the orderbook.
+    OrderEntry is an immutable dataclass for representing a row in the orderbook.
 
     Args:
         price: Unit price.
@@ -13,6 +14,9 @@ class OrderRecord:
     def __init__(self, price, volume):
         self._price  = price
         self._volume = volume
+
+    def __repr__(self):
+        return '<OrderEntry: ({}, {})>'.format(self._price, self._volume)
 
     @property
     def price(self):
@@ -29,6 +33,7 @@ class Orderbook:
     Args:
         bids: An array of tuples as [(price, volume), ...]
         asks: Same as bids
+        time: Time of snapshot
     """
     def __init__(self, bids=None, asks=None, time=-1):
         self._bids = {}
@@ -51,6 +56,31 @@ class Orderbook:
                 self._ask_prices.append(price)
                 self._asks[price] = volume
             self._ask_prices.sort()
+
+    def __repr__(self):
+        return '<Orderbook (bid: {}, ask: {})>'.format(self.top_bid(), self.top_ask())
+
+    @property
+    def time(self):
+        """Datetime of snapshot."""
+        return datetime.fromtimestamp(self._time)
+
+    @time.setter
+    def time(self, time):
+        if isinstance(time, (int, float)):
+            self._time = time
+        elif isinstance(time, datetime):
+            self._time = datetime.timestamp()
+        else:
+            raise TypeError('Integer or datetime expected')
+
+    def mid_price(self):
+        """Mid price"""
+        return (self.top_bid() + self.top_ask()) / 2
+
+    def spread(self):
+        """Bid-ask spread"""
+        return self.top_ask() - self.top_bid()
 
     def create_bid(self, price, amount):
         """Place new bid order."""
@@ -101,7 +131,7 @@ class Orderbook:
     def delete(self, price, amount, otype):
         pass
 
-    def apply_diff(self, price, amount, timestamp, diff_type, order_type):
+    def apply_diff(self, price, amount, diff_type, order_type, time=None):
         """Apply an orderdiff to the orderbook.
         
         Args:
@@ -127,31 +157,39 @@ class Orderbook:
             elif diff_type == 'delete':
                 self.delete_ask(price, amount)
 
-        self._time = timestamp
+        self._time = time or self._time
 
-    def top_bid(self, n=1):
+    def top_bid(self):
+        """Returns top bid price."""
+        return self._bid_prices[0]
+
+    def top_ask(self):
+        """Returns top ask price."""
+        return self._ask_prices[0]
+
+    def bids(self, n=10):
         """Returns top n number of bid prices."""
         return self._bid_prices[:n]
 
-    def top_bid_volume(self, n=1):
-        """Returns top n number of bid prices."""
+    def bid_volume(self, n=10):
+        """Returns top n number of bid volumes."""
         return [self._bids[price] for price in self._bid_prices[:n]]
 
-    def top_bid_order(self, n=1):
-        """Returns top n number of bid prices."""
-        return [OrderRecord(price, self._bids[price]) for price in self._bid_prices[:n]]
+    def bid_order(self, n=10):
+        """Returns top n number of bid orders."""
+        return [OrderEntry(price, self._bids[price]) for price in self._bid_prices[:n]]
 
-    def top_ask(self, n=1):
+    def asks(self, n=10):
         """Returns top n number of ask prices."""
         return self._ask_prices[:n]
 
-    def top_ask_volume(self, n=1):
-        """Returns top n number of ask prices."""
+    def ask_volume(self, n=10):
+        """Returns top n number of ask volumes."""
         return [self._asks[price] for price in self._ask_prices[:n]]
 
-    def top_ask_order(self, n=1):
-        """Returns top n number of ask prices."""
-        return [OrderRecord(price, self._asks[price]) for price in self._ask_prices[:n]]
+    def ask_order(self, n=10):
+        """Returns top n number of ask orders."""
+        return [OrderEntry(price, self._asks[price]) for price in self._ask_prices[:n]]
 
     @classmethod
     def fromstring(cls, bids, asks, time=-1):
