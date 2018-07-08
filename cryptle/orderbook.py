@@ -83,6 +83,14 @@ class Orderbook:
         """Bid-ask spread"""
         return self.top_ask() - self.top_bid()
 
+    def order_gradient(self, diffs):
+        """Order gradient"""
+        t = diffs.time
+        for time in t.unique():
+            tdiff = 1 / sum(t == time)
+            for i, diff in diffs[t == time].iterrows():
+                self.apply_diff(**{**diff, 'time': time+tdiff*i})
+
     def create_bid(self, price, amount):
         """Place new bid order."""
         if price not in self._bids:
