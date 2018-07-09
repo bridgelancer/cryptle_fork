@@ -213,7 +213,7 @@ class Orderbook:
 
     def bid_order(self, n=10):
         """Returns top n number of bid orders."""
-        return [OrderEntry(price, self._bids[price]) for price in self._bid_prices[:n]]
+        return [(price, self._bids[price]) for price in self._bid_prices[:n]]
 
     def asks(self, n=10):
         """Returns top n number of ask prices."""
@@ -225,7 +225,7 @@ class Orderbook:
 
     def ask_order(self, n=10):
         """Returns top n number of ask orders."""
-        return [OrderEntry(price, self._asks[price]) for price in self._ask_prices[:n]]
+        return [(price, self._asks[price]) for price in self._ask_prices[:n]]
 
     @classmethod
     def fromstring(cls, bids, asks, time=-1):
