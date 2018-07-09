@@ -2,31 +2,6 @@ import bisect
 from datetime import datetime
 
 
-class OrderEntry:
-    """An entry in the orderbook. Not to be confused with an order.
-    
-    OrderEntry is an immutable dataclass for representing a row in the orderbook.
-
-    Args:
-        price: Unit price.
-        volume: Volume.
-    """
-    def __init__(self, price, volume):
-        self._price  = price
-        self._volume = volume
-
-    def __repr__(self):
-        return '<OrderEntry: ({}, {})>'.format(self._price, self._volume)
-
-    @property
-    def price(self):
-        return self._price
-
-    @property
-    def volume(self):
-        return self._volume
-
-
 class Orderbook:
     """In memory orderbook.
 
