@@ -59,12 +59,41 @@ class Orderbook:
         return self.top_ask() - self.top_bid()
 
     def order_gradient(self, diffs):
-        """Order gradient"""
+        """Compute orderself gradient after applying diffs.
+        
+        Todo: Improve performance with numpy arrays
+        Todo: Make this purely functional
+        """
         t = diffs.time
+        bid_price_grad  = [0 for i in range(depth)]
+        ask_price_grad  = [0 for i in range(depth)]
+        bid_volume_grad = [0 for i in range(depth)]
+        ask_volume_grad = [0 for i in range(depth)]
+
         for time in t.unique():
+            # @Refactor: can just multiple by sum(t==time) in grad calculation
             tdiff = 1 / sum(t == time)
+
             for i, diff in diffs[t == time].iterrows():
+                start_bid_price  = self.bids(depth)
+                start_ask_price  = self.asks(depth)
+                start_bid_volume = self.bid_volume(depth)
+                start_ask_volume = self.ask_volume(depth)
+
                 self.apply_diff(**{**diff, 'time': time+tdiff*i})
+
+                end_bid_price    = self.bids(depth)
+                end_ask_price    = self.asks(depth)
+                end_bid_volume   = self.bid_volume(depth)
+                end_ask_volume   = self.ask_volume(depth)
+                
+                for i in range(depth):
+                    bid_price_grad[i]  += (end_bid_price[i] - start_bid_price[i]) / tdiff
+                    ask_price_grad[i]  += (end_ask_price[i] - start_ask_price[i]) / tdiff
+                    bid_volume_grad[i] += (end_bid_volume[i] - start_bid_volume[i]) / tdiff
+                    ask_volume_grad[i] += (end_ask_volume[i] - start_ask_volume[i]) / tdiff
+
+        return bid_price_grad, ask_price_grad, bid_volume_grad, ask_volume_grad
 
     def create_bid(self, price, amount):
         """Place new bid order."""
