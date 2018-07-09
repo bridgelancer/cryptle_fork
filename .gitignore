@@ -6,6 +6,8 @@
 *.txt
 *.config
 
+!requirements.txt
+
 *.png
 *.jpg
 *.jpeg
