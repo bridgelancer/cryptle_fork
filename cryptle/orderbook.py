@@ -51,18 +51,75 @@ class Orderbook:
             raise TypeError('Integer or datetime expected')
 
     def mid_price(self):
-        """Mid price"""
+        """Mid price."""
         return (self.top_bid() + self.top_ask()) / 2
 
     def spread(self):
-        """Bid-ask spread"""
+        """Bid-ask spread."""
         return self.top_ask() - self.top_bid()
 
-    def order_gradient(self, diffs):
-        """Compute orderself gradient after applying diffs.
-        
-        Todo: Improve performance with numpy arrays
-        Todo: Make this purely functional
+    def record_diffs(self, depth=10):
+        """Start recording applied diffs and compute time sensative metrics."""
+        self._diffs      = 0
+        self._depth      = depth
+        self._recording  = True
+        self._start_time = self._time
+
+        self._bid_price_grad    = [0 for i in range(depth)]
+        self._ask_price_grad    = [0 for i in range(depth)]
+        self._bid_volume_grad   = [0 for i in range(depth)]
+        self._ask_volume_grad   = [0 for i in range(depth)]
+        self._event_count = {
+            'create_ask': 0,
+            'create_bid': 0,
+            'delete_ask': 0,
+            'delete_bid': 0,
+            'take_ask': 0,
+            'take_bid': 0
+        }
+
+    def stop_recording(self):
+        """Stop recording diff events."""
+        self._recording = False
+
+    def recorded_gradient(self):
+        """Return order gradients as (bid price, ask price, bid vol, ask vol)."""
+        return self._bid_price_grad, self._ask_price_grad, self._bid_volume_grad, self._ask_volume_grad
+
+    def recorded_events(self):
+        """Return count of recorded events."""
+        return self._event_count
+
+    def _save(self):
+        """Cache current top orders at depth from the :ref:record_diffs."""
+        self._start_bid_price  = self.bids(self._depth)
+        self._start_ask_price  = self.asks(self._depth)
+        self._start_bid_volume = self.bid_volume(self._depth)
+        self._start_ask_volume = self.ask_volume(self._depth)
+
+    def _update_record(self):
+        """Compute"""
+        end_bid_price    = self.bids(self._depth)
+        end_ask_price    = self.asks(self._depth)
+        end_bid_volume   = self.bid_volume(self._depth)
+        end_ask_volume   = self.ask_volume(self._depth)
+
+        for i in range(self._depth):
+            self._bid_price_grad[i]  += (end_bid_price[i] - self._start_bid_price[i]) / tdiff
+            self._ask_price_grad[i]  += (end_ask_price[i] - self._start_ask_price[i]) / tdiff
+            self._bid_volume_grad[i] += (end_bid_volume[i] - self._start_bid_volume[i]) / tdiff
+            self._ask_volume_grad[i] += (end_ask_volume[i] - self._start_ask_volume[i]) / tdiff
+
+    def apply_diffs_order_gradient(self, diffs, depth=10):
+        """Compute gradient from applying diffs. The calling instance will be modified.
+
+        Args:
+            diffs: List of dicts with keys conforming to :ref:`apply_diff`
+            depth: The orderbook depth in returned gradient.
+
+        Returns:
+            4 lists, ordered as, bid price gradient, ask price gradient, bid
+            volume gradient, ask volume gradient.
         """
         t = diffs.time
         bid_price_grad  = [0 for i in range(depth)]
@@ -86,7 +143,7 @@ class Orderbook:
                 end_ask_price    = self.asks(depth)
                 end_bid_volume   = self.bid_volume(depth)
                 end_ask_volume   = self.ask_volume(depth)
-                
+
                 for i in range(depth):
                     bid_price_grad[i]  += (end_bid_price[i] - start_bid_price[i]) / tdiff
                     ask_price_grad[i]  += (end_ask_price[i] - start_ask_price[i]) / tdiff
@@ -171,11 +228,18 @@ class Orderbook:
 
     def apply_diff(self, price, amount, diff_type, order_type, time=None):
         """Apply an orderdiff to the orderbook.
-        
+
         Args:
+            price: float for price of changed order
+            amount: float for changed order volume
             diff_type: Type of diff. Accepted values are 'create', 'take', 'delete'.
-            order_type: Type of diffed order. Accepted values are 'bid', 'ask.
+            order_type: Type of diffed order. Accepted values are 'bid', 'ask'.
+            time: (optional) time which the diff event happened
         """
+
+        if self._recording:
+            self._save()
+
         if order_type == 'bid':
             if diff_type == 'create':
                 self.create_bid(price, amount)
@@ -191,6 +255,9 @@ class Orderbook:
                 self.take_ask(price, amount)
             elif diff_type == 'delete':
                 self.delete_ask(price, amount)
+
+        if self._recording:
+            self._update_record()
 
         self._time = time or self._time
         self._diff += 1
@@ -229,9 +296,10 @@ class Orderbook:
 
     @classmethod
     def fromstring(cls, bids, asks, time=-1):
-        """Type flexible version of __init__. 
-        
+        """Constructor with flexible type.
+
         Convert all values to float before putting them into internal storage.
+        Helpful in dealing with json datasets keyed by string formatted price.
         """
         self = cls()
         self._time = time
