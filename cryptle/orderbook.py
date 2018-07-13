@@ -65,10 +65,11 @@ class Orderbook:
         self._recording  = True
         self._start_time = self._time
 
-        self._bid_price_grad    = [0 for i in range(depth)]
-        self._ask_price_grad    = [0 for i in range(depth)]
-        self._bid_volume_grad   = [0 for i in range(depth)]
-        self._ask_volume_grad   = [0 for i in range(depth)]
+        self._bp_grad = [0 for i in range(depth)]   # bid price gradient
+        self._ap_grad = [0 for i in range(depth)]   # ask price gradient
+        self._bv_grad = [0 for i in range(depth)]   # bid volume gradient
+        self._av_grad = [0 for i in range(depth)]   # ask volume gradient
+
         self._event_count = {
             'create_ask': 0,
             'create_bid': 0,
@@ -88,33 +89,46 @@ class Orderbook:
 
     def recorded_events(self):
         """Return count of recorded events."""
-        return self._event_count
+        # Only shallow copy is needed
+        return self._event_count.copy()
 
     def _save(self):
-        """Cache current top orders at depth from the :ref:record_diffs."""
-        self._start_bid_price  = self.bids(self._depth)
-        self._start_ask_price  = self.asks(self._depth)
-        self._start_bid_volume = self.bid_volume(self._depth)
-        self._start_ask_volume = self.ask_volume(self._depth)
+        """Cache current top orders at depth from the :py:meth`record_diffs`."""
+        self._collision_count = 0
+        self._prev_time = self._time
+        self._prev_bp   = self.bids(self._depth)          # bid price
+        self._prev_ap   = self.asks(self._depth)          # ask price
+        self._prev_bv   = self.bid_volume(self._depth)    # bid volume
+        self._prev_av   = self.ask_volume(self._depth)    # ask volume
 
-    def _update_record(self):
-        """Compute"""
-        end_bid_price    = self.bids(self._depth)
-        end_ask_price    = self.asks(self._depth)
-        end_bid_volume   = self.bid_volume(self._depth)
-        end_ask_volume   = self.ask_volume(self._depth)
+    def _update_record(self, diff_type, order_type):
+        """Update recorded metrics."""
+        if diff_type == 'change':
+            diff_type = 'take'
 
-        for i in range(self._depth):
-            self._bid_price_grad[i]  += (end_bid_price[i] - self._start_bid_price[i]) / tdiff
-            self._ask_price_grad[i]  += (end_ask_price[i] - self._start_ask_price[i]) / tdiff
-            self._bid_volume_grad[i] += (end_bid_volume[i] - self._start_bid_volume[i]) / tdiff
-            self._ask_volume_grad[i] += (end_ask_volume[i] - self._start_ask_volume[i]) / tdiff
+        event = '_'.join(diff_type, order_type)
+        self._event_count[event] += 1
+
+        # Compute orderbook gradients with second resolution.
+        if self._prev_time == self._time:
+            self._collision_count += 1
+        else:
+            end_bp  = self.bids(self._depth)
+            end_ap  = self.asks(self._depth)
+            end_bv  = self.bid_volume(self._depth)
+            end_av  = self.ask_volume(self._depth)
+
+            for i in range(self._depth):
+                self._bp_grad[i] += (end_bp[i] - self._prev_bp[i]) / self._collision_count
+                self._ap_grad[i] += (end_ap[i] - self._prev_ap[i]) / self._collision_count
+                self._bv_grad[i] += (end_bv[i] - self._prev_bv[i]) / self._collision_count
+                self._av_grad[i] += (end_av[i] - self._prev_av[i]) / self._collision_count
 
     def apply_diffs_order_gradient(self, diffs, depth=10):
         """Compute gradient from applying diffs. The calling instance will be modified.
 
         Args:
-            diffs: List of dicts with keys conforming to :ref:`apply_diff`
+            diffs: List of dicts with keys conforming to :py:meth:`apply_diff`
             depth: The orderbook depth in returned gradient.
 
         Returns:
@@ -257,7 +271,7 @@ class Orderbook:
                 self.delete_ask(price, amount)
 
         if self._recording:
-            self._update_record()
+            self._update_record(diff_type, order_type)
 
         self._time = time or self._time
         self._diff += 1
