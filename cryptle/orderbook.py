@@ -36,27 +36,41 @@ class Orderbook:
     def __repr__(self):
         return '<Orderbook (bid: {}, ask: {})>'.format(self.top_bid(), self.top_ask())
 
-    @property
-    def time(self):
-        """Datetime of snapshot."""
-        return datetime.fromtimestamp(self._time)
+    def apply_diff(self, price, amount, diff_type, order_type, time=None):
+        """Apply an orderdiff to the orderbook.
 
-    @time.setter
-    def time(self, time):
-        if isinstance(time, (int, float)):
-            self._time = time
-        elif isinstance(time, datetime):
-            self._time = datetime.timestamp()
-        else:
-            raise TypeError('Integer or datetime expected')
+        Args:
+            price: float for price of changed order
+            amount: float for changed order volume
+            diff_type: Type of diff. Accepted values are 'create', 'take', 'delete'.
+            order_type: Type of diffed order. Accepted values are 'bid', 'ask'.
+            time: (optional) time which the diff event happened
+        """
 
-    def mid_price(self):
-        """Return mid price."""
-        return (self.top_bid() + self.top_ask()) / 2
+        if self._recording:
+            self._save()
 
-    def spread(self):
-        """Return bid-ask spread."""
-        return self.top_ask() - self.top_bid()
+        if order_type == 'bid':
+            if diff_type == 'create':
+                self.create_bid(price, amount)
+            elif diff_type == 'take' or diff_type == 'change':
+                self.take_bid(price, amount)
+            elif diff_type == 'delete':
+                self.delete_bid(price, amount)
+
+        elif order_type == 'ask':
+            if diff_type == 'create':
+                self.create_ask(price, amount)
+            elif diff_type == 'take' or diff_type == 'change':
+                self.take_ask(price, amount)
+            elif diff_type == 'delete':
+                self.delete_ask(price, amount)
+
+        if self._recording:
+            self._update_record(diff_type, order_type)
+
+        self._time = time or self._time
+        self._diff += 1
 
     def record_diffs(self, depth=10):
         """Start recording applied diffs and compute time sensative metrics.
@@ -244,41 +258,27 @@ class Orderbook:
         elif otype == 'ask':
             self.delete_ask(price, amount)
 
-    def apply_diff(self, price, amount, diff_type, order_type, time=None):
-        """Apply an orderdiff to the orderbook.
+    @property
+    def time(self):
+        """Datetime of snapshot."""
+        return datetime.fromtimestamp(self._time)
 
-        Args:
-            price: float for price of changed order
-            amount: float for changed order volume
-            diff_type: Type of diff. Accepted values are 'create', 'take', 'delete'.
-            order_type: Type of diffed order. Accepted values are 'bid', 'ask'.
-            time: (optional) time which the diff event happened
-        """
+    @time.setter
+    def time(self, time):
+        if isinstance(time, (int, float)):
+            self._time = time
+        elif isinstance(time, datetime):
+            self._time = datetime.timestamp()
+        else:
+            raise TypeError('Integer or datetime expected')
 
-        if self._recording:
-            self._save()
+    def mid_price(self):
+        """Returns mid price."""
+        return (self.top_bid() + self.top_ask()) / 2
 
-        if order_type == 'bid':
-            if diff_type == 'create':
-                self.create_bid(price, amount)
-            elif diff_type == 'take' or diff_type == 'change':
-                self.take_bid(price, amount)
-            elif diff_type == 'delete':
-                self.delete_bid(price, amount)
-
-        elif order_type == 'ask':
-            if diff_type == 'create':
-                self.create_ask(price, amount)
-            elif diff_type == 'take' or diff_type == 'change':
-                self.take_ask(price, amount)
-            elif diff_type == 'delete':
-                self.delete_ask(price, amount)
-
-        if self._recording:
-            self._update_record(diff_type, order_type)
-
-        self._time = time or self._time
-        self._diff += 1
+    def spread(self):
+        """Returns bid-ask spread."""
+        return self.top_ask() - self.top_bid()
 
     def top_bid(self):
         """Returns top bid price."""
