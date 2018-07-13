@@ -112,7 +112,7 @@ class Orderbook:
 
     def _save(self):
         """Cache current top orders at depth from the :py:meth`record_diffs`."""
-        self._collision_count = 0
+        self._collision_count = 0   # unused
         self._prev_time = self._time
         self._prev_bp   = self.bids(self._depth)          # bid price
         self._prev_ap   = self.asks(self._depth)          # ask price
@@ -128,7 +128,10 @@ class Orderbook:
         self._event_count[event] += 1
 
         # Compute orderbook gradients with second resolution.
+        res = 1
+
         if self._prev_time == self._time:
+            # unused
             self._collision_count += 1
         else:
             end_bp  = self.bids(self._depth)
@@ -137,10 +140,10 @@ class Orderbook:
             end_av  = self.ask_volume(self._depth)
 
             for i in range(self._depth):
-                self._bp_grad[i] += (end_bp[i] - self._prev_bp[i]) / self._collision_count
-                self._ap_grad[i] += (end_ap[i] - self._prev_ap[i]) / self._collision_count
-                self._bv_grad[i] += (end_bv[i] - self._prev_bv[i]) / self._collision_count
-                self._av_grad[i] += (end_av[i] - self._prev_av[i]) / self._collision_count
+                self._bp_grad[i] += (end_bp[i] - self._prev_bp[i]) / res
+                self._ap_grad[i] += (end_ap[i] - self._prev_ap[i]) / res
+                self._bv_grad[i] += (end_bv[i] - self._prev_bv[i]) / res
+                self._av_grad[i] += (end_av[i] - self._prev_av[i]) / res
 
     def apply_diffs_order_gradient(self, diffs, depth=10):
         """Compute gradient from applying diffs. The calling instance will be modified.
