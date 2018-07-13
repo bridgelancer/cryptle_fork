@@ -51,15 +51,19 @@ class Orderbook:
             raise TypeError('Integer or datetime expected')
 
     def mid_price(self):
-        """Mid price."""
+        """Return mid price."""
         return (self.top_bid() + self.top_ask()) / 2
 
     def spread(self):
-        """Bid-ask spread."""
+        """Return bid-ask spread."""
         return self.top_ask() - self.top_bid()
 
     def record_diffs(self, depth=10):
-        """Start recording applied diffs and compute time sensative metrics."""
+        """Start recording applied diffs and compute time sensative metrics.
+
+        Args:
+            depth: number of orders at top of orderbook to keep track of
+        """
         self._diffs      = 0
         self._depth      = depth
         self._recording  = True
