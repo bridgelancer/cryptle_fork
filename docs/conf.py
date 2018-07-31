@@ -66,7 +66,7 @@ pygments_style = 'sphinx'
 
 # -- Options for HTML output -------------------------------------------------
 
-html_theme = 'classic'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme-specific options that customize the look and feel of a theme.
 # html_theme_options = {}
