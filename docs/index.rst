@@ -1,18 +1,49 @@
+==================
 Welcome to Cryptle
 ==================
 
 Cryptle is a Python algorithmic trading framework. Get started with an overview
-with :ref:`basics`. Those already familiar with the framework can head over
+with :ref:`overview`, followed by the framework terminlogies and concepts at
+:ref:`concepts`. Those who are familiar with the framework can head over
 :ref:`advanced` to find specific HOWTO recipes. For Cryptle in detail, the full
 reference can be found in the :ref:`api` section.
 
+.. _overview:
 
-.. _basics:
+Overview
+========
+Creating a strategy with Cryptle::
 
-Basic Concepts
+   from cryptle import Plugin, subscribe, publish
+
+   class FooStrat(Plugin):
+
+      @subscribe('time:15mins')
+      def onTime(self, event):
+         # Rebalance every 15 minutes
+         marketbuy()
+
+      @publish('<pair>:market_buy')
+      def buy(self, price):
+         return True
+
+To put the strategy to action, install it on an engine::
+   from cryptle import engine
+
+   engine.install(FooStrat())
+
+
+.. _concepts:
+
+Important Concepts
 ==============
 
 Dummy text.
+.. note::
+   Event name can be any Python valid strings. However the recommended convention
+   is 'subject:datatype'.
+
+
 
 
 .. _advanced:
