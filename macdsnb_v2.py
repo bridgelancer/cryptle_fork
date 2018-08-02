@@ -49,6 +49,7 @@ class SNBStrat(Strategy):
         s.indicators['bar'] = bar = CandleBar(period)
         super().__init__(**kws)
 
+        # @Todo: use dependency injection
         s.atr = ATR(bar, scope1)
         s.wma1 = WMA(bar, scope1)
         s.wma2 = WMA(bar, scope2)
