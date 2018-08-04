@@ -367,12 +367,14 @@ def test_candle_diffMACD():
     wma1 = WMA(bar, 5)
     wma2 = WMA(bar, 8)
     macd = MACD(wma1, wma2, 3)
-    diffVal = Difference(macd, 'diff', 'diff_ma')
+    diff = Difference(macd, 'diff', 'diff_ma')
 
     for i, price in enumerate(alt_quad):
         bar.pushTick(price, i)
-    print (diffVal.value)
-    assert diffVal.value - (-70.11296) < 1e-5
+
+    assert diff.value - (-70.11296) < 1e-5
+    assert diff.diff_ma - (-35.062037) < 1e-5
+    assert diff.diff - (-105.175) < 1e-5
 
 if __name__ == '__main__':
     run_all_tests()

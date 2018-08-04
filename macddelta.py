@@ -40,37 +40,39 @@ class DeltaStrat(Strategy):
         s.macd = MACD(s.wma1, s.wma2, macd_scope)
         s.rsi = RSI(bar, rsi_period)
 
-        s.macddlc = Difference(s.macd) # to be integrated
+        s.macddlc = Difference(s.macd, 'diff', 'diff_ma') # to be integrated
 
         # Initialize flags and states
         s.init_time = 0
-        s.init_bar = max(scope1, scope2, macd_scope, bband_period, snb_period, rsi_period)
-        s.macd_signal = False
+        s.init_bar = max(scope1, scope2, macd_scope, rsi_period)
+        s.dlc_signal = False
         s.rsi_signal = False
         s.rsi_sell_flag = False
-        s.prev_crossover_time = None
 
 
     def handleTick(s, price, timestamp, volume, action):
         if not s.doneInit(timestamp):
             return -1
 
-        s.signifyMACD()
+        s.signifyDLC()
         s.signifyRSI()
 
-
+    # initation phase - return and do nothing before initiation is done
     def doneInit(s, timestamp):
         if s.init_time == 0:
             s.init_time = timestamp
         return timestamp > s.init_time + s.init_bar * s.bar.period
 
-    def signifyMACD(s):
-        new_macd_signal = s.macd > 0
-        if new_macd_signal and not s.macd_signal:
-            logger.metric('MACD upcross')
-        elif not new_macd_signal and s.macd_signal:
-            logger.metric('MACD downcross')
-        s.macd_signal = new_macd_signal
+    # generate new DLC signal in place of the old MACD signal
+    def signifyDLC(s):
+        value = s.macddlc.value
+        diff = s.macddlc.diff
+        diff_ma = s.macddlc.diff_ma
+
+        new_dlc_signal = value > 0 and diff > 0
+        if new_dlc_signal and not s.dlc_signal:
+            logger.metric('DLC: Double In')
+        s.dlc_signal = new_dlc_signal
 
     # @Fix dodgy logic, though data snooping gives better return
     # RSI over 80 sell leads to 5% less return
@@ -81,9 +83,9 @@ class DeltaStrat(Strategy):
         elif s.rsi > s.rsi_thresh:
             s.rsi_signal = True
 
-        if s.rsi_sell_flag and s.downtrend:
+        # if rsi_sell_flag is up, we allow it to sell when rsi < 50
+        if s.rsi_sell_flag and s.rsi < 50:
             s.rsi_signal = False
-
         if s.rsi < s.rsi_thresh:
             s.rsi_sell_flag = False
             s.rsi_signal = False
@@ -93,9 +95,7 @@ class DeltaStrat(Strategy):
         if s.hasCash and not s.hasBalance:
             if (
                     s.rsi_signal
-                    and (s.bollinger_signal or s.snb_signal)
-                    and s.macd_signal
-                    and s.atr_signal
+                    and s.dlc_signal
                ):
                 s.marketBuy(s.maxBuyAmount)
                 s.reset_params()
@@ -106,17 +106,13 @@ class DeltaStrat(Strategy):
                 s.reset_params()
                 logger.signal('Sell: Over 70 RSI')
 
-            elif not s.rsi_signal and not s.macd_signal:
+            elif not s.rsi_signal and not s.dlc_signal:
                 s.marketSell(s.maxSellAmount)
                 s.reset_params()
                 logger.signal('Sell: RSI + MACD')
 
-
     def reset_params(s):
-        s.prev_crossover_time = None
         s.rsi_sell_flag = False
-        s.rsi_sell_flag_80 = False
-
 
 if __name__ == '__main__':
     from cryptle.backtest import backtest_tick, Backtest, PaperExchange
@@ -152,23 +148,6 @@ if __name__ == '__main__':
     pair = 'bchusd'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
-
-    strat = SNBStrat(
-        message='[MACD SNB]',
-        period=120,
-        scope1=5,
-        scope2=8,
-        macd_scope=4,
-        bband=6.0,
-        bband_period=20,
-        bwindow=3600,
-        snb_period=10,
-        snb_factor=1.25,
-        snb_bband=3,
-        rsi_period=14,
-        pair=pair,
-        portfolio=port,
-        exchange=exchange)
 
     backtest_tick(strat, dataset, exchange=exchange, callback=record_indicators)
 
