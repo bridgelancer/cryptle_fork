@@ -129,3 +129,8 @@ def cost_normal_var(series, mean=0):
         return dist * (np.log(2 * np.pi) + np.log(diff/dist) + 1)
 
     return cost
+
+# wrapper function for numpy difference method
+def difference(series, n=1):
+    return np.diff(series, n)
+
