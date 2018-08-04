@@ -375,8 +375,10 @@ class MACD(CandleMetric):
 class Difference(CandleMetric):
     '''Difference.
 
+    This class stores a list of historic n-th differences and returns the last value of that list.
+
     Value:
-        n-th difference of the series
+        The last value of the n-th difference of the series
 
     Args:
         use_open (bool): Flag for using open/close price.
@@ -407,7 +409,6 @@ class Difference(CandleMetric):
         else:
             prices = self.candle.close_prices(self._history + self._n)
 
-        print(prices)
         self.output = np.diff(prices, self._n)
         if len(self.output) > 0:
             self.value = self.output[-1]
