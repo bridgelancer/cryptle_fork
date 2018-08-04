@@ -367,7 +367,7 @@ def test_candle_diffMACD():
     wma1 = WMA(bar, 5)
     wma2 = WMA(bar, 8)
     macd = MACD(wma1, wma2, 3)
-    diffVal = Difference(macd)
+    diffVal = Difference(macd, 'diff', 'diff_ma')
 
     for i, price in enumerate(alt_quad):
         bar.pushTick(price, i)
