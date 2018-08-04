@@ -405,30 +405,37 @@ class Difference(CandleMetric):
             n=1,
             lookback=4 # not yet implemented, 4 as default for future DIDO scaling
             ):
+
         super().__init__(metric.candle)
         self._metric = metric
         self._lookback = lookback
         self._n = n
-        self._attributes = list(args)
-        self.record = {'value': []}
-        self.output = {}
+        self._attrs = list(args) # addtional string arguments to diff attributes
+        self._record = {'value': []} # dictionary of lists storing raw attr values
+        self.output = {} # dictonary of lists storing differenced attributes
         self.value = 0
 
-        if len(self._attributes) > 0:
-            for attribute in self._attributes:
-                self.record[attribute] = []
+        if len(self._attrs) > 0:
+            # create return values and indexing attribute to record
+            for attr in self._attrs:
+                self.__dict__[attr] = 0
+                self._record[attr] = []
 
     def onCandle(self):
         if len(self.candle) < self._n:
             return
-        self.record['value'].append(float(self._metric))
-        for attribute in self._attributes:
-            self.record[attribute].append(self._metric.__dict__[attribute])
-        for attribute, record in self.record.items():
-            self.output[attribute] =  np.diff(record, self._n)
+        # append the updated attriute value to record
+        self._record['value'].append(float(self._metric))
+        for attr in self._attrs:
+            self._record[attr].append(self._metric.__dict__[attr])
+        # differencing all record in self._records using np.diff method
+        for attr, record in self._record.items():
+            self.output[attr] =  np.diff(record, self._n)
+        # assigning proper return values for access
         if len(self.output['value']) > 0:
             self.value = self.output['value'][-1]
-            print(self.output['value'][-1], self.output['diff'][-1], self.output['diff_ma'][-1])
+            for attr in self._attrs:
+                self.__dict__[attr] = self.output[attr][-1]
 
     def onTick(self):
         raise NotImplementedError # not yet implemented
