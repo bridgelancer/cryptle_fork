@@ -362,6 +362,7 @@ class MACD(CandleMetric):
         self.diff = self._fast - self._slow
         self._past.append(self.diff)
         self._past = self._past[-self._lookback:]
+        self.diff_ma = 0
 
         if len(self._past) == self._lookback:
             self.diff_ma = np.average(self._past, axis=0, weights=self._weights)
@@ -370,7 +371,49 @@ class MACD(CandleMetric):
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
 
+# Review its role and duplication in metric/generic.py
+class Difference(CandleMetric):
+    '''Difference.
 
+    Value:
+        n-th difference of the series
+
+    Args:
+        use_open (bool): Flag for using open/close price.
+        n (int): number of days to differecne.
+        history (int): number of results to be stored
+
+    Attributes:
+        output (list): the n-th times difference of the metric
+    '''
+    def __init__(
+            self,
+            candle,
+            n=1,
+            history=4,
+            use_open=True
+            ):
+        super().__init__(candle)
+        self._use_open = use_open
+        self._history = history
+        self._n = n
+
+    def onCandle(self):
+        if len(self.candle) < self._n:
+            return
+
+        if self._use_open:
+            prices = self.candle.open_prices(self._history + self._n) # hardcoded to store 4 diff
+        else:
+            prices = self.candle.close_prices(self._history + self._n)
+
+        print(prices)
+        self.output = np.diff(prices, self._n)
+        if len(self.output) > 0:
+            self.value = self.output[-1]
+
+    def onTick(self):
+        raise NotImplementedError # not yet implemented
 
 class BollingerBand(CandleMetric):
     '''Bollinger band.
