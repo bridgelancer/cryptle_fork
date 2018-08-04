@@ -390,26 +390,22 @@ class Difference(CandleMetric):
     '''
     def __init__(
             self,
-            candle,
+            metric,
             n=1,
             history=4,
             use_open=True
             ):
-        super().__init__(candle)
+        super().__init__(metric.candle)
         self._use_open = use_open
+        self._metric = metric
         self._history = history
         self._n = n
-
+        self.past_metric_values = []
     def onCandle(self):
         if len(self.candle) < self._n:
             return
-
-        if self._use_open:
-            prices = self.candle.open_prices(self._history + self._n) # hardcoded to store 4 diff
-        else:
-            prices = self.candle.close_prices(self._history + self._n)
-
-        self.output = np.diff(prices, self._n)
+        self.past_metric_values.append(self._metric.value)
+        self.output = np.diff(self.past_metric_values, self._n)
         if len(self.output) > 0:
             self.value = self.output[-1]
 
@@ -506,8 +502,6 @@ class MABollinger(CandleMetric):
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError # Not yet implemented
-
-
 
 class RSI(CandleMetric):
     '''Calculate and store the latest RSI value for the attached candle'''

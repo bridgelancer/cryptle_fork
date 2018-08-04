@@ -362,36 +362,17 @@ def test_candle_manb():
     assert snb == 0
 
 @unittest
-def test_candle_diff():
-    bar = CandleBar(10)
-    diff = Difference(bar)
-    for i, price in enumerate(lin):
-        bar.pushTick(price, i)
-    print (diff)
-    assert True
-
-    for i, price in enumerate(alt_quad):
-        bar.pushTick(price, i)
-    assert True
-
-@unittest
 def test_candle_diffMACD():
     bar = CandleBar(1)
-    barDiffVal = CandleBar(1)
-    barDiffMA = CandleBar(1)
-
     wma1 = WMA(bar, 5)
     wma2 = WMA(bar, 8)
     macd = MACD(wma1, wma2, 3)
-    diffVal = Difference(barDiffVal)
-    diffMA = Difference(barDiffMA)
+    diffVal = Difference(macd)
 
     for i, price in enumerate(alt_quad):
         bar.pushTick(price, i)
-        barDiffVal.pushTick(macd.value, i)
-        barDiffMA.pushTick(macd.diff_ma, i)
-    assert diffMA.value - (-35.062037) < 1e-5
-    assert diffVal.value - (-70.11296296) < 1e-5
+    print (diffVal.value)
+    assert diffVal.value - (-70.11296) < 1e-5
 
 if __name__ == '__main__':
     run_all_tests()
