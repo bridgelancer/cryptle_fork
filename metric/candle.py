@@ -375,20 +375,27 @@ class MACD(CandleMetric):
 class Difference(CandleMetric):
     '''Difference.
 
-    This class stores a list of historic n-th differences and returns the last value of that list.
+    This class computes a dictionary of lists of historic n-th differences.
+
+    This class supports differencing of multiple attributes of a class. In default settings, no
+    additional argument is needed. Only the 'value' attribute of the Metric class would be
+    differencd. For any additional attributes required differencing, the string of the required
+    attribute names should be parsed during the construction of this Difference class.
+
+    The class returns a dictionary of lists, with the key being the names of differenced attributes.
+    Resuls up to the specified lookback period would be stored and returned.
 
     Value:
         The last value of the n-th difference of the series
 
     Args:
-        use_open (bool): Flag for using open/close price.
-        n (int): number of days to differecne.
-        history (int): number of results to be stored
-        *args (str): strings of names of the concerned attributes of the Metric parsed to this
-        class for differencing
+        n         (int): The n-th order difference required.
+        lookback  (int): Number of results to be stored
+        *args     (str): Strings of names of attributes of the Metric parsed for differencing
+
     Attributes:
-        output (list): the n-th times difference of required attributes (value + **kwargs) of the
-        Metric
+        output   (list): The n-th times difference of the required attributes (value + **kwargs)
+        value   (float): The latest value of output['value'][-1]
     '''
 
     def __init__(
@@ -396,17 +403,16 @@ class Difference(CandleMetric):
             metric,
             *args,
             n=1,
-            history=4,
-            use_open=True
+            lookback=4 # not yet implemented, 4 as default for future DIDO scaling
             ):
         super().__init__(metric.candle)
-        self._use_open = use_open
         self._metric = metric
-        self._history = history
+        self._lookback = lookback
         self._n = n
         self._attributes = list(args)
         self.record = {'value': []}
         self.output = {}
+        self.value = 0
 
         if len(self._attributes) > 0:
             for attribute in self._attributes:
