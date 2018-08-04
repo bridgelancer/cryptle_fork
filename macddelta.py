@@ -40,7 +40,7 @@ class DeltaStrat(Strategy):
         s.macd = MACD(s.wma1, s.wma2, macd_scope)
         s.rsi = RSI(bar, rsi_period)
 
-        s.macddlc = None # to be integrated
+        s.macddlc = Difference(s.macd) # to be integrated
 
         # Initialize flags and states
         s.init_time = 0

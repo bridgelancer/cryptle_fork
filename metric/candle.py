@@ -384,13 +384,17 @@ class Difference(CandleMetric):
         use_open (bool): Flag for using open/close price.
         n (int): number of days to differecne.
         history (int): number of results to be stored
-
+        *args (str): strings of names of the concerned attributes of the Metric parsed to this
+        class for differencing
     Attributes:
-        output (list): the n-th times difference of the metric
+        output (list): the n-th times difference of required attributes (value + **kwargs) of the
+        Metric
     '''
+
     def __init__(
             self,
             metric,
+            *args,
             n=1,
             history=4,
             use_open=True
@@ -400,14 +404,25 @@ class Difference(CandleMetric):
         self._metric = metric
         self._history = history
         self._n = n
-        self.past_metric_values = []
+        self._attributes = list(args)
+        self.record = {'value': []}
+        self.output = {}
+
+        if len(self._attributes) > 0:
+            for attribute in self._attributes:
+                self.record[attribute] = []
+
     def onCandle(self):
         if len(self.candle) < self._n:
             return
-        self.past_metric_values.append(self._metric.value)
-        self.output = np.diff(self.past_metric_values, self._n)
-        if len(self.output) > 0:
-            self.value = self.output[-1]
+        self.record['value'].append(float(self._metric))
+        for attribute in self._attributes:
+            self.record[attribute].append(self._metric.__dict__[attribute])
+        for attribute, record in self.record.items():
+            self.output[attribute] =  np.diff(record, self._n)
+        if len(self.output['value']) > 0:
+            self.value = self.output['value'][-1]
+            print(self.output['value'][-1], self.output['diff'][-1], self.output['diff_ma'][-1])
 
     def onTick(self):
         raise NotImplementedError # not yet implemented
