@@ -10,18 +10,6 @@ strategy
 place order
 route order
 
-Flows
-=====
-# Basic linear flow
-datafeed -> strategy -> place order
-
-# Common linear flow
-datafeed -> metrics/models -> strategy -> place order -> route order
-
-# Complex flow
-datafeed -> metrics -> metrics -> strategy -> strategy -> place order
-datafeed -> metrics -> strategy -> place order -> strategy -> place order
-
 Scenerios
 =========
 Common:
@@ -34,12 +22,25 @@ Complex:
 - Metastrategies for asset basket
 
 Specifications
-==============
+--------------
 - declarative dependency
 - single responsibility principle: require well defined flexible interface
 
+Flows
+-----
+# Basic linear flow
+datafeed -> strategy -> place order
+
+# Common linear flow
+datafeed -> metrics/models -> strategy -> place order -> route order
+
+# Complex flow
+datafeed -> metrics -> metrics -> strategy -> strategy -> place order
+datafeed -> metrics -> strategy -> place order -> strategy -> place order
+
+
 Problems with X
----------------
+===============
 Heavy opinionated framework could lead to tougher extensibiliy.
 i.e. The original cryptle and pyalgotrade both directly depends on an instance
 of broker through DI. While this makes sense for most strategies, it breaks down
