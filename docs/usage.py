@@ -1,73 +1,23 @@
-# ===[ cryptle.py ]===
-from functools import wraps
+# ===[ DI framework ]===
+from cryptle.di import Component, require
 
-class Engine:
-    # @Todo: strict_install
-    # @Todo: strict_begin
-    def _publish():
+class Car(Component):
+    engine = require(Engine)
+    frame = require(Frame)
 
-    def _subscribe():
-
-    # @Rename
-    def add():
-
-
-def subscribe(*events):
-    @wraps
-    def decorator(func):
-        func._hook = events
-        return func
-    return decorator
-
-
-def publish(*events):
-    @wraps
-    def decorator(func):
-        func._hook = events
-        return func
-    return decorator
-
-
-class PluginMeta(type):
-    def __new__(cls, name, bases, attrs):
-        # Setup subscribe/publish hooks
-        ...
-
-    def __init__(cls, name, bases, attrs):
-        # Handle class
-        ...
-
-class Plugin(metaclass=PluginMeta):
-    # Handle
-    def  __new__(self):
-        # Handle
-        ...
-
-
-    def  __init__(self):
-        # Handle
-        ...
+    def start(self):
+        self.frame.safetycheck()
+        self.engine.fire()
 
 
 # ===[ foostrat.py ]===
-from cryptle import Plugin, subscribe, publish
+from cryptle.di import Component
+from cryptle.ta import MA, RSI
+from cryptle.mq import publish, subscribe
 
-class FooStrat(Plugin):
-  requires = []
-
-  def __init__(self):
-
-  @subscribe('<pair>:tick')
-  def onTick(self, event):
-
-  @publish('<pair>:buy')
-  def buy(self, ):
-     return
-
-from cryptle.engine import on
-
-class FooStrat(Plugin):
-    require = ['time', '{pair}:candle']
+class FooStrat(Component):
+    ma  = require(MA)
+    rsi = require(RSI)
 
     def __init__(self, pair):
         self.pair = pair
@@ -90,11 +40,14 @@ if __name__ == '__main__':
     import cryptle.engine as engine
     config = {...}
     engine.install(FooStrat(config))
-    engine.install()
 
-# Raises dependency exception
+    # Raises dependency exception
     engine.start()
 
-# Succeed
+    from cryptle.ta import MA, RSI
+    engine.install(MA(pair))
+    engine.install(RSI(pair))
+
+    # Succeed
     engine.start()
 

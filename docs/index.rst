@@ -8,29 +8,53 @@ with :ref:`overview`, followed by the framework terminlogies and concepts at
 :ref:`advanced` to find specific HOWTO recipes. For Cryptle in detail, the full
 reference can be found in the :ref:`api` section.
 
+
 .. _overview:
 
 Overview
 ========
 Creating a strategy with Cryptle::
 
-   from cryptle import Plugin, subscribe, publish
+   class FooStrat:
 
-   class FooStrat(Plugin):
+
+To put the strategy to use, simply install it on the engine and start it::
+   from cryptle import engine
+
+   engine.install()
+   engine.install(FooStrat())
+
+The message bus and injection engines are decoupled from the rest of Cryptle.
+Feel free to use them at your disposal.
+
+Lets see the message bus engine in action::
+   from cryptle.messages import subscribe, publish
+
+   class FooStrat(Component):
 
       @subscribe('time:15mins')
       def onTime(self, event):
-         # Rebalance every 15 minutes
          marketbuy()
 
       @publish('<pair>:market_buy')
       def buy(self, price):
          return True
 
-To put the strategy to action, install it on an engine::
-   from cryptle import engine
 
-   engine.install(FooStrat())
+And the injection engine::
+
+   from cryptle.injection import require, Component
+   from cryptle.timeseries import MA, RSI
+
+   class FooStrat(Component):
+      ma = require(MA)
+      rsi = require(RSI)
+
+      def onTime(self, event):
+         marketbuy()
+
+      def buy(self, price):
+         return True
 
 
 .. _concepts:
