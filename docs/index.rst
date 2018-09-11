@@ -16,58 +16,48 @@ Overview
 Creating a strategy with Cryptle::
 
    class FooStrat:
+      # Todo
 
+The event loop is decoupled from the rest of Cryptle.  Lets see it in action::
 
-To put the strategy to use, simply install it on the engine and start it::
-   from cryptle import engine
+   import event
 
-   engine.install()
-   engine.install(FooStrat())
+    class Ticker:
+        @event.emit('tick')
+        def tick(self, val):
+            return val
 
-The message bus and injection engines are decoupled from the rest of Cryptle.
-Feel free to use them at your disposal.
+    class Candle:
+        @event.on('tick')
+        def recv(self, data):
+            print(data) 
 
-Lets see the message bus engine in action::
-   from cryptle.messages import subscribe, publish
+    ticker = Ticker()
+    candle = Candle()
 
-   class FooStrat(Component):
+    loop = event.Loop()
+    loop.bind(ticker)
+    loop.bind(candle)
 
-      @subscribe('time:15mins')
-      def onTime(self, event):
-         marketbuy()
+    ticker.tick(1)  // prints 1 to stdout
 
-      @publish('<pair>:market_buy')
-      def buy(self, price):
-         return True
+Methods decorated as callbacks can still be called normally::
 
-
-And the injection engine::
-
-   from cryptle.injection import require, Component
-   from cryptle.timeseries import MA, RSI
-
-   class FooStrat(Component):
-      ma = require(MA)
-      rsi = require(RSI)
-
-      def onTime(self, event):
-         marketbuy()
-
-      def buy(self, price):
-         return True
+    candle.recv(2)  // prints 2
 
 
 .. _concepts:
 
 Important Concepts
-==============
+==================
 
-Dummy text.
+Event loops allow events to be generated and observed. An event always come with
+a data object, though this object can be :code:`None`.
+
 .. note::
    Event name can be any Python valid strings. However the recommended convention
-   is 'subject:datatype'.
-
-
+   is 'subject:datatype'. (This is subject to change, since a prototype event
+   parser is underway.)
 
 
 .. _advanced:
@@ -109,6 +99,13 @@ Exchange
 --------
 
 .. automodule:: cryptle.exchange
+   :members:
+
+
+Event
+-----
+
+.. automodule:: cryptle.event
    :members:
 
 
