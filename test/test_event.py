@@ -43,3 +43,21 @@ def test_on_decorator():
     loop.bind(sma)
     assert evt in loop._callbacks
     assert len(loop._callbacks[evt]) == 1
+
+
+def test_emit_decorator():
+    evt = 'test_event'
+
+    class Tick:
+        @event.emit(evt)
+        def test(self):
+            return 0
+
+    tick = Tick()
+    loop = event.Loop()
+    loop.bind(tick)
+    assert tick.test._isemitter
+    assert tick.test._event == evt
+
+    with pytest.raises(Warning):
+        tick.test()
