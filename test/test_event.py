@@ -1,5 +1,5 @@
 # Todo
-
+import inspect
 import cryptle.event as event
 import pytest
 
@@ -30,16 +30,16 @@ def test_on_and_emit():
     loop.emit('test_event', None)
 
 
-def test_listener_class():
-    class SMA(event.Listener):
-        def  __init__(self):
-            event.Listener.__init__(self)
+def test_on_decorator():
+    evt = 'test_event'
 
-        @event.on('test_event')
+    class SMA:
+        @event.on(evt)
         def test(self, data):
             assert data == None
 
     sma = SMA()
     loop = event.Loop()
     loop.bind(sma)
-    loop.emit('test_event', data=None)
+    assert evt in loop._callbacks
+    assert len(loop._callbacks[evt]) == 1
