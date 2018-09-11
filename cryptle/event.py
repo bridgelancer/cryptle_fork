@@ -24,7 +24,10 @@ class BaseLoop:
 
 
 class Loop(BaseLoop):
+    """Basic event loop."""
     def bind(self, instance):
+        """Binds an instance object and register it's decorated methods in the loop.
+        """
         for _, attr in inspect.getmembers(instance):
             if inspect.ismethod(attr):
                 meth = attr
@@ -35,7 +38,9 @@ class Loop(BaseLoop):
 
 
 def on(event):
-    """Method decorator for class methods designed to be used in an event loop.
+    """Decorator to designate object methods as event callbacks.
+
+    The decorated method must take a single argument for the event data.
     """
     def decorator(method):
         method._iscallback = True
@@ -45,15 +50,22 @@ def on(event):
 
 
 def emit(event):
+    """Decorator for event emitting methods.
+
+    If the object instance of the decorated method is binded to a loop, the
+    return value will be sent to the loop before being returned. The method must
+    therefore return only a single value.
+    """
     def decorator(method):
         @functools.wraps(method)
         def wrapper(self, *args, **kwargs):
-            # Unbounded
-            if getattr(self, '_loop', False):
-                self._loop.emit(event, method(self, *args, **kwargs))
+            rvalue = method(self, *args, **kwargs)
+
             # Bounded to an event loop instance
-            else:
-                return method(self, *args, **kwargs)
+            if getattr(self, '_loop', False):
+                self._loop.emit(event, rvalue)
+
+            return rvalue
 
         wrapper._isemitter = True
         wrapper._event = event

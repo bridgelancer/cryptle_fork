@@ -1,5 +1,5 @@
-Todo
-====
+Todos
+=====
 
 ## Strategy
 - Remove Strategy.execute() training wheels. Allow user to have complete control

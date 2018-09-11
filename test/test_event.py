@@ -61,3 +61,24 @@ def test_emit_decorator():
 
     with pytest.raises(Warning):
         tick.test()
+
+
+def test_class_pair():
+    class Ticker:
+        @event.emit('tick')
+        def tick(self, val=0):
+            return val
+
+    class Candle:
+        @event.on('tick')
+        def recv(self, data, expect=0):
+            assert data == expect
+
+    ticker = Ticker()
+    candle = Candle()
+
+    loop = event.Loop()
+    loop.bind(ticker)
+    loop.bind(candle)
+
+    ticker.tick()
