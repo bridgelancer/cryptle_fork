@@ -18,11 +18,7 @@ class OrderError(ExchangeError):
     pass
 
 
-def logHTTPError(res):
-    '''
-    Args:
-        res: Response object from requests
-    '''
+def _log_HTTP_error(res):
     if code == 400:
         msg = '400 Bad Request'
     elif code == 401:
@@ -40,7 +36,13 @@ def logHTTPError(res):
 
 
 class Bitstamp:
+    """REST API wrapper of Bitstamp.
 
+    Args:
+        key: Account key (per subaccount)
+        secret: Secret key (per subaccount)
+        customer_id: Customer ID (login ID)
+    """
     url = 'https://www.bitstamp.net/api/v2'
 
     def __init__(self, key=None, secret=None, customer_id=None):
@@ -48,21 +50,24 @@ class Bitstamp:
         self.secret = secret
         self.id = customer_id
 
-
-    # [Public Functions]
+    # ----------
+    # Public Functions (Mapping of API call)
+    # ----------
     def getTicker(self, asset, base_currency):
+        """Get ticker snapshot."""
         endpoint = '/ticker/'
         return self._get(endpoint + self._encode_pair(asset, base_currency))
 
 
     def getOrderbook(self, asset, base_currency):
+        """Get orderbook snapshot."""
         endpoint = '/order_book/'
         return self._get(endpoint + self._encode_pair(asset, base_currency))
 
 
     # [Private Functions]
     def getBalance(self, asset='', base_currency=''):
-        '''Request account balance from bitstamp.
+        """Get account balance from bitstamp.
 
         Args:
             asset (str): Optional argument to request only part of the balance
@@ -74,7 +79,7 @@ class Bitstamp:
 
         Raises:
             ConnectionError: For non 200 HTTP status code, raised by _post()
-        '''
+        """
         res = self._post('/balance/' + self._encode_pair(asset, base_currency))
 
         if self.hasBitstampError(res):
@@ -105,7 +110,7 @@ class Bitstamp:
 
 
     def sendMarketBuy(self, asset, currency, amount):
-        '''Place marketbuy on bitstamp. Returns python dict when order terminates.
+        """Place marketbuy on bitstamp. Returns python dict when order terminates.
 
         Args:
             asset: Name of asset to buy
@@ -115,7 +120,7 @@ class Bitstamp:
         Raises:
             ConnectionError: For non 200 HTTP status code, raised by _post()
             OrderError: If bitsatmp respone contains {'status': error}
-        '''
+        """
         params = {
             'amount': _truncate(amount, 8)
         }
@@ -132,7 +137,7 @@ class Bitstamp:
 
 
     def sendMarketSell(self, asset, currency, amount):
-        '''Place marketsell on bitstamp. Returns python dict when order terminates
+        """Place marketsell on bitstamp. Returns python dict when order terminates
 
         Args:
             asset: Name of asset to sell
@@ -142,7 +147,7 @@ class Bitstamp:
         Raises:
             ConnectionError: For non 200 HTTP status code, raised by _post()
             OrderError: If bitsatmp respone contains {'status': error}
-        '''
+        """
         params = {
             'amount': _truncate(amount, 8)
         }
@@ -159,7 +164,7 @@ class Bitstamp:
 
 
     def sendLimitBuy(self, asset, currency, amount, price):
-        '''Place limitbuy on bitstamp. Returns python dict when order terminates
+        """Place limitbuy on bitstamp. Returns python dict when order terminates
 
         Args:
             asset: Name of asset to buy
@@ -174,7 +179,7 @@ class Bitstamp:
         Note:
             This method is not fully implemented yet. A proper version should either be
             async, or returns the ordreId.
-        '''
+        """
         params = {
             'amount': _truncate(amount, 8),
             'price': _truncate(price, 8)
@@ -192,7 +197,7 @@ class Bitstamp:
 
 
     def sendLimitSell(self, asset, currency, amount, price):
-        '''Place limitsell on bitstamp. Returns python dict when order terminates
+        """Place limitsell on bitstamp. Returns python dict when order terminates
 
         Args:
             asset: Name of asset to buy
@@ -207,7 +212,7 @@ class Bitstamp:
         Note:
             This method is not fully implemented yet. A proper version should either be
             async, or returns the ordreId.
-        '''
+        """
         params = {
             'amount': _truncate(amount, 8),
             'price': _truncate(price, 8)
@@ -223,20 +228,19 @@ class Bitstamp:
         res['timestamp'] = now()
         return res
 
-    # @Document
     def sendOrderCancel(self, order_id):
-        '''Cancel an open limit order'''
+        """Cancel an open limit order"""
         return self._post('/cancel_order/', params={'id': order_id})
 
-
-    # @Document
     def cancnelAllOrder(self):
+        """Cancel all open order"""
         return self._post('/cancel_all_orders/')
 
-
-    # [Low level requests interfae]
+    # ----------
+    # Low level HTTP request interface
+    # ----------
     def _get(self, endpoint):
-        '''Send GET request to bitstamp. Return python dict.'''
+        """Send GET request to bitstamp. Return python dict."""
 
         url = self.url + endpoint
 
@@ -244,15 +248,14 @@ class Bitstamp:
         res = req.get(url)
 
         if res.status_code // 100 != 2:
-            logHTTPError(res)
+            _log_HTTP_error(res)
             raise ConnectionError
 
         res = json.loads(res.text)
         return res
 
-
     def _post(self, endpoint, params=None):
-        '''Send POST request to bitstamp. Return python dict.'''
+        """Send POST request to bitstamp. Return python dict."""
 
         params = params or {}
         params = {**self._authParams(), **params}
@@ -262,12 +265,11 @@ class Bitstamp:
         res = req.post(url, params)
 
         if res.status_code // 100 != 2:
-            logHTTPError(res)
+            _log_HTTP_error(res)
             raise ConnectionError
 
         res = json.loads(res.text)
         return res
-
 
     def _authParams(self):
         assert self.secret is not None
@@ -278,7 +280,6 @@ class Bitstamp:
         params['signature'] = self._sign(str(nonce))
         params['nonce'] = nonce
         return params
-
 
     def _sign(self, nonce):
         message = nonce + self.id + self.key
@@ -292,18 +293,16 @@ class Bitstamp:
 
     @staticmethod
     def _encode_pair(asset, base_currency):
-        '''Format a traded asset/base_currency pair into bitstamp representation'''
+        """Format a traded asset/base_currency pair into bitstamp representation"""
         return asset + base_currency
-
 
     @staticmethod
     def _decode_balance(balance):
-        '''Format balance entries in the json loaded python dict'''
+        """Format balance entries in the json loaded python dict"""
         # @Hardcode: For optimization
         return {
             k[:3]: float(v) for k, v in balance.items() if k.endswith('available') and float(v) > 1e-8
         }
-
 
     @staticmethod
     def hasBitstampError(res):

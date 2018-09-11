@@ -9,7 +9,7 @@ import pysher
 # @Todo refactor this into a method of each feed class
 @contextmanager
 def connect(feed_name, *args, **kwargs):
-    '''Datafeed as context manager.'''
+    """Datafeed as context manager."""
     try:
         if feed_name == 'bitstamp':
             feed = BitstampFeed()
@@ -22,12 +22,12 @@ def connect(feed_name, *args, **kwargs):
 
 
 class Datafeed:
-    '''Base class for datafeed objects'''
+    """Base class for datafeed objects"""
     pass
 
 
 class BitstampFeed(Datafeed):
-    '''Datafeed for bitstamp, has dependency on pysher websockets.
+    """Datafeed for bitstamp, has dependency on pysher websockets.
 
     Provides a javascript-like interface for various types of supported bitstamp
     events. Details are provided at https://www.bitstamp.net/websocket/
@@ -36,7 +36,7 @@ class BitstampFeed(Datafeed):
         Dependent on a recent version of pysher. Otherwise 4200 disconnects
         will lead to channels being no longer recognised and requires a re-binding
         of callbacks.
-    '''
+    """
     key = 'de504dc5763aeef9ff52'
 
     def __init__(self, log_level=logging.INFO):

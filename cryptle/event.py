@@ -24,7 +24,7 @@ class BaseLoop:
 
 
 class Loop(BaseLoop):
-    """Basic event loop."""
+    """Event loop middleware."""
     def bind(self, instance):
         """Binds an instance object and register it's decorated methods in the loop.
         """
@@ -41,6 +41,9 @@ def on(event):
     """Decorator to designate object methods as event callbacks.
 
     The decorated method must take a single argument for the event data.
+
+    Todo: Multiple events can be listened to, either with multiple decorating
+        statement or as extra arguments a single decorate statment.
     """
     def decorator(method):
         method._iscallback = True
