@@ -6,11 +6,11 @@ import pytest
 
 def test_empty_emit():
     loop = event.Loop()
-    with pytest.raises(Warning):
+    with pytest.raises(event.NotListenedWarning):
         loop.emit('test_event', None)
 
 
-def test_internal_on():
+def test_on():
     def callback(data):
         assert data == None
 
@@ -51,16 +51,17 @@ def test_emit_decorator():
     class Tick:
         @event.emit(evt)
         def test(self):
-            return 0
+            return 1
 
     tick = Tick()
     loop = event.Loop()
     loop.bind(tick)
-    assert tick.test._isemitter
-    assert tick.test._event == evt
+    assert len(tick.test._loops) == 1
+    assert tick.test._loops[0] == loop
+    assert tick.test._emits
 
-    with pytest.raises(Warning):
-        tick.test()
+    with pytest.raises(event.NotListenedWarning):
+        assert tick.test() == 1
 
 
 def test_class_pair():
@@ -82,3 +83,23 @@ def test_class_pair():
     loop.bind(candle)
 
     ticker.tick()
+
+
+def test_multiple_bind():
+    class Ticker:
+        def __init__(self):
+            self.called = 0
+
+        @event.on('tick')
+        def print_tick(self, data):
+            self.called += 1
+            return data
+
+    loop = event.Loop()
+
+    ticker = Ticker()
+    loop.bind(ticker)
+    loop.on('tick', ticker.print_tick)
+
+    loop.emit('tick', 1)
+    assert ticker.called == 2
