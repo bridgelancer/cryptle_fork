@@ -1,4 +1,3 @@
-import functools
 import inspect
 
 
@@ -23,45 +22,22 @@ class BaseLoop:
             cb(data)
 
 
-class NullLoop(BaseLoop):
-    pass
-
-
 class Loop(BaseLoop):
-    def bind(self, obj):
-        if not isinstance(obj, Listener):
-            raise TypeError('Object must be an instance of Listener.')
-
-        loop = obj.loop
-        if not isinstance(loop, Loop):
-            self._transfer(loop)
-            obj.loop = self
-        # @Todo Emitter instances
-
-    def _transfer(self, loop):
-        for evt in loop._callbacks:
-            if evt not in self._callbacks:
-                self._callbacks[evt] = loop._callbacks[evt]
-            self._callbacks[evt] += loop._callbacks[evt]
-
-# Todo consider metaclass
-class Listener:
-    """Abstract base classes for classes designed to work with event decorators.
-    """
-    def __init__(self, loop=None):
-        self.loop = loop or NullLoop()
+    def bind(self, instance):
+        for _, attr in inspect.getmembers(instance):
+            if inspect.ismethod(attr):
+                meth = attr
+                if getattr(meth, '_iscallback', False):
+                    self.on(meth._event, meth)
 
 
-# Todo not working yet
 def on(event):
     """Method decorator for class methods designed to be used in an event loop.
     """
     def decorator(method):
-        @functools.wraps(method)
-        def wrapper(self, *args, **kwargs):
-            self.on(event, method)
-            method(self, *args, **kwargs)
-        return wrapper
+        method._iscallback = True
+        method._event = event
+        return method
     return decorator
 
 
