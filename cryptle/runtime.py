@@ -5,7 +5,7 @@ import threading
 
 
 class Runtime:
-    '''Live execution environment for strategies.
+    """Live execution environment for strategies.
 
     This class provides an interface to query runtime information of a strategy.
     Updates are also performed through querying an exchange. All read/write is
@@ -14,9 +14,9 @@ class Runtime:
     This class can act as base for more specialized I/O sources. Subclasses may
     read from any inputs and write to any outputs by overwriting the methods:
     - run_forever()
-    - read_forever()
+    - read_command_forever()
     - handle_input()
-    '''
+    """
     help_str = (
         '\n'
         'h | help           Print this help\n'
@@ -42,18 +42,22 @@ class Runtime:
         self.asset = self.strat.asset
         self.base_currency = self.strat.base_currency
 
-
     def run_forever(self):
+        """Start the reporting thread and run forever."""
         report_thread = threading.Thread(target=self._report_loop)
         report_thread.start()
         print(self.help_str)
         self.report()
-        self.read_forever()
+        self.read_command_forever()
 
+    def read_command_forever(self, stream=sys.stdin):
+        """Read and process an input stream as commands forever.
 
-    def read_forever(self):
+        Since the default stream is sys.stdin, this method does not attempt to
+        close the provided stream.
+        """
         try:
-            for line in sys.stdin:
+            for line in stream:
                 if line:
                     s = self.handle_input(line)
         except KeyboardInterrupt:
@@ -89,7 +93,7 @@ class Runtime:
 
 
     def process_command(self, line):
-        '''Return a string result after processing the commaned'''
+        """Return a string result after processing the commaned"""
         line = line.strip()
 
         if line == 'h' or line == 'help':

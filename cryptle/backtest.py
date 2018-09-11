@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
         commission=0.0012, slippage=0, callback=None):
-    '''Wrapper function for running backtest on tick based strategy.
+    """Wrapper function for running backtest on tick based strategy.
 
     Args:
         dataset: Dataset to be read by the backtest. File format can be detected automatically
@@ -28,7 +28,7 @@ def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
 
     Raise:
         Exceptions that may be raised by the strategy
-    '''
+    """
     portfolio = portfolio or Portfolio(10000)
     exchange = exchange or PaperExchange(commission=commission, slippage=slippage)
 
@@ -43,7 +43,7 @@ def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
 
 def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
         commission=0.0012, slippage=0, callback=None):
-    '''Wrapper function for running backtest on bar based strategy.
+    """Wrapper function for running backtest on bar based strategy.
 
     Args:
         dataset: Dataset to be read by the backtest. File format can be detected automatically
@@ -59,7 +59,7 @@ def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
 
     Raise:
         Exceptions that may be raised by the strategy
-    '''
+    """
     portfolio = portfolio or Portfolio(10000)
     exchange = exchange or PaperExchange(commission=commission, slippage=slippage)
 
@@ -74,18 +74,17 @@ def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
 
 # Only works with tick for now
 class Backtest:
-    '''Provides an interface to load datasets and launch backtests.'''
+    """Provides an interface to load datasets and launch backtests."""
 
     def __init__(self, exchange=None):
         self.exchange = exchange or PaperExchange()
 
-
     def run(self, strat, callback=None):
-        '''Run a tick strategy on the loaded dataset.
+        """Run a tick strategy on the loaded dataset.
 
         Args:
             callback: A function taking (price, volume, timestamp, action) as parameter
-        '''
+        """
         for tick in self.ticks:
             price, timestamp, volume, action= _unpack(tick)
             self.exchange.price = price
@@ -94,7 +93,6 @@ class Backtest:
             strat.pushTick(price, timestamp, volume, action) # push the tick to strat
             if callback:
                 callback(strat)
-
 
     def runCandle(self, strat, callback=None):
         for candle in self.candles:
@@ -105,7 +103,6 @@ class Backtest:
             strat.pushCandle(o, c, h, l, t, v) # push the candle stick to strat
             if callback:
                 callback(strat)
-
 
     # Read file, detect it's data format and automatically parses it
     def read(self, fname, fileformat=None, fmt=None):
@@ -130,12 +127,10 @@ class Backtest:
     def readString(self, fname):
         self.ticks = self._read(fname)
 
-
     # Not needed, Strategy now only supports json string
     def readJSON(self, fname):
         raw = self._read(fname)
         self.ticks = self._parseJSON(raw)
-
 
     # Not needed, Strategy now only supports json string
     def readCSV(self, fname, fieldnames=None):
@@ -161,11 +156,9 @@ class Backtest:
         with open(fname) as f:
             return f.read().splitlines()
 
-
     @staticmethod
     def _parseJSON(strings):
         return [json.loads(tick) for tick in strings]
-
 
     @staticmethod
     def _parseCSV(strings, fieldnames=None):
@@ -178,13 +171,12 @@ class Backtest:
 
 
 class PaperExchange:
-    '''Stub for exchange objects. Only supports market/limit orders.
+    """Stub for exchange objects. Only supports market/limit orders.
 
     When used with the OO backtest interface, it should be passed to the
     Backtest object such that the market price is updated while the strategy
     processeses incoming market information.
-    '''
-
+    """
 
     def __init__(self, commission=0, slippage=0):
         self.price = 0
@@ -203,7 +195,6 @@ class PaperExchange:
         logger.info('Paid {:.5g} commission'.format(_price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
-
     def sendMarketSell(self, pair, amount):
         _price = self.price
         price *= (1 - self.commission)
@@ -212,7 +203,6 @@ class PaperExchange:
         logger.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
         logger.info('Paid {:.5g} commission'.format(_price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
-
 
     def sendLimitBuy(self, pair, amount, price):
         _price = price
@@ -223,7 +213,6 @@ class PaperExchange:
         logger.info('Paid {:.5g} commission'.format(_price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
-
     def sendLimitSell(self, pair, amount, price):
         _price = price
         price *= (1 - self.commission)
@@ -233,26 +222,20 @@ class PaperExchange:
         logger.info('Paid {:.5g} commission'.format(_price * self.commission))
         return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
 
-
     def getCash(self, *args, **kws):
         raise NotImplementedError
-
 
     def getTicker(self, *args, **kws):
         raise NotImplementedError
 
-
     def getOrderbook(self, *args, **kws):
         raise NotImplementedError
-
 
     def getBalance(self, *args, **kws):
         raise NotImplementedError
 
-
     def getOrderStatus(self, *args, **kws):
         raise NotImplementedError
-
 
     def getOpenOrders(self, *args, **kws):
         raise NotImplementedError
