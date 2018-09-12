@@ -5,9 +5,9 @@ import pytest
 
 
 def test_empty_emit():
-    loop = event.Loop()
+    bus = event.Bus()
     with pytest.raises(event.NotListenedWarning):
-        loop.emit('test_event', None)
+        bus.emit('test_event', None)
 
 
 def test_on():
@@ -15,19 +15,19 @@ def test_on():
         assert data == None
 
     evt = 'test_event'
-    loop = event.Loop()
-    loop.on(evt, callback)
-    assert evt in loop._callbacks
-    assert len(loop._callbacks[evt]) == 1
+    bus = event.Bus()
+    bus.on(evt, callback)
+    assert evt in bus._callbacks
+    assert len(bus._callbacks[evt]) == 1
 
 
 def test_on_and_emit():
     def callback(data):
         assert data == None
 
-    loop = event.Loop()
-    loop.on('test_event', callback)
-    loop.emit('test_event', None)
+    bus = event.Bus()
+    bus.on('test_event', callback)
+    bus.emit('test_event', None)
 
 
 def test_on_decorator():
@@ -39,10 +39,10 @@ def test_on_decorator():
             assert data == None
 
     sma = SMA()
-    loop = event.Loop()
-    loop.bind(sma)
-    assert evt in loop._callbacks
-    assert len(loop._callbacks[evt]) == 1
+    bus = event.Bus()
+    bus.bind(sma)
+    assert evt in bus._callbacks
+    assert len(bus._callbacks[evt]) == 1
 
 
 def test_emit_decorator():
@@ -54,10 +54,10 @@ def test_emit_decorator():
             return 1
 
     tick = Tick()
-    loop = event.Loop()
-    loop.bind(tick)
-    assert len(tick.test._loops) == 1
-    assert tick.test._loops[0] == loop
+    bus = event.Bus()
+    bus.bind(tick)
+    assert len(tick.test._buses) == 1
+    assert tick.test._buses[0] == bus
     assert tick.test._emits
 
     with pytest.raises(event.NotListenedWarning):
@@ -78,9 +78,9 @@ def test_class_pair():
     ticker = Ticker()
     candle = Candle()
 
-    loop = event.Loop()
-    loop.bind(ticker)
-    loop.bind(candle)
+    bus = event.Bus()
+    bus.bind(ticker)
+    bus.bind(candle)
 
     ticker.tick()
 
@@ -95,11 +95,11 @@ def test_multiple_bind():
             self.called += 1
             return data
 
-    loop = event.Loop()
+    bus = event.Bus()
 
     ticker = Ticker()
-    loop.bind(ticker)
-    loop.on('tick', ticker.print_tick)
+    bus.bind(ticker)
+    bus.on('tick', ticker.print_tick)
 
-    loop.emit('tick', 1)
+    bus.emit('tick', 1)
     assert ticker.called == 2

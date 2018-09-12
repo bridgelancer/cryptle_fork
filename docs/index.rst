@@ -102,11 +102,17 @@ Exchange
    :members:
 
 
-Event
------
+Message Bus
+-----------
 
 .. automodule:: cryptle.event
-   :members:
+
+   .. autoclass:: Bus
+      :members:
+
+   .. autofunction:: on
+
+   .. autofunction:: emit
 
 
 Backtest

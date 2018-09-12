@@ -2,58 +2,59 @@ import inspect
 import functools
 
 
-class LoopException(Exception):
+class BusException(Exception):
     pass
 
 
-class ExtraEmit(LoopException):
+class ExtraEmit(BusException):
     pass
 
 
-class NotListenedWarning(LoopException):
+class NotListenedWarning(BusException):
     pass
 
 
-class UnboundedEmitter(LoopException):
+class UnboundedEmitter(BusException):
     pass
 
 
-class NoRegisteredMethod(LoopException):
+class NoRegisteredMethod(BusException):
     pass
 
 
-class BaseLoop:
+class Bus:
+    """Event bus middleware.
+
+    This class allows wiring of function chains to be decoupled into events.
+
+    """
     def __init__(self):
         self._callbacks = {}
 
     def on(self, evt, cb):
-        """Register events directly into the event loop."""
+        """Register events directly into the event bus."""
         if evt not in self._callbacks:
             self._callbacks[evt] = []
         self._callbacks[evt].append(cb)
 
     def emit(self, evt, data):
-        """Emit events directly into the event loop."""
+        """Emit events directly into the event bus."""
 
         if evt not in self._callbacks:
-            raise NotListenedWarning('No registered callbacks in this loop.')
+            raise NotListenedWarning('No registered callbacks in this bus.')
 
         for cb in self._callbacks[evt]:
             cb(data)
 
-
-class Loop(BaseLoop):
-    """Event loop middleware."""
-
-    def bind(self, obj):
-        """Binds an obj object and register it's decorated methods in the loop.
+    def bind(self, object):
+        """Binds an object and register it's decorated methods on the bus.
 
         Args:
-            obj: An instance from a class with methods decorated as callback or
-                emitters.
+            object: An object instance from a class with methods decorated as
+                callback or emitters.
         """
         no_decorated = True
-        for _, attr in inspect.getmembers(obj):
+        for _, attr in inspect.getmembers(object):
             if inspect.ismethod(attr):
                 method = attr
                 try:
@@ -64,10 +65,10 @@ class Loop(BaseLoop):
                 else:
                     no_decorated = False
 
-                # Common use case is binding instance to single loop
+                # Common use case is binding instance to single bus
                 # This optimise for performance
                 if hasattr(method, '_emits'):
-                    method._loops.append(self)
+                    method._buses.append(self)
                     no_decorated = False
 
         if no_decorated:
@@ -94,8 +95,8 @@ def on(*events):
 def emit(event):
     """Decorator for event emitting methods.
 
-    If the object instance of the decorated method is binded to a loop, the
-    return value will be sent to the loop before being returned. The method must
+    If the object instance of the decorated method is binded to a bus, the
+    return value will be sent to the bus before being returned. The method must
     therefore return only a single value.
 
     A method can only emit one event.
@@ -109,19 +110,12 @@ def emit(event):
             rvalue = method(self, *args, **kwargs)
             meth = getattr(self, method.__name__)
 
-            # Bounded to an event loop instance
-            try:
-                loops = meth._loops
-            except AttributeError:
-                # Todo: add setting to raise warning
-                loops = []
-
-            for loop in loops:
-                loop.emit(event, rvalue)
+            for bus in meth._buses:
+                bus.emit(event, rvalue)
 
             return rvalue
 
         wrapper._emits = event
-        wrapper._loops = []
+        wrapper._buses = []
         return wrapper
     return decorator
