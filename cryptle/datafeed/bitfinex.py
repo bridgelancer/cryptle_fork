@@ -14,7 +14,7 @@ from .exception import *
 
 
 _log = logging.getLogger(__name__)
-WSSURL = 'wss://api.bitfinex.com/ws/2'
+WSURL = 'wss://api.bitfinex.com/ws/2'
 
 
 def decode_event(event):
@@ -63,7 +63,7 @@ def encode_event(msg: dict):
     return cid, event
 
 
-def parse_raw_msg(msg):
+def _parse_wsmsg(msg):
     return json.loads(msg)
 
 
@@ -95,7 +95,7 @@ class BitfinexFeed:
     Attributes:
         connected: Connection status.
     """
-    def __init__(self, *args, **options):
+    def __init__(self, *args, **kwargs):
         # { Channel_ID: event, ... }
         self._id_event = {}
 
@@ -105,7 +105,7 @@ class BitfinexFeed:
         # Incoming messages processing thread
         self._recv_thread = None
 
-        self._ws = ws.WebSocket(*args, **options)
+        self._ws = ws.WebSocket(*args, **kwargs)
         self._ws.settimeout(3)
 
     # ----------
@@ -117,7 +117,7 @@ class BitfinexFeed:
             return
 
         _log.info('Attempting to connect')
-        self._ws.connect(WSSURL, **options)
+        self._ws.connect(WSURL, **options)
         _log.info('Connection establishedd')
 
         self._recv_thread = Thread(target=self._recvForever)
@@ -125,13 +125,17 @@ class BitfinexFeed:
         self.running = True
         self._recv_thread.start()
 
-    def close(self):
+    def disconnect(self):
         """Disconnect from Bitfinex."""
         if self.connected:
             if self._recv_thread.is_alive():
                 self.running = False
                 self._recv_thread.join()
             self._ws.close()
+
+    @property
+    def connected(self):
+        return self._ws.connected
 
     def on(self, event, callback):
         """Bind a callback to an event.
@@ -154,10 +158,6 @@ class BitfinexFeed:
 
         self._callbacks[event].append(callback)
         _log.info('Add callback: "{}"'.format(event))
-
-    @property
-    def connected(self):
-        return self._ws.connected
 
     # ----------
     # Send outgoing messages
@@ -189,7 +189,7 @@ class BitfinexFeed:
                 except ws.WebSocketTimeoutException:
                     continue
                 else:
-                    wsmsg = parse_raw_msg(raw_msg)
+                    wsmsg = _parse_wsmsg(raw_msg)
                     if isinstance(wsmsg, dict):
                         self._handleMessage(wsmsg)
                     elif isinstance(wsmsg, list):
