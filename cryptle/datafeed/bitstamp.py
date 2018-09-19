@@ -3,7 +3,6 @@ import time
 import json
 import logging
 import traceback
-import contextlib
 from threading import Thread
 from collections import defaultdict
 
@@ -32,20 +31,6 @@ def _build_bitstamp_url():
             query_params
         )
     return url
-
-
-@contextlib.contextmanager
-def connect(feed_name, *args, **kwargs):
-    """Datafeed as context manager."""
-    try:
-        if feed_name == 'bitstamp':
-            feed = BitstampFeed()
-            feed.connect(*args, **kwargs)
-        else:
-            raise ValueError('No datafeed named {}'.format(feed_name))
-        yield feed
-    finally:
-        feed.close()
 
 
 def decode_event(event):
