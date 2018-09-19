@@ -1,4 +1,3 @@
-# Todo
 import inspect
 import cryptle.event as event
 import pytest
@@ -21,7 +20,7 @@ def test_on():
     assert len(bus._callbacks[evt]) == 1
 
 
-def test_on_and_emit():
+def test_callback_emit():
     def callback(data):
         assert data == None
 
@@ -30,11 +29,11 @@ def test_on_and_emit():
     bus.emit('test_event', None)
 
 
-def test_on_decorator():
+def test_unbound_source():
     evt = 'test_event'
 
     class SMA:
-        @event.on(evt)
+        @event.unbound_callback(evt)
         def test(self, data):
             assert data == None
 
@@ -49,7 +48,7 @@ def test_emit_decorator():
     evt = 'test_event'
 
     class Tick:
-        @event.emit(evt)
+        @event.unbound_source(evt)
         def test(self):
             return 1
 
@@ -66,12 +65,12 @@ def test_emit_decorator():
 
 def test_class_pair():
     class Ticker:
-        @event.emit('tick')
+        @event.unbound_source('tick')
         def tick(self, val=0):
             return val
 
     class Candle:
-        @event.on('tick')
+        @event.unbound_callback('tick')
         def recv(self, data, expect=0):
             assert data == expect
 
@@ -90,7 +89,7 @@ def test_multiple_bind():
         def __init__(self):
             self.called = 0
 
-        @event.on('tick')
+        @event.unbound_callback('tick')
         def print_tick(self, data):
             self.called += 1
             return data
@@ -103,3 +102,18 @@ def test_multiple_bind():
 
     bus.emit('tick', 1)
     assert ticker.called == 2
+
+
+def test_direct_bus_binding_usage():
+    bus = event.Bus()
+    class Test:
+        @bus.on('test')
+        def foo(self, data):
+            assert data == 1
+
+        @bus.source('test')
+        def bar(self):
+            return 1
+
+    test_object = Test()
+    test_object.bar()
