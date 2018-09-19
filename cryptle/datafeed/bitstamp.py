@@ -72,8 +72,6 @@ def encode_event(msg: dict):
     channel = msg['channel']
     event   = msg['event']
 
-    print(msg)
-
     # Hacky ways to decode. Very susceptible to change in bitstamp APIs
     if event == 'trade':
         if channel == 'live_trades':
