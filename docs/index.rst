@@ -29,7 +29,7 @@ Lets see the event bus in action::
     import event
 
     class Ticker:
-        @event.emit('tick')
+        @event.source('tick')
         def tick(self, val):
             return val
 
@@ -92,7 +92,7 @@ multiple event names to a decorator.
         print(1)
 
     bus = Bus()
-    bus.on('event', test)
+    bus.addListener('event', test)
     bus.emit('tick', data=1) // print 1 twice
 
 ::
@@ -178,7 +178,7 @@ Message Bus
 
    .. autofunction:: on
 
-   .. autofunction:: emit
+   .. autofunction:: source
 
 
 Backtest

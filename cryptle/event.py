@@ -36,7 +36,11 @@ class _Emitter:
         return self
 
     def __call__(self, *args, **kwargs):
-        rvalue = self.func(self.instance)
+        if self.instance:
+            rvalue = self.func(self.instance, *args, **kwargs)
+        else:
+            rvalue = self.func(*args, **kwargs)
+
         for bus in self.buses:
             bus.emit(self.event, rvalue)
         return rvalue
@@ -46,10 +50,8 @@ class Bus:
     """Event bus middleware.
 
     This class allows wiring of function chains to be decoupled into events.
-
-    Todo:
-        Allow removal of callback/emitter bindings.
     """
+    # Todo: Allow removal of callback/emitter bindings.
     def __init__(self):
         self._callbacks = defaultdict(list)
         self._emitters  = defaultdict(list)
@@ -140,7 +142,7 @@ class Bus:
 
         # global functions binded as emitters
         if isinstance(object, _Emitter):
-            attr.buses.append(self)
+            object.buses.append(self)
             decorated = True
 
         # object is instance variable, find unbound methods in the instance
