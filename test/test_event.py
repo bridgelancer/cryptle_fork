@@ -34,6 +34,21 @@ def test_global_on():
     bus.emit('test_event', None)
 
 
+def test_global_source_on():
+    @event.source('test_event')
+    def source():
+        return None
+
+    @event.on('test_event')
+    def callback(data):
+        assert data == None
+
+    bus = event.Bus()
+    bus.bind(source)
+    bus.bind(callback)
+    source()
+
+
 def test_bound_bus_bound_callback():
     def callback(data):
         assert data == None
@@ -78,7 +93,7 @@ def test_unbound_source_method_unbound_bus():
         assert tick.test() == 1
 
 
-def test_1_source_and_callback_instance():
+def test_1_source_callback_combined_instance():
     class Ticker:
         @event.source('tick')
         def tick(self):
