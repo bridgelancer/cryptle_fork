@@ -4,6 +4,7 @@ from collections import defaultdict
 
 
 class BusException(Exception):
+    """Base exception for this module."""
     pass
 
 
