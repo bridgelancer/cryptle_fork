@@ -57,8 +57,8 @@ and methods decorated as emitter will also return the value after it's emitted::
 
 .. note::
    Event name can be any Python valid strings. However the recommended convention
-   is 'subject:datatype'. (This is subject to change, since a prototype event
-   parser is underway.)
+   is 'subject:datatype'. (This is subject to change, a more powerful event
+   parser is possibly coming soon.)
 
 The event bus is a critical component of Cryptle. The event bus serves as the
 middleware for communication/data-passing between trading engine components.
@@ -132,78 +132,3 @@ multiple event names to a decorator.
 
     bus.emit('bar', data=2)
     assert test.data = 3  // True
-
-
-.. _api:
-
-API Reference
-=============
-
-This part of the documentation coveres all the interfaces of Cryptle.
-
-
-Strategy
---------
-
-.. automodule:: cryptle.strategy
-
-   .. autoclass:: Strategy
-      :members: handleTick, handleCandle, handleText, execute
-
-   .. autoclass:: Portfolio
-      :members:
-
-
-Datafeed
---------
-
-.. automodule:: cryptle.datafeed
-   :members:
-
-
-Exchange
---------
-
-.. automodule:: cryptle.exchange
-   :members:
-
-
-Message Bus
------------
-
-.. automodule:: cryptle.event
-
-   .. autoclass:: Bus
-      :members:
-
-   .. autofunction:: on
-
-   .. autofunction:: source
-
-
-Backtest
---------
-
-.. automodule:: cryptle.backtest
-   :members:
-
-
-Runtime
--------
-
-.. automodule:: cryptle.runtime
-   :members:
-
-
-Plotting
---------
-
-.. automodule:: cryptle.plotting
-   :members:
-
-
-Orderbook
----------
-
-.. automodule:: cryptle.orderbook
-   :members:
