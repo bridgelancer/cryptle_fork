@@ -44,6 +44,13 @@ Message Bus
 
    .. autofunction:: source
 
+   .. autoexception:: BusException
+
+   .. autoexception:: ExtraEmit
+
+   .. autoexception:: NotListenedWarning
+
+   .. autoexception:: UnboundEmitter
 
 Backtest
 --------

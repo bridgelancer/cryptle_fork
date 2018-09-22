@@ -2,21 +2,39 @@
 Welcome to Cryptle
 ==================
 
-Cryptle is a Python algorithmic trading framework. Get started with an overview
-with :ref:`overview`. Those who are familiar with the framework can head over
-:ref:`advanced` to find specific HOWTO recipes. For Cryptle in detail, the full
-reference can be found in the :ref:`api` section.
+Welcome to Cryptle's documentation. Cryptle is a Python algorithmic trading
+framework. Get started with Cryptle at :ref:`overview`. Those who are familiar
+with the framework can head over to :ref:`advanced` and find specific HOWTO
+recipes. For Cryptle in detail, the full reference can be found in the
+:doc:`api` section.
 
 
 .. _overview:
 
 Overview
 ========
-Creating a strategy with Cryptle::
+Create and test a strategy with Cryptle::
 
-   class FooStrat:
-      # Todo
+    from cryptle.event import source, on
+    from cryptle.datafeed import connect, BITSTAMP
 
+    class Strat:
+        @on('candle:btcusd')
+        def handle(self, data):
+            price = data['open']
+            if price > 1000:
+                self.buy()
+
+        @source('buy')
+        def buy(self, price):
+            return price
+
+    if __name__ == '__main__':
+        # ...do stuff
+
+
+Event Bus
+---------
 Event buses allow events to be generated and observed. An event always come with
 a data object, though this object can be :code:`None`.
 
@@ -26,39 +44,66 @@ binded to the emitter function.
 
 Lets see the event bus in action::
 
-    import event
+    from event import source, on, Bus
 
-    class Ticker:
-        @event.source('tick')
-        def tick(self, val):
-            return val
-
+    @source('tick')
+    def tick():
+        return val
+      
     class Candle:
-        @event.on('tick')
+        @on('tick')
         def recv(self, data):
             print(data) 
 
-    ticker = Ticker()
     candle = Candle()
 
-    bus = event.Bus()
-    bus.bind(ticker)
+    bus = Bus()
+    bus.bind(tick)
     bus.bind(candle)
 
-    ticker.tick(1)  // prints 1 to stdout
+    tick(1)  // prints 1 to stdout
 
-Methods decorated as callbacks can still be called normally::
+Functions or methods can be marked for binding with the decorators
+:func:`source` and :func:`on`. :meth:`Bus.bind` registers marked functions and
+marked methods of instance objects to an instance event bus.
+
+Methods decorated as listeners can still be called normally::
 
     candle.recv(2)  // prints 2
 
 and methods decorated as emitter will also return the value after it's emitted::
 
-    assert 1 == ticker.tick(1)  // True
+    assert 1 == tick(1)  // True
 
 .. note::
    Event name can be any Python valid strings. However the recommended convention
    is 'subject:datatype'. (This is subject to change, a more powerful event
    parser is possibly coming soon.)
+
+:meth:`Bus.source` and :meth:`Bus.on` are decorators serving the same purpose as
+the module level decorators. These decorators associated with a bus instance
+save the need for binding the decorated functions to a bus. They however can
+only be used for module level functions::
+
+    bus = Bus()
+
+    @bus.source('event')
+    def foo();
+        return 1
+
+    @bus.on('event')
+    def bar(data):
+        print data
+
+    foo() // prints 1
+
+.. todo explain this more clearly, go into how we cannot track instances created
+   from class
+.. note::
+   The reason why this doesn't work on instance methods is due to the protocol
+   with which class instance inherits instance methods from the class template.
+   For example, :code:`A.f`, a method of class :code:`A`, is a actually global
+   function, where as :code:`a.f`, where :code:`a = A()`, is a bound method.
 
 The event bus is a critical component of Cryptle. The event bus serves as the
 middleware for communication/data-passing between trading engine components.
@@ -75,6 +120,10 @@ An asynchronous protocol could be implemented in the future.
    each callback. Hence if a piece of event data is modifible objects such as
    dictionary, callbacks that are called earlier could modify the value passed
    into later callbacks.
+
+
+Datafeed
+--------
 
 
 .. _advanced:
