@@ -80,7 +80,7 @@ def encode_event(msg: dict):
             pair = channel[-6:]
         return ':'.join(('trades', pair))
 
-    elif event == 'data' and channel[4:] == 'diff':
+    elif event == 'data' and channel[:4] == 'diff':
         if channel == 'diff_order_book':
             pair = 'btcusd'
         else:
@@ -92,7 +92,7 @@ def encode_event(msg: dict):
         else:
             pair = channel[-6:]
         # Pushed orderbooks not supported
-        raise BadEvent(event)
+        raise BadEvent(msg)
     else:
         if event == 'order_changed':
             evt = 'bookchange'
@@ -101,7 +101,7 @@ def encode_event(msg: dict):
         elif event == 'order_deleted':
             evt = 'bookdelete'
         else:
-            raise BadEvent(event)
+            raise BadEvent(msg)
 
         if channel == 'live_orders':
             pair = 'btcusd'
@@ -168,7 +168,7 @@ class BitstampFeed:
         if not callable(cb):
             raise TypeError('Expected 2nd argument to be callable')
 
-        channel, event, *args = decode_event(event)
+        channel, *args = decode_event(event)
         if not channel in self._channels:
             self._subscribe(channel)
 
@@ -253,7 +253,7 @@ class BitstampFeed:
             except Exception as e:
                 _, _, tb = sys.exc_info()
                 traceback.print_tb(tb)
-                _log.error('(callback error):{}:{}'.format(type(e).__name__, e))
+                _log.error('(callback error):{}({})'.format(type(e).__name__, e))
 
             else:
                 _log.debug('Received: {}'.format(raw_msg))

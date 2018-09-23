@@ -1,6 +1,9 @@
 import inspect
-import functools
+import logging
+from functools import wraps
 from collections import defaultdict
+
+_log = logging.getLogger(__name__)
 
 
 class BusException(Exception):
@@ -21,6 +24,7 @@ class UnboundEmitter(BusException):
 
 
 class _Emitter:
+    """Functor descriptor for wrapper functions and instance methods into bindable emitters."""
     def __init__(self, event, func):
         if isinstance(func, self.__class__):
             raise ExtraEmitError('An emitter may only emit one type of event.')
@@ -82,6 +86,10 @@ class Bus:
         # global functions binded as emitters
         if isinstance(object, _Emitter):
             object.buses.append(self)
+            decorated = True
+
+        if isinstance(object, DeferedSource):
+            object._bus = self
             decorated = True
 
         # object is instance variable, find unbound methods in the instance
@@ -152,6 +160,7 @@ class Bus:
     def addListener(self, event, func):
         """Add the provided function to the list of listeners of the provided event."""
         self._callbacks[event].append(func)
+        _log.info('Add listener {} for event "{}"'.format(func, event))
 
     def makeEmitter(self, event, func):
         """Return an emitter function binded to the caller bus."""
@@ -165,6 +174,8 @@ class Bus:
         emitter = _Emitter(event, func)
         emitter.buses.append(self)
         self._emitters[event].append(emitter)
+
+        _log.info('Created emitter {} for event "{}"'.format(func, event))
         return emitter
 
 
@@ -175,7 +186,7 @@ def on(event):
     a binding, the callback behaves just like a regular function.
     """
     if not isinstance(event, str):
-        raise TypeError('Event string required')
+        raise TypeError('Event string required.')
 
     def decorator(method):
         if hasattr(method, '_events'):
@@ -193,9 +204,19 @@ def source(event):
     a binding, the emitter behaves just like a regular function.
     """
     if not isinstance(event, str):
-        raise TypeError('Event string required')
+        raise TypeError('Event string required.')
 
     def decorator(method):
         emitter = _Emitter(event, method)
         return emitter
     return decorator
+
+
+class DeferedSource:
+    def source(self, event):
+        def wrapper(method):
+            try:
+                return self._bus.makeEmitter(event, method)
+            except AttributeError:
+                raise UnboundEmitter('Defered sources must be bound to an event bus.')
+        return wrapper
