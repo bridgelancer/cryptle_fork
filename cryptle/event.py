@@ -12,7 +12,7 @@ class ExtraEmit(BusException):
     pass
 
 
-class NotListenedWarning(BusException):
+class NotListened(BusException):
     pass
 
 
@@ -100,13 +100,13 @@ class Bus:
                     decorated = True
 
         if not decorated:
-            raise ValueError('Object {} has no callbacks or emitters.'.format(object))
+            raise ValueError('Expected callbacks or emitters in {}.'.format(object))
 
     def emit(self, event, data):
         """Directly emit events into the event bus."""
 
         if event not in self._callbacks:
-            raise NotListenedWarning('No registered callbacks in this bus.')
+            raise NotListened('No registered callbacks for "{}" in this bus.'.format(event))
 
         for cb in self._callbacks[event]:
             cb(data)

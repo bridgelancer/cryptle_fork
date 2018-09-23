@@ -15,8 +15,8 @@ Overview
 ========
 Create and test a strategy with Cryptle::
 
-    from cryptle.event import source, on
-    from cryptle.datafeed import connect, BITSTAMP
+    from cryptle.event import source, on, Bus
+    from cryptle.datafeed import BitstampEmitter
 
     class Strat:
         @on('candle:btcusd')
@@ -29,9 +29,17 @@ Create and test a strategy with Cryptle::
         def buy(self, price):
             return price
 
-    if __name__ == '__main__':
-        # ...Tood
-        # ...do stuff
+    if __name__ == "__main__":
+        bs = BitstampEmitter()
+        bus = Bus()
+        strat = Strat()
+
+        bus.bind(bs)
+        bus.bind(strat)
+        bs.connect()
+
+        # ??
+        bs.emit('trades:btcusd')
 
 
 Event Bus

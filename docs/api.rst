@@ -48,7 +48,7 @@ Message Bus
 
    .. autoexception:: ExtraEmit
 
-   .. autoexception:: NotListenedWarning
+   .. autoexception:: NotListened
 
    .. autoexception:: UnboundEmitter
 
