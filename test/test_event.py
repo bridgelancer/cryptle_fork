@@ -1,4 +1,6 @@
 import inspect
+from functools import wraps
+
 import pytest
 
 import cryptle.event as event
@@ -6,6 +8,14 @@ import cryptle.event as event
 
 class CallbackReached(Exception):
     pass
+
+
+def reached(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        func(*args, **kwargs)
+        raise CallbackReached
+    return wrapper
 
 
 def test_empty_emit():
@@ -60,7 +70,30 @@ def test_bound_bus_bound_callback():
     assert len(bus._callbacks[evt]) == 1
 
 
-def test_unbound_callback_method_unbound_bus():
+def test_Bus_source_to_function():
+    bus = event.Bus()
+
+    @reached
+    @bus.source('test')
+    def test():
+        return 1
+
+    with pytest.raises(event.NotListenedWarning):
+        test()
+
+
+def test_Bus_on_to_function():
+    bus = event.Bus()
+
+    @reached
+    @bus.on('test')
+    def test(data):
+        pass
+
+    bus.emit('test', None)
+
+
+def test_unbound_on_method_unbound_bus():
     evt = 'test_event'
 
     class SMA:
@@ -99,10 +132,10 @@ def test_1_source_callback_combined_instance():
         def tick(self):
             return 1
 
+        @reached
         @event.on('tick')
         def recv(self, data):
             assert data == 1
-            raise CallbackReached
 
     ticker = Ticker()
     bus = event.Bus()
@@ -118,10 +151,10 @@ def test_1_source_instance_1_callback_instance():
             return val
 
     class Candle:
+        @reached
         @event.on('tick')
         def recv(self, data, expect=0):
             assert data == expect
-            raise CallbackReached
 
     ticker = Ticker()
     candle = Candle()

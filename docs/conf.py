@@ -8,33 +8,35 @@ project = 'Cryptle'
 author = 'CryptleFund'
 copyright = '2018, CryptleFund'
 
-version = '0.0'
+version = '0.9'
 release = '0'
+
 
 # General --------------------------------------------------------------------
 
+add_module_names = False
 master_doc = 'index'
+pygments_style = 'sphinx'
 source_suffix = '.rst'
+today_fmt = '%B %d, %Y'
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
 ]
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 autodoc_member_order = 'groupwise'
 
-today_fmt = '%B %d, %Y'
-add_module_names = False
-pygments_style = 'sphinx'
 
 # HTML -----------------------------------------------------------------------
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 html_last_updated_fmt = '%b %d, %Y'
-
-# Output file base name for HTML help builder.
 htmlhelp_basename = 'Cryptledoc'
+html_theme_options = {
+    'titles_only': False
+}
 
 
 # LaTeX ----------------------------------------------------------------------

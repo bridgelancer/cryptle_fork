@@ -30,6 +30,7 @@ Create and test a strategy with Cryptle::
             return price
 
     if __name__ == '__main__':
+        # ...Tood
         # ...do stuff
 
 
@@ -125,6 +126,8 @@ An asynchronous protocol could be implemented in the future.
 Datafeed
 --------
 
+Todo.
+
 
 .. _advanced:
 
@@ -181,3 +184,10 @@ multiple event names to a decorator.
 
     bus.emit('bar', data=2)
     assert test.data = 3  // True
+
+
+.. toctree::
+   :maxdepth: 2
+
+   self
+   api

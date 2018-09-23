@@ -50,76 +50,14 @@ class _Emitter:
 class Bus:
     """Event bus middleware.
 
-    This class allows wiring of function chains to be decoupled into events.
+    The purpose of an event bus is to decoupled hardcoded function chains into
+    modular components that are agnostic about the implementation and existance
+    of it's dependency.
     """
     # Todo: Allow removal of callback/emitter bindings.
     def __init__(self):
         self._callbacks = defaultdict(list)
         self._emitters  = defaultdict(list)
-
-    def emit(self, event, data):
-        """Directly emit events into the event bus."""
-
-        if event not in self._callbacks:
-            raise NotListenedWarning('No registered callbacks in this bus.')
-
-        for cb in self._callbacks[event]:
-            cb(data)
-
-    def on(self, event):
-        """Decorator global functions as bounded event callbacks.
-
-        The same callback can listen to multiple events.
-
-        Warning:
-            Does not work on instance methods. This is because without the use
-            of metaclasses, bound methods do not inherit the template function
-            of a class.
-        """
-        def decorator(func):
-            self.addListener(event, func)
-            return func
-        return decorator
-
-    def source(self, event):
-        """Decorator for global functions as bounded emitter function/methods.
-
-        When the decorated method is binded to a bus, the functions's return value
-        will be sent to the bus before being returned to the caller.
-
-        A source can only emit one event. Multiple buses may be bounded to a source.
-        When the source is called all binded buses will receive the event.
-
-        Note:
-            In use cases with multiple buses, the order that the buses receive the
-            event is in order that they were binded. This is an implementation
-            detail and is subject to change. Multi-thread usage is thus discouraged.
-
-        Warning:
-            Does not work on instance methods. This is because without the use
-            of metaclasses, bound methods do not inherit the template function
-            of a class.
-        """
-        def decorator(func):
-            self.addEmitter(event, func)
-            return emitter
-        return decorator
-
-    def addListener(self, event, func):
-        self._callbacks[event].append(func)
-
-    def addEmitter(self, event, func):
-        if isinstance(func, _Emitter):
-            if not func.event == event:
-                raise ExtraEmitError('An emitter may only emit one type of event.')
-            func.buses.append(self)
-            self._emitters[event].append(func)
-            return func
-
-        emitter = _Emitter(event, func)
-        emitter.buses.append(self)
-        self._emitters[event].append(emitter)
-        return emitter
 
     def bind(self, object):
         """Catch all method for binding objects, methods, or functions to the bus.
@@ -163,6 +101,71 @@ class Bus:
 
         if not decorated:
             raise ValueError('Object {} has no callbacks or emitters.'.format(object))
+
+    def emit(self, event, data):
+        """Directly emit events into the event bus."""
+
+        if event not in self._callbacks:
+            raise NotListenedWarning('No registered callbacks in this bus.')
+
+        for cb in self._callbacks[event]:
+            cb(data)
+
+    def on(self, event):
+        """Decorator for global functions as bound event callbacks.
+
+        The same callback can listen to multiple events. Callbacks must take a
+        single argument positional for the event data.
+
+        Warning:
+            Does not work on instance methods. This is because without the use
+            of metaclasses, bound methods do not inherit the template function
+            of a class.
+        """
+        def decorator(func):
+            self.addListener(event, func)
+            return func
+        return decorator
+
+    def source(self, event):
+        """Decorator for global functions as bound emitter function/methods.
+
+        When the decorated method is binded to a bus, the functions's return value
+        will be sent to the bus before being returned to the caller.
+
+        A source can only emit one event. Multiple buses may be bounded to a source.
+        When the source is called all binded buses will receive the event.
+
+        Note:
+            In use cases with multiple buses, the order that the buses receive the
+            event is in order that they were binded. This is an implementation
+            detail and is subject to change. Multi-thread usage is thus discouraged.
+
+        Warning:
+            Does not work on instance methods.
+        """
+        def decorator(func):
+            emitter = self.makeEmitter(event, func)
+            return emitter
+        return decorator
+
+    def addListener(self, event, func):
+        """Add the provided function to the list of listeners of the provided event."""
+        self._callbacks[event].append(func)
+
+    def makeEmitter(self, event, func):
+        """Return an emitter function binded to the caller bus."""
+        if isinstance(func, _Emitter):
+            if not func.event == event:
+                raise ExtraEmitError('An emitter may only emit one type of event.')
+            func.buses.append(self)
+            self._emitters[event].append(func)
+            return func
+
+        emitter = _Emitter(event, func)
+        emitter.buses.append(self)
+        self._emitters[event].append(emitter)
+        return emitter
 
 
 def on(event):
