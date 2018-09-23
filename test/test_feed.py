@@ -18,7 +18,6 @@ def test_bitstamp():
     time.sleep(5)
 
 
-
 def feed_bitfinex():
     def cb(msg):
         print(msg)

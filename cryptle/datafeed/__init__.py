@@ -49,3 +49,12 @@ class BitstampEmitter(BitstampFeed, DeferedSource):
         def _emit(data):
             return data
         self.on(event, _emit)
+
+
+class BitfinexEmitter(BitfinexFeed, DeferedSource):
+    """Simple wrapper around BitstampFeed to emit data into a bus."""
+    def broadcast(self, event):
+        @self.source(event)
+        def _emit(data):
+            return data
+        self.on(event, _emit)

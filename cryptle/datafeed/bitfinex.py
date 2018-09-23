@@ -49,13 +49,18 @@ def encode_event(msg: dict):
 
     # @Todo: Implement all events
     if name == 'trades':
-        event = 'trades:{}'.format(msg['symbol'])
+        symbol = msg['symbol'][1:].lower()
+        event  = 'trades:{}'.format(symbol)
+
     elif name == 'ticker':
-        pass
+        raise NotImplementedError
+
     elif name == 'book':
-        pass
+        raise NotImplementedError
+
     elif name == 'rawbook':
-        pass
+        raise NotImplementedError
+
     elif name == 'candles':
         _, symbol, period = msg['key'].split(':')
         event = 'candles:{}:{}'.format(symbol, period)
@@ -251,4 +256,8 @@ class BitfinexFeed:
         cid = msg.pop(0)
         event= self._id_event[cid]
         for cb in self._callbacks[event]:
-            cb(*msg)
+            # e.g. msg == ['tu', [<trade id>, <unixtime>, <volume>, <price>]]
+            if isinstance(msg[0], str):
+                cb(msg[1])
+            else:
+                cb(msg)
