@@ -10,8 +10,8 @@ from .exception import *
 BITSTAMP = 'bitstamp'
 BITFINEX = 'bitfinex'
 
-BITSTAMP_EMITTER = 'bitstamp_emitter'
-BITFINEX_EMITTER = 'bitfinex_emitter'
+BITSTAMP_FEED = 'bitstamp_feed'
+BITFINEX_FEED = 'bitfinex_feed'
 
 
 @contextlib.contextmanager
@@ -19,19 +19,18 @@ def connect(feed_name, *args, **kwargs):
     """Datafeed as context manager."""
     try:
         if feed_name == BITSTAMP:
-            feed = BitstampFeed()
+            feed = Bitstamp()
             feed.connect(*args, **kwargs)
 
         elif feed_name == BITFINEX:
-            feed = BitfinexFeed()
+            feed = Bitfinex()
             feed.connect(*args, **kwargs)
 
-        elif feed_name == BITSTAMP_EMITTER:
-            feed = BitstampEmitter(args.pop(0))
+        elif feed_name == BITSTAMP_FEED:
+            feed = BitstampFeed()
             feed.connect(*args, **kwargs)
 
-        elif feed_name == BITSTAMP_EMITTER:
-            # Todo_events
+        elif feed_name == BITFINEX_FEED:
             feed = BitfinexFeed()
             feed.connect(*args, **kwargs)
 
@@ -42,7 +41,7 @@ def connect(feed_name, *args, **kwargs):
         feed.close()
 
 
-class BitstampEmitter(BitstampFeed, DeferedSource):
+class Bitstamp(BitstampFeed, DeferedSource):
     """Simple wrapper around BitstampFeed to emit data into a bus."""
     def broadcast(self, event):
         @self.source(event)
@@ -51,7 +50,7 @@ class BitstampEmitter(BitstampFeed, DeferedSource):
         self.on(event, _emit)
 
 
-class BitfinexEmitter(BitfinexFeed, DeferedSource):
+class Bitfinex(BitfinexFeed, DeferedSource):
     """Simple wrapper around BitstampFeed to emit data into a bus."""
     def broadcast(self, event):
         @self.source(event)
