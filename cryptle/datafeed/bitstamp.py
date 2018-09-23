@@ -165,12 +165,20 @@ class BitstampFeed:
         if not self.connected:
             raise ConnectionClosed()
 
+        if not callable(cb):
+            raise TypeError('Expected 2nd argument to be callable')
+
         channel, event, *args = decode_event(event)
         if not channel in self._channels:
             self._subscribe(channel)
 
         self._callbacks[event].append(cb)
-        _log.info('Add callback <{}> to "{}"'.format(cb.__name__, event))
+        try:
+            # functions
+            _log.info('Add callback <{}> for event "{}"'.format(cb.__name__, event))
+        except AttributeError:
+            # functors
+            _log.info('Add callback {} for event "{}"'.format(repr(cb), event))
 
     # ----------
     # Outgoing messages complying to Pusher API
@@ -186,7 +194,6 @@ class BitstampFeed:
     def _pong(self):
         _log.info('Ping')
         self._send({'event': 'pusher:unsubscribe',  'data': {'channel': channel}})
-
 
     def _send(self, msg):
         """Low level method to send a websocket message.
