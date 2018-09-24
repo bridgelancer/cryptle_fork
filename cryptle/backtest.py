@@ -78,6 +78,7 @@ class Backtest:
 
     def __init__(self, exchange=None):
         self.exchange = exchange or PaperExchange()
+        self.ticks = None
 
     def run(self, strat, callback=None):
         """Run a tick strategy on the loaded dataset.
@@ -85,6 +86,9 @@ class Backtest:
         Args:
             callback: A function taking (price, volume, timestamp, action) as parameter
         """
+        if not tick:
+            raise ValueError('Expected dataset to be loaded, none found.')
+
         for tick in self.ticks:
             price, timestamp, volume, action= _unpack(tick)
             self.exchange.price = price

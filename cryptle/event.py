@@ -27,7 +27,7 @@ class _Emitter:
     """Functor descriptor for wrapper functions and instance methods into bindable emitters."""
     def __init__(self, event, func):
         if isinstance(func, self.__class__):
-            raise ExtraEmitError('An emitter may only emit one type of event.')
+            raise ExtraEmit('An emitter may only emit one type of event.')
         self.func = func
         self.buses = []
         self.event = event
@@ -166,7 +166,7 @@ class Bus:
         """Return an emitter function binded to the caller bus."""
         if isinstance(func, _Emitter):
             if not func.event == event:
-                raise ExtraEmitError('An emitter may only emit one type of event.')
+                raise ExtraEmit('An emitter may only emit one type of event.')
             func.buses.append(self)
             self._emitters[event].append(func)
             return func
