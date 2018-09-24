@@ -1,4 +1,4 @@
-.PHONY: doc awsdoc test
+.PHONY: doc awsdoc test clean lint
 
 doc:
 	@$(MAKE) -C docs html
@@ -6,7 +6,7 @@ doc:
 awsdoc: doc
 	@aws s3 sync ./docs/_build/html s3://cryptle-docs
 
-test: test-all
+test: test-all lint
 
 test-all:
 	@pytest
@@ -16,3 +16,9 @@ test-event:
 
 test-feed:
 	@pytest test/test_feed.py --rootdir=./
+
+lint:
+	@pylint cryptle
+
+clean:
+	rm -r **/__pycache__
