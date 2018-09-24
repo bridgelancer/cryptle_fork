@@ -11,25 +11,6 @@ from cryptle.strategy import Portfolio, Strategy
 import cryptle.loglevel
 
 
-formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')
-
-sh = logging.StreamHandler()
-sh.setLevel(logging.REPORT)
-sh.setFormatter(formatter)
-
-logger = logging.getLogger('Unittest')
-logger.setLevel(logging.DEBUG)
-logger.addHandler(sh)
-
-fh = logging.FileHandler('unittest.log', mode='w')
-fh.setLevel(logging.DEBUG)
-fh.setFormatter(formatter)
-
-crylog = logging.getLogger('Cryptle')
-crylog.setLevel(logging.INFO)
-crylog.addHandler(fh)
-
-
 # Unittest logging helpers
 RESET   = '\033[0m'
 COLOR   = '\033[%dm'
@@ -56,6 +37,9 @@ def FATAL(testname):
 # Unittest testsuite setup
 tests = []
 def unittest(func):
+    if __name__ != '__main__':
+        return func
+
     @wraps(func)
     def func_wrapper(*args, **kargs):
         try:
@@ -135,4 +119,22 @@ def test_exchange():
 
 
 if __name__ == '__main__':
+    formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')
+
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.REPORT)
+    sh.setFormatter(formatter)
+
+    logger = logging.getLogger('Unittest')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(sh)
+
+    fh = logging.FileHandler('unittest.log', mode='w')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+
+    crylog = logging.getLogger('Cryptle')
+    crylog.setLevel(logging.INFO)
+    crylog.addHandler(fh)
+
     run_all_tests()

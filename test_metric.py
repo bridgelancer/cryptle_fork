@@ -11,22 +11,6 @@ from metric.candle import *
 from metric.generic import *
 
 
-formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')
-
-sh = logging.StreamHandler()
-sh.setLevel(logging.INFO)
-sh.setFormatter(formatter)
-
-fh = logging.FileHandler('unittest.log', mode='w')
-fh.setLevel(logging.DEBUG)
-fh.setFormatter(formatter)
-
-logger = logging.getLogger('Unittest')
-logger.setLevel(logging.DEBUG)
-logger.addHandler(sh)
-logger.addHandler(fh)
-
-
 # Unittest logging helpers
 RESET   = '\033[0m'
 COLOR   = '\033[%dm'
@@ -53,6 +37,9 @@ def FATAL(testname):
 # Unittest testsuite setup
 tests = []
 def unittest(func):
+    if __name__ != '__main__':
+        return func
+
     @wraps(func)
     def func_wrapper(*args, **kargs):
         try:
@@ -377,4 +364,19 @@ def test_candle_diffMACD():
     assert diff.diff - (-105.175) < 1e-5
 
 if __name__ == '__main__':
+    formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')
+
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.INFO)
+    sh.setFormatter(formatter)
+
+    fh = logging.FileHandler('unittest.log', mode='w')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+
+    logger = logging.getLogger('Unittest')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(sh)
+    logger.addHandler(fh)
+
     run_all_tests()
