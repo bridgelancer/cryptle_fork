@@ -38,7 +38,7 @@ def connect(feed_name, *args, **kwargs):
             raise ValueError('No datafeed named {}'.format(feed_name))
         yield feed
     finally:
-        feed.close()
+        feed.disconnect()
 
 
 class Bitstamp(BitstampFeed, DeferedSource):
