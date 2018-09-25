@@ -97,7 +97,24 @@ class DeltaStrat(Strategy):
                     s.rsi_signal
                     and s.dlc_signal
                ):
+                s.buy_amount = s.maxBuyAmount
                 s.marketBuy(s.maxBuyAmount)
+                s.buy_price = price
+                s.buy_time = timestamp
+                s.was_stoploss = False
+                s.reset_params()
+            elif(
+                    s.rsi_signal
+                    and s.dlc_signal
+                    and s.screened
+                    and not s.hasBalance
+                ):
+                s.buy_amount = s.maxBuyAmount * 0.00000001
+                s.marketBuy(s.maxBuyAmount*0.00000001)
+                logger.signal('Screened')
+                s.buy_price = price
+                s.buy_time = timestamp
+                s.was_stoploss = False
                 s.reset_params()
 
         elif s.hasBalance:
@@ -109,7 +126,54 @@ class DeltaStrat(Strategy):
             elif not s.rsi_signal and not s.dlc_signal:
                 s.marketSell(s.maxSellAmount)
                 s.reset_params()
-                logger.signal('Sell: RSI + MACD')
+                logger.metric('Percent gain: {}'.format((price/s.buy_price -1) * 100))
+                logger.signal('Sell: RSI')
+                s.buy_price = None
+                s.buy_time = None
+                s.buy_amount = None
+
+            if s.trailing_stop and not s.was_triggered:
+                print("Trigger time: {}".format(datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')))
+                print("BOLLINGER: buy: {}, current:{}, stoploss: {}".format(s.buy_price, price,
+                    s.stoploss_level))
+                try:
+                    s.marketSell(float(s.buy_amount * 0.3))
+                    logger.metric('Percent gain: {}'.format((price/s.buy_price -1) * 100))
+                except Exception as e:
+                    print(e)
+                    s.marketSell(s.maxSellAmount * 0.999)
+                    logger.metric('Percent gain: {}'.format((price/s.buy_price -1) * 100))
+                logger.signal('Sell: Bollinger trailing stop')
+
+                s.prev_triggered_time = s.triggered_time
+                s.was_triggered = True
+                s.triggered_time = None
+                s.triggered_current = None
+                s.stoploss_level = None
+            #if s.dido and not s.was_dido:
+                #s.marketSell(s.maxSellAmount * 0.5)
+                #logger.signal('Scale off: DIDO')
+                ## need to flag this
+                #s.was_dido = True
+                #s.dido_time = timestamp
+
+            # scaling off after 1% gain to recover commission, only execute once per trade
+            #if s.hasBalance and s.margin and not s.was1p:
+                #s.marketSell(s.maxSellAmount * 0.999)
+                #logger.signal('Scale off: commission recovered')
+                #s.was1p = True
+
+            # stop loss if the position is down by 2%
+            #if s.hasBalance and s.stoploss and not s.was_stoploss:
+                #s.marketSell(s.maxSellAmount * 0.999)
+                #logger.signal('Stop loss')
+                #s.was_stoploss = True
+                #s.reset_params()
+
+            #if s.hasBalance and s.singular and not s.was_singular:
+            #    s.marketSell(s.maxSellAmount * 0.5)
+            #    logger.signal('Benefit Reaped')
+            #    s.was_singular = True
 
     def reset_params(s):
         s.rsi_sell_flag = False
