@@ -7,16 +7,16 @@ from threading import Thread
 
 import requests as req
 
+from .exception import ExchangeError, OrderError
+
 
 _LOG = logging.getLogger(__name__)
 
 
-class ExchangeError(Exception):
-    pass
-
-
-class OrderError(ExchangeError):
-    pass
+try:
+    import cryptle.event as event
+except ImportError as e:
+    _LOG.error('{}', e)
 
 
 def _log_http_error(res):
@@ -36,7 +36,7 @@ def _log_http_error(res):
     _LOG.error(msg + '\n' + res.text)
 
 
-def _encode_pair(asset, base_currency):
+def encode_pair(asset, base_currency):
     """Format a traded asset/base_currency pair into bitstamp representation"""
     return asset + base_currency
 
@@ -68,20 +68,27 @@ class Bitstamp:
         self.secret = secret
         self.id = customer_id
 
+        self.poll_rate = 5
+        self.polling = False
+        self._polling_thread = None
+        self._open_orders = set()
+
     # ----------
     # Public Functions (Mapping of API call)
     # ----------
     def getTicker(self, asset, base_currency):
         """Get ticker snapshot."""
         endpoint = '/ticker/'
-        return self._get(endpoint + encode_pair(asset, base_currency))
+        return self._public(endpoint + encode_pair(asset, base_currency))
 
     def getOrderbook(self, asset, base_currency):
         """Get orderbook snapshot."""
         endpoint = '/order_book/'
-        return self._get(endpoint + encode_pair(asset, base_currency))
+        return self._public(endpoint + encode_pair(asset, base_currency))
 
-    # [Private Functions]
+    # ----------
+    # Private Functions
+    # ----------
     def getBalance(self, asset='', base_currency=''):
         """Get account balance from bitstamp.
 
@@ -94,9 +101,9 @@ class Bitstamp:
             The full balance, keyed by asset names
 
         Raises:
-            ConnectionError: For non 200 HTTP status code, raised by _post()
+            ConnectionError: For non 200 HTTP status code, raised by _private()
         """
-        res = self._post('/balance/' + encode_pair(asset, base_currency))
+        res = self._private('/balance/' + encode_pair(asset, base_currency))
 
         if self.hasBitstampError(res):
             _LOG.error('Balance request failed')
@@ -105,7 +112,7 @@ class Bitstamp:
         return decode_balance(res)
 
     def getOrderStatus(self, order_id):
-        res = self._post('/order_status/', params={'id': order_id})
+        res = self._private('/order_status/', params={'id': order_id})
 
         if self.hasBitstampError(res):
             _LOG.error('Open orders request failed')
@@ -114,7 +121,7 @@ class Bitstamp:
         return res
 
     def getOpenOrders(self, asset='all/', base_currency='usd'):
-        res = self_post('/open_orders/' + encode_pair(asset, base_currency))
+        res = self_private('/open_orders/' + encode_pair(asset, base_currency))
 
         if self.hasBitstampError(res):
             _LOG.error('Open orders request failed')
@@ -146,7 +153,7 @@ class Bitstamp:
             amount: Number of assets to buy
 
         Raises:
-            ConnectionError: For non 200 HTTP status code, raised by _post()
+            ConnectionError: For non 200 HTTP status code, raised by _private()
             OrderError: If bitsatmp respone contains {'status': error}
         """
         params = {
@@ -154,7 +161,7 @@ class Bitstamp:
         }
 
         endpoint = '/buy/market/'
-        res = self._post(endpoint + encode_pair(asset, currency), params=params)
+        res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
             _LOG.error('Market buy {} failed: {}'.format(asset.upper(), res['reason']))
@@ -172,7 +179,7 @@ class Bitstamp:
             amount: Number of assets to sell
 
         Raises:
-            ConnectionError: For non 200 HTTP status code, raised by _post()
+            ConnectionError: For non 200 HTTP status code, raised by _private()
             OrderError: If bitsatmp respone contains {'status': error}
         """
         params = {
@@ -180,7 +187,7 @@ class Bitstamp:
         }
 
         endpoint = '/sell/market/'
-        res = self._post(endpoint + encode_pair(asset, currency), params=params)
+        res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
             _LOG.error('Market sell {} failed: {}'.format(asset.upper(), res['reason']))
@@ -199,7 +206,7 @@ class Bitstamp:
             price: Price (in base currency) for the order to be placed
 
         Raises:
-            ConnectionError: For non 200 HTTP status code, raised by _post()
+            ConnectionError: For non 200 HTTP status code, raised by _private()
             OrderError: If bitsatmp respone contains {'status': error}
 
         Note:
@@ -212,13 +219,14 @@ class Bitstamp:
         }
 
         endpoint = '/buy/'
-        res = self._post(endpoint + encode_pair(asset, currency), params=params)
+        res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
             _LOG.error('Limit buy {} failed: {}'.format(asset.upper(), res['reason']))
             raise OrderError
 
         res['timestamp'] = now()
+        self._open_orders.add(res['id'])
         return res
 
     def limitSell(self, asset, currency, amount, price):
@@ -231,7 +239,7 @@ class Bitstamp:
             price: Price (in base currency) for the order to be placed
 
         Raises:
-            ConnectionError: For non 200 HTTP status code, raised by _post()
+            ConnectionError: For HTTP non 200 status code
             OrderError: If bitsatmp respone contains {'status': error}
 
         Note:
@@ -244,27 +252,42 @@ class Bitstamp:
         }
 
         endpoint = '/sell/'
-        res = self._post(endpoint + encode_pair(asset, currency), params=params)
+        res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
             _LOG.error('Limit sell {} failed: {}'.format(asset.upper(), res['reason']))
             raise OrderError
 
         res['timestamp'] = now()
+        self._open_orders.add(res['id'])
         return res
 
     def cancelOrder(self, order_id):
-        """Cancel an open limit order"""
-        return self._post('/cancel_order/', params={'id': order_id})
+        """Cancel an open limit order."""
+        self._open_orders.add(res['id'])
+        return self._private('/cancel_order/', params={'id': order_id})
 
     def cancnelAllOrder(self):
-        """Cancel all open order"""
-        return self._post('/cancel_all_orders/')
+        """Cancel all open order."""
+        return self._private('/cancel_all_orders/')
+
+    def orderStatus(self, oid):
+        """Return the status of the provided limit order."""
+        return self._private('/order_status/', params={'id': oid})
+
+    def poll(self):
+        if not self.key or not self.secret or not self.id:
+            raise ValueError('Invalid state, need account details to call private API.')
+
+        self.polling = True
+        self._polling_thread = Thread(target=self._pollForever)
+        self._polling_thread.setDaemon(True)
+        self._polling_thread.start()
 
     # ----------
     # Low level HTTP request
     # ----------
-    def _get(self, endpoint):
+    def _public(self, endpoint):
         """Send GET request to bitstamp. Return python dict."""
 
         url = self.url + endpoint
@@ -279,11 +302,10 @@ class Bitstamp:
         res = json.loads(res.text)
         return res
 
-    def _post(self, endpoint, params=None):
+    def _private(self, endpoint, **params):
         """Send POST request to bitstamp. Return python dict."""
 
-        params = params or {}
-        params = {**self._authParams(), **params}
+        params.update(self._authParams())
         url = self.url + endpoint
 
         _LOG.debug('Sending POST request: ' + url)
@@ -314,6 +336,22 @@ class Bitstamp:
                 digestmod=hashlib.sha256
         ).hexdigest().upper()
         return signature
+
+    # ----------
+    # Low level HTTP polling
+    # ----------
+    def _poll_forever(self):
+        while True and self.polling:
+            for order in self._open_orders:
+                res = self._private('/order_status/', params={'id': order})
+                if res['status'] == 'finished':
+                    self._announce_orderfilled(order)
+                    self._open_orders.remove(order)
+            sleep(self.poll_rate)
+
+    @event.source('orderfilled')
+    def _announce_orderfilled(self, oid):
+        return oid
 
     @staticmethod
     def hasBitstampError(res):

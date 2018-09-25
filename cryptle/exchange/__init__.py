@@ -1,6 +1,2 @@
-import logging
-
-from .exchange import *
-
-
-_log = logging.getLogger(__name__)
+from .bitstamp import Bitstamp
+from .exception import ExchangeError, OrderError
