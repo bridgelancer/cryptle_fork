@@ -4,6 +4,7 @@ from cryptle.strategy import *
 from cryptle.event import source, on, Bus
 from cryptle.registry import Registry
 from cryptle.loglevel import *
+from cryptle.aggregator import Aggregator
 
 from functools import wraps
 import logging
@@ -15,93 +16,18 @@ import log
 import pandas as pd
 
 
-formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')
-
-sh = logging.StreamHandler()
-sh.setLevel(logging.REPORT)
-sh.setFormatter(formatter)
-
-logger = logging.getLogger('Unittest')
-logger.setLevel(logging.DEBUG)
-logger.addHandler(sh)
-
-fh = logging.FileHandler('unittest.log', mode='w')
-fh.setLevel(logging.DEBUG)
-fh.setFormatter(formatter)
-
-crylog = logging.getLogger('Cryptle')
-crylog.setLevel(logging.INFO)
-crylog.addHandler(fh)
+logging.basicConfig(level=logging.DEBUG)
 
 
-# Unittest logging helpers
-RESET   = '\033[0m'
-COLOR   = '\033[%dm'
-DIM     = '\033[%d;2m'
-BOLD    = '\033[01;%dm'
-RED     = BOLD % 31
-YELLOW  = BOLD % 33
-GREEN   = COLOR % 32
-GREY    = COLOR % 90
-
-
-def PASS(testname):
-    logger.report(GREEN + 'Passed ' + GREY + testname + RESET)
-
-
-def FAIL(testname):
-    logger.report(YELLOW + 'Failed ' + RESET + testname)
-
-
-def FATAL(testname):
-    logger.report(RED + 'ERROR  ' + RESET + testname)
-
-
-# Unittest testsuite setup
-tests = []
-def unittest(func):
-    @wraps(func)
-    def func_wrapper(*args, **kargs):
-        try:
-            func(*args, **kargs)
-            PASS(func.__name__)
-        except AssertionError:
-            _, _, tb = sys.exc_info()
-            tb_info = traceback.extract_tb(tb)
-            _, line, _, text = tb_info[-1]
-            FAIL('{}: Line {}: {}'.format(func.__name__, line, text))
-        except Exception as e:
-            FATAL('{}: {}: {}'.format(func.__name__, type(e).__name__, e))
-    tests.append(func_wrapper)
-    return func_wrapper
-
-
-def run_all_tests(dataset):
-    global tests
-    for test in tests:
-        test(dataset)
-
-
-class DummyStrat(Strategy):
-    def __init__(s, **kws):
-        s.indicators = {}
-        super().__init__(**kws)
-
-    def generateSignal(s, price, ts, volume, action):
-        pass
-
-    def execute(s, ts):
-        pass
-
-@unittest
-def test_registry_construction(dataset):
+def test_registry_construction():
+    dataset = pd.read_csv(open('bitstamp.csv'))
     setup = {"testrun": [['open'], ['once per bar']], "testrun2": [['close'],['once per trade']]} # key value pairs that signify the constraints of each type of action
     registry = Registry(setup)
     assert registry.__dict__['setup'] == setup
 
 # only activate when it is bar close
-@unittest
-def test_on_close(dataset):
+def test_on_close():
+    dataset = pd.read_csv(open('bitstamp.csv'))
     setup = {'close': [['open'], ['once per bar']]}
     registry = Registry(setup)
 
@@ -117,8 +43,8 @@ def test_on_close(dataset):
     assert registry.close_price == 6453.99
 
 # only activate when it is bar open
-@unittest
-def test_on_open(dataset):
+def test_on_open():
+    dataset = pd.read_csv(open('bitstamp.csv'))
     setup = {'close': [['open'], ['once per bar']]}
     registry = Registry(setup)
 
@@ -133,50 +59,86 @@ def test_on_open(dataset):
         parseOpen(value)
     assert registry.open_price == 6375.11
 
-@unittest
-def test_on_tick(dataset):
+def test_on_tick():
     setup = {'close': [['open'], ['once per bar']]}
     registry = Registry(setup)
-
-    tickset = pd.read_json(open('bch.log'), convert_dates=False, lines=True)
+    tickset = pd.read_json(open('bch1.log'), convert_dates=False, lines=True)
     @source('tick')
-    def parseTick(val):
-        return val
+    def emitTick(tick):
+        return tick
 
     bus = Bus()
-    bus.bind(parseTick)
+    bus.bind(emitTick)
     bus.bind(registry)
-    for value in tickset['price']:
-        parseTick(value)
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
     assert registry.current_price == 995.0
 
-# only activate once per bar
-@unittest
-def test_once_per_bar(dataset):
-    setup = {'2kprice': [['open'], ['once per bar']]}
-    registry = Registry(setup)
-
-    tickset = pd.read_json(open('bch.log'), convert_dates=False, lines=True)
+# this works, only because of not listening to 'aggregator:new_candle'
+def test_aggregator():
+    aggregator = Aggregator(3600)
+    tickset = pd.read_json(open('bch1.log'), convert_dates=False, lines=True)
     @source('tick')
-    def parseTick(val):
-        return val
+    def emitTick(tick):
+        return tick
 
     bus = Bus()
-    bus.bind(parseTick)
+    bus.bind(emitTick)
+    bus.bind(aggregator)
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
+
+    assert(aggregator._bars[-1] == [float(1013.94), float(995.0), float(1014.94), float(995.0),
+        float(1518066000.0), float(0.11807207), float(0.0)])
+
+# only activate once per bar
+def test_once_per_bar():
+    setup = {'twokprice': [['open'], ['once per bar']]}
+    registry = Registry(setup)
+    aggregator = Aggregator(3600)
+
+    tickset = pd.read_json(open('bch1.log'), convert_dates=False, lines=True)
+    @source('tick')
+    def emitTick(tick):
+        return tick
+
+    #@on('tick')
+    #def testOn(data):
+    #    print(data)
+    @source('strategy:triggered')
+    def triggered():
+        return 'triggered'
+
+    @on('registry:execute')
+    def twokprice(data):
+        if data == "twokprice":
+            if current_price > 2000:
+                triggered()
+
+
+    bus = Bus()
+    bus.bind(emitTick)
     bus.bind(registry)
-    for value in tickset['price']:
-        parseTick(value)
+    bus.bind(aggregator)
+    bus.bind(twokprice)
+    #bus.bind(testOn)
+    bus.bind(triggered)
+
+    current_price = None
+
+
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
+        current_price = tick['price']
 
 # only exit at most n times per position
-@unittest
-def test_n_exits_per_trade(dataset):
+def test_n_exits_per_trade():
     pass
 
 # do not do anything before the screened position is closed
-@unittest
-def test_screened(dataset):
+def test_screened():
     pass
 
-if __name__ == "__main__":
-    dataset = pd.read_csv(open('bitstamp.csv'))
-    run_all_tests(dataset)
