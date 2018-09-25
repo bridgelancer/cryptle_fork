@@ -49,17 +49,20 @@ class Registry:
                                'once per trade': self.once_per_trade,}
         self.open_price = None
         self.close_price = None
+        self.current_price = None
 
 
     @on('tick')
-    def refreshTick(self):
+    def refreshTick(self, price):
         self.new_open = False
         self.new_close = False
+        self.current_price = price
 
     @on('open')
-    def refreshOpen(self):
+    def refreshOpen(self, price):
         self.new_open = True
         self.num_bars += 1
+        self.open_price = price
 
     @on('close')
     def refreshClose(self, price):
@@ -76,7 +79,7 @@ class Registry:
 
     # This handles all the execution of tests at appropriate time
     @on('tick')
-    def handleCheck(self):
+    def handleCheck(self, price):
         setup = self.setup
         for key in setup.keys():
             # all items in setup[key][0] should be parsed to corresponding handle nested function in

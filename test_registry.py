@@ -114,8 +114,7 @@ def test_on_close(dataset):
     bus.bind(registry)
     for value in dataset['close']:
         parseClose(value)
-
-    print(registry.close_price)
+    assert registry.close_price == 6453.99
 
 # only activate when it is bar open
 @unittest
@@ -123,11 +122,50 @@ def test_on_open(dataset):
     setup = {'close': [['open'], ['once per bar']]}
     registry = Registry(setup)
 
+    @source('open')
+    def parseOpen(val):
+        return val
+
+    bus = Bus()
+    bus.bind(parseOpen)
+    bus.bind(registry)
+    for value in dataset['open']:
+        parseOpen(value)
+    assert registry.open_price == 6375.11
+
+@unittest
+def test_on_tick(dataset):
+    setup = {'close': [['open'], ['once per bar']]}
+    registry = Registry(setup)
+
+    tickset = pd.read_json(open('bch.log'), convert_dates=False, lines=True)
+    @source('tick')
+    def parseTick(val):
+        return val
+
+    bus = Bus()
+    bus.bind(parseTick)
+    bus.bind(registry)
+    for value in tickset['price']:
+        parseTick(value)
+    assert registry.current_price == 995.0
 
 # only activate once per bar
 @unittest
 def test_once_per_bar(dataset):
-    pass
+    setup = {'2kprice': [['open'], ['once per bar']]}
+    registry = Registry(setup)
+
+    tickset = pd.read_json(open('bch.log'), convert_dates=False, lines=True)
+    @source('tick')
+    def parseTick(val):
+        return val
+
+    bus = Bus()
+    bus.bind(parseTick)
+    bus.bind(registry)
+    for value in tickset['price']:
+        parseTick(value)
 
 # only exit at most n times per position
 @unittest
