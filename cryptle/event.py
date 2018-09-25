@@ -56,7 +56,7 @@ class Bus:
 
     The purpose of an event bus is to decoupled hardcoded function chains into
     modular components that are agnostic about the implementation and existance
-    of it's dependency.
+    of its dependency.
     """
     # Todo: Allow removal of callback/emitter bindings.
     def __init__(self):
@@ -114,7 +114,8 @@ class Bus:
         """Directly emit events into the event bus."""
 
         if event not in self._callbacks:
-            raise NotListened('No registered callbacks for "{}" in this bus.'.format(event))
+            pass
+            #raise NotListened('No registered callbacks for "{}" in this bus.'.format(event))
 
         for cb in self._callbacks[event]:
             cb(data)
