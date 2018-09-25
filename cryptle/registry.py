@@ -84,7 +84,6 @@ class Registry:
         self.bars.append(bar)
 
     # This handles all the execution of tests at appropriate time
-
     @source('registry:execute')
     def check(self, key, whenexec):
         if all(self.lookup_check[constraint] for constraint in whenexec) and \
