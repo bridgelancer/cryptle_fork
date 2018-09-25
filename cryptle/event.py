@@ -1,5 +1,6 @@
 import inspect
 import logging
+import threading
 from functools import wraps
 from collections import defaultdict
 
@@ -116,8 +117,9 @@ class Bus:
         if event not in self._callbacks:
             raise NotListened('No registered callbacks for "{}" in this bus.'.format(event))
 
-        for cb in self._callbacks[event]:
-            cb(data)
+        with threading.Lock():
+            for cb in self._callbacks[event]:
+                cb(data)
 
     def on(self, event):
         """Decorator for global functions as bound event callbacks.
