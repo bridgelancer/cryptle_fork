@@ -50,13 +50,15 @@ class Registry:
         self.open_price = None
         self.close_price = None
         self.current_price = None
+        self.bars = []
+        self.eventName = None
 
 
     @on('tick')
-    def refreshTick(self, price):
+    def refreshTick(self, tick):
         self.new_open = False
         self.new_close = False
-        self.current_price = price
+        self.current_price = tick[0]
 
     @on('open')
     def refreshOpen(self, price):
@@ -77,20 +79,39 @@ class Registry:
     def refreshSell(self):
         self.sell_count += 1
 
+    @on('aggregator:new_candle')
+    def refreshCandle(self, bar):
+        self.bars.append(bar)
+
     # This handles all the execution of tests at appropriate time
+
+    @source('registry:execute')
+    def check(self, key, whenexec):
+        if all(self.lookup_check[constraint] for constraint in whenexec) and \
+           self.logic_status[key] == []: # now only works if no constraint is placed
+            return str(key)
+
     @on('tick')
-    def handleCheck(self, price):
+    def handleCheck(self, tick):
         setup = self.setup
         for key in setup.keys():
             # all items in setup[key][0] should be parsed to corresponding handle nested function in
             # checkXXX function
-            eventName = 'registry:'+ str(key)
-            @source(eventName)
-            def check(whenexec):
-                if all(self.lookup_check[constraint] for constraint in whenexec) and \
-                   self.logic_status[key] == []: # now only works if no constraint is placed
-                    return 'execute'
-            check(setup[key][0])
+            self.check(key, setup[key][0])
+
+#
+#    class FOO(Strategy):
+#        check = [....]
+#        def check_RSI(self,):
+#            if RSI > 50:
+#                ...
+#            else:
+#                self.annoucne()
+#
+#        @source(event)
+#        def announce(self):
+#            return w/e
+#
 
     # This handles all the triggered tests and apply suitable constraints via constraint functions
     @on('strategy:triggered')
@@ -108,7 +129,6 @@ class Registry:
         # unless an explicit reversal is conveyed to the Registry, or a new bar is due.
 
         self.logic_status[action].append('once per bar')
-
 
     def once_per_trade(self, action):
         # This funciton should be invoked if any aciton setup pair in self.setup has been
