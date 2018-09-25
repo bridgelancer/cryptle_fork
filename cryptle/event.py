@@ -215,6 +215,15 @@ def source(event):
 
 
 class DeferedSource:
+    """Mixin class that enables binded objects to emit custom events at runtime.
+
+    class A(DeferedSource):
+        def emit_custom_event(self, event, data):
+            @self.source(event)
+            def _():
+                return data
+            _()
+    """
     def source(self, event):
         def wrapper(method):
             try:
