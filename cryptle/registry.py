@@ -2,42 +2,23 @@ from cryptle.event import source, on
 
 class Registry:
     '''Registry class that keeps record of the various important state information for the Strategy
-    class.
-
-    Registry is also responsible for dispatching Events that signifiy the execution of logical tests
+    class. Registry is also responsible for dispatching Events that signifiy the execution of logical tests
     at desired time and frequency as time elapsed.
 
-    These functionality are achieved by three distinct types of functions within the Registry. The
-    first type of functions handles market events (e.g. new bar, new tick, new open, new close).
-    These maintain a valid state for the strategy and form the basis of the Registry class.
+    Args:
+        setup (Dictionary): {'actionname': [[whenexec], [constraints after triggered]]}
 
-    The registry also holds functions that keep track of the orders that were placed by Strategy (or
-    in the future, any OrderBook or equivalent). This allows the strategy to know the state of
-    orders that it has placed previously and react accordingly.
-
-    In order to streamline the process of generating valid logical tests for determining appropriate
-    entries and exits based on any metric, the Registry is also responsible for regulating the
-    execution of these logic tests at appropriate time. This is achieved by utilizing the state
-    storing capacity of the Registry and the interaction between the Strategy and Registry class via
-    the new EventBus architecture.
-
-    In most of the cases, the logical tests of a bar-based strategy should not be indefinitely
-    executable within the same bar. In the old Strategy implementation, this behaviour is achieved
-    by creating flags held by the strategy class itself. This paradigm has proven to be useful in
-    the development of simple strategy. However, as Cryptle progresses, the excessive flags and
-    logic within the Strategy makes development hard and the code base unmaintainable.
-
-    In view of these challenges, Registry would dictate when these logical tests should execute. The logical
-    tests of the Strategy class should only execute when they receive their corresponding "registry:test" signals.
-    Signals are "triggered" if their test return True. In this situation, triggered tests should generate a
+    Registry would dictate when these logical tests should execute. The logical tests of the Strategy class
+    should only execute when they receive their corresponding "registry:test" signals. Signals
+    are "triggered" if their test return True. In this situation, triggered tests should generate a
     "strategy:triggered" event with its name (in string) as the associated value.
 
     '''
     def __init__(self, setup):
-        self.setup = setup # setup should have str(actioname) as keys and a list of two lists as
-                           # values {'actioname': [[argv to indicate when to execute],[constraints
-                           # after being triggered]]
-        self.logic_status = {key: [] for key in setup.keys()}
+        self.setup = setup
+        self.logic_status = {key: [] for key in setup.keys()} # this holds runtime after triggered
+                                                              # states of actions
+
         # bar-related states that should be source by aggregator
         self.open_price = None
         self.close_price = None
