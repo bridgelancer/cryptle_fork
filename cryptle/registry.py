@@ -6,7 +6,7 @@ class Registry:
     at desired time and frequency as time elapsed.
 
     Args:
-        setup (Dictionary): {'actionname': [[whenexec], [constraints after triggered]]}
+        setup (Dictionary): {'actionname': [[whenexec], {constraints after triggered}]}
 
     Registry would dictate when these logical tests should execute. The logical tests of the Strategy class
     should only execute when they receive their corresponding "registry:test" signals. Signals
@@ -16,7 +16,7 @@ class Registry:
     '''
     def __init__(self, setup):
         self.setup = setup
-        self.logic_status = {key: [] for key in setup.keys()} # this holds runtime after triggered
+        self.logic_status = {key: [[], {}] for key in setup.keys()} # this holds runtime after triggered
                                                               # states of actions
 
         # bar-related states that should be source by aggregator
@@ -35,7 +35,9 @@ class Registry:
         self.lookup_check   = {'open': self.new_open,
                                'close': self.new_close,}
         self.lookup_trigger = {'once per bar': self.once_per_bar,
-                               'once per trade': self.once_per_trade,}
+                               'once per trade': self.once_per_trade,
+                               'n per bar': self.n_per_bar,
+                               'n per trade': self.n_per_trade,}
 
     # refresh Functions to maintain correct states
     @on('tick') # tick should be fairly agnostic to sources, but should hold predefined format
@@ -69,10 +71,12 @@ class Registry:
         self.bars.append(bar)
         # this removes all the 'once per bar' constraint for every action
         for key in self.logic_status.keys():
-            lst = self.logic_status[key]
-            if 'once per bar' in lst:
-                lst.pop(lst.index('once per bar'))
-
+            once = self.logic_status[key][0]
+            multi = self.logic_status[key][1]
+            if 'once per bar' in once:
+                once.pop(once.index('once per bar'))
+            if 'n per bar' in multi.keys():
+                del multi['n per bar']
     # emitExecute push execute Event to Bus
     @source('registry:execute')
     def emitExecute(self, key):
@@ -90,29 +94,40 @@ class Registry:
     # self.setup, it should also check whether any triggered constraint is currently in
     # place, source a "registry:execute" event when all are triggered
     def check(self, key, whenexec):
-        if all(self.lookup_check[constraint] for constraint in whenexec) and \
-           self.logic_status[key] == []: # now only works if no constraint is placed
+        key_constr = self.logic_status[key]
+        if (all(self.lookup_check[constraint] for constraint in whenexec) and
+            key_constr[0] == [] and
+            all(key_constr[1][constraint] != 0 for constraint in key_constr[1].keys())): # now only works if no constraint is placed
                self.emitExecute(key)
 
     # This handles all the triggered tests and apply suitable constraints via constraint functions
     @on('strategy:triggered')
     def handleTrigger(self, action):
-        for item in self.setup[action][1]:
+        for item in self.setup[action][1][0]:
             constraint = self.lookup_trigger[item]
             constraint(action)
+        for item in self.setup[action][1][1].keys():
+            constraint = self.lookup_trigger[item]
+            constraint(action, self.setup[action][1][1][item])
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
     def once_per_bar(self, action):
-        self.logic_status[action].append('once per bar')
+        self.logic_status[action][0].append('once per bar')
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
     def n_per_bar(self, action, n):
-        self.logic_status[action].append('n per bar')
+        if 'n per bar' not in self.logic_status[action][1]:
+            self.logic_status[action][1]['n per bar'] = n
+        else:
+            self.logic_status[action][1]['n per bar'] -= 1
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
     def once_per_trade(self, action):
-        self.logic_status[action].append('once per trade')
+        self.logic_status[action][0].append('once per trade')
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
     def n_per_trade(self, action, n):
-        self.logic_status[action].append('n per trade')
+        if 'n per trade' not in self.logic_status[action][1]:
+            self.logic_status[action][1]['n per trade'] = n
+        else:
+            self.logic_status[action][1]['n per trade'] -= 1

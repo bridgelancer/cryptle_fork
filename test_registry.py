@@ -31,7 +31,7 @@ def test_registry_construction():
 
 # only activate when it is bar close
 def test_on_close():
-    setup = {'close': [['open'], ['once per bar']]}
+    setup = {'close': [['open'], [['once per bar'], {}]]}
     registry = Registry(setup)
 
     @source('close')
@@ -47,7 +47,7 @@ def test_on_close():
 
 ## only activate when it is bar open
 def test_on_open():
-    setup = {'close': [['open'], ['once per bar']]}
+    setup = {'close': [['open'], [['once per bar'],{}]]}
     registry = Registry(setup)
 
     @source('open')
@@ -62,7 +62,7 @@ def test_on_open():
     assert registry.open_price == 6375.11
 
 def test_on_tick():
-    setup = {'close': [['open'], ['once per bar']]}
+    setup = {'close': [['open'], [['once per bar'], {}]]}
     registry = Registry(setup)
     @source('tick')
     def emitTick(tick):
@@ -92,7 +92,7 @@ def test_aggregator():
 
 
 def test_handleTrigger():
-    setup = {'twokprice': [['open'], ['once per bar', 'once per trade']]}
+    setup = {'twokprice': [['open'], [['once per bar', 'once per trade'], {}]]}
     registry = Registry(setup)
 
     @source('strategy:triggered')
@@ -104,12 +104,12 @@ def test_handleTrigger():
     bus.bind(registry)
 
     emitTrigger()
-    assert registry.logic_status == {'twokprice': ['once per bar', 'once per trade']}
+    assert registry.logic_status == {'twokprice': [['once per bar', 'once per trade'], {}]}
 
 # this also implicitly tested once per bar function, verify by using -s flag to observe the print
 # behaviour
 def test_executeAfterTrigger():
-    setup = {'twokprice': [[], ['once per bar']]}
+    setup = {'twokprice': [[], [['once per bar'], {}]]}
     registry = Registry(setup)
     aggregator = Aggregator(3600)
 
@@ -120,14 +120,14 @@ def test_executeAfterTrigger():
 
     # emit Trigger to enforce post-triggered restraints
     @source('strategy:triggered')
-    def emitTrigger(eventName):
-        return eventName
+    def emitTrigger():
+        return 'twokprice'
 
     # client code that mimics that actual logic tests implemented in Strategy instance
     @on('registry:execute')
     def twokprice(data):
         print(data[1], data[2])
-        emitTrigger('twokprice') # should pass its name (action name) to emitTrigger
+        emitTrigger() # should pass its name (action name) to emitTrigger
 
     # intitiate and binding class instances and functions to Bus
     bus = Bus()
@@ -142,5 +142,37 @@ def test_executeAfterTrigger():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
 
-def test_once_per_trade():
-    pass
+# mostly not working
+def test_n_per_trade():
+    setup = {'twokprice': [[], [[], {'n per bar': 3}]]}
+    registry = Registry(setup)
+    aggregator = Aggregator(3600)
+
+    # emit tick to trigger check
+    @source('tick')
+    def emitTick(tick):
+        return tick
+
+    # emit Trigger to enforce post-triggered restraints
+    @source('strategy:triggered')
+    def emitTrigger():
+        return 'twokprice'
+
+    # client code that mimics that actual logic tests implemented in Strategy instance
+    @on('registry:execute')
+    def twokprice(data):
+        print(data[1], data[2])
+        emitTrigger() # should pass its name (action name) to emitTrigger
+
+    # intitiate and binding class instances and functions to Bus
+    bus = Bus()
+    bus.bind(emitTrigger)
+    bus.bind(twokprice)
+    bus.bind(registry)
+    bus.bind(aggregator)
+    bus.bind(emitTick)
+
+    # Tick-generating for loop using default dataset
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
