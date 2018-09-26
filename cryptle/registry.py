@@ -38,24 +38,26 @@ class Registry:
                            # values {'actioname': [[argv to indicate when to execute],[constraints
                            # after being triggered]]
         self.logic_status = {key: [] for key in setup.keys()}
+        # bar-related states that should be source by aggregator
+        self.open_price = None
+        self.close_price = None
+        self.bars = []
         self.num_bars = 0
-        self.new_open = None
-        self.new_close = None
+        self.new_open = False
+        self.new_close = False
+        # tick-related states that should be sourced by feed
+        self.current_price = None
+        self.current_time = None
+        # trade-related states that should be sourced by orderBook (or equivalent)
         self.buy_count = 0
         self.sell_count = 0
         self.lookup_check   = {'open': self.new_open,
                                'close': self.new_close,}
         self.lookup_trigger = {'once per bar': self.once_per_bar,
                                'once per trade': self.once_per_trade,}
-        self.open_price = None
-        self.close_price = None
-        self.current_price = None
-        self.current_time = None
-        self.bars = []
-        self.eventName = None
 
-
-    @on('tick')
+    # refresh Functions to maintain correct states
+    @on('tick') # tick should be fairly agnostic to sources, but should hold predefined format
     def refreshTick(self, tick):
         self.new_open = False
         self.new_close = False
@@ -87,7 +89,8 @@ class Registry:
         # this removes all the 'once per bar' constraint for every action
         for key in self.logic_status.keys():
             lst = self.logic_status[key]
-            lst.pop(lst.index('once per bar'))
+            if 'once per bar' in lst:
+                lst.pop(lst.index('once per bar'))
 
     # emitExecute push execute Event to Bus
     @source('registry:execute')
@@ -95,7 +98,7 @@ class Registry:
         # temporary return format, might be revamped
         return [str(key), self.current_time, self.current_price]
 
-    # On arrival of tick, handleCheck carries out check
+    # on arrival of tick, handleCheck carries out check
     @on('tick')
     def handleCheck(self, tick):
         setup = self.setup
@@ -104,7 +107,7 @@ class Registry:
 
     # check is responsible to verify the current state against the constraints stored within
     # self.setup, it should also check whether any triggered constraint is currently in
-    # place
+    # place, source a "registry:execute" event when all are triggered
     def check(self, key, whenexec):
         if all(self.lookup_check[constraint] for constraint in whenexec) and \
            self.logic_status[key] == []: # now only works if no constraint is placed
@@ -113,17 +116,22 @@ class Registry:
     # This handles all the triggered tests and apply suitable constraints via constraint functions
     @on('strategy:triggered')
     def handleTrigger(self, action):
-        def onTrigger(prohibited):
-            for item in prohibited:
-                constraint = self.lookup_trigger[item]
-                constraint(action)
-        onTrigger(self.setup[action][1])
-
+        for item in self.setup[action][1]:
+            constraint = self.lookup_trigger[item]
+            constraint(action)
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
     def once_per_bar(self, action):
         self.logic_status[action].append('once per bar')
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
+    def n_per_bar(self, action, n):
+        self.logic_status[action].append('n per bar')
+
+    # constraint function after triggering, consider revamping into handleTrigger altogether
     def once_per_trade(self, action):
         self.logic_status[action].append('once per trade')
+
+    # constraint function after triggering, consider revamping into handleTrigger altogether
+    def n_per_trade(self, action, n):
+        self.logic_status[action].append('n per trade')

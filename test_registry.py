@@ -61,72 +61,75 @@ def test_on_open():
         parseOpen(value)
     assert registry.open_price == 6375.11
 
-#def test_on_tick():
-#    setup = {'close': [['open'], ['once per bar']]}
-#    registry = Registry(setup)
-#    @source('tick')
-#    def emitTick(tick):
-#        return tick
-#    bus = Bus()
-#    bus.bind(emitTick)
-#    bus.bind(registry)
-#    for index, tick in tickset.iterrows():
-#        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
-#        emitTick(data)
-#    assert registry.current_price == 995.0
+def test_on_tick():
+    setup = {'close': [['open'], ['once per bar']]}
+    registry = Registry(setup)
+    @source('tick')
+    def emitTick(tick):
+        return tick
+    bus = Bus()
+    bus.bind(emitTick)
+    bus.bind(registry)
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
+    assert registry.current_price == 995.0
 
 # this works, only because of not listening to 'aggregator:new_candle'
-#def test_aggregator():
-#    aggregator = Aggregator(3600)
-#    @source('tick')
-#    def emitTick(tick):
-#        return tick
-#
-#    bus = Bus()
-#    bus.bind(emitTick)
-#    bus.bind(aggregator)
-#    for index, tick in tickset.iterrows():
-#        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
-#        emitTick(data)
-#
-#    assert(aggregator._bars[-1] == [float(1013.94), float(995.0), float(1014.94), float(995.0),
-#        float(1518066000.0), float(0.11807207), float(0.0)])
-
-
-#def test_handleTrigger():
-#    setup = {'twokprice': [['open'], ['once per bar', 'once per trade']]}
-#    registry = Registry(setup)
-#
-#    @source('strategy:triggered')
-#    def emitTrigger():
-#        return 'twokprice'
-#
-#    bus = Bus()
-#    bus.bind(emitTrigger)
-#    bus.bind(registry)
-#
-#    emitTrigger()
-#    assert registry.logic_status == {'twokprice': ['once per bar', 'once per trade']}
-
-def test_executeAfterTrigger():
-    setup = {'twokprice': [[], ['once per bar']]}
-    registry = Registry(setup)
+def test_aggregator():
     aggregator = Aggregator(3600)
+    @source('tick')
+    def emitTick(tick):
+        return tick
+
+    bus = Bus()
+    bus.bind(emitTick)
+    bus.bind(aggregator)
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
+    print(aggregator._bars[-1])
+
+
+def test_handleTrigger():
+    setup = {'twokprice': [['open'], ['once per bar', 'once per trade']]}
+    registry = Registry(setup)
 
     @source('strategy:triggered')
     def emitTrigger():
         return 'twokprice'
 
-    @on('registry:execute')
-    def twokprice(data):
-        print(data[1], data[2])
-        emitTrigger()
+    bus = Bus()
+    bus.bind(emitTrigger)
+    bus.bind(registry)
+
+    emitTrigger()
+    assert registry.logic_status == {'twokprice': ['once per bar', 'once per trade']}
+
+# this also implicitly tested once per bar function, verify by using -s flag to observe the print
+# behaviour
+def test_executeAfterTrigger():
+    setup = {'twokprice': [[], ['once per bar']]}
+    registry = Registry(setup)
+    aggregator = Aggregator(3600)
 
     # emit tick to trigger check
     @source('tick')
     def emitTick(tick):
         return tick
 
+    # emit Trigger to enforce post-triggered restraints
+    @source('strategy:triggered')
+    def emitTrigger(eventName):
+        return eventName
+
+    # client code that mimics that actual logic tests implemented in Strategy instance
+    @on('registry:execute')
+    def twokprice(data):
+        print(data[1], data[2])
+        emitTrigger('twokprice') # should pass its name (action name) to emitTrigger
+
+    # intitiate and binding class instances and functions to Bus
     bus = Bus()
     bus.bind(emitTrigger)
     bus.bind(twokprice)
@@ -134,8 +137,10 @@ def test_executeAfterTrigger():
     bus.bind(aggregator)
     bus.bind(emitTick)
 
+    # Tick-generating for loop using default dataset
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
 
-    assert registry.logic_status == {'twokprice': ['once per bar']}
+def test_once_per_trade():
+    pass
