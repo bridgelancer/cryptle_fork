@@ -61,12 +61,53 @@ class Aggregator:
     def pushCandle(self, o, c, h, l, t, v, nv):
         '''Provides public interface for accepting aggregated candles. '''
         self._pushFullCandle(o, c, h, l, t, v, nv)
+        # methods that output corresponding events to message bus
+        self.pushAllMetrics(o, c, h, l, t, v, nv)
+
+    def pushAllMetrics(self, o, c, h, l, t, v, nv):
+        self._pushOpen(o)
+        self._pushClose(c)
+        self._pushHigh(h)
+        self._pushLow(l)
+        self._pushTime(t)
+        self._pushVolume(v)
+        self._pushNetVolume(nv)
+
+
+    @source('aggregator:new_open')
+    def _pushOpen(self, o):
+        return o
+
+    @source('aggregator:new_close')
+    def _pushClose(self, c):
+        return c
+
+    @source('aggregator:new_high')
+    def _pushHigh(self, h):
+        return h
+
+    @source('aggregator:new_low')
+    def _pushLow(self, l):
+        return l
+
+    @source('aggregator:new_timestamp')
+    def _pushTime(self, t):
+        return t
+
+    @source('aggregator:new_volume')
+    def _pushVolume(self, v):
+        return v
+
+    @source('aggregator:new_net_volume')
+    def _pushNetVolume(self, nv):
+        return nv
 
     @source('aggregator:new_candle')
     def _pushInitCandle(self, value, timestamp, volume, action):
         round_ts = timestamp - timestamp % self.period
         new_candle = Candle(value, value, value, value, round_ts, volume, volume * action)
         self._bars.append(new_candle)
+        self.pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)
         return new_candle
 
     @source('aggregator:new_candle')
@@ -74,6 +115,7 @@ class Aggregator:
         t = t - t % self.period
         new_candle = Candle(o, c, h, l, t, v, nv)
         self._bars.append(new_candle)
+        self.pushAllMetrics(o, c, h, l, t, v, nv)
         return new_candle
 
     @source('aggregator:new_candle')
@@ -81,6 +123,7 @@ class Aggregator:
         round_ts = timestamp - timestamp % self.period
         new_candle = Candle(value, value, value, value, round_ts, 0, 0)
         self._bars.append(new_candle)
+        self.pushAllMetrics(o, c, h, l, t, v, nv)
         return new_candle
 
     @property
