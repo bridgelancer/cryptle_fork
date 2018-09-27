@@ -142,8 +142,7 @@ def test_executeAfterTrigger():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
 
-# mostly not working
-def test_n_per_trade():
+def test_n_per_bar():
     setup = {'twokprice': [[], [[], {'n per bar': 3}]]}
     registry = Registry(setup)
     aggregator = Aggregator(3600)
