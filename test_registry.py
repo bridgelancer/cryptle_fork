@@ -34,7 +34,7 @@ def test_on_close():
     setup = {'close': [['open'], [['once per bar'], {}]]}
     registry = Registry(setup)
 
-    @source('close')
+    @source('aggregator:new_close')
     def parseClose(val):
         return val
 
@@ -50,7 +50,7 @@ def test_on_open():
     setup = {'close': [['open'], [['once per bar'],{}]]}
     registry = Registry(setup)
 
-    @source('open')
+    @source('aggregator:new_open')
     def parseOpen(val):
         return val
 
@@ -126,7 +126,7 @@ def test_executeAfterTrigger():
     # client code that mimics that actual logic tests implemented in Strategy instance
     @on('registry:execute')
     def twokprice(data):
-        print(data[1], data[2])
+        #print(data[1], data[2])
         emitTrigger() # should pass its name (action name) to emitTrigger
 
     # intitiate and binding class instances and functions to Bus
