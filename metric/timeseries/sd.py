@@ -1,4 +1,5 @@
 from metric.base import Timeseries
+from cryptle.event import on, source
 import numpy as np
 
 class SD(Timeseries):
@@ -8,6 +9,7 @@ class SD(Timeseries):
         self.value     = 0
         self._record   = []
 
+    @on('aggregator:candle')
     @Timeseries.cache
     def onCandle(self):
         calc = self._record[:-1]

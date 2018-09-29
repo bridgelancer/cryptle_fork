@@ -1,4 +1,5 @@
 from metric.base import Timeseries
+from cryptle.event import on, source
 import numpy as np
 
 class Volatility(Timeseries):
@@ -7,6 +8,7 @@ class Volatility(Timeseries):
         self._ts       = ts
         self._cache    = []
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self, bar, candle):
         if np.std(self._cache) > 0:

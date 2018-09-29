@@ -1,4 +1,5 @@
 from metric.base import Timeseries
+from cryptle.event import on, source
 import scipy.stats as sp
 
 class Skewness(Timeseries):
@@ -7,6 +8,7 @@ class Skewness(Timeseries):
         self._ts       = ts
         self._cache    = []
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self):
         self.value = sp.skew(self._cache)
