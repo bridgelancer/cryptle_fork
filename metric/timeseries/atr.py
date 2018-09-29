@@ -1,4 +1,5 @@
 from metric.base import Timeseries
+from cryptle.event import source, on
 import numpy as np
 
 class ATR(Timeseries):
@@ -11,6 +12,7 @@ class ATR(Timeseries):
 
     def onCandle(self):
         self.value = (self.value * (self._lookback -1) * self._tr) / self._lookback
+        self._tr.onCandle():
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError
@@ -22,6 +24,7 @@ class true_range(Timeseries):
         self._ts       = candle     # misnomer to fit the decorator usage
         self._cache    = []
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self):
         if self.value is None and len(self._cache) == self._lookback:

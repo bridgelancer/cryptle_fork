@@ -1,4 +1,5 @@
 from metric.base import Timeseries
+from cryptle.event import on
 
 class IchimokuCloud(Timeseries):
     def __init__(self, ts, short, long, base):
@@ -9,6 +10,7 @@ class IchimokuCloud(Timeseries):
         self.value  = 0
         self._cache = []
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self):
         window = self._cache[-max(self._short, self._long, self._base)-1:-1]

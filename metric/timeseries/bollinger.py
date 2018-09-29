@@ -28,6 +28,7 @@ class width(Timeseries):
         self._cache    = []
         self.value     = None
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self):
         self.value = np.std(self._cache)
@@ -44,6 +45,7 @@ class upperband(Timeseries):
         self._uppersd  = upper_sd
         self.value     = None
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self):
         self.value = self._cache[-1] + self._upper_sd * self._width
@@ -61,6 +63,7 @@ class lowerband(Timeseries):
         self._lowersd  = lower_sd
         self.value     = None
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self):
         self.value = self._cache[-1] + self._lower_sd * self._width

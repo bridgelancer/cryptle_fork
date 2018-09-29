@@ -1,3 +1,4 @@
+from cryptle.event import source, on
 from metric.base import Timeseries
 
 '''Candle-related Timeseries object.
@@ -12,9 +13,9 @@ implemented for the new Timeseries paradigm.
 
 class CandleStick(Timeseries):
     ''' Extracted wrapper function of the original CandleBar class'''
-    def __init__(self, bar, lookback):
+    def __init__(self, lookback):
         self._lookback = lookback
-        self._ts       = bar
+        self._ts       = []
         self._cache    = []
         self.o         = Open(self._ts, lookback)
         self.c         = Close(self._ts, lookback)
@@ -22,8 +23,15 @@ class CandleStick(Timeseries):
         self.l         = Low(self._ts, lookback)
         self.value     = None
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def onCandle(self, data):
+        self._ts.append(data)
+        self.o.onCandle()
+        self.c.onCandle()
+        self.h.onCandle()
+        self.l.onCandle()
+
         # the onCandle function should automatically push a bar to self._cache
         try:
             self.value = float(self.o) # use self.o is the default value
@@ -37,6 +45,7 @@ class Open(Timeseries):
         self._ts       = bar
         self.value      = None
 
+    @on('aggregator:new_open')
     @Timeseries.cache
     def onCandle(self):
         try:
@@ -51,6 +60,7 @@ class Close(Timeseries):
         self._ts      = bar
         self.value     = None
 
+    @on('aggregator:new_close')
     def onCandle(self):
         self.value = self._ts[1]
 
@@ -61,6 +71,7 @@ class High(Timeseries):
         self._ts      = bar
         self.value     = None
 
+    @on('aggregator:new_high')
     def onCandle(self):
         self.value = self._ts[2]
 
@@ -71,6 +82,7 @@ class Low(Timeseries):
         self._ts      = bar
         self.value     = None
 
+    @on('aggregator:new_low')
     def onCandle(self):
         self.value = self._ts[3]
 
@@ -81,6 +93,7 @@ class Volume(Timeseries):
         self._ts      = bar
         self.vallue    = None
 
+    @on('aggregator:new_volume')
     def onCandle(self):
         self.value = self._ts[4]
 
