@@ -1,3 +1,5 @@
+from functools import wraps
+
 class Metric:
     '''Base class with common functions of single valued metrics'''
 
@@ -95,6 +97,12 @@ class Candle:
     def __init__(self, o, c, h, l, t, v, nv):
         self._bar = [o, c, h, l, t, v, nv]
 
+    def __int__(self):
+        return int(self._bar[0])
+
+    def __float__(self):
+        return float(self._bar[0])
+
     def __getitem__(self, item):
         return self._bar[item]
 
@@ -156,3 +164,85 @@ class Candle:
     @netvol.setter
     def netvol(self, value):
         self._bar[6] = value
+
+class Model:
+    ''' Base class for holding statistical model '''
+
+    # reporting function for model exploration and verification
+    def report(self):
+        pass
+
+
+class Timeseries:
+    ''' Base class for times series that encapsulate current Candle and Metric objects.
+
+    TimeSeries object should only concern about the updating of its series upon arrival of tick or
+    candle and no more. The calculation part of the class should only hold the most updated
+    value of the corresponding TimeSeries. The handling of the historical data would
+    be designed and implemented in a later stage. Any cached data that the TimeSeries
+    object maintained should not be accessed by other objects for any external purpose.
+
+    '''
+    def __float__(self):
+        try:
+            float(self.value)
+            return float(self.value)
+        except:
+            pass
+
+     # pseudo-decorator for maintainng valid main cache in any instance of any base class
+    def cache(func):
+        '''Decorator function for any Timeseries to maintain its valid main cache for calculating its output value.
+
+        The class method to be decorated should initialize self._cache as empty list. It should also
+        contain an attribute self._lookback for caching purpose.
+
+        '''
+        def wrapper(*args, **kwargs):
+            # if no self._cache in original ts, create one for it
+            if '_cache' not in args[0].__dict__.keys():
+                args[0]._cache = []
+
+            try: # handling single value cases
+                args[0]._cache.append(float(args[0]._ts))
+            except: # handling bar cases
+                args[0]._cache.append(args[0]._ts)
+
+            # the routines that handle the caching
+            if len(args[0]._cache) < args[0]._lookback:
+                return
+            elif len(args[0]._cache) > args[0]._lookback:
+                args[0]._cache = args[0]._cache[-args[0]._lookback:]
+
+            func(*args, **kwargs)
+        return wrapper
+
+    # psuedo-decorator for maintaining valid open, close, high, low caches in any instance of any base class
+    def bar_cache(func):
+        '''Decorator function for any class to maintain valid open, close, high and low caches.
+
+        The class method to be decorated should initialize self.o, self.c, self.h, self.l as
+        empty lists. It should also contain an attribute self._lookback for caching purpose.
+
+        '''
+        def wrapper(self, **kwargs):
+            self.o.append(float(candle.o))
+            self.c.append(float(candle.c))
+            self.h.append(float(candle.h))
+            self.l.append(float(candle.l))
+            self.t = float(candle.t)
+
+            if len(self.o) < self._lookback:
+                return
+            elif len(self.o) >= self._lookback:
+                self.o = self.o[-self._lookback:]
+                self.c = self.c[-self._lookback:]
+                self.h = self.h[-self._lookback:]
+                self.l = self.l[-self._lookback:]
+
+            func(*args, **kwargs)
+        return wrapper
+
+    def importBars(self, ):
+        ''' import functionality to import well defined excel columns as Timeseries objects '''
+        raise NotImplementedError
