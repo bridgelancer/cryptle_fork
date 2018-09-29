@@ -1,4 +1,5 @@
 from metric.base import Timeseries
+from cryptle.event import on
 
 def default(lookback):
     return 2 / (lookback + 1)
@@ -11,6 +12,7 @@ class EMA(Timeseries):
         self.value   = None
         self._bar    = bar
 
+    @on('aggregator:new_candle')
     def onCandle(self, candle=None):
 
         if self.value is None:

@@ -1,5 +1,6 @@
 from metric.base import Timeseries
 from metric.timeseries.wma import WMA
+from cryptle.event import on
 
 import numpy as np
 
@@ -19,6 +20,8 @@ class MACD(Timeseries):
         self.value = None
 
     def onCandle(self):
+        self.diff.onCandle()
+        self.diff_ma.onCandle()
         try:
             self.value = float(self.diff) - float(self.diff_ma)
         except:
@@ -33,6 +36,7 @@ class diff(Timeseries):
         self._slow = slow
         self.value = None
 
+    @on('aggregator:new_candle')
     def onCandle(self):
         try:
             self.value = float(self._fast) - float(self._slow)
@@ -42,6 +46,7 @@ class diff(Timeseries):
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError
 
+# review this class
 class diff_ma(Timeseries):
     def __init__(self, lookback, diff, weights):
         self._lookback = lookback
