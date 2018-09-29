@@ -1,4 +1,5 @@
 from metric.base import Timeseries
+from metric.event import on, source
 import numpy as np
 
 class WilliamPercentR(Timeseries):
@@ -8,6 +9,7 @@ class WilliamPercentR(Timeseries):
         self._cache    = []
         self.value     = 0
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self):
         window = self._cache[-lookback-1:-1]

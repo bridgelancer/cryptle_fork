@@ -1,4 +1,5 @@
 from metric.base import Timeseries, Candle
+from cryptle.event import on, source
 import numpy as np
 
 class SMA(Timeseries):
@@ -12,6 +13,7 @@ class SMA(Timeseries):
         if list:
             self.onList()
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self, candle=None):
         self.value = np.mean(self._cache)

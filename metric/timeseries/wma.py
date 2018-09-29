@@ -1,4 +1,5 @@
 from metric.base import Timeseries
+from cryptle.event import on, source
 import numpy as np
 
 class WMA(Timeseries):
@@ -11,6 +12,7 @@ class WMA(Timeseries):
         self.value  = None
         self._bar    = bar
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self):
         if len(self._cache) == self._lookback:

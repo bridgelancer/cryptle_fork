@@ -1,4 +1,5 @@
 from metric.base import Timeseries
+from cryptle.event import on, source
 import numpy as np
 
 def default(lookback):
@@ -15,6 +16,7 @@ class RSI(Timeseries):
         self._ema_up   = None
         self._ema_down = None
 
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self):
         if len(self._cache) < 2:

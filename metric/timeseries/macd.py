@@ -46,7 +46,7 @@ class diff(Timeseries):
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError
 
-# review this class
+# review this class, probably using Timeseries.cache
 class diff_ma(Timeseries):
     def __init__(self, lookback, diff, weights):
         self._lookback = lookback
