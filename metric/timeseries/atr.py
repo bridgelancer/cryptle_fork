@@ -12,7 +12,7 @@ class ATR(Timeseries):
 
     def onCandle(self):
         self.value = (self.value * (self._lookback -1) * self._tr) / self._lookback
-        self._tr.onCandle():
+        self._tr.onCandle()
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError

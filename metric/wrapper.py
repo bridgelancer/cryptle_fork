@@ -9,7 +9,7 @@ def Wrapper:
     '''Base class of all the wrapper objects for the new TimeSeries object.
 
     Wrapper would provide interface to retrieve the updated value of the TimeSeries object. In the
-    future, it would also allow access to historical values of the TimeSeries that are stored to
+    future, it would also allow access to historical values of the TimeSeries that would be stored to
     disk.
 
     For metrics that hold several TimeSeries objects to comprise a valid Metric in the original

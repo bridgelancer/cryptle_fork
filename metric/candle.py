@@ -68,7 +68,6 @@ class CandleBar:
         #if self._auto_prune:
         #    self.prune(self._maxsize)
 
-
     def pushCandle(self, o, c, h, l, t, v, nv):
         '''Provides public interface for accepting aggregated candles.'''
         self._pushFullCandle(o, c, h, l, t, v, nv)

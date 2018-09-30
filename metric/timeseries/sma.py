@@ -13,9 +13,10 @@ class SMA(Timeseries):
         if list:
             self.onList()
 
-    @on('aggregator:new_candle')
+    @on('aggregator:new_open')
     @Timeseries.cache
     def onCandle(self, candle=None):
+        print(self._cache)
         self.value = np.mean(self._cache)
 
         @Timeseries.bar_cache

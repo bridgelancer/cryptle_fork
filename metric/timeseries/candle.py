@@ -1,5 +1,5 @@
-from cryptle.event import source, on
 from metric.base import Timeseries
+from cryptle.event import source, on
 
 '''Candle-related Timeseries object.
 
@@ -42,14 +42,14 @@ class Open(Timeseries):
 
     def __init__(self, bar, lookback):
         self._lookback  = lookback
-        self._ts       = bar
+        self._ts        = bar
         self.value      = None
 
     @on('aggregator:new_open')
     @Timeseries.cache
     def onCandle(self):
         try:
-            self.value = self._ts[0]
+            self.value = self._ts[-1][0]
         except:
             self.value = None
 
@@ -57,12 +57,12 @@ class Close(Timeseries):
 
     def __init__(self, bar, lookback):
         self._lookback = lookback
-        self._ts      = bar
+        self._ts       = bar
         self.value     = None
 
     @on('aggregator:new_close')
     def onCandle(self):
-        self.value = self._ts[1]
+        self.value = self._ts[-1][1]
 
 class High(Timeseries):
 
@@ -73,7 +73,7 @@ class High(Timeseries):
 
     @on('aggregator:new_high')
     def onCandle(self):
-        self.value = self._ts[2]
+        self.value = self._ts[-1][2]
 
 class Low(Timeseries):
 
@@ -84,7 +84,7 @@ class Low(Timeseries):
 
     @on('aggregator:new_low')
     def onCandle(self):
-        self.value = self._ts[3]
+        self.value = self._ts[-1][3]
 
 class Volume(Timeseries):
 
@@ -95,5 +95,4 @@ class Volume(Timeseries):
 
     @on('aggregator:new_volume')
     def onCandle(self):
-        self.value = self._ts[4]
-
+        self.value = self._ts[-1][4]
