@@ -24,9 +24,12 @@ class CandleStick(Timeseries):
         self.value     = None
 
     @on('aggregator:new_candle')
-    @Timeseries.cache
-    def onCandle(self, data):
+    def appendTS(self, data):
         self._ts.append(data)
+        self.onCandle()
+
+    @Timeseries.cache
+    def onCandle(self):
         self.o.onCandle()
         self.c.onCandle()
         self.h.onCandle()
