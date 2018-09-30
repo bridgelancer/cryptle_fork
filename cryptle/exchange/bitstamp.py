@@ -7,19 +7,16 @@ from threading import Thread
 
 import requests as req
 
+from cryptle.event import source, on
 from .exception import ExchangeError, OrderError
 
 
 _LOG = logging.getLogger(__name__)
 
 
-try:
-    import cryptle.event as event
-except ImportError as e:
-    _LOG.error('{}', e)
-
-
 def _log_http_error(res):
+    code = res.status_code
+
     if code == 400:
         msg = '400 Bad Request'
     elif code == 401:
@@ -121,7 +118,7 @@ class Bitstamp:
         return res
 
     def getOpenOrders(self, asset='all/', base_currency='usd'):
-        res = self_private('/open_orders/' + encode_pair(asset, base_currency))
+        res = self._private('/open_orders/' + encode_pair(asset, base_currency))
 
         if self.hasBitstampError(res):
             _LOG.error('Open orders request failed')
@@ -164,7 +161,7 @@ class Bitstamp:
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
-            _LOG.error('Market buy {} failed: {}'.format(asset.upper(), res['reason']))
+            _LOG.error('Market buy {} failed: {}', asset.upper(), res['reason'])
             raise OrderError
 
         res['timestamp'] = now()
@@ -190,7 +187,7 @@ class Bitstamp:
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
-            _LOG.error('Market sell {} failed: {}'.format(asset.upper(), res['reason']))
+            _LOG.error('Market sell {} failed: {}', asset.upper(), res['reason'])
             raise OrderError
 
         res['timestamp'] = now()
@@ -222,7 +219,7 @@ class Bitstamp:
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
-            _LOG.error('Limit buy {} failed: {}'.format(asset.upper(), res['reason']))
+            _LOG.error('Limit buy {} failed: {}', asset.upper(), res['reason'])
             raise OrderError
 
         res['timestamp'] = now()
@@ -255,7 +252,7 @@ class Bitstamp:
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
-            _LOG.error('Limit sell {} failed: {}'.format(asset.upper(), res['reason']))
+            _LOG.error('Limit sell {} failed: {}', asset.upper(), res['reason'])
             raise OrderError
 
         res['timestamp'] = now()
@@ -264,7 +261,7 @@ class Bitstamp:
 
     def cancelOrder(self, order_id):
         """Cancel an open limit order."""
-        self._open_orders.add(res['id'])
+        self._open_orders.remove(order_id)
         return self._private('/cancel_order/', params={'id': order_id})
 
     def cancnelAllOrder(self):
@@ -280,9 +277,12 @@ class Bitstamp:
             raise ValueError('Invalid state, need account details to call private API.')
 
         self.polling = True
-        self._polling_thread = Thread(target=self._pollForever)
+        self._polling_thread = Thread(target=self._poll_forever)
         self._polling_thread.setDaemon(True)
         self._polling_thread.start()
+
+    def stop_polling(self):
+        self.polling = False
 
     # ----------
     # Low level HTTP request
@@ -292,11 +292,11 @@ class Bitstamp:
 
         url = self.url + endpoint
 
-        _LOG.debug('Sending GET request: ' + url)
+        _LOG.debug('Sending GET request: {}', url)
         res = req.get(url)
 
         if res.status_code // 100 != 2:
-            _log_HTTP_error(res)
+            _log_http_error(res)
             raise ConnectionError
 
         res = json.loads(res.text)
@@ -308,11 +308,11 @@ class Bitstamp:
         params.update(self._authParams())
         url = self.url + endpoint
 
-        _LOG.debug('Sending POST request: ' + url)
+        _LOG.debug('Sending POST request: {}', url)
         res = req.post(url, params)
 
         if res.status_code // 100 != 2:
-            _log_HTTP_error(res)
+            _log_http_error(res)
             raise ConnectionError
 
         res = json.loads(res.text)
@@ -349,8 +349,9 @@ class Bitstamp:
                     self._open_orders.remove(order)
             sleep(self.poll_rate)
 
-    @event.source('orderfilled')
-    def _announce_orderfilled(self, oid):
+    @source('orderfilled')
+    @staticmethod
+    def _announce_orderfilled(oid):
         return oid
 
     @staticmethod
