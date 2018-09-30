@@ -205,8 +205,6 @@ class CandleBar:
     def last_netvol(self, value):
         self._bars[-1].netvol = value
 
-
-
 class CandleMetric(Metric):
     '''Base class for candle dependent metrics.
 
@@ -226,14 +224,10 @@ class CandleMetric(Metric):
         def onTick(self, price, ts, volume, action):
             pass
     '''
-
-
     def __init__(self, candle):
         self.candle = candle
         self.value = 0
         candle.attach(self)
-
-
 
 class SMA(CandleMetric):
 
