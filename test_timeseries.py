@@ -81,7 +81,7 @@ def test_candlestick():
     for i, bar in enumerate(bars):
         pushCandle([*bar, 0])
 
-    assert stick._ts[-1]._bar == [6, 6, 6, 6, 2, 8, 0]
+    assert stick._ts[-1] == [6, 6, 6, 6, 2, 8, 0]
 
 def test_sma():
     aggregator = Aggregator(1) # set to be a 1 second aggregator
@@ -96,9 +96,11 @@ def test_sma():
     bus.bind(pushTick)
     bus.bind(aggregator)
     bus.bind(stick)
+    bus.bind(ma)
 
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
+        print("Verify", price, ma.value)
 
 def test_wma():
     timeseries = []

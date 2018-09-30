@@ -107,7 +107,7 @@ class Candle:
         return self._bar[item]
 
     def __repr__(self):
-        return self._bar.__repr__()
+        return "Candle({})".format(self._bar.__repr__())
 
     @property
     def open(self):
@@ -213,8 +213,8 @@ class Timeseries:
                 return
             elif len(args[0]._cache) > args[0]._lookback:
                 args[0]._cache = args[0]._cache[-args[0]._lookback:]
-
             func(*args, **kwargs)
+
         return wrapper
 
     # psuedo-decorator for maintaining valid open, close, high, low caches in any instance of any base class

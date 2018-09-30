@@ -1,5 +1,5 @@
 from metric.base import Timeseries
-from metric.event import on, source
+from cryptle.event import on, source
 import numpy as np
 
 class WilliamPercentR(Timeseries):
