@@ -194,7 +194,7 @@ class Timeseries:
     def cache(func):
         '''Decorator function for any Timeseries to maintain its valid main cache for calculating its output value.
 
-        The class method to be decorated should initialize self._cache as empty list. It should also
+        The class method to be decorated should initialize self._cache as empty list. The class should also
         contain an attribute self._lookback for caching purpose.
 
         '''
@@ -206,13 +206,14 @@ class Timeseries:
             try: # handling single value cases
                 args[0]._cache.append(float(args[0]._ts))
             except: # handling bar cases
-                args[0]._cache.append(args[0]._ts)
+                args[0]._cache.append(args[0]._ts[-1])
 
             # the routines that handle the caching
             if len(args[0]._cache) < args[0]._lookback:
                 return
-            elif len(args[0]._cache) > args[0]._lookback:
+            elif len(args[0]._cache) >= args[0]._lookback:
                 args[0]._cache = args[0]._cache[-args[0]._lookback:]
+                #print(args[0]._cache)
             func(*args, **kwargs)
 
         return wrapper
