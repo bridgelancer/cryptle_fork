@@ -1,5 +1,5 @@
 from metric.base import Timeseries
-from cryptle.event import source, on
+from cryptle.event import source, on, Bus
 
 '''Candle-related Timeseries object.
 
@@ -13,16 +13,20 @@ implemented for the new Timeseries paradigm.
 
 class CandleStick(Timeseries):
     ''' Extracted wrapper function of the original CandleBar class'''
-    def __init__(self, lookback):
+    def __init__(self, lookback, bus=None):
         self._lookback = lookback
         self._ts       = []
         self._cache    = []
+        self.output    = []
         self.o         = Open(self._ts, lookback)
         self.c         = Close(self._ts, lookback)
         self.h         = High(self._ts, lookback)
         self.l         = Low(self._ts, lookback)
         self.value     = None
+        if isinstance(bus, Bus):
+            bus.bind(self)
 
+    # CandleStick has a unique functino appendTS that makes itself a ts generating source
     @on('aggregator:new_candle')
     def appendTS(self, data):
         self._ts.append(data)
@@ -38,6 +42,7 @@ class CandleStick(Timeseries):
         # the onCandle function should automatically push a bar to self._cache
         try:
             self.value = float(self.o) # use self.o is the default value
+            self.output.append(self.value)
         except:
             self.value = None
 
@@ -48,7 +53,6 @@ class Open(Timeseries):
         self._ts        = bar
         self.value      = None
 
-    @on('aggregator:new_open')
     @Timeseries.cache
     def onCandle(self):
         try:
@@ -63,7 +67,6 @@ class Close(Timeseries):
         self._ts       = bar
         self.value     = None
 
-    @on('aggregator:new_close')
     def onCandle(self):
         self.value = self._ts[-1][1]
 
@@ -74,7 +77,6 @@ class High(Timeseries):
         self._ts      = bar
         self.value     = None
 
-    @on('aggregator:new_high')
     def onCandle(self):
         self.value = self._ts[-1][2]
 
@@ -85,7 +87,6 @@ class Low(Timeseries):
         self._ts      = bar
         self.value     = None
 
-    @on('aggregator:new_low')
     def onCandle(self):
         self.value = self._ts[-1][3]
 
@@ -96,6 +97,5 @@ class Volume(Timeseries):
         self._ts      = bar
         self.vallue    = None
 
-    @on('aggregator:new_volume')
     def onCandle(self):
         self.value = self._ts[-1][4]

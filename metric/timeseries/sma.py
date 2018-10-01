@@ -1,23 +1,28 @@
 from metric.base import Timeseries, Candle
-from cryptle.event import on, source
+from cryptle.event import on, source, Bus
 import numpy as np
 
 class SMA(Timeseries):
 
-    def __init__(self, ts, lookback, bar=False, list=False):
+    def __init__(self, ts, lookback, bar=False, list=False, bus=None):
         self._lookback = lookback
         self._ts    = ts
         self._cache = []
+        self.output = []
         self._bar   = bar
         self.value  = None
         if list:
             self.onList()
+        if isinstance(bus, Bus):
+            bus.bind(self)
 
-    @on('aggregator:new_open')
+    # Any ts would call onCandle as new_candle emits. This updates its ts value for calculating the
+    # correct value for output and further sourcing.
+    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self, candle=None):
-        print(self._cache)
         self.value = np.mean(self._cache)
+        self.output.append(self.value)
 
         @Timeseries.bar_cache
         def toBar(self, candle):
