@@ -84,9 +84,6 @@ def test_candle():
 #    assert stick._ts[-1] == [6, 6, 6, 6, 2, 8, 0]
 
 def test_sma():
-    aggregator = Aggregator(1) # set to be a 1 second aggregator
-    stick = CandleStick(1)
-    ma = SMA(stick._ts, 5)
 
     @source('tick')
     def pushTick(tick):
@@ -94,9 +91,9 @@ def test_sma():
 
     bus = Bus()
     bus.bind(pushTick)
-    bus.bind(aggregator)
-    bus.bind(stick)
-    bus.bind(ma)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    ma = SMA(stick.output, 5, bus=bus)
 
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
