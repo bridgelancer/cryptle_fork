@@ -21,4 +21,5 @@ lint:
 	@pylint cryptle
 
 clean:
-	rm -r **/__pycache__
+	rm -rf **/__pycache__
+	$(MAKE) -C docs clean
