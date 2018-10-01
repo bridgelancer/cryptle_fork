@@ -5,6 +5,13 @@ Advanced Usage
 This part of the documentation covers single, specific tasks in a step-by-step
 instructions.
 
+.. _datafeed_event:
+
+Datafeed integration with event bus
+-----------------------------------
+:code:`cryptle.event.DeferedSource`
+:meth:`cryptle.datafeed.Bitstamp.broadcast`
+
 
 Event bus decorators
 --------------------
@@ -58,3 +65,5 @@ multiple event names to a decorator.
 
     bus.emit('bar', data=2)
     assert test.data = 3  // True
+
+DeferedSource
