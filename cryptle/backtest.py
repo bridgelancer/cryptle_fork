@@ -1,6 +1,5 @@
 # @Incomplete data format is hardwired for bitstamp (or are we?)
 # @Incomplete candle formatted data is not properly implemented
-# @Todo refactor dependancy of backtest on paperexchange
 
 from .strategy import Portfolio
 
@@ -72,7 +71,6 @@ def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
     test.runCandle(strat, callback)
 
 
-# Only works with tick for now
 class Backtest:
     """Provides an interface to load datasets and launch backtests."""
 
@@ -189,7 +187,6 @@ class PaperExchange:
         self.commission = commission
         self.slippage = slippage
 
-    # @Cleanup too much code replication
     def sendMarketBuy(self, pair, amount):
         _price = self.price
         price *= (1 + self.commission)

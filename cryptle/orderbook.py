@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 class Orderbook:
-    """In memory orderbook.
+    """In memory orderbook optimzed for orderbook data analysis.
 
     Args:
         bids: An array of tuples as [(price, volume), ...]
