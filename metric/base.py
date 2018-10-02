@@ -203,6 +203,7 @@ class Timeseries:
             pass
 
     def update(self):
+        # currnetly, all onCandle functions would be called if candle decides to broadcast
         self.onCandle()
 
     def register(self, new_ts):
@@ -227,6 +228,7 @@ class Timeseries:
 
         '''
         def wrapper(*args, **kwargs):
+            # a hack - args[0] must be "self"
             # if no self._cache in original ts, create one for it
             if '_cache' not in args[0].__dict__.keys():
                 args[0]._cache = []

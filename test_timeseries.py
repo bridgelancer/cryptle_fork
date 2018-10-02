@@ -96,7 +96,6 @@ def test_sma():
     aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
     stick = CandleStick(1, bus=bus)
     ma = SMA(stick, 5, name='fuck')
-    print(stick.listeners)
 
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])

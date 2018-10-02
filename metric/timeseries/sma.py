@@ -10,7 +10,6 @@ class SMA(Timeseries):
         self.name = name
         self._ts    = ts
         self._cache = []
-        self.output = []
         self._bar   = bar
         self.value  = None
         if list:
@@ -20,8 +19,8 @@ class SMA(Timeseries):
     # correct value for output and further sourcing.
     @Timeseries.cache
     def onCandle(self, candle=None):
+        print(self._cache)
         self.value = np.mean(self._cache)
-        self.output.append(self.value)
 
         @Timeseries.bar_cache
         def toBar(self, candle):
