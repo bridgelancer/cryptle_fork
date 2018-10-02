@@ -181,15 +181,32 @@ class Timeseries:
     be designed and implemented in a later stage. Any cached data that the TimeSeries
     object maintained should not be accessed by other objects for any external purpose.
 
-    To progress from the original hard binding of CandleBar -> Metric data flow, Timeseries class
-    is designed to be both an observable and an observer. This means that each instance of a
-    Timeseries class has corresponding publisher/subscriber functionality that allows it to
-    broadcast its changes to Timeseries that are listening to its updates/listen to updates from other
-    timeseries.
+    Ordinary timeseries class is designed to be both an observable and an observer.
+    This means that each instance of a Timeseries class has corresponding publisher/subscriber
+    functionality that allows it to broadcast its changes to Timeseries that are listening
+    to its updates/listen to updates from other timeseries.
+
+    Args:
+        ts   = Timeseries object to subscribe (or not rely on a TS if not specified)
+        name = User given name of the Timeseries object (or the class name if not specified)
+
+    For every Timeseries type object, the __init__ constructor of that type should first call
+    super().__init__(ts=ts, name=name) or suitable base class constructor to initialize the
+    observer-observable behaviour properly.
+
     '''
 
+    #Note that some particular Timseries object (e.g. CandleStick) has no observable to keep track of.
+    #Rather, they act as a source of data for other types of Timeseries objects to listen to. Hence,
+    #for CandleStick (or other source Timeseries), their data source should be constructed by an Event
+    #via the Event bus architecture.
+
+    #Any timeseries type should also support list-based initialization and update. The implementation
+    #is deferred to a later stage due to prioritization of tasks.
+
     def __init__(self, ts=None, name=None):
-    # self.subscribers are the set of instances that listen to the root timeseries
+    # self.subscribers are the dictionary of timeseries object that listen to this timeseries
+    # instance
         self.listeners = dict()
         self.name = name or self.__class__.__name__
         if ts is not None:
@@ -202,12 +219,18 @@ class Timeseries:
         except:
             pass
 
+    # should implement for every child class of Timeseries
     def evaluate(self):
         raise NotImplementedError
 
     def update(self):
         # currnetly, all evaluate of listeners would be called if candle decides to broadcast
         self.evaluate()
+
+    # this calls all the update methods of the instances which subscribe to the root timeseries
+    def broadcast(self):
+        for listener in self.listeners:
+            self.listeners[listener].update()
 
     # currently not in use
     def register(self, new_ts):
@@ -217,11 +240,6 @@ class Timeseries:
     # currently not in use
     def unregister(self, ts):
         del self.listeners[ts.name]
-
-    # this calls all the update methods of the instances which subscribe to the root timeseries
-    def broadcast(self):
-        for listener in self.listeners:
-            self.listeners[listener].update()
 
     # pseudo-decorator for maintainng valid main cache in any instance of any base class
     def cache(func):
@@ -278,6 +296,6 @@ class Timeseries:
             func(*args, **kwargs)
         return wrapper
 
-    def importBars(self, ):
+    def importBars(self):
         ''' import functionality to import well defined excel columns as Timeseries objects '''
         raise NotImplementedError
