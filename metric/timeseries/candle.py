@@ -18,7 +18,6 @@ class CandleStick(Timeseries):
         self._lookback = lookback
         self._ts       = []
         self._cache    = []
-        self.output    = []
         self.o         = Open(self._ts, lookback)
         self.c         = Close(self._ts, lookback)
         self.h         = High(self._ts, lookback)
@@ -45,7 +44,6 @@ class CandleStick(Timeseries):
         # the onCandle function should automatically push a bar to self._cache
         try:
             self.value = float(self.o) # use self.o is the default value
-            self.output.append(self.value)
         except:
             self.value = None
 
