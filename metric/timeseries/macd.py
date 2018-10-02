@@ -19,9 +19,9 @@ class MACD(Timeseries):
         self.diff_ma   = diff_ma(lookback, self._weights)
         self.value = None
 
-    def onCandle(self):
-        self.diff.onCandle()
-        self.diff_ma.onCandle()
+    def evaluate(self):
+        self.diff.evaluate()
+        self.diff_ma.evaluate()
         try:
             self.value = float(self.diff) - float(self.diff_ma)
         except:
@@ -37,7 +37,7 @@ class diff(Timeseries):
         self.value = None
 
     @on('aggregator:new_candle')
-    def onCandle(self):
+    def evaluate(self):
         try:
             self.value = float(self._fast) - float(self._slow)
         except:
@@ -56,6 +56,6 @@ class diff_ma(Timeseries):
         self.value     = None
 
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
        self.value = np.average(self._cache, axis=0, weights = self._weights)
 

@@ -18,7 +18,7 @@ class RSI(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         if len(self._cache) < 2:
             return
         if self._cache[-1] > self.candle[-2]:

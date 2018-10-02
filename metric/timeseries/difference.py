@@ -11,7 +11,7 @@ class Difference(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
 
         if len(self._cache) == self._n:
             output = np.diff(self._cache, self._n)

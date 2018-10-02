@@ -10,9 +10,9 @@ class ATR(Timeseries):
         self.value     = None
         self._tr       = true_range(lookback, candle) # tr is the true_range object to be passed into the "ATR" wrapper
 
-    def onCandle(self):
+    def evaluate(self):
         self.value = (self.value * (self._lookback -1) * self._tr) / self._lookback
-        self._tr.onCandle()
+        self._tr.evaluate()
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError
@@ -26,7 +26,7 @@ class true_range(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         if self.value is None and len(self._cache) == self._lookback:
             self.value = np.mean(self._cache)
         else:

@@ -14,7 +14,7 @@ class WMA(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         if len(self._cache) == self._lookback:
             self.value = np.average(self._cache, axis=0, weights=self._weights)
 

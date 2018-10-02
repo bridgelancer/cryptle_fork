@@ -10,7 +10,7 @@ class Kurtosis(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         self.value = sp.skew(self._cache)
 
     def onTick(self, price, timestamp, volume, action):
