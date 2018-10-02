@@ -62,26 +62,28 @@ def test_candle():
     assert c.netvol == 1
 
 
-#def test_candlestick():
-#    # CandleStick converts barseries to appropriate form
-#    # Barseries is an object with gives out constantly updating bars
-#    # upon update, the onCandle function of the CandleStick class would be invoked
-#    aggregator = Aggregator(1) # set to be a 1 second  aggregator
-#    stick = CandleStick(1)
-#
-#    @source('candle')
-#    def pushCandle(bar):
-#        return bar
-#
-#    bus = Bus()
-#    bus.bind(pushCandle)
-#    bus.bind(aggregator)
-#    bus.bind(stick)
-#
-#    for i, bar in enumerate(bars):
-#        pushCandle([*bar, 0])
-#
-#    assert stick._ts[-1] == [6, 6, 6, 6, 2, 8, 0]
+def test_candlestick():
+    # CandleStick converts barseries to appropriate form
+    # Barseries is an object with gives out constantly updating bars
+    # upon update, the onCandle function of the CandleStick class would be invoked
+    aggregator = Aggregator(1) # set to be a 1 second  aggregator
+    stick = CandleStick(1)
+
+    @source('candle')
+    def pushCandle(bar):
+        return bar
+
+    bus = Bus()
+    bus.bind(pushCandle)
+    bus.bind(aggregator)
+    bus.bind(stick)
+
+    for i, bar in enumerate(bars):
+        pushCandle([*bar, 0])
+        print(stick._ts[-1])
+
+    print(stick.listeners)
+    assert stick._ts[-1] == [6, 6, 6, 6, 2, 8, 0]
 
 def test_sma():
 
@@ -93,7 +95,8 @@ def test_sma():
     bus.bind(pushTick)
     aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
     stick = CandleStick(1, bus=bus)
-    ma = SMA(stick.output, 5, bus=bus)
+    ma = SMA(stick, 5, name='fuck')
+    print(stick.listeners)
 
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])

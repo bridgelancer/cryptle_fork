@@ -14,6 +14,7 @@ implemented for the new Timeseries paradigm.
 class CandleStick(Timeseries):
     ''' Extracted wrapper function of the original CandleBar class'''
     def __init__(self, lookback, bus=None):
+        super().__init__()
         self._lookback = lookback
         self._ts       = []
         self._cache    = []
@@ -27,10 +28,12 @@ class CandleStick(Timeseries):
             bus.bind(self)
 
     # CandleStick has a unique functino appendTS that makes itself a ts generating source
+
     @on('aggregator:new_candle')
     def appendTS(self, data):
         self._ts.append(data)
         self.onCandle()
+        self.broadcast()
 
     @Timeseries.cache
     def onCandle(self):

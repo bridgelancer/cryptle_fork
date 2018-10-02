@@ -11,7 +11,6 @@ class Metric:
 
     def __neg__(self):
         return -self.value
-
     def __abs__(self):
         return abs(self.value)
 
@@ -182,7 +181,20 @@ class Timeseries:
     be designed and implemented in a later stage. Any cached data that the TimeSeries
     object maintained should not be accessed by other objects for any external purpose.
 
+    To progress from the original hard binding of CandleBar -> Metric data flow, Timeseries class
+    is designed to be both an observable and an observer. This means that each instance of a
+    Timeseries class has corresponding publisher/subscriber functionality that allows it to
+    broadcast its changes to Timeseries that are listening to its updates/listen to updates from other
+    timeseries.
     '''
+
+    def __init__(self, ts=None, name=None):
+    # self.subscribers are the set of instances that listen to the root timeseries
+        self.listeners = dict()
+        self.name = name or self.__class__.__name__
+        if ts is not None:
+            ts.listeners[self.name] = self
+
     def __float__(self):
         try:
             float(self.value)
@@ -190,7 +202,23 @@ class Timeseries:
         except:
             pass
 
-     # pseudo-decorator for maintainng valid main cache in any instance of any base class
+    def update(self):
+        self.onCandle()
+
+    def register(self, new_ts):
+        # this registers listener to this istnace to the instance listener list
+        self.listeners.add(new_ts)
+
+    # decorator to broachcast all updates
+    def broadcast(self):
+        # this calls all the update methods of the instances which subscribe to the root timeseries
+        for listener in self.listeners:
+            self.listeners[listener].update()
+
+    def onCandle(self):
+        raise NotImplementedError
+
+    # pseudo-decorator for maintainng valid main cache in any instance of any base class
     def cache(func):
         '''Decorator function for any Timeseries to maintain its valid main cache for calculating its output value.
 
