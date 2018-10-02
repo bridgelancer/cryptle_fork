@@ -217,7 +217,7 @@ class Timeseries:
             float(self.value)
             return float(self.value)
         except:
-            pass
+            return None
 
     # should implement for every child class of Timeseries
     def evaluate(self):
@@ -241,7 +241,7 @@ class Timeseries:
     def unregister(self, ts):
         del self.listeners[ts.name]
 
-    # pseudo-decorator for maintainng valid main cache in any instance of any base class
+    # pseudo-decorator for maintainng valid main cache in any instance of any Timeseries object
     def cache(func):
         '''Decorator function for any Timeseries to maintain its valid main cache for calculating its output value.
 
@@ -265,7 +265,6 @@ class Timeseries:
                 return
             elif len(args[0]._cache) >= args[0]._lookback:
                 args[0]._cache = args[0]._cache[-args[0]._lookback:]
-                #print(args[0]._cache)
             func(*args, **kwargs)
 
         return wrapper
