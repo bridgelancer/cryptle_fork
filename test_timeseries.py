@@ -128,10 +128,19 @@ def test_ema():
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
     assert ma.value - -23.5015 < 1e-7
-#
-#def test_bollinger():
-#    pass
-#
+
+def test_bollinger():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    bollinger = BollingerBand(stick, 5)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+
+    assert float(bollinger._upperband) - 1271.5142485395759 < 1e-7
+    assert float(bollinger._lowerband) - -1306.8892485395759 < 1e-7
+
 #def test_rsi():
 #    pass
 #
