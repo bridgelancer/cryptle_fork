@@ -16,7 +16,7 @@ class BollingerBand(Timeseries):
         self._band      = band(ts, lookback, upper_sd, lower_sd)
         self._value     = None
 
-    def onCandle(self):
+    def evaluate(self):
         self._value = float(self._band)
 
     def onTick(self, price, timestamp, volume, action):
@@ -31,7 +31,7 @@ class width(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         self.value = np.std(self._cache)
 
     def onTick(self, price, timestamp, volume, action):
@@ -48,7 +48,7 @@ class upperband(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         self.value = self._cache[-1] + self._upper_sd * self._width
 
     def onTick(self, price, timestamp, volume, action):
@@ -66,7 +66,7 @@ class lowerband(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         self.value = self._cache[-1] + self._lower_sd * self._width
 
     def onTick(self, price, timestamp, volume, action):
@@ -79,7 +79,7 @@ class band(Timeseries):
         self._upperband = upperband(ts, lookback, upper_sd)
         self._lowerband = lowerband(ts, lookback, lower_sd)
 
-    def onCandle(self):
+    def evaluate(self):
         self.value = ((self._upperband / self._lowerband) - 1) * 100
 
     def onTick(self, price, timestamp, volume, action):

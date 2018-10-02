@@ -10,7 +10,7 @@ class Volatility(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self, bar, candle):
+    def evaluate(self, bar, candle):
         if np.std(self._cache) > 0:
             self.value = 1 / np.std(self._cache, ddof=1)
         else:

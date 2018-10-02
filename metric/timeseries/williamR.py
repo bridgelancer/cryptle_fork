@@ -11,7 +11,7 @@ class WilliamPercentR(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         window = self._cache[-lookback-1:-1]
         # pending confirmation
         high_prices  = [x.high  for x in window]

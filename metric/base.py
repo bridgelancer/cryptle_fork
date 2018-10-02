@@ -202,22 +202,24 @@ class Timeseries:
         except:
             pass
 
+    def evaluate(self):
+        raise NotImplementedError
+
     def update(self):
-        # currnetly, all onCandle functions would be called if candle decides to broadcast
-        self.onCandle()
+        # currnetly, all evaluate of listeners would be called if candle decides to broadcast
+        self.evaluate()
 
     def register(self, new_ts):
-        # this registers listener to this istnace to the instance listener list
-        self.listeners.add(new_ts)
+        # this registers listener to the self.listeners dictionary
+        self.listeners[new_ts.name] = new_ts
 
-    # decorator to broachcast all updates
+    def unregister(self, ts):
+        del self.listeners[ts.name]
+
+    # this calls all the update methods of the instances which subscribe to the root timeseries
     def broadcast(self):
-        # this calls all the update methods of the instances which subscribe to the root timeseries
         for listener in self.listeners:
             self.listeners[listener].update()
-
-    def onCandle(self):
-        raise NotImplementedError
 
     # pseudo-decorator for maintainng valid main cache in any instance of any base class
     def cache(func):

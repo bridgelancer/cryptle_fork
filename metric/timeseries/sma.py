@@ -15,10 +15,10 @@ class SMA(Timeseries):
         if list:
             self.onList()
 
-    # Any ts would call onCandle as new_candle emits. This updates its ts value for calculating the
+    # Any ts would call evaluate as new_candle emits. This updates its ts value for calculating the
     # correct value for output and further sourcing.
     @Timeseries.cache
-    def onCandle(self, candle=None):
+    def evaluate(self, candle=None):
         print(self._cache)
         self.value = np.mean(self._cache)
 

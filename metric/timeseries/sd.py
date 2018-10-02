@@ -11,7 +11,7 @@ class SD(Timeseries):
 
     @on('aggregator:candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         calc = self._record[:-1]
         if np.std(calc) > 0.001 * np.average(calc): # SHOULD SET TO A FRACTION OF THE MEAN VALUE OF THE SERIES
             self.value = (float(self._ts) - np.average(calc)) / np.std(calc)

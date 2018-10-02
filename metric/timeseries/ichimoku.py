@@ -12,7 +12,7 @@ class IchimokuCloud(Timeseries):
 
     @on('aggregator:new_candle')
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         window = self._cache[-max(self._short, self._long, self._base)-1:-1]
         # pending confirmation, refer to williamR.py
         high_prices = [x.high for x in window]

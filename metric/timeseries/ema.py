@@ -13,7 +13,7 @@ class EMA(Timeseries):
         self._bar    = bar
 
     @on('aggregator:new_candle')
-    def onCandle(self, candle=None):
+    def evaluate(self, candle=None):
 
         if self.value is None:
             self.value = float(self._ts)

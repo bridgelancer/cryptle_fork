@@ -31,17 +31,17 @@ class CandleStick(Timeseries):
     @on('aggregator:new_candle')
     def appendTS(self, data):
         self._ts.append(data)
-        self.onCandle()
+        self.evaluate()
         self.broadcast()
 
     @Timeseries.cache
-    def onCandle(self):
-        self.o.onCandle()
-        self.c.onCandle()
-        self.h.onCandle()
-        self.l.onCandle()
+    def evaluate(self):
+        self.o.evaluate()
+        self.c.evaluate()
+        self.h.evaluate()
+        self.l.evaluate()
 
-        # the onCandle function should automatically push a bar to self._cache
+        # the evaluate function should automatically push a bar to self._cache
         try:
             self.value = float(self.o) # use self.o is the default value
         except:
@@ -55,7 +55,7 @@ class Open(Timeseries):
         self.value      = None
 
     @Timeseries.cache
-    def onCandle(self):
+    def evaluate(self):
         try:
             self.value = self._ts[-1][0]
         except:
@@ -68,7 +68,7 @@ class Close(Timeseries):
         self._ts       = bar
         self.value     = None
 
-    def onCandle(self):
+    def evaluate(self):
         self.value = self._ts[-1][1]
 
 class High(Timeseries):
@@ -78,7 +78,7 @@ class High(Timeseries):
         self._ts      = bar
         self.value     = None
 
-    def onCandle(self):
+    def evaluate(self):
         self.value = self._ts[-1][2]
 
 class Low(Timeseries):
@@ -88,7 +88,7 @@ class Low(Timeseries):
         self._ts      = bar
         self.value     = None
 
-    def onCandle(self):
+    def evaluate(self):
         self.value = self._ts[-1][3]
 
 class Volume(Timeseries):
@@ -98,5 +98,5 @@ class Volume(Timeseries):
         self._ts      = bar
         self.vallue    = None
 
-    def onCandle(self):
+    def evaluate(self):
         self.value = self._ts[-1][4]
