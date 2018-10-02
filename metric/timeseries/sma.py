@@ -4,8 +4,10 @@ import numpy as np
 
 class SMA(Timeseries):
 
-    def __init__(self, ts, lookback, bar=False, list=False, bus=None):
+    def __init__(self, ts, lookback, name=None, bar=False, list=False):
+        super().__init__(ts=ts, name=name)
         self._lookback = lookback
+        self.name = name
         self._ts    = ts
         self._cache = []
         self.output = []
@@ -13,12 +15,9 @@ class SMA(Timeseries):
         self.value  = None
         if list:
             self.onList()
-        if isinstance(bus, Bus):
-            bus.bind(self)
 
     # Any ts would call onCandle as new_candle emits. This updates its ts value for calculating the
     # correct value for output and further sourcing.
-    @on('aggregator:new_candle')
     @Timeseries.cache
     def onCandle(self, candle=None):
         self.value = np.mean(self._cache)
@@ -41,6 +40,7 @@ class SMA(Timeseries):
             self.h = []
             self.l = []
             toBar(candle)
+        self.broadcast()
 
     def onTick(self):
         raise NotImplementedError
