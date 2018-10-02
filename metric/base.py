@@ -209,10 +209,12 @@ class Timeseries:
         # currnetly, all evaluate of listeners would be called if candle decides to broadcast
         self.evaluate()
 
+    # currently not in use
     def register(self, new_ts):
         # this registers listener to the self.listeners dictionary
         self.listeners[new_ts.name] = new_ts
 
+    # currently not in use
     def unregister(self, ts):
         del self.listeners[ts.name]
 

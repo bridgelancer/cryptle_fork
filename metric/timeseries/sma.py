@@ -19,7 +19,6 @@ class SMA(Timeseries):
     # correct value for output and further sourcing.
     @Timeseries.cache
     def evaluate(self, candle=None):
-        print(self._cache)
         self.value = np.mean(self._cache)
 
         @Timeseries.bar_cache

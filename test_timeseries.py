@@ -80,16 +80,14 @@ def test_candlestick():
 
     for i, bar in enumerate(bars):
         pushCandle([*bar, 0])
-        print(stick._ts[-1])
 
-    print(stick.listeners)
     assert stick._ts[-1] == [6, 6, 6, 6, 2, 8, 0]
 
-def test_sma():
+@source('tick')
+def pushTick(tick):
+    return tick
 
-    @source('tick')
-    def pushTick(tick):
-        return tick
+def test_sma():
 
     bus = Bus()
     bus.bind(pushTick)
@@ -99,15 +97,27 @@ def test_sma():
 
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
-        print("Verify", price, ma.value)
+    assert ma.value - 17.6875 < 1e-7
 
-#def test_wma():
-#    timeseries = []
-#    ma = WMA(timeseries, 5)
-#    for i, price in enumerate(alt_quad):
-#        ma._ts = price
-#        ma.onCandle()
-#
+def test_wma():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    ma = WMA(stick, 5)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+    assert ma.value - 22.5375 < 1e-7
+
+def test_recursive():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    ma = SMA(WMA(stick, 5), 3)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+    assert ma.value - 59.9666667 < 1e-7
 #def test_ema():
 #    timeseries = []
 #    ma = EMA(timeseries, 5)

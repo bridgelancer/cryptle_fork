@@ -4,7 +4,8 @@ import numpy as np
 
 class WMA(Timeseries):
 
-    def __init__(self, ts, lookback, weights=None, bar=False):
+    def __init__(self, ts, lookback, name=None, weights=None, bar=False):
+        super().__init__(ts=ts, name=name)
         self._lookback = lookback
         self._weights  = weights or [2 * (i+1) / (lookback * (lookback + 1)) for i in range(lookback)]
         self._ts    = ts
@@ -12,7 +13,6 @@ class WMA(Timeseries):
         self.value  = None
         self._bar    = bar
 
-    @on('aggregator:new_candle')
     @Timeseries.cache
     def evaluate(self):
         if len(self._cache) == self._lookback:
@@ -35,6 +35,7 @@ class WMA(Timeseries):
             self.h = []
             self.l = []
             toBar(candle)
+        self.broadcast()
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError
