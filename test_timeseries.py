@@ -118,13 +118,16 @@ def test_recursive():
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
     assert ma.value - 59.9666667 < 1e-7
-#def test_ema():
-#    timeseries = []
-#    ma = EMA(timeseries, 5)
-#
-#    for i, price in enumerate(alt_quad):
-#        ma._ts = price
-#        ma.onCandle()
+
+def test_ema():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    ma = EMA(stick, 5)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+    assert ma.value - -23.5015 < 1e-7
 #
 #def test_bollinger():
 #    pass
