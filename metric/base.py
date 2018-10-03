@@ -207,10 +207,19 @@ class Timeseries:
     def __init__(self, ts=None, name=None):
     # self.subscribers are the dictionary of timeseries object that listen to this timeseries
     # instance
-        self.listeners = dict()
+        self.subscribers = dict()
+        self.subscribers_broadcasted = set()
+        self.listeners   = dict()
         self.name = name or self.__class__.__name__
-        if ts is not None:
-            ts.listeners[self.name] = self
+
+        # ts is either a single ts object, or list containing multiple ts objects
+        if ts is not None and not isinstance(ts, list):
+            ts.listeners[self.name]     = self
+            self.subscribers[ts.name]   = ts
+        elif ts is not None and isinstance(ts, list):
+            for t in ts:
+                t.listeners[self.name]    = self
+                self.subscribers[t.name]  = t
 
     def __float__(self):
         try:
@@ -223,14 +232,27 @@ class Timeseries:
     def evaluate(self):
         raise NotImplementedError
 
+    def processBroadcast(self, ts_name):
+        if len(self.subscribers) == 1:
+            self.update()
+        # by default, processBroadcast trigger self.update only if
+        else:
+            self.subscribers_broadcasted.add(ts_name)
+            if len(self.subscribers_broadcasted) < len(self.subscribers):
+                pass
+            elif len(self.subscribers_broadcasted) == len(self.subscribers):
+                self.subscribers_broadcasted.clear()
+                self.update()
+
+
     def update(self):
         # currnetly, all evaluate of listeners would be called if candle decides to broadcast
         self.evaluate()
 
     # this calls all the update methods of the instances which subscribe to the root timeseries
-    def broadcast(self):
+    def broadcast(self, ts_name):
         for listener in self.listeners:
-            self.listeners[listener].update()
+            self.listeners[listener].processBroadcast(self.name)
 
     # currently not in use
     def register(self, new_ts):
@@ -249,24 +271,39 @@ class Timeseries:
         contain an attribute self._lookback for caching purpose.
 
         '''
+        def prune(lst, lookback):
+            if len(lst) < lookback:
+                return lst
+            else:
+                return lst[-lookback:]
+        # **TODO** handle the case of multiple underlying timeseries and the related caching issues
         def wrapper(*args, **kwargs):
+            # set alias self
+            self = args[0]
             # a hack - args[0] must be "self"
             # if no self._cache in original ts, create one for it
-            if '_cache' not in args[0].__dict__.keys():
-                args[0]._cache = []
-
-            try: # handling single value cases
-                args[0]._cache.append(float(args[0]._ts))
-            except: # handling bar cases
-                args[0]._cache.append(args[0]._ts[-1])
-
-            # the routines that handle the caching
-            if len(args[0]._cache) < args[0]._lookback:
-                return
-            elif len(args[0]._cache) >= args[0]._lookback:
-                args[0]._cache = args[0]._cache[-args[0]._lookback:]
+            if '_cache' not in self.__dict__.keys():
+                self._cache = []
+            if isinstance(self._ts, list):
+                if self._ts[-1] is None or isinstance(self._ts[-1], float):
+                    self._cache.append(self._ts[-1])
+                    self._cache = prune(self._cache, self._lookback)
+                if isinstance(self._ts[-1], Timeseries):
+                    zip(*self._cache)
+                    try:
+                        self._cache.append([float(ts) for ts in self._ts])
+                    except:
+                        pass
+                    self._cache = prune(self._cache, self._lookback)
+                    zip(*self._cache)
+            elif isinstance(self._ts, Timeseries):
+                # handling single value cases
+                try:
+                    self._cache.append(float(self._ts))
+                except:
+                    pass
+                self._cache = prune(self._cache, self._lookback)
             func(*args, **kwargs)
-
         return wrapper
 
     # psuedo-decorator for maintaining valid open, close, high, low caches in any instance of any base class

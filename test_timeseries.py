@@ -138,11 +138,29 @@ def test_bollinger():
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
 
-    assert float(bollinger._upperband) - 1271.5142485395759 < 1e-7
+    assert float(bollinger._upperband) -  1271.5142485395759 < 1e-7
     assert float(bollinger._lowerband) - -1306.8892485395759 < 1e-7
 
-#def test_rsi():
-#    pass
-#
-#def test_macd():
-#    pass
+def test_rsi():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    rsi = RSI(stick, 5)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+
+def test_macd():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus)
+    stick = CandleStick(1, bus=bus)
+    wma5  = WMA(stick, 5, name='wma5')
+    wma8  = WMA(stick, 8, name='wma8')
+    macd  = MACD(wma5, wma8, 3)
+
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+    assert float(macd.diff) - -53.127777777 < 1e-7
+    assert float(macd.diff_ma) -17.7111111111 < 1e-7
+    assert float(macd.value) - 34.696296296296 < 1e-7

@@ -38,7 +38,7 @@ class SMA(Timeseries):
             self.h = []
             self.l = []
             toBar(candle)
-        self.broadcast()
+        self.broadcast(self.name)
 
     def onTick(self):
         raise NotImplementedError
