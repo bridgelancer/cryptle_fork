@@ -35,7 +35,7 @@ class WMA(Timeseries):
             self.h = []
             self.l = []
             toBar(candle)
-        self.broadcast()
+        self.broadcast(self.name)
 
     def onTick(self, price, ts, volume, action):
         raise NotImplementedError
