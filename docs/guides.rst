@@ -8,7 +8,7 @@ This part of the documentation breaks down each Cryptle subsystem one by one.
 Datafeed
 --------
 Supported datafeeds include Bitstamp and Bitfinex. Datafeed classes generally
-has the following interfaces:
+has the following methods:
 
 :code:`connect()` starts a thread for a long-polled socket that sends and
 receives messages.
@@ -31,9 +31,10 @@ Exchange
 Todo.
 
 
-Backteting and Paper Trading
-----------------------------
-Todo.
+Backtesting and Paper Trading
+-----------------------------
+:mod:`backtest` :class:`Paper` is the heart and soul of backtesting in
+Cryptle.
 
 
 Event Bus
