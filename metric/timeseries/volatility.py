@@ -8,7 +8,6 @@ class Volatility(Timeseries):
         self._ts       = ts
         self._cache    = []
 
-    @on('aggregator:new_candle')
     @Timeseries.cache
     def evaluate(self, bar, candle):
         if np.std(self._cache) > 0:

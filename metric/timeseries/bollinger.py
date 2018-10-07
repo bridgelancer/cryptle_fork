@@ -20,9 +20,6 @@ class BollingerBand(Timeseries):
         self.x = 0
 
     def evaluate(self):
-        self._width.evaluate()
-        self._upperband.evaluate()
-        self._lowerband.evaluate()
         try:
             self.value = (float(self._upperband) / float(self._lowerband) - 1) * 100
         except:
@@ -32,7 +29,8 @@ class BollingerBand(Timeseries):
         raise NotImplementedError
 
 class width(Timeseries):
-    def __init__(self, ts, lookback):
+    def __init__(self, ts, lookback, name=None):
+        super().__init__(ts=ts, name=name)
         self._lookback = lookback
         self._ts       = ts
         self._cache    = []
@@ -41,12 +39,14 @@ class width(Timeseries):
     @Timeseries.cache
     def evaluate(self):
         self.value = np.std(self._cache, ddof=1)
+        self.broadcast()
 
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError
 
 class upperband(Timeseries):
-    def __init__(self, ts, lookback, width, upper_sd):
+    def __init__(self, ts, lookback, width, upper_sd, name=None):
+        super().__init__(ts=ts, name=name)
         self._lookback = lookback
         self._ts       = ts
         self._cache    = []
@@ -57,13 +57,15 @@ class upperband(Timeseries):
     @Timeseries.cache
     def evaluate(self):
         self.value = sum(self._cache)/self._lookback + self._uppersd * float(self._width)
+        self.broadcast()
 
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError
 
 
 class lowerband(Timeseries):
-    def __init__(self, ts, lookback, width, lower_sd):
+    def __init__(self, ts, lookback, width, lower_sd, name=None):
+        super().__init__(ts=ts, name=name)
         self._lookback = lookback
         self._ts       = ts
         self._cache    = []
@@ -74,6 +76,7 @@ class lowerband(Timeseries):
     @Timeseries.cache
     def evaluate(self):
         self.value = sum(self._cache)/self._lookback - self._lowersd * float(self._width)
+        self.broadcast()
 
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError

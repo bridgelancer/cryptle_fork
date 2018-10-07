@@ -62,6 +62,8 @@ class RSI(Timeseries):
         if len(self._cache) > 2:
             self._cache = self._cache[-2:]
 
+        self.broadcast()
+
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError
 

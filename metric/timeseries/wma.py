@@ -26,7 +26,6 @@ class WMA(Timeseries):
                 c = np.average(self.c, axis=0, weights=self._weights)
                 h = np.average(self.h, axis=0, weights=self._weights)
                 l = np.average(self.l, axis=0, weights=self._weights)
-
                 self.bar = Candle(o, c, h, l, 0, 0)
 
         if self._bar:

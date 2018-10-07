@@ -284,7 +284,7 @@ class Timeseries:
                 return lst
             else:
                 return lst[-lookback:]
-        # **TODO** handle the case of multiple underlying timeseries and the related caching issues
+
         def wrapper(*args, **kwargs):
             # set alias self
             self = args[0]
@@ -293,9 +293,11 @@ class Timeseries:
             if '_cache' not in self.__dict__.keys():
                 self._cache = []
             if isinstance(self._ts, list):
+                # exception case handling - for CandleStick-like object
                 if self._ts[-1] is None or isinstance(self._ts[-1], float):
                     self._cache.append(self._ts[-1])
                     self._cache = prune(self._cache, self._lookback)
+                # handle the case when self._ts is a list of ts objects
                 if isinstance(self._ts[-1], Timeseries):
                     zip(*self._cache)
                     try:
@@ -304,13 +306,21 @@ class Timeseries:
                         pass
                     self._cache = prune(self._cache, self._lookback)
                     zip(*self._cache)
+
             elif isinstance(self._ts, Timeseries):
-                # handling single value cases
+                # handle the case when self._ts is a ts object or when candlestick as underlying ts
                 try:
                     self._cache.append(float(self._ts))
                 except:
                     pass
-                self._cache = prune(self._cache, self._lookback)
+                # consider disallow any direct sourcing from candlestick apart from direct object
+                try:
+                    if self.bar:
+                        self._cache.pop()
+                        self._cache.append(self._ts.accessBar())
+                except:
+                    pass
+            self._cache = prune(self._cache, self._lookback)
             func(*args, **kwargs)
         return wrapper
 

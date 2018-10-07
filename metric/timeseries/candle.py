@@ -13,16 +13,17 @@ implemented for the new Timeseries paradigm.
 
 class CandleStick(Timeseries):
     ''' Extracted wrapper function of the original CandleBar class'''
-    def __init__(self, lookback, bus=None):
+    def __init__(self, lookback, bar=False, bus=None):
         super().__init__()
         self._lookback = lookback
+        # self._ts needs pruning in this case - @TODO
         self._ts       = []
-        self._cache    = []
         self.o         = Open(self._ts, lookback)
         self.c         = Close(self._ts, lookback)
         self.h         = High(self._ts, lookback)
         self.l         = Low(self._ts, lookback)
         self.value     = None
+        self.bar       = bar
         if isinstance(bus, Bus):
             bus.bind(self)
 
@@ -32,9 +33,13 @@ class CandleStick(Timeseries):
     def appendTS(self, data):
         self._ts.append(data)
         self.evaluate()
+        self.prune()
         self.broadcast()
 
-    @Timeseries.cache
+    def prune(self):
+        if len(self._ts) > 365:
+            self._ts = self._ts[-365:]
+
     def evaluate(self):
         self.o.evaluate()
         self.c.evaluate()
@@ -47,56 +52,69 @@ class CandleStick(Timeseries):
         except:
             self.value = None
 
+    def accessBar():
+        return [float(x) for x in [self.o, self, c, self.h, self.l, self.v]]
+
 class Open(Timeseries):
 
-    def __init__(self, bar, lookback):
+    def __init__(self, ts, lookback, name=None):
+        super().__init__(ts=ts, name=name)
         self._lookback  = lookback
-        self._ts        = bar
+        self._ts        = ts
         self.value      = None
 
     @Timeseries.cache
     def evaluate(self):
         try:
             self.value = self._ts[-1][0]
+            self.broadcast()
         except:
             self.value = None
 
 class Close(Timeseries):
 
-    def __init__(self, bar, lookback):
+    def __init__(self, ts, lookback, name=None):
+        super().__init__(ts=ts, name=name)
         self._lookback = lookback
-        self._ts       = bar
+        self._ts       = ts
         self.value     = None
 
     def evaluate(self):
         self.value = self._ts[-1][1]
+        self.broadcast()
 
 class High(Timeseries):
 
-    def __init__(self, bar, lookback):
+    def __init__(self, ts, lookback, name=None):
+        super().__init__(ts=ts, name=name)
         self._lookback = lookback
-        self._ts      = bar
+        self._ts      = ts
         self.value     = None
 
     def evaluate(self):
         self.value = self._ts[-1][2]
+        self.broadcast()
 
 class Low(Timeseries):
 
-    def __init__(self, bar, lookback):
+    def __init__(self, ts, lookback, name=None):
+        super().__init__(ts=ts, name=name)
         self._lookback = lookback
-        self._ts      = bar
+        self._ts      = ts
         self.value     = None
 
     def evaluate(self):
         self.value = self._ts[-1][3]
+        self.broadcast()
 
 class Volume(Timeseries):
 
-    def __init__(self, bar, lookback):
+    def __init__(self, ts, lookback, name=None):
+        super().__init__(ts=ts, name=name)
         self._lookback = lookback
-        self._ts      = bar
+        self._ts      = ts
         self.vallue    = None
 
     def evaluate(self):
         self.value = self._ts[-1][4]
+        self.broadcast()
