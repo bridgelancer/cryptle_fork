@@ -205,21 +205,24 @@ class Timeseries:
     #is deferred to a later stage due to prioritization of tasks.
 
     def __init__(self, ts=None, name=None):
-    # self.subscribers are the dictionary of timeseries object that listen to this timeseries
-    # instance
-        self.subscribers = dict()
+        # self.subscribers are the dictionary of timeseries objects that this instance subscribes to
+        self.subscribers = []
+        # self.subscribers_broadcasted is the set of timeseries that broadcasted previously
         self.subscribers_broadcasted = set()
-        self.listeners   = dict()
+        # self.listeners is the dictionary of timeseries objects that listen to this timeseries
+        self.listeners = []
         self.name = name or self.__class__.__name__
 
         # ts is either a single ts object, or list containing multiple ts objects
         if ts is not None and not isinstance(ts, list):
-            ts.listeners[self.name]     = self
-            self.subscribers[ts.name]   = ts
+            # for single ts object
+            ts.listeners.append(self)
+            self.subscribers.append(ts)
         elif ts is not None and isinstance(ts, list):
+            # for a list containing multiple ts objects
             for t in ts:
-                t.listeners[self.name]    = self
-                self.subscribers[t.name]  = t
+                t.listeners.append(self)
+                self.subscribers.append(t)
 
     def __float__(self):
         try:
@@ -232,36 +235,41 @@ class Timeseries:
     def evaluate(self):
         raise NotImplementedError
 
-    def processBroadcast(self, ts_name):
+    # by default, a listener would update only after all its subscribers updated once
+    def processBroadcast(self, index):
         if len(self.subscribers) == 1:
             self.update()
-        # by default, processBroadcast trigger self.update only if
         else:
-            self.subscribers_broadcasted.add(ts_name)
+            self.subscribers_broadcasted.add(self.subscribers[index].name)
             if len(self.subscribers_broadcasted) < len(self.subscribers):
                 pass
-            elif len(self.subscribers_broadcasted) == len(self.subscribers):
+            else:
                 self.subscribers_broadcasted.clear()
                 self.update()
 
-
     def update(self):
-        # currnetly, all evaluate of listeners would be called if candle decides to broadcast
+        # by current design, all evaluate of listeners would be called if candle decides to broadcast
         self.evaluate()
 
-    # this calls all the update methods of the instances which subscribe to the root timeseries
-    def broadcast(self, ts_name):
+    # this calls all the processBroadcast methods of the instances which subscribe to the root timeseries
+    def broadcast(self):
+        # for list version of this paradigm
+        # 1. find the index corresponds to the root instance in each listener.subscribers
+        # 2. pass the index to listener
         for listener in self.listeners:
-            self.listeners[listener].processBroadcast(self.name)
+            pos = listener.subscribers.index(self)
+            listener.processBroadcast(pos)
 
     # currently not in use
     def register(self, new_ts):
         # this registers listener to the self.listeners dictionary
         self.listeners[new_ts.name] = new_ts
+        #self.listners.append(new_ts)
 
     # currently not in use
     def unregister(self, ts):
         del self.listeners[ts.name]
+        #self.listeners.pop(ts)
 
     # pseudo-decorator for maintainng valid main cache in any instance of any Timeseries object
     def cache(func):
@@ -305,6 +313,7 @@ class Timeseries:
                 self._cache = prune(self._cache, self._lookback)
             func(*args, **kwargs)
         return wrapper
+
 
     # psuedo-decorator for maintaining valid open, close, high, low caches in any instance of any base class
     def bar_cache(func):

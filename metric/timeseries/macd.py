@@ -26,7 +26,7 @@ class MACD(Timeseries):
         self.value = None
 
     def evaluate(self):
-        self.broadcast(self.name)
+        self.broadcast()
         try:
             self.value = float(self.diff) - float(self.diff_ma)
         except:
@@ -51,7 +51,7 @@ class diff(Timeseries):
             self.value = float(self._fast) - float(self._slow)
         except:
             pass
-        self.broadcast(self.name)
+        self.broadcast()
 
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError
@@ -71,5 +71,5 @@ class diff_ma(Timeseries):
             self.value = np.average(self._cache, axis=0, weights = self._weights)
         except:
             pass
-        self.broadcast(self.name)
+        self.broadcast()
 
