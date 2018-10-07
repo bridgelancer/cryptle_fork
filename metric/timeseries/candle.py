@@ -32,7 +32,7 @@ class CandleStick(Timeseries):
     def appendTS(self, data):
         self._ts.append(data)
         self.evaluate()
-        self.broadcast(self.name)
+        self.broadcast()
 
     @Timeseries.cache
     def evaluate(self):
