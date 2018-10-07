@@ -39,6 +39,7 @@ class EMA(Timeseries):
         if self._bar:
             self.o = self.h = self.c = self.l = None
             toBar(candle)
+        self.broadcast()
 
     def onTick(self, value, timestamp, volume=0, netvol=0):
         raise NotImplementedError

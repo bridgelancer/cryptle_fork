@@ -48,8 +48,8 @@ alt_quad     = [(100 + ((-1) ** i) * (i/4) **2) for i in range(1, 100)]
 alt_quad_10k = [(100 + ((-1) ** i) * (i/4) ** 2) for i in range(1, 100)]
 logistic     = [(10 / ( 1 + 100 * math.exp(-i/10))) for i in range(1, 100)]
 sine         = [(100) + (1/4) * ( 2* math.sin(i) ** 3 * i - math.sin(i) ** 5) / 2 / (i /1.5) for i in range(1, 100)]
-bars         = [[1,3,4,0,0,0], [2,4,5,1,1,7], [6,6,6,6,2,8]]
-
+bars         = [[1,3,4,0,0,0], [2,4,5,1,1,7], [6,6,6,6,2,8], [1,3,4,0,0,0], [2,4,5,1,1,7],
+        [6,6,6,6,2,8]] * 100
 
 def test_candle():
     c = Candle(4, 7, 10, 3, 12316, 1, 1)
@@ -88,7 +88,6 @@ def pushTick(tick):
     return tick
 
 def test_sma():
-
     bus = Bus()
     bus.bind(pushTick)
     aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
@@ -164,3 +163,74 @@ def test_macd():
     assert float(macd.diff) - -53.127777777 < 1e-7
     assert float(macd.diff_ma) -17.7111111111 < 1e-7
     assert float(macd.value) - 34.696296296296 < 1e-7
+
+def test_difference():
+    pass
+
+def test_atr():
+    @source('candle')
+    def pushCandle(bar):
+        return bar
+    bus = Bus()
+    bus.bind(pushCandle)
+    aggregator = Aggregator(5, bus=bus)
+    stick = CandleStick(5, bus=bus)
+    atr = ATR(stick, 5)
+    for i, bar in enumerate(bars):
+        pushCandle([*bar, 0])
+
+def test_kurtosis():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    kurt = Kurtosis(stick, 5)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+    assert kurt.value - -3.323900651 < 1e-5
+
+def test_skewness():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    skew = Skewness(stick, 5)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+    assert skew.value - 0.60615850445 < 1e-5
+
+# not validated - forgotten formula
+def test_williamR():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    william = WilliamPercentR(stick, 5)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+
+def test_volatility():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    sd = SD(stick, 5)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+    assert sd.value - 0.0015513475 < 1e-7
+
+def test_diff():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    sd = SD(stick, 5)
+    diff = Difference(sd)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+        try:
+            print(diff.value)
+        except:
+            pass
+    assert diff.value - -3.2466947194 * 1e-5 < 1e-7
+
