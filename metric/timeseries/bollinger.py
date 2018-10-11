@@ -1,5 +1,4 @@
 from metric.base import Timeseries
-from cryptle.event import on, source
 import numpy as np
 
 class BollingerBand(Timeseries):
