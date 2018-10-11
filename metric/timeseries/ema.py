@@ -1,5 +1,4 @@
 from metric.base import Timeseries
-from cryptle.event import on
 
 def default(lookback):
     return 2 / (lookback + 1)

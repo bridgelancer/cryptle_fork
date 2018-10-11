@@ -1,5 +1,4 @@
 from metric.base import Timeseries
-from cryptle.event import source, on
 import numpy as np
 
 class ATR(Timeseries):

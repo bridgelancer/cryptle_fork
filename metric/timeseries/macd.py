@@ -1,6 +1,5 @@
 from metric.base import Timeseries
 from metric.timeseries.wma import WMA
-from cryptle.event import on
 
 import numpy as np
 

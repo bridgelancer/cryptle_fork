@@ -1,15 +1,15 @@
 from cryptle.event import source, on
 
 class Registry:
-    '''Registry class that keeps record of the various important state information for the Strategy
+    '''Registry class keeps record of the various important state information for the Strategy
     class. Registry is also responsible for dispatching Events that signifiy the execution of logical tests
     at desired time and frequency as time elapsed.
 
     Args:
-        setup (Dictionary): {'actionname': [[whenexec], {constraints after triggered}]}
+        setup (Dictionary): {'actionname': [[when to execute], {constraints after triggered}]}
 
-    Registry would dictate when these logical tests should execute. The logical tests of the Strategy class
-    should only execute when they receive their corresponding "registry:test" signals. Signals
+    Registry would dictate when these logical tests execute. The logical tests of the Strategy class
+    should only execute when they receive their corresponding "registry:test_name" signals. Signals
     are "triggered" if their test return True. In this situation, triggered tests should generate a
     "strategy:triggered" event with its name (in string) as the associated value.
 
@@ -18,11 +18,10 @@ class Registry:
         self.setup = setup
         self.logic_status = {key: [[], {}] for key in setup.keys()} # this holds runtime after triggered
                                                               # states of actions
-
         # bar-related states that should be source by aggregator
+        self.bars = []
         self.open_price = None
         self.close_price = None
-        self.bars = []
         self.num_bars = 0
         self.new_open = False
         self.new_close = False

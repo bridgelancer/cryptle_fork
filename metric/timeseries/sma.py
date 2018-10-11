@@ -1,5 +1,4 @@
 from metric.base import Timeseries, Candle
-from cryptle.event import on, source, Bus
 import numpy as np
 
 class SMA(Timeseries):

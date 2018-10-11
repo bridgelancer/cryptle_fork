@@ -1,4 +1,3 @@
-from cryptle.event import on
 from metric.base import Timeseries
 import numpy as np
 
