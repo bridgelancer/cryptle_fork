@@ -16,7 +16,7 @@ class Registry:
     '''
     def __init__(self, setup):
         self.setup = setup
-        self.logic_status = {key: [[], {}] for key in setup.keys()} # this holds runtime after triggered
+        self.logic_status = {key: {} for key in setup.keys()} # this holds runtime after triggered
                                                               # states of actions
         # bar-related states that should be source by aggregator
         self.bars = []
@@ -33,10 +33,15 @@ class Registry:
         self.sell_count = 0
         self.lookup_check   = {'open': self.new_open,
                                'close': self.new_close,}
+        # key-value pair with class function as value to name of contraints
         self.lookup_trigger = {'once per bar': self.once_per_bar,
                                'once per trade': self.once_per_trade,
+                               'once per period': self.once_per_period,
+                               'once per signal': self.once_per_signal,
                                'n per bar': self.n_per_bar,
-                               'n per trade': self.n_per_trade,}
+                               'n per period': self.n_per_period,
+                               'n per trade': self.n_per_trade,
+                               'n per signal': self.n_per_signal}
 
     # refresh Functions to maintain correct states
     @on('tick') # tick should be fairly agnostic to sources, but should hold predefined format
@@ -57,37 +62,62 @@ class Registry:
         self.close_price = price
         self.new_close = True
 
-    @on('buy') # 'buy', 'sell' events are not implemented for the moment
+    # these flags are still largely imaginary and are not tested
+    @on('buy') # 'buy', 'sell' events are not integrated for the moment
     def refreshBuy(self):
         self.buy_count += 1
 
-    @on('sell')
+    # these flags are still largely imaginary and are not tested
+    @on('sell') # 'buy', 'sell' events are not integrated for the moment
     def refreshSell(self):
         self.sell_count += 1
 
     @on('aggregator:new_candle')
     def refreshCandle(self, bar):
         self.bars.append(bar)
-        # this removes all the 'once per bar' constraint for every action
+        # this removes all the 'once per bar' and 'n per bar' constraint for every candle
+        # refreshLogicStatus()
         for key in self.logic_status.keys():
-            once = self.logic_status[key][0]
-            multi = self.logic_status[key][1]
-            if 'once per bar' in once:
-                once.pop(once.index('once per bar'))
-            if 'n per bar' in multi.keys():
-                del multi['n per bar']
+            self.handleLogicStatus(key, 'candle')
+
+        if len(self.bars) > 1000:
+            self.bars = self.bars[-1000:]
+
+    def handleLogicStatus(self, key, timeEvent):
+        # hierachy - bar < period < trade < someshit(s) or < someshit(s) < trade? or customizable?
+        # in any way, when ambiguous -> always take the most lenient one as the one with lowest
+        # hierachy, bar < period < anythng is not ambiguous
+
+        # for any set of given trigger constraint, the format needs to follow the following
+        # specification: a dictionary with a string as key to specify constraint category and a
+        # list to specify the permissible number of times to be triggered under that type of
+        # category e.g. {'bar': [1, 1], 'period': [2,3], 'trade': [4, 4], 'signal1': [5,1], 'signal2':
+        # [6,2]}
+
+        # All constraints would be updated when there is a successful trigger of the test. Whether
+        # or not a subsequent trigger is blocked depends on the updated status of the logic status:
+        # if the lowest category has no more available chances for triggering but the higher
+        # categories still have available chances, then the subsequent trigger within the timeframe
+        # of the lowest category is blocked until it is refreshed by the passage of time. If the
+        # highest category has no more available chances for triggering, then the test could not be
+        # triggered subsequently unless the status of the highest category is refreshed.
+
+        test = self.logic_status[key]
+        if timeEvent == 'candle':
+            test = {cat:val for cat, val in test.items() if cat != 'bar'}
+            self.logic_status[key] = test
+
     # emitExecute push execute Event to Bus
     @source('registry:execute')
     def emitExecute(self, key):
-        # temporary return format, might be revamped
+        # temporary return format for backtesting purposes
         return [str(key), self.current_time, self.current_price]
 
-    # on arrival of tick, handleCheck carries out check
+    # on arrival of tick, handleCheck calls check and carries out checking
     @on('tick')
     def handleCheck(self, tick):
-        setup = self.setup
-        for key in setup.keys():
-            self.check(key, setup[key][0])
+        for key in self.setup.keys():
+            self.check(key, self.setup[key][0])
 
     # check is responsible to verify the current state against the constraints stored within
     # self.setup, it should also check whether any triggered constraint is currently in
@@ -95,13 +125,15 @@ class Registry:
     def check(self, key, whenexec):
         key_constr = self.logic_status[key]
         if (all(self.lookup_check[constraint] for constraint in whenexec) and
-            key_constr[0] == [] and
-            all(key_constr[1][constraint] != 1 for constraint in key_constr[1].keys())): # now only works if no constraint is placed
+                (all(key_constr[constraint][0] > 1 for constraint in key_constr) or (key_constr ==
+                    {} ))):
+                print(key_constr)
                 self.emitExecute(key)
 
     # This handles all the triggered tests and apply suitable constraints via constraint functions
     @on('strategy:triggered')
     def handleTrigger(self, action):
+        # for updating constraints in the list of setup
         for item in self.setup[action][1][0]:
             constraint = self.lookup_trigger[item]
             constraint(action)
@@ -111,22 +143,45 @@ class Registry:
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
     def once_per_bar(self, action):
-        self.logic_status[action][0].append('once per bar')
+        if 'bar' not in self.logic_status[action].keys():
+            self.logic_status[action]['bar'] = [1, 1]
+        else:
+            self.logic_status[action]['bar'][0] -= 1
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
     def n_per_bar(self, action, n):
-        if 'n per bar' not in self.logic_status[action][1]:
-            self.logic_status[action][1]['n per bar'] = n
+        if 'bar' not in self.logic_status[action].keys():
+            self.logic_status[action]['bar'] = [n, 1]
         else:
-            self.logic_status[action][1]['n per bar'] -= 1
+            self.logic_status[action]['bar'][0] -= 1
+
+    # think of a suitable data structure for storing the updating of these caches
+    def once_per_period(self, action, period):
+        self.logic_status[action]['period'] = [1, period]
+
+    # think of a suitable data structure for storing the updating of these caches
+    def n_per_period(self, action, period, n):
+        if 'period' not in self.logic_status[action].keys():
+            self.logic_status[action]['period'] = [n, period]
+        else:
+            self.logic_status[action]['period'][0] -= 1
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
     def once_per_trade(self, action):
-        self.logic_status[action][0].append('once per trade')
+        self.logic_status[action]['trade'] = [1, 1]
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
     def n_per_trade(self, action, n):
-        if 'n per trade' not in self.logic_status[action][1]:
-            self.logic_status[action][1]['n per trade'] = n
-        elif self.logic_status[action][1]['n per trade'] > 1:
-                self.logic_status[action][1]['n per trade'] -= 1
+        if 'trade' not in self.logic_status[action].keys():
+            self.logic_status[action]['trade'] = [n, 1]
+        else:
+            self.logic_status[action]['trade'][0] -= 1
+
+    def once_per_signal(self, action, signal):
+        self.logic_status[action][str(signal)] = [1, 1]
+
+    def n_per_signal(self, action, signal, n):
+        if str(signal) not in self.logic_status[action].keys():
+            self.logic_status[action][str(signal)] = [n, 1]
+        else:
+            self.logic_status[action][str(signal)][0] -= 1
