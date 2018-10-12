@@ -88,7 +88,7 @@ def test_aggregator():
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
-    print(aggregator._bars[-1])
+    #print(aggregator._bars[-1])
 
 
 def test_handleTrigger():
@@ -104,11 +104,11 @@ def test_handleTrigger():
     bus.bind(registry)
 
     emitTrigger()
-    assert registry.logic_status == {'twokprice': [['once per bar', 'once per trade'], {}]}
+    assert registry.logic_status == {'twokprice': {'bar': [1, 1], 'trade': [1, 1]}}
 
 # this also implicitly tested once per bar function, verify by using -s flag to observe the print
 # behaviour
-def test_executeAfterTrigger():
+def test_execute_after_trigger():
     setup = {'twokprice': [[], [['once per bar'], {}]]}
     registry = Registry(setup)
     aggregator = Aggregator(3600)
@@ -126,7 +126,7 @@ def test_executeAfterTrigger():
     # client code that mimics that actual logic tests implemented in Strategy instance
     @on('registry:execute')
     def twokprice(data):
-        #print(data[1], data[2])
+        print(data[1], data[2])
         emitTrigger() # should pass its name (action name) to emitTrigger
 
     # intitiate and binding class instances and functions to Bus
