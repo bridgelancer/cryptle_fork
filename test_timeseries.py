@@ -154,6 +154,7 @@ def test_macd():
     bus.bind(pushTick)
     aggregator = Aggregator(1, bus=bus)
     stick = CandleStick(1, bus=bus)
+
     wma5  = WMA(stick, 5, name='wma5')
     wma8  = WMA(stick, 8, name='wma8')
     macd  = MACD(wma5, wma8, 3)
@@ -228,9 +229,5 @@ def test_diff():
     diff = Difference(sd)
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
-        try:
-            print(diff.value)
-        except:
-            pass
     assert diff.value - -3.2466947194 * 1e-5 < 1e-7
 
