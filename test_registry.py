@@ -16,6 +16,8 @@ from cryptle.event import source, on, Bus
 from cryptle.registry import Registry
 from cryptle.loglevel import *
 from cryptle.aggregator import Aggregator
+from metric.timeseries.candle import CandleStick
+from metric.timeseries.sma import SMA
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -31,7 +33,7 @@ def test_registry_construction():
 
 # only activate when it is bar close
 def test_on_close():
-    setup = {'close': [['open'], [['once per bar'], {}]]}
+    setup = {'close': [['close'], [['once per bar'], {}]]}
     registry = Registry(setup)
 
     @source('aggregator:new_close')
@@ -192,7 +194,7 @@ def test_one_per_period():
     # client code that mimics that actual logic tests implemented in Strategy instance
     @on('registry:execute')
     def twokprice(data):
-        print(data[1], data[2])
+        #print(data[1], data[2])
         emitTrigger() # should pass its name (action name) to emitTrigger
 
     # intitiate and binding class instances and functions to Bus
@@ -209,13 +211,129 @@ def test_one_per_period():
         emitTick(data)
 
 def test_n_per_period():
-    pass
+    setup = {'twokprice': [[], [[], {'n per period': [3, 3]}]]}
+    registry = Registry(setup)
+    aggregator = Aggregator(3600)
+
+    # emit tick to trigger check
+    @source('tick')
+    def emitTick(tick):
+        return tick
+
+    # emit Trigger to enforce post-triggered restraints
+    @source('strategy:triggered')
+    def emitTrigger():
+        return 'twokprice'
+
+    # client code that mimics that actual logic tests implemented in Strategy instance
+    @on('registry:execute')
+    def twokprice(data):
+        #print(data[1], data[2])
+        emitTrigger() # should pass its name (action name) to emitTrigger
+
+    # intitiate and binding class instances and functions to Bus
+    bus = Bus()
+    bus.bind(emitTrigger)
+    bus.bind(twokprice)
+    bus.bind(registry)
+    bus.bind(aggregator)
+    bus.bind(emitTick)
+
+    # Tick-generating for loop using default dataset
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
+
+def test_once_per_bar_n_per_period():
+    setup = {'twokprice': [[], [['once per bar'], {'n per period': [3, 5]}]]}
+    registry = Registry(setup)
+    aggregator = Aggregator(3600)
+
+    # emit tick to trigger check
+    @source('tick')
+    def emitTick(tick):
+        return tick
+
+    # emit Trigger to enforce post-triggered restraints
+    @source('strategy:triggered')
+    def emitTrigger():
+        return 'twokprice'
+
+    # client code that mimics that actual logic tests implemented in Strategy instance
+    @on('registry:execute')
+    def twokprice(data):
+        print(data[1], data[2])
+        emitTrigger() # should pass its name (action name) to emitTrigger
+
+    # intitiate and binding class instances and functions to Bus
+    bus = Bus()
+    bus.bind(emitTrigger)
+    bus.bind(twokprice)
+    bus.bind(registry)
+    bus.bind(aggregator)
+    bus.bind(emitTick)
+
+    # Tick-generating for loop using default dataset
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
 
 def test_one_per_signal():
-    pass
+    setup      = {'twokprice': [[], [['once per bar'], {'once per signal': ['sma']}]],}
+    bus        = Bus()
+    registry   = Registry(setup)
+    aggregator = Aggregator(3600, bus=bus)
+    stick      = CandleStick(1, bus=bus)
+    sma        = SMA(stick, 5)
+
+    # emit tick to trigger check
+    @source('tick')
+    def emitTick(tick):
+        return tick
+
+    # emit Trigger to enforce post-triggered restraints
+    @source('strategy:triggered')
+    def emitPrintTrigger():
+        return 'twokprice'
+
+    # This exists purely because one function could not emit two types of events
+    @source('signal')
+    def emitSMATrigger(test, boolean):
+        return [test, boolean]
+
+    # sourcing 'strategy:triggered', only triggered if sma > last open
+    @on('aggregator:new_candle')
+    def aboveSMA(data):
+        if sma.value > float(stick.o):
+            emitSMATrigger('sma', True)
+            return 'sma'
+        else:
+            emitSMATrigger('sma', False)
+            return 'sma'
+
+
+    # client code that mimics that actual logic tests implemented in Strategy instance
+    @on('registry:execute')
+    def twokprice(data):
+        #print(data[1], data[2])
+        emitPrintTrigger() # should pass its name (action name) to emitTrigger
+
+    # intitiate and binding class instances and functions to Bus
+    bus.bind(emitPrintTrigger)
+    bus.bind(emitSMATrigger)
+    bus.bind(twokprice)
+    bus.bind(aboveSMA)
+    bus.bind(registry)
+    bus.bind(aggregator)
+    bus.bind(stick)
+    bus.bind(emitTick)
+
+    # Tick-generating for loop using default dataset
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
+    print(registry.logic_status)
 
 def test_n_per_signal():
     pass
 
-def test_multiple_restraints():
-    pass

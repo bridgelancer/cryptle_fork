@@ -86,19 +86,38 @@ class Registry:
 
     @on('aggregator:new_candle')
     def refreshPeriod(self, bar):
-        # this function should maintain logical states of all period-related constraints
+        # refreshPeriod should maintain logical states of all period-related constraints
         timeToRefresh = False
-
         for key in self.logic_status.keys():
             if 'period' not in self.logic_status[key]:
                 continue
-            if 'period' in self.logic_status[key]:
+            elif 'period' in self.logic_status[key]:
                 activated_time = self.logic_status[key]['period'][2]
                 period         = self.logic_status[key]['period'][1]
                 if self.num_bars - activated_time >= period:
                     timeToRefresh = True
             if timeToRefresh:
                 self.handleLogicStatus(key, 'period')
+
+    @on('signal') # 'signal' event could be any arbirtary flags, not standardized at the moment
+    def refreshSignal(self, signal):
+        # refreshSignal should maintain logical states of all signal-related constraints
+        signalToRefresh = False
+        signalname, boolean = signal
+        for key in self.logic_status.keys():
+            if signalname not in self.logic_status[key]:
+                if not boolean:
+                    continue
+                else:
+                    dictionary = self.setup[key][1][1]
+                    item = [k for k,v in dictionary.items() if v[-1] == signalname]
+                    constraint = self.lookup_trigger[item[-1]]
+                    constraint(key, *dictionary[item[-1]])
+            elif signalname in self.logic_status[key]:
+                if not boolean:
+                    signalToRefresh = True
+            if signalToRefresh:
+                self.handleLogicStatus(key, signalname)
 
     def handleLogicStatus(self, key, timeEvent):
         # hierachy - bar < period < trade < someshit(s) or < someshit(s) < trade? (or customizable?)
@@ -107,8 +126,8 @@ class Registry:
         # for any set of given trigger constraint, the format needs to follow the following
         # specification: a dictionary with a string as key to specify constraint category and a
         # list to specify the permissible number of times to be triggered under that type of
-        # category e.g. {'bar': [1, 1], 'period': [2,3], 'trade': [4, 4], 'signal1': [5,1], 'signal2':
-        # [6,2]}
+        # category e.g. {'bar': [1, 1], 'period': [2, 3], 'trade': [4, 4], 'signal1': [5, 1], 'signal2':
+        # [6, 2]}
 
         # All constraints would be updated when there is a successful trigger of the test. Whether
         # or not a subsequent trigger is blocked depends on the updated status of the logic status:
@@ -122,13 +141,12 @@ class Registry:
         if timeEvent == 'candle':
             test = {cat:val for cat, val in test.items() if cat != 'bar'}
             self.logic_status[key] = test
-        if timeEvent == 'period':
+        elif timeEvent == 'period':
             test = {cat:val for cat, val in test.items() if cat != 'period'}
             self.logic_status[key] = test
-        if timeEvent == 'trade':
-            raise NotImplementedError
-        if timeEvent == 'signal':
-            raise NotImplementedError
+        else:
+            test = {cat:val for cat, val in test.items() if cat != timeEvent}
+            self.logic_status[key] = test
 
     # emitExecute push execute Event to Bus
     @source('registry:execute')
@@ -142,7 +160,7 @@ class Registry:
         for key in self.setup.keys():
             self.check(key, self.setup[key][0])
 
-    # check is responsible to verify the current state against the constraints stored within
+    # check is responsible to verify the current state against the constraints stored signal, *argsn
     # self.setup, it should also check whether any triggered constraint is currently in
     # place, source a "registry:execute" event when all are triggered
     def check(self, key, whenexec):
@@ -152,7 +170,7 @@ class Registry:
                     {} ))):
                 self.emitExecute(key)
 
-    # This handles all the triggered tests and apply suitable constraints via constraint functions
+    # handleTrigger handles all the triggered tests and apply suitable constraints via constraint functions
     @on('strategy:triggered')
     def handleTrigger(self, action):
         # for updating constraints in the list of setup[1]
@@ -180,31 +198,40 @@ class Registry:
 
     # think of a suitable data structure for storing the updating of these caches
     def once_per_period(self, action, *args):
-        self.logic_status[action]['period'] = [1, *args, self.num_bars]
+        if 'bar' not in self.logic_status[action].keys():
+            self.logic_status[action]['period'] = [1, *args, self.num_bars]
+        else:
+            self.logic_status[action]['period'][0] -=1
 
     # think of a suitable data structure for storing the updating of these caches
-    def n_per_period(self, action, period, n):
+    def n_per_period(self, action, *args):
         if 'period' not in self.logic_status[action].keys():
-            self.logic_status[action]['period'] = [n, period, self.num_bars]
+            self.logic_status[action]['period'] = [*args, self.num_bars]
         else:
             self.logic_status[action]['period'][0] -= 1
 
     # constraint function after triggering, consider revamping into handleTrigger altogether
     def once_per_trade(self, action):
-        self.logic_status[action]['trade'] = [1, 1, self.num_bars]
-
-    # constraint function after triggering, consider revamping into handleTrigger altogether
-    def n_per_trade(self, action, n):
-        if 'trade' not in self.logic_status[action].keys():
-            self.logic_status[action]['trade'] = [n, 1, self.num_bars]
+        if 'period' not in self.logic_status[action].keys():
+            self.logic_status[action]['trade'] = [1, 1, self.num_bars]
         else:
             self.logic_status[action]['trade'][0] -= 1
 
-    def once_per_signal(self, action, signal):
-        self.logic_status[action][str(signal)] = [1, 1, self.num_bars]
-
-    def n_per_signal(self, action, signal, n):
-        if str(signal) not in self.logic_status[action].keys():
-            self.logic_status[action][str(signal)] = [n, 1, self.num_bars]
+    # constraint function after triggering, consider revamping into handleTrigger altogether
+    def n_per_trade(self, action, *args):
+        if 'trade' not in self.logic_status[action].keys():
+            self.logic_status[action]['trade'] = [*args, 1, self.num_bars]
         else:
-            self.logic_status[action][str(signal)][0] -= 1
+            self.logic_status[action]['trade'][0] -= 1
+
+    def once_per_signal(self, action, signal, *args):
+        if signal not in self.logic_status[action].keys():
+            self.logic_status[action][signal] = [1, 1, self.num_bars]
+        else:
+            self.logic_status[action][signal][0] -= 1
+
+    def n_per_signal(self, action, signal, *args):
+        if signal not in self.logic_status[action].keys():
+            self.logic_status[action][signal] = [*args, 1, self.num_bars]
+        else:
+            self.logic_status[action][signal][0] -= 1

@@ -372,5 +372,4 @@ class GenericTS(Timeseries):
         # wrapper class
         self.value = self._eval_func(*self._args)
         self.broadcast()
-        print(type(self))
 
