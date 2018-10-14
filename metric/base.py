@@ -354,3 +354,23 @@ class Timeseries:
     def importBars(self):
         ''' import functionality to import well defined excel columns as Timeseries objects '''
         raise NotImplementedError
+
+class GenericTS(Timeseries):
+    ''' Generic Timeseries object for sub-timeseries held by wrapper Metric class '''
+    def __init__(self, ts, name=None, lookback=None, eval_func=None, args=None):
+        super().__init__(ts=ts, name=name)
+        self._lookback  = lookback
+        self._ts        = ts
+        self._cache     = []
+        self._eval_func = eval_func
+        self._args      = args
+        self.value      = None
+
+    @Timeseries.cache
+    def evaluate(self):
+        # pass a function "eval_func" reference to GenericTS.evaluate to update, eval_func should be defined in
+        # wrapper class
+        self.value = self._eval_func(*self._args)
+        self.broadcast()
+        print(type(self))
+
