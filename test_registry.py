@@ -104,7 +104,7 @@ def test_handleTrigger():
     bus.bind(registry)
 
     emitTrigger()
-    assert registry.logic_status == {'twokprice': {'bar': [1, 1], 'trade': [1, 1]}}
+    assert registry.logic_status == {'twokprice': {'bar': [1, 1, 0], 'trade': [1, 1, 0]}}
 
 # this also implicitly tested once per bar function, verify by using -s flag to observe the print
 # behaviour
@@ -126,7 +126,6 @@ def test_execute_after_trigger():
     # client code that mimics that actual logic tests implemented in Strategy instance
     @on('registry:execute')
     def twokprice(data):
-        print(data[1], data[2])
         emitTrigger() # should pass its name (action name) to emitTrigger
 
     # intitiate and binding class instances and functions to Bus
@@ -143,7 +142,40 @@ def test_execute_after_trigger():
         emitTick(data)
 
 def test_n_per_bar():
-    setup = {'twokprice': [[], [[], {'n per bar': 3}]]}
+    setup = {'twokprice': [[], [[], {'n per bar': [3]}]]}
+    registry = Registry(setup)
+    aggregator = Aggregator(3600)
+
+    # emit tick to trigger check
+    @source('tick')
+    def emitTick(tick):
+        return tick
+
+    # emit Trigger to enforce post-triggered restraints
+    @source('strategy:triggered')
+    def emitTrigger():
+        return 'twokprice'
+
+    # client code that mimics that actual logic tests implemented in Strategy instance
+    @on('registry:execute')
+    def twokprice(data):
+        emitTrigger() # should pass its name (action name) to emitTrigger
+
+    # intitiate and binding class instances and functions to Bus
+    bus = Bus()
+    bus.bind(emitTrigger)
+    bus.bind(twokprice)
+    bus.bind(registry)
+    bus.bind(aggregator)
+    bus.bind(emitTick)
+
+    # Tick-generating for loop using default dataset
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
+
+def test_one_per_period():
+    setup = {'twokprice': [[], [[], {'once per period': [3]}]]}
     registry = Registry(setup)
     aggregator = Aggregator(3600)
 
@@ -175,3 +207,15 @@ def test_n_per_bar():
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
+
+def test_n_per_period():
+    pass
+
+def test_one_per_signal():
+    pass
+
+def test_n_per_signal():
+    pass
+
+def test_multiple_restraints():
+    pass
