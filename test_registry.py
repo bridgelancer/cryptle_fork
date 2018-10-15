@@ -280,9 +280,10 @@ def test_once_per_bar_n_per_period():
         emitTick(data)
 
 def test_one_per_signal():
-    setup      = {'twokprice': [[], [['once per bar'], {'once per signal': ['sma']}]],}
+    setup      = {'twokprice': [['open'], [['once per bar'], {'once per signal': ['sma']}]]}#, 'sma':[[], [['once per bar'], {}]]}
     bus        = Bus()
     registry   = Registry(setup)
+    bus.bind(registry)
     aggregator = Aggregator(3600, bus=bus)
     stick      = CandleStick(1, bus=bus)
     sma        = SMA(stick.o, 5)
@@ -307,7 +308,6 @@ def test_one_per_signal():
     def aboveSMA(data):
         print(datetime.datetime.fromtimestamp(int(data[4])).strftime('%Y-%m-%d %H:%M:%S'),
                 "SMA:", sma.value, "Open:", data[0])
-        print(data, sma.value)
         if sma.value < float(stick.o):
             emitSMATrigger('sma', True)
             return 'sma'
@@ -326,12 +326,11 @@ def test_one_per_signal():
         emitPrintTrigger() # should pass its name (action name) to emitTrigger
 
     # intitiate and binding class instances and functions to Bus
+    bus.bind(emitTick)
     bus.bind(emitPrintTrigger)
     bus.bind(emitSMATrigger)
-    bus.bind(twokprice)
     bus.bind(aboveSMA)
-    bus.bind(registry)
-    bus.bind(emitTick)
+    bus.bind(twokprice)
 
     # Tick-generating for loop using default dataset
     for index, tick in tickset.iterrows():
