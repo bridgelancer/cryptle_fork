@@ -105,6 +105,7 @@ class Registry:
         signalToRefresh = False
         applyConstraint = False
         signalname, boolean = signal
+        # Semi-hardcoded behaviour, hierachy structure to be implemented
         for key in self.logic_status.keys():
             if signalname in self.logic_status[key]:
                 # call refreshLogicStatus if signal returned false
@@ -150,6 +151,13 @@ class Registry:
         elif timeEvent == 'period':
             test = {cat:val for cat, val in test.items() if cat != 'period'}
             self.logic_status[key] = test
+
+        # This control flow is ultimate hardcode - any signal or trade event that blocks further execution
+        # of client codes would be the only relevant condition, only reversal of that signal/trade
+        # event could lead to another execution of client codes. In the future, an explicit hierachy
+        # structure should be implemented to clearly state the behaviour instead of relying the
+        # constraint functions and refresh functions to achieve a more fine-grained control of the
+        # execution of client codes.
         else:
             test = {cat:[-1] + [x for i, x in enumerate(val) if i != 0] for cat, val in test.items() if cat == timeEvent}
             #test = {cat:val for cat, val in test.items() if cat != timeEvent}
