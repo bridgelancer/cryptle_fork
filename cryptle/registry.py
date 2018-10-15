@@ -103,21 +103,24 @@ class Registry:
     def refreshSignal(self, signal):
         # refreshSignal should maintain logical states of all signal-related constraints
         signalToRefresh = False
+        applyConstraint = False
         signalname, boolean = signal
         for key in self.logic_status.keys():
-            if signalname not in self.logic_status[key]:
-                if not boolean:
-                    continue
-                else:
-                    dictionary = self.setup[key][1][1]
-                    item = [k for k,v in dictionary.items() if v[-1] == signalname]
-                    constraint = self.lookup_trigger[item[-1]]
-                    constraint(key, *dictionary[item[-1]])
-            elif signalname in self.logic_status[key]:
-                if not boolean:
+            if signalname in self.logic_status[key]:
+                # call refreshLogicStatus if signal returned false
+                if not boolean and self.logic_status[key][signalname][0] != -1:
                     signalToRefresh = True
+                if boolean and self.logic_status[key][signalname][0] == -1:
+                    applyConstraint = True
+            # cleanup actions resulting from the actions of refreshing signal
             if signalToRefresh:
                 self.handleLogicStatus(key, signalname)
+            if applyConstraint:
+                dictionary = self.setup[key][1][1]
+                item = [k for k,v in dictionary.items() if v[-1] == signalname]
+                constraint = self.lookup_trigger[item[-1]]
+                constraint(key, *dictionary[item[-1]])
+
 
     def handleLogicStatus(self, key, timeEvent):
         # hierachy - bar < period < trade < someshit(s) or < someshit(s) < trade? (or customizable?)
@@ -137,6 +140,9 @@ class Registry:
         # highest category has no more available chances for triggering, then the test could not be
         # triggered subsequently unless the status of the highest category is refreshed.
 
+
+        # These codes basically removes the timeEvent from self.logic_status of that key, thereby
+        # removing any constraint relevant to that cat
         test = self.logic_status[key]
         if timeEvent == 'candle':
             test = {cat:val for cat, val in test.items() if cat != 'bar'}
@@ -145,8 +151,10 @@ class Registry:
             test = {cat:val for cat, val in test.items() if cat != 'period'}
             self.logic_status[key] = test
         else:
-            test = {cat:val for cat, val in test.items() if cat != timeEvent}
+            test = {cat:[-1] + [x for i, x in enumerate(val) if i != 0] for cat, val in test.items() if cat == timeEvent}
+            #test = {cat:val for cat, val in test.items() if cat != timeEvent}
             self.logic_status[key] = test
+            print(self.logic_status[key])
 
     # emitExecute push execute Event to Bus
     @source('registry:execute')
@@ -225,10 +233,14 @@ class Registry:
             self.logic_status[action]['trade'][0] -= 1
 
     def once_per_signal(self, action, signal, *args):
-        if signal not in self.logic_status[action].keys():
+        # enter via refreshSignal
+        if signal in self.logic_status[action].keys():
+            if self.logic_status[action][signal][0] == -1:
+                del self.logic_status[action][signal]
+            else:
+                self.logic_status[action][signal][0] -= 1
+        elif signal not in self.logic_status[action].keys():
             self.logic_status[action][signal] = [1, 1, self.num_bars]
-        else:
-            self.logic_status[action][signal][0] -= 1
 
     def n_per_signal(self, action, signal, *args):
         if signal not in self.logic_status[action].keys():
