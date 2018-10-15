@@ -74,7 +74,5 @@ class CandleStick(Timeseries):
         if len(self._ts) > 365:
             self._ts = self._ts[-365:]
 
-
-
     def accessBar():
         return [float(x) for x in [self.o, self, c, self.h, self.l, self.v]]

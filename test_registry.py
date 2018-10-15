@@ -5,6 +5,7 @@ import time
 import sys
 import traceback
 import log
+import datetime
 
 import pytest
 import pandas as pd
@@ -284,7 +285,7 @@ def test_one_per_signal():
     registry   = Registry(setup)
     aggregator = Aggregator(3600, bus=bus)
     stick      = CandleStick(1, bus=bus)
-    sma        = SMA(stick, 5)
+    sma        = SMA(stick.o, 5)
 
     # emit tick to trigger check
     @source('tick')
@@ -304,7 +305,10 @@ def test_one_per_signal():
     # sourcing 'strategy:triggered', only triggered if sma > last open
     @on('aggregator:new_candle')
     def aboveSMA(data):
-        if sma.value > float(stick.o):
+        print(datetime.datetime.fromtimestamp(int(data[4])).strftime('%Y-%m-%d %H:%M:%S'),
+                "SMA:", sma.value, "Open:", data[0])
+        print(data, sma.value)
+        if sma.value < float(stick.o):
             emitSMATrigger('sma', True)
             return 'sma'
         else:
@@ -315,7 +319,10 @@ def test_one_per_signal():
     # client code that mimics that actual logic tests implemented in Strategy instance
     @on('registry:execute')
     def twokprice(data):
-        #print(data[1], data[2])
+        try:
+            print("TRIGGERED", datetime.datetime.fromtimestamp(int(data[1])).strftime('%Y-%m-%d %H:%M:%S'), data[2], "\n")
+        except:
+            pass
         emitPrintTrigger() # should pass its name (action name) to emitTrigger
 
     # intitiate and binding class instances and functions to Bus
@@ -324,15 +331,12 @@ def test_one_per_signal():
     bus.bind(twokprice)
     bus.bind(aboveSMA)
     bus.bind(registry)
-    bus.bind(aggregator)
-    bus.bind(stick)
     bus.bind(emitTick)
 
     # Tick-generating for loop using default dataset
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
-    print(registry.logic_status)
 
 def test_n_per_signal():
     pass
