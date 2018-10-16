@@ -178,12 +178,14 @@ class Registry:
     # on arrival of tick, handleCheck calls check and carries out checking
     @on('tick')
     def handleCheck(self, tick):
-        for key in self.setup.keys():
-            self.check(key, self.setup[key][0])
+        for key, item in sorted(self.setup.items()):
+            self.check(key, item[0])
 
     # check is responsible to verify the current state against the constraints stored signal, *argsn
     # self.setup, it should also check whether any triggered constraint is currently in
     # place, source a "registry:execute" event when all are triggered
+
+    # check should be able to enforce all client code in the order of setup
     def check(self, key, whenexec):
         key_constr = self.logic_status[key]
         if (all(self.lookup_check[constraint] for constraint in whenexec) and
