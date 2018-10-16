@@ -38,10 +38,6 @@ class MACD(Timeseries):
 
     def evaluate(self):
         try:
-            print(float(self.diff._ts[0]), float(self.diff._ts[1]))
-            print(self.diff._cache)
-            print("Diff", float(self.diff), '\n')
-            print("Diff_ma", float(self.diff_ma), '\n')
             self.value = float(self.diff) - float(self.diff_ma)
         except:
             pass

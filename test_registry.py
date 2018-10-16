@@ -21,7 +21,7 @@ from metric.timeseries.candle import CandleStick
 from metric.timeseries.sma import SMA
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.FATAL)
 #dataset = pd.read_csv(open('bitstamp.csv'))
 dataset = pd.read_csv(open('bitstamp.csv'))
 tickset = pd.read_json(open('bch1.log'), convert_dates=False, lines=True)
@@ -263,7 +263,7 @@ def test_once_per_bar_n_per_period():
     # client code that mimics that actual logic tests implemented in Strategy instance
     @on('registry:execute')
     def twokprice(data):
-        print(data[1], data[2])
+        #print(data[1], data[2])
         emitTrigger() # should pass its name (action name) to emitTrigger
 
     # intitiate and binding class instances and functions to Bus
@@ -280,7 +280,7 @@ def test_once_per_bar_n_per_period():
         emitTick(data)
 
 def test_one_per_signal():
-    setup      = {'twokprice': [['open'], [['once per bar'], {'once per signal': ['sma']}]]}#, 'sma':[[], [['once per bar'], {}]]}
+    setup      = {'sma': [['open'], [['once per bar'], {}]], 'twokprice': [['open'], [['once per bar'], {'once per signal': ['sma']}]]}
     bus        = Bus()
     registry   = Registry(setup)
     bus.bind(registry)
@@ -303,34 +303,43 @@ def test_one_per_signal():
     def emitSMATrigger(test, boolean):
         return [test, boolean]
 
-    # sourcing 'strategy:triggered', only triggered if sma > last open
-    @on('aggregator:new_candle')
-    def aboveSMA(data):
-        print(datetime.datetime.fromtimestamp(int(data[4])).strftime('%Y-%m-%d %H:%M:%S'),
-                "SMA:", sma.value, "Open:", data[0])
-        if sma.value < float(stick.o):
-            emitSMATrigger('sma', True)
-            return 'sma'
-        else:
-            emitSMATrigger('sma', False)
-            return 'sma'
+    @source('strategy:triggered')
+    def emitStratTrigger():
+        return 'sma'
 
+    # sourcing 'strategy:triggered', only triggered if last open > sma.value
+    @on('registry:execute')
+    def aboveSMA(data):
+        if data[0] == 'sma':
+            try:
+                if sma.value < float(stick.o):
+                    print(sma.value, float(stick.o))
+                    emitSMATrigger('sma', True)
+                    emitStratTrigger()
+                else:
+                    print(sma.value, float(stick.o))
+                    emitSMATrigger('sma', False)
+                    emitStratTrigger()
+            except:
+                pass
 
     # client code that mimics that actual logic tests implemented in Strategy instance
     @on('registry:execute')
     def twokprice(data):
-        try:
-            print("TRIGGERED", datetime.datetime.fromtimestamp(int(data[1])).strftime('%Y-%m-%d %H:%M:%S'), data[2], "\n")
-        except:
-            pass
-        emitPrintTrigger() # should pass its name (action name) to emitTrigger
+        if data[0] == 'twokprice':
+            try:
+                print("TRIGGERED", datetime.datetime.fromtimestamp(int(data[1])).strftime('%Y-%m-%d %H:%M:%S'), data[2], "\n")
+            except:
+                pass
+            emitPrintTrigger() # should pass its name (action name) to emitTrigger
 
     # intitiate and binding class instances and functions to Bus
     bus.bind(emitTick)
     bus.bind(emitPrintTrigger)
     bus.bind(emitSMATrigger)
-    bus.bind(aboveSMA)
+    bus.bind(emitStratTrigger)
     bus.bind(twokprice)
+    bus.bind(aboveSMA)
 
     # Tick-generating for loop using default dataset
     for index, tick in tickset.iterrows():
