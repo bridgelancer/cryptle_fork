@@ -79,7 +79,7 @@ class SimpleFormatter(logging.Formatter):
         return s
 
 
-class StreamColorFormatter(logging.Formatter):
+class ColorFormatter(logging.Formatter):
     """Create colorize log messages with terminal control characters."""
     fmt = '{name:<10} {asctime} {levelname:<8} {message}'
     datefmt = '%Y-%m-%d %H:%M:%S'
@@ -130,7 +130,7 @@ def make_logger(name, *handlers, level=logging.DEBUG):
     return logger
 
 
-def get_filehandler(fname, level=logging.DEBUG, formatter=DefaultFormatter()):
+def get_filehandler(fname, level=logging.DEBUG, formatter=DebugFormatter()):
     fh = logging.FileHandler(fname)
     fh.setLevel(level)
     fh.setFormatter(formatter)
