@@ -263,7 +263,7 @@ def test_once_per_bar_n_per_period():
     # client code that mimics that actual logic tests implemented in Strategy instance
     @on('registry:execute')
     def twokprice(data):
-        #print(data[1], data[2])
+        print(data[1], data[2])
         emitTrigger() # should pass its name (action name) to emitTrigger
 
     # intitiate and binding class instances and functions to Bus
@@ -280,7 +280,7 @@ def test_once_per_bar_n_per_period():
         emitTick(data)
 
 def test_one_per_signal():
-    setup      = {'sma': [['open'], [['once per bar'], {}]], 'twokprice': [['open'], [['once per bar'], {'once per signal': ['sma']}]]}
+    setup      = {'sma': [['open'], [['once per bar'], {}], 1], 'twokprice': [['open'], [['once per bar'], {'once per signal': ['sma']}], 2]}
     bus        = Bus()
     registry   = Registry(setup)
     bus.bind(registry)
