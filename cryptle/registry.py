@@ -134,6 +134,7 @@ class Registry:
                 # call refreshLogicStatus if signal returned false
                 if not boolean and self.logic_status[key][signalname][0] != -1:
                     signalToRefresh = True
+                # apply suitable constraint if signal returned true and the test is locked
                 if boolean and self.logic_status[key][signalname][0] == -1:
                     applyConstraint = True
             # cleanup actions resulting from the actions of refreshing signal
@@ -141,7 +142,7 @@ class Registry:
                 self.handleLogicStatus(key, signalname)
             if applyConstraint:
                 dictionary = self.setup[key][1][1]
-                item = [k for k,v in dictionary.items() if v[-1] == signalname]
+                item = [k for k,v in dictionary.items() if v[0] == signalname]
                 constraint = self.lookup_trigger[item[-1]]
                 constraint(key, *dictionary[item[-1]])
 
@@ -278,7 +279,8 @@ class Registry:
 
     # not tested
     def n_per_signal(self, action, signal, *args):
-        if signal not in self.logic_status[action].keys():
+        print("BEFORE", self.logic_status[action])
+        if signal in self.logic_status[action].keys():
             # enter via refreshSignal
             if self.logic_status[action][signal][0] == -1:
                 del self.logic_status[action][signal]
@@ -286,3 +288,4 @@ class Registry:
                 self.logic_status[action][signal][0] -= 1
         elif signal not in self.logic_status[action].keys():
             self.logic_status[action][signal] = [*args, 1, self.num_bars]
+        print("AFTER", self.logic_status[action])
