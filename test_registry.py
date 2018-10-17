@@ -26,6 +26,11 @@ logging.basicConfig(level=logging.FATAL)
 dataset = pd.read_csv(open('bitstamp.csv'))
 tickset = pd.read_json(open('bch1.log'), convert_dates=False, lines=True)
 
+# **********************************************************************************************
+# IMPORTANT NOTES: apart from basic construction tests, all the following tests are checked via
+# manual examination of the print results based on the set bch1.log. No unit tests are currently
+# implemented to check the functionality of the registry methods separately.
+# **********************************************************************************************
 
 def test_registry_construction():
     setup = {"testrun": [['open'], ['once per bar']], "testrun2": [['close'],['once per trade']]} # key value pairs that signify the constraints of each type of action
@@ -78,7 +83,6 @@ def test_on_tick():
         emitTick(data)
     assert registry.current_price == 995.0
 
-# this works, only because of not listening to 'aggregator:new_candle'
 def test_aggregator():
     aggregator = Aggregator(3600)
     @source('tick')
