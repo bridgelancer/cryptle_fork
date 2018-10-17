@@ -6,7 +6,8 @@ doc:
 awsdoc: doc
 	@aws s3 sync ./docs/_build/html s3://cryptle-docs
 
-test: test-all lint
+test:
+	@pytest --ignore test/test_feed.py
 
 test-all:
 	@pytest
