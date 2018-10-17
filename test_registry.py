@@ -383,6 +383,75 @@ def test_n_per_signal():
         if data[0] == 'sma':
             try:
                 if sma.value < float(stick.o):
+                    #print(sma.value, float(stick.o))
+                    emitSMATrigger('sma', True)
+                    emitStratTrigger()
+                else:
+                    #print(sma.value, float(stick.o))
+                    emitSMATrigger('sma', False)
+                    emitStratTrigger()
+            except:
+                pass
+
+    # client code that mimics that actual logic tests implemented in Strategy instance
+    @on('registry:execute')
+    def twokprice(data):
+        if data[0] == 'twokprice':
+            try:
+                print("TRIGGERED", datetime.datetime.fromtimestamp(int(data[1])).strftime('%Y-%m-%d %H:%M:%S'), data[2], "\n")
+            except:
+                pass
+            emitPrintTrigger() # should pass its name (action name) to emitTrigger
+
+    # intitiate and binding class instances and functions to Bus
+    bus.bind(emitTick)
+    bus.bind(emitPrintTrigger)
+    bus.bind(emitSMATrigger)
+    bus.bind(emitStratTrigger)
+    bus.bind(twokprice)
+    bus.bind(aboveSMA)
+
+    # Tick-generating for loop using default dataset
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
+
+def test_n_per_period_n_per_signal():
+    print('**************************N PER PERIOD N PER SIGNAL**************************')
+    setup      = {'sma':       [['open'], [['once per bar'], {}], 1],
+                  'twokprice': [['open'], [['once per bar'], {'n per period': [1, 2], 'n per signal': ['sma', 3]}], 2]}
+    bus        = Bus()
+    registry   = Registry(setup)
+    bus.bind(registry)
+    aggregator = Aggregator(3600, bus=bus)
+    stick      = CandleStick(1, bus=bus)
+    sma        = SMA(stick.o, 5)
+
+    # emit tick to trigger check
+    @source('tick')
+    def emitTick(tick):
+        return tick
+
+    # emit Trigger to enforce post-triggered restraints
+    @source('strategy:triggered')
+    def emitPrintTrigger():
+        return 'twokprice'
+
+    # This exists purely because one function could not emit two types of events
+    @source('signal')
+    def emitSMATrigger(test, boolean):
+        return [test, boolean]
+
+    @source('strategy:triggered')
+    def emitStratTrigger():
+        return 'sma'
+
+    # sourcing 'strategy:triggered', only triggered if last open > sma.value
+    @on('registry:execute')
+    def aboveSMA(data):
+        if data[0] == 'sma':
+            try:
+                if sma.value < float(stick.o):
                     print(sma.value, float(stick.o))
                     emitSMATrigger('sma', True)
                     emitStratTrigger()

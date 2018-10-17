@@ -279,7 +279,6 @@ class Registry:
 
     # not tested
     def n_per_signal(self, action, signal, *args):
-        print("BEFORE", self.logic_status[action])
         if signal in self.logic_status[action].keys():
             # enter via refreshSignal
             if self.logic_status[action][signal][0] == -1:
@@ -288,4 +287,3 @@ class Registry:
                 self.logic_status[action][signal][0] -= 1
         elif signal not in self.logic_status[action].keys():
             self.logic_status[action][signal] = [*args, 1, self.num_bars]
-        print("AFTER", self.logic_status[action])
