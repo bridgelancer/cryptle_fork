@@ -50,7 +50,8 @@ class Registry:
         self.lookup_check   = {'open': self.new_open,
                                'close': self.new_close,}
         # key-value pair with class method as value to predefined name of contraints
-        self.lookup_trigger = {'once per bar': self.once_per_bar,
+        self.lookup_trigger = {'once': self.once,
+                               'once per bar': self.once_per_bar,
                                'once per trade': self.once_per_trade,
                                'once per period': self.once_per_period,
                                'once per signal': self.once_per_signal,
@@ -231,11 +232,13 @@ class Registry:
     ##################################CONSTRAINT FUNCTIONS##################################
     # These are the functions that are called by handleTrigger by iterating through the items of the
     # list and keys of the dictionary of triggerConstraints
+    def once(self, action):
+        if 'once' not in self.logic_status[action].keys():
+            self.logic_status[action]['once'] = [1, 1, self.num_bars]
+
     def once_per_bar(self, action):
         if 'bar' not in self.logic_status[action].keys():
             self.logic_status[action]['bar'] = [1, 1, self.num_bars]
-        else:
-            self.logic_status[action]['bar'][0] -= 1
 
     def n_per_bar(self, action, *args):
         if 'bar' not in self.logic_status[action].keys():
@@ -246,8 +249,6 @@ class Registry:
     def once_per_period(self, action, *args):
         if 'bar' not in self.logic_status[action].keys():
             self.logic_status[action]['period'] = [1, *args, self.num_bars]
-        else:
-            self.logic_status[action]['period'][0] -=1
 
     def n_per_period(self, action, *args):
         if 'period' not in self.logic_status[action].keys():
@@ -258,8 +259,6 @@ class Registry:
     def once_per_trade(self, action):
         if 'period' not in self.logic_status[action].keys():
             self.logic_status[action]['trade'] = [1, 1, self.num_bars]
-        else:
-            self.logic_status[action]['trade'][0] -= 1
 
     def n_per_trade(self, action, *args):
         if 'trade' not in self.logic_status[action].keys():
@@ -272,8 +271,6 @@ class Registry:
             # enter via refreshSignal
             if self.logic_status[action][signal][0] == -1:
                 del self.logic_status[action][signal]
-            else:
-                self.logic_status[action][signal][0] -= 1
         elif signal not in self.logic_status[action].keys():
             self.logic_status[action][signal] = [1, 1, self.num_bars]
 
