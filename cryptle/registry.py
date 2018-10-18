@@ -235,6 +235,8 @@ class Registry:
     def once(self, action):
         if 'once' not in self.logic_status[action].keys():
             self.logic_status[action]['once'] = [1, 1, self.num_bars]
+        else:
+            del self.logic_status[action]['once']
 
     def once_per_bar(self, action):
         if 'bar' not in self.logic_status[action].keys():
