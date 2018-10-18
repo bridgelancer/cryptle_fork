@@ -65,15 +65,15 @@ class CandleStickChart:
             plot_volume (bool): Flag to create a volume subplot
             numxlabels (int): No. of datetime labels on the x-axis
         """
-        n = len(candle)
+        n = len(candle._bars)
 
-        barlen = [abs(bar[0] - bar[1]) for bar in candle]
-        bottom = [min(bar[0], bar[1]) for bar in candle]
-        hi = [bar[2] for bar in candle]
-        lo = [bar[3] for bar in candle]
-        ts = [bar[4] for bar in candle]
+        barlen = [abs(bar[0] - bar[1]) for bar in candle._bars]
+        bottom = [min(bar[0], bar[1]) for bar in candle._bars]
+        hi = [bar[2] for bar in candle._bars]
+        lo = [bar[3] for bar in candle._bars]
+        ts = [bar[4] for bar in candle._bars]
 
-        color = ['g' if bar[0] < bar[1] else 'r' for bar in candle]
+        color = ['g' if bar[0] < bar[1] else 'r' for bar in candle._bars]
         fill  = [c == 'r' for c in color]
 
         self._axes[0].bar(ts, height=barlen, bottom=bottom, width=20, color=color,
