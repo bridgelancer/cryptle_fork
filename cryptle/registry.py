@@ -1,4 +1,4 @@
-from cryptle.event import source, on
+from cryptle.event import source, on, Bus
 
 class Registry:
     '''Registry class keeps record of the various important state information for the Strategy
@@ -28,7 +28,7 @@ class Registry:
     #   trigger (verb)     = refers to a successful run of client codes that emits
     #                        'strategy:triggered' or any execution of signal
 
-    def __init__(self, setup):
+    def __init__(self, setup, bus=None):
         # setup in conventional form - see test_registry.py for reference
         self.setup = setup
         # in plain dictionary form, holds all logical states for limiting further triggering of
@@ -50,7 +50,7 @@ class Registry:
         self.lookup_check   = {'open': self.new_open,
                                'close': self.new_close,}
         # key-value pair with class method as value to predefined name of contraints
-        self.lookup_trigger = {'once': self.once,
+        self.lookup_trigger = {#'once': self.once,
                                'once per bar': self.once_per_bar,
                                'once per trade': self.once_per_trade,
                                'once per period': self.once_per_period,
@@ -59,6 +59,25 @@ class Registry:
                                'n per period': self.n_per_period,
                                'n per trade': self.n_per_trade,
                                'n per signal': self.n_per_signal}
+
+        def neglectFirst():
+            ls = self.logic_status
+            cs = self.setup
+            for key, action in self.setup.items():
+                onceTrigger = action[1][0]
+                nTrigger = action[1][1]
+                o = 'once per signal'
+                n = 'n per signal'
+
+                # set the logic status of signal influencing the action to be [-1, 1, 0]
+                if 'once per signal' in action[1][0]:
+                    ls[key][action[1][0]['once per signal'][0]] = [-1, 1, 0]
+                if 'n per signal' in action[1][1]:
+                    ls[key][action[1][1]['n per signal'][0]] = [-1, 1, 0]
+        neglectFirst()
+
+        if isinstance(bus, Bus):
+            bus.bind(self)
 
     # Refresh methods to maintain correct states
     @on('tick') # tick should be agnostic to source of origin, but should take predefined format
@@ -130,7 +149,10 @@ class Registry:
         # and second item be the boolean status of the signal.
         signalname, boolean = signal
         # semi-hardcoded behaviour, hierachy structure to be implemented
-        for key in self.logic_status.keys():
+
+        # similar to check, the refreshSignal should also be sorted according to original order in
+        # setup @TODO - to implement this feature (now only sorted according to alphabetical order)
+        for key, item in sorted(self.logic_status.items()):
             if signalname in self.logic_status[key]:
                 # call refreshLogicStatus if signal returned false
                 if not boolean and self.logic_status[key][signalname][0] != -1:
@@ -144,6 +166,7 @@ class Registry:
             if applyConstraint:
                 dictionary = self.setup[key][1][1]
                 item = [k for k,v in dictionary.items() if v[0] == signalname]
+                print("ITEM:", self.logic_status, item)
                 constraint = self.lookup_trigger[item[-1]]
                 constraint(key, *dictionary[item[-1]])
 
@@ -194,21 +217,21 @@ class Registry:
     # On arrival of tick, handleCheck calls check and carries out checking
     @on('tick')
     def handleCheck(self, tick):
-        if any(len(k[1]) < 3 for k, item in self.setup.items()):
+        if any(len(item) < 3 for k, item in self.setup.items()):
             # for unspecified/incomplete order, the test would be run according to alphabetical
             # order of test keys
             for k, test in sorted(self.setup.items()):
-                self.check(k, test[0], self.logic_status[k])
+                self.check(k, test[0], test[1], self.logic_status[k])
         else:
             # execute the tests in setup in predefined order specified by the int of test[1][2]
             for k, test in sorted(self.setup.items(), key=lambda test: test[1][2]):
-                self.check(k, test[0], self.logic_status[k])
+                self.check(k, test[0], test[1][1], self.logic_status[k])
 
     # check should be able to enforce all constraints of client codes/tests against setup and logic
     # status and emit 'registry:execute'
-    def check(self, key, whenexec, triggerConstraints):
+    def check(self, key, whenexec, triggerSetup, triggerConstraints):
         if (all(self.lookup_check[constraint] for constraint in whenexec) and
-           (all(triggerConstraints[constraint][0] > 1 for constraint in triggerConstraints) or
+           (all(triggerConstraints[logicStatus][0] > 1 for logicStatus in triggerConstraints) or
                (triggerConstraints == {}))):
                 # emitExecuted would be called if
                 # 1.  Fulfilled constraint in whenexec
@@ -232,12 +255,6 @@ class Registry:
     ##################################CONSTRAINT FUNCTIONS##################################
     # These are the functions that are called by handleTrigger by iterating through the items of the
     # list and keys of the dictionary of triggerConstraints
-    def once(self, action):
-        if 'once' not in self.logic_status[action].keys():
-            self.logic_status[action]['once'] = [1, 1, self.num_bars]
-        else:
-            del self.logic_status[action]['once']
-
     def once_per_bar(self, action):
         if 'bar' not in self.logic_status[action].keys():
             self.logic_status[action]['bar'] = [1, 1, self.num_bars]
@@ -276,7 +293,6 @@ class Registry:
         elif signal not in self.logic_status[action].keys():
             self.logic_status[action][signal] = [1, 1, self.num_bars]
 
-    # not tested
     def n_per_signal(self, action, signal, *args):
         if signal in self.logic_status[action].keys():
             # enter via refreshSignal
