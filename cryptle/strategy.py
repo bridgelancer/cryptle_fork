@@ -1,6 +1,7 @@
 # @Todo Module level doc
 
 import logging
+from cryptle.event import source
 
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,182 @@ class Portfolio:
                 pass
         return self.equity
 
+class NewStrategy:
+    """Base class of the new verison of strategies using the Event bus architecture.
+
+    To create a new strategy, subclass from :class:`NewStrategy`. In contrast to the old
+    :class:`Strategy`, there is no need to implement data handling call back methods by the
+    instances of :class:`NewStrategy`.
+
+    Metrics/Indicators that needs to be updated according to specified schedule and order should be
+    specified in the setup of the Registry instance passed into the :class:`NewStrategy`. The
+    reference for how to specify the format of the setup should refer back to the Registry base
+    class documentation. In contrast to the old :class:`Strategy`, no callback functions to handle
+    data is required.
+
+    Apart from the Registy and the new Timeseries objects utilized in the :class:`NewStrategy`,
+    other dependencies of the original Strategy are largely kept.
+
+    Args:
+        pair:  String representation of the trade coin pair (meta info)
+        portfolio: Portfolio managed by the strategy instance
+        exchange: Exchange to be used by the strategy for order placements
+        equitey_at_risk: The maximum proportion of equitey that will be traded
+        print_timestamp: Flag for printing timestamp at buy/sell confirmation
+
+    Notes:
+        When given a portfolio, NewStrategy(Base) assumes that it is the only strategy trading on
+        that portfolio for the given pair.
+    """
+    def __init__(self,
+            *,
+            pair,
+            asset,
+            base_currency,
+            portfolio,
+            exchange,
+            bus,
+            equity_at_risk=1,
+            print_timestamp=True):
+
+        self.pair = pair
+        self.asset = asset
+        self.base_currency = base_currency
+        self.portfolio = portfolio
+        self.exchange = exchange
+        self.equity_at_risk = equity_at_risk
+        self.print_timestamp = print_timestamp
+        self.bus = bus
+
+        self.trades = []
+    # [Portfolio interface]
+    # Wrappers of portfolio object, mostly for convenience purpose
+    @property
+    def hasBalance(self):
+        try:
+            return self.portfolio.balance[self.asset] > 0
+        except:
+            return False
+
+    @property
+    def hasCash(self):
+        return self.portfolio.cash > 0
+
+
+    @property
+    def equity(self):
+        return self.portfolio.equity
+
+
+    @property
+    def maxBuyAmount(self):
+        max_equi = self.equity_at_risk * self.equity / self.last_price
+        max_cash = self.portfolio.cash / self.last_price
+        return min(max_equi, max_cash)
+
+
+    @property
+    def maxSellAmount(self):
+        return self.portfolio.balance[self.asset]
+
+    # [Exchange interface]
+    # Wrappers of exchange object for fine grain control/monitor over buy/sell process
+    @source('buy')
+    def marketBuy(self, amount, message=''):
+        if amount > 0: raise ValueError("Amount must be larger than zero")
+        msg = 'Placing market buy for {:.6g} {} {:s}'
+        logger.debug(msg.format(amount, self.asset.upper(), message))
+        res = self.exchange.sendMarketBuy(self.asset, amount)
+        self._cleanupBuy(res, message)
+        return
+
+    @source('sell')
+    def marketSell(self, amount, message=''):
+        if amount > 0: raise ValueError("Amount must be larger than zero")
+        msg = 'Placing market sell for {:.6g} {} {:s}'
+        logger.debug(msg.format(amount, self.asset.upper(), message))
+        res = self.exchange.sendMarketSell(self.asset, amount)
+        self._cleanupSell(res, message)
+        return
+
+    @source('scale out')
+    def marketScaleOut(self, amount, message=''):
+        if amount > 0: raise ValueError("Amount must be larger than zero")
+        msg = 'Placing market sell for {:.6g} {} {:s}'
+        logger.debug(msg.format(amount, self.asset.upper(), message))
+        res = self.exchange.sendMarketSell(self.asset, amount)
+        self._cleanupSell(res, message)
+        return
+
+    def limitBuy(self, amount, price, message=''):
+        if amount > 0: raise ValueError("Amount must be larger than zero")
+        if price  > 0: raise ValueError("Price must be larger than zero")
+        msg = 'Placing limit buy for {:.6g} {} @${:.6g} {:s}'
+        logger.debug(msg.format(amount, self.asset.upper(), price, message))
+        res = self.exchange.sendLimitBuy(self.asset, amount, price)
+        self._cleanupBuy(res, message)
+
+
+    def limitSell(self, amount, price, message=''):
+        if amount > 0: raise ValueError("Amount must be larger than zero")
+        if price  > 0: raise ValueError("Price must be larger than zero")
+        msg = 'Placing limit sell for {:.6g} {} @${:.6g} {:s}'
+        logger.debug(msg.format(amount, self.asset.upper(), price, message))
+        res = self.exchange.sendLimitSell(self.asset, amount, price)
+        self._cleanupSell(res, message)
+
+
+    # Reconcile actions made on the exchange with the portfolio
+    def _cleanupBuy(self, res, message=None):
+        if res['status'] == 'error':
+            logger.error('Buy failed {} {}'.format(self.asset.upper(), message))
+            return
+
+        price = float(res['price'])
+        amount = float(res['amount'])
+        timestamp = int(res['timestamp'])
+
+        self.portfolio.deposit(self.asset, amount, price)
+        self.portfolio.cash -= amount * price
+        self.trades.append([timestamp, price])
+
+        msg = 'Bought {:7.6g} {} @${:<7.6g} {:s}'
+        if self.print_timestamp:
+            msg += ' at {:%Y-%m-%d %H:%M:%S}'
+        logger.info(msg.format(
+                amount,
+                self.asset.upper(),
+                price,
+                message,
+                datetime.fromtimestamp(timestamp)))
+
+
+    def _cleanupSell(self, res, message=None):
+        if res['status'] == 'error':
+            logger.error('Sell failed {} {}'.format(self.asset.upper(), message))
+            return
+
+        price = float(res['price'])
+        amount = float(res['amount'])
+        timestamp = int(res['timestamp'])
+
+        self.portfolio.withdraw(self.asset, amount)
+        self.portfolio.cash += amount * price
+        self.trades[-1] += [timestamp, price]
+
+        msg = 'Sold   {:7.6g} {} @${:<7.6g} {:s}'
+        if self.print_timestamp:
+            msg += ' at {:%Y-%m-%d %H:%M:%S}'
+        logger.info(msg.format(
+                amount,
+                self.asset.upper(),
+                price,
+                message,
+                datetime.fromtimestamp(timestamp)))
+
+    def _checkHasExchange(self):
+        if self.exchange is None:
+            raise AttributeError('An exchange has to be associated before strategy runs')
 
 
 class Strategy:

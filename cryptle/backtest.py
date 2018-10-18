@@ -1,8 +1,8 @@
 # @Incomplete data format is hardwired for bitstamp (or are we?)
 # @Incomplete candle formatted data is not properly implemented
-# @Todo refactor dependancy of backtest on paperexchange
 
 from .strategy import Portfolio
+from .event import source, Bus
 
 import json
 import csv
@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
+def backtest_tick(strat, dataset, bus=None, pair=None, portfolio=None, exchange=None,
         commission=0.0012, slippage=0, callback=None):
     """Wrapper function for running backtest on tick based strategy.
 
@@ -37,7 +37,11 @@ def backtest_tick(strat, dataset, pair=None, portfolio=None, exchange=None,
     strat.exchange = strat.exchange or exchange
 
     test = Backtest(exchange)
+    if isinstance(bus, Bus):
+        bus.bind(test)
+
     test.read(dataset)
+    print(dataset)
     test.run(strat, callback)
 
 
@@ -72,12 +76,20 @@ def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
     test.runCandle(strat, callback)
 
 
-# Only works with tick for now
 class Backtest:
     """Provides an interface to load datasets and launch backtests."""
 
     def __init__(self, exchange=None):
         self.exchange = exchange or PaperExchange()
+        self.ticks = None
+
+    @source('tick')
+    def emitTick(self, tick):
+        return tick
+
+    @source('candle')
+    def emitCandle(self, candle):
+        return candle
 
     def run(self, strat, callback=None):
         """Run a tick strategy on the loaded dataset.
@@ -85,12 +97,21 @@ class Backtest:
         Args:
             callback: A function taking (price, volume, timestamp, action) as parameter
         """
+
         for tick in self.ticks:
+            if not tick:
+                raise ValueError('Expected dataset to be loaded, none found.')
             price, timestamp, volume, action= _unpack(tick)
             self.exchange.price = price
             self.exchange.volume = volume
             self.exchange.timestamp = timestamp
-            strat.pushTick(price, timestamp, volume, action) # push the tick to strat
+            if strat.__class__.__bases__[-1].__name__ == 'Strategy':
+                strat.pushTick(price, timestamp, volume, action) # push the tick to strat
+            elif strat.__class__.__bases__[-1].__name__ == 'NewStrategy':
+                # emit a tick Event to kickstart the new strategy
+                # WARNING: check tick format to see whether it still fits dataset
+                self.emitTick([price, volume, timestamp, action])
+
             if callback:
                 callback(strat)
 
@@ -100,7 +121,11 @@ class Backtest:
             self.exchange.price = c
             self.exchange.volume = v
             self.exchange.timestamp = t
-            strat.pushCandle(o, c, h, l, t, v) # push the candle stick to strat
+            if strat.__name__ == 'Strategy':
+                strat.pushCandle(o, c, h, l, t, v) # push the candle stick to strat
+            elif strat.__name__ == 'NewStrategy':
+                # emit a 'candle' Event to kickstart the new strategy
+                pass
             if callback:
                 callback(strat)
 
@@ -185,7 +210,6 @@ class PaperExchange:
         self.commission = commission
         self.slippage = slippage
 
-    # @Cleanup too much code replication
     def sendMarketBuy(self, pair, amount):
         _price = self.price
         price *= (1 + self.commission)
