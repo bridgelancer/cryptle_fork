@@ -269,5 +269,8 @@ def _unpack(tick):
     price = tick['price']
     volume = tick['amount']
     timestamp = float(tick['timestamp'])
-    action = 1 - tick['type'] * 2
+    if 'type' in tick:
+        action = 1 - tick['type'] * 2
+    else:
+        action = 0
     return price, timestamp, volume, action
