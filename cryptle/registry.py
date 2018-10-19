@@ -157,8 +157,6 @@ class Registry:
         signalname, boolean = signal
         # semi-hardcoded behaviour, hierachy structure to be implemented
 
-        # similar to check, the refreshSignal should also be sorted according to original order in
-        # setup @TODO - to implement this feature (now only sorted according to alphabetical order)
         for key, item in sorted(self.logic_status.items(), key=lambda test: test[1]['order']):
             if signalname in self.logic_status[key]:
                 # call refreshLogicStatus if signal returned false
