@@ -28,16 +28,17 @@ class DummyStrat(NewStrategy):
         rsi_period = 12,
         rsi_thresh = 40,
         rsi_upperthresh = 70,
-        timelag = 10,
         **kws):
 
         s.message = message
         s.init_bar = max(scope1, scope2, macd_scope, rsi_period)
         super().__init__(**kws)
         # Specify setup for local registry - @TODO
-        setup = {'doneInit':    [['open'], [['once per bar'], {}], 1],
+        setup = {'doneInit': [['open'], [['once per bar'], {}], 1],
                  #'belowRSIthresh':  [['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}, 2]],
-                 'wma':         [['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 2]
+                 'wma':      [['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 2],
+                 'singular': [['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 3],
+                 'aboveRSISellFlag': [['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 4]
                 }
 
         # Initiate candle aggregator and CandleStick
@@ -55,6 +56,11 @@ class DummyStrat(NewStrategy):
         s.rsi_diff = Difference(s.rsi)
         s.reaper   = BollingerBand(s.rsi_diff, s.rsi._lookback, sd=2)
 
+        # Parameters
+        s.rsi_upperthresh = rsi_upperthresh
+        s.rsi_thresh      = rsi_thresh
+
+
     @source('signal')
     def emitSignal(s, signalName, boolean):
         return [signalName, boolean]
@@ -70,22 +76,20 @@ class DummyStrat(NewStrategy):
         # whenexec: after self.registry.num_bars > s.init_bars, triggerConstraint:[['open'],
         # [['once'], {}]]
         if data[0] == 'doneInit':
-            print('doneInit checked', s.registry.num_bars, s.init_bar)
             if s.registry.num_bars > s.init_bar:
-                print('finished doneInit')
                 s.emitSignal('doneInit', True)
                 s.emitTriggered('doneInit')
+            else:
+                print('doneInit checked', s.registry.num_bars, s.init_bar)
+
 
     @on('registry:execute')
     def signifyWMA(s, data):
         if data[0] == 'wma':
             try:
-                print(s.registry.logic_status['wma'])
-                if float(s.wma1) < float(s.stick.o):
-                    print(float(s.wma1), float(s.stick.o))
+                if s.wma1 < s.stick.o:
                     s.emitTriggered('wma')
                 else:
-                    print(float(s.wma1), float(s.stick.o))
                     s.emitTriggered('wma')
                 print('finished wma')
             except:
@@ -121,36 +125,37 @@ class DummyStrat(NewStrategy):
     #        except:
     #            pass
 
-    #@on('registry:execute')
-    #def signifySingularity(s, data):
-    #    if data[0] == 'singular':
-    #        try:
-    #            if (s.rsi_diff > s.reaper.upperband):
-    #                s.emitSignal('singular', True)
-    #                s.emitTriggered('singular')
-    #            else:
-    #                s.emitSignal('singular', False)
-    #                s.emitTriggered('singular')
-    #        except:
-    #            pass
+    @on('registry:execute')
+    def signifySingularity(s, data):
+        if data[0] == 'singular':
+            try:
+                if (s.rsi_diff > s.reaper.upperband):
+                    print(s.rsi_diff, s.reaper.upperband, s.registry.num_bars)
+                    s.emitSignal('singular', True)
+                    s.emitTriggered('singular')
+                else:
+                    s.emitSignal('singular', False)
+                    s.emitTriggered('singular')
+            except:
+                pass
 
-    #@on('registry:execute')
-    #def signifyRSISellFlag(s, data):
-    #    # whenexec = 'open'; triggerConstraint: [['once'], {}]
-    #    if data[0] == 'aboveRSISellFlag':
-    #        try:
-    #            if float(s.rsi) > s.rsi_upperthresh:
-    #                s.emitSignal('aboveRSISellFlag', True)
-    #                s.emitTriggered('aboveRSISellFlag')
-    #        except:
-    #            pass
+    @on('registry:execute')
+    def signifyRSISellFlag(s, data):
+        # whenexec = 'open'; triggerConstraint: [['once'], {}]
+        if data[0] == 'aboveRSISellFlag':
+            try:
+                if s.rsi > s.rsi_upperthresh:
+                    s.emitSignal('aboveRSISellFlag', True)
+                    s.emitTriggered('aboveRSISellFlag')
+            except:
+                pass
 
     #@on('registry:execute')
     #def signifyRSIBelowThresh(s, data):
     #    # whenexec = 'open'; triggerConstraint: [['once'], {}]
     #    if data[0] == 'belowRSIthresh':
     #        try:
-    #            if float(s.rsi) < s.rsi_thresh:
+    #            if s.rsi < s.rsi_thresh:
     #                s.emitSignal('belowRSIthresh', True)
     #                s.emitSignal('aboveRSISellFlag', False)
     #                s.emitTriggered('belowRSIthres')
@@ -165,12 +170,12 @@ class DummyStrat(NewStrategy):
     #    if data[0] == 'aboveRSI50':
     #        try:
     #            someConditionToBeImplemented = True
-    #            if float(s.rsi) > 50:
+    #            if s.rsi > 50:
     #                s.emitSignal('aboveRSI50', True)
-    #            elif float(s.rsi) > 40 and someConditionToBeImplemented:
+    #            elif s.rsi > 40 and someConditionToBeImplemented:
     #                s.emitSignal('aboveRSI50', False)
     #                s.emitSignal('belowRSIthresh', False)
-    #            elif float(s.rsi) < 40:
+    #            elif s.rsi < 40:
     #                s.emitSignal('aboveRSI50', False)
     #            s.emitTriggered('aboveRSI50')
     #        except:
@@ -263,11 +268,11 @@ if __name__ == '__main__':
         except:
             pass
 
-    dataset = 'bch1.log'
+    dataset = 'btc01.log'
 
-    pair = 'bchusd'
+    pair = 'btcusd'
     asset = 'usd'
-    base_currency = 'BCHUSD'
+    base_currency = 'BTCUSD'
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0013, slippage=0)
     bus = Bus()
