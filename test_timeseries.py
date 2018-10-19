@@ -137,8 +137,8 @@ def test_bollinger():
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
 
-    assert float(bollinger._upperband) -  1271.5142485395759 < 1e-7
-    assert float(bollinger._lowerband) - -1306.8892485395759 < 1e-7
+    assert bollinger.upperband -  1271.5142485395759 < 1e-7
+    assert bollinger.lowerband - -1306.8892485395759 < 1e-7
 
 def test_rsi():
     bus = Bus()
@@ -161,9 +161,9 @@ def test_macd():
 
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
-    assert float(macd.diff) - -53.127777777 < 1e-7
-    assert float(macd.diff_ma) -17.7111111111 < 1e-7
-    assert float(macd.value) - 34.696296296296 < 1e-7
+    assert macd.diff - -53.127777777 < 1e-7
+    assert macd.diff_ma -17.7111111111 < 1e-7
+    assert macd.value - 34.696296296296 < 1e-7
 
 def test_difference():
     pass
