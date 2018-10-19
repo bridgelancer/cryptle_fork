@@ -368,8 +368,8 @@ class GenericTS(Timeseries):
 
     @Timeseries.cache
     def evaluate(self):
-        # pass a function "eval_func" reference to GenericTS.evaluate to update, eval_func should be defined in
-        # wrapper class
+        # pass a function "eval_func" reference to GenericTS.evaluate to update its value
+        #eval_func should be defined in wrapper class
         self.value = self._eval_func(*self._args)
         self.broadcast()
 
