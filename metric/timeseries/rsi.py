@@ -22,8 +22,10 @@ class RSI(Timeseries):
             return
         if self._cache[-1] > self._cache[-2]:
             self._up.append(abs(self._cache[-1] - self._cache[-2]))
+            self._down.append(0)
         else:
             self._down.append(abs(self._cache[-1] - self._cache[-2]))
+            self._up.append(0)
         if len(self._up) < self._lookback or len(self._down) < self._lookback:
             return
 
