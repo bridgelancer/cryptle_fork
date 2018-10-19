@@ -17,20 +17,20 @@ class BollingerBand(Timeseries):
 
         # eval_func for computing subseries
         def width(bb):
-            return np.std(bb._width._cache, ddof=1)
+            return np.std(bb.width._cache, ddof=1)
 
         # eval_func for computing subseries
         def upperband(bb):
-            return sum(bb._upperband._cache)/bb._lookback + bb._uppersd * float(bb._width)
+            return sum(bb.upperband._cache)/bb._lookback + bb._uppersd * float(bb.width)
 
         # eval_func for computing subseries
         def lowerband(bb):
-            return sum(bb._lowerband._cache)/bb._lookback - bb._lowersd * float(bb._width)
+            return sum(bb.lowerband._cache)/bb._lookback - bb._lowersd * float(bb.width)
 
         # A BollingerBand object holds these subseries
-        self._width     = GenericTS(ts, lookback=lookback, eval_func=width, args=[self])
-        self._upperband = GenericTS(ts, lookback=lookback, eval_func=upperband, args=[self])
-        self._lowerband = GenericTS(ts, lookback=lookback, eval_func=lowerband, args=[self])
+        self.width     = GenericTS(ts, lookback=lookback, eval_func=width, args=[self])
+        self.upperband = GenericTS(ts, lookback=lookback, eval_func=upperband, args=[self])
+        self.lowerband = GenericTS(ts, lookback=lookback, eval_func=lowerband, args=[self])
 
         self._sd        = sd
         self._ts        = ts
