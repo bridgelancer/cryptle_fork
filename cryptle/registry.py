@@ -60,7 +60,7 @@ class Registry:
                                'n per trade': self.n_per_trade,
                                'n per signal': self.n_per_signal}
 
-        def neglectFirst():
+        def initialize():
             ls = self.logic_status
             cs = self.setup
             for key, action in self.setup.items():
@@ -69,12 +69,19 @@ class Registry:
                 o = 'once per signal'
                 n = 'n per signal'
 
-                # set the logic status of signal influencing the action to be [-1, 1, 0]
+                # to append order information to all actions
+                for item in action[1][0]:
+                    self.appendOrder(key)
+
+                for itme in action[1][1]:
+                    self.appendOrder(key)
+
+                # Special handling: set the logic status of signal influencing the action to be [-1, 1, 0]
                 if 'once per signal' in action[1][0]:
                     ls[key][action[1][0]['once per signal'][0]] = [-1, 1, 0]
                 if 'n per signal' in action[1][1]:
                     ls[key][action[1][1]['n per signal'][0]] = [-1, 1, 0]
-        neglectFirst()
+        initialize()
 
         if isinstance(bus, Bus):
             bus.bind(self)
@@ -152,7 +159,7 @@ class Registry:
 
         # similar to check, the refreshSignal should also be sorted according to original order in
         # setup @TODO - to implement this feature (now only sorted according to alphabetical order)
-        for key, item in sorted(self.logic_status.items()):
+        for key, item in sorted(self.logic_status.items(), key=lambda test: test[1]['order']):
             if signalname in self.logic_status[key]:
                 # call refreshLogicStatus if signal returned false
                 if not boolean and self.logic_status[key][signalname][0] != -1:
@@ -166,7 +173,6 @@ class Registry:
             if applyConstraint:
                 dictionary = self.setup[key][1][1]
                 item = [k for k,v in dictionary.items() if v[0] == signalname]
-                print("ITEM:", self.logic_status, item)
                 constraint = self.lookup_trigger[item[-1]]
                 constraint(key, *dictionary[item[-1]])
 
@@ -231,7 +237,7 @@ class Registry:
     # status and emit 'registry:execute'
     def check(self, key, whenexec, triggerSetup, triggerConstraints):
         if (all(self.lookup_check[constraint] for constraint in whenexec) and
-           (all(triggerConstraints[logicStatus][0] > 1 for logicStatus in triggerConstraints) or
+           (all(triggerConstraints[logicStatus][0] > 0 for logicStatus in triggerConstraints) or
                (triggerConstraints == {}))):
                 # emitExecuted would be called if
                 # 1.  Fulfilled constraint in whenexec
@@ -255,33 +261,37 @@ class Registry:
     ##################################CONSTRAINT FUNCTIONS##################################
     # These are the functions that are called by handleTrigger by iterating through the items of the
     # list and keys of the dictionary of triggerConstraints
+    def appendOrder(self, action):
+        if 'order' not in self.logic_status[action].keys():
+            self.logic_status[action]['order'] = [self.setup[action][2]]
+
     def once_per_bar(self, action):
         if 'bar' not in self.logic_status[action].keys():
-            self.logic_status[action]['bar'] = [1, 1, self.num_bars]
+            self.logic_status[action]['bar'] = [1-1, 1, self.num_bars]
 
     def n_per_bar(self, action, *args):
         if 'bar' not in self.logic_status[action].keys():
-            self.logic_status[action]['bar'] = [*args, 1, self.num_bars]
+            self.logic_status[action]['bar'] = [*args-1, 1, self.num_bars]
         else:
             self.logic_status[action]['bar'][0] -= 1
 
     def once_per_period(self, action, *args):
         if 'bar' not in self.logic_status[action].keys():
-            self.logic_status[action]['period'] = [1, *args, self.num_bars]
+            self.logic_status[action]['period'] = [1-1, *args, self.num_bars]
 
     def n_per_period(self, action, *args):
         if 'period' not in self.logic_status[action].keys():
-            self.logic_status[action]['period'] = [*args, self.num_bars]
+            self.logic_status[action]['period'] = [*args-1, self.num_bars]
         else:
             self.logic_status[action]['period'][0] -= 1
 
     def once_per_trade(self, action):
         if 'period' not in self.logic_status[action].keys():
-            self.logic_status[action]['trade'] = [1, 1, self.num_bars]
+            self.logic_status[action]['trade'] = [1-1, 1, self.num_bars]
 
     def n_per_trade(self, action, *args):
         if 'trade' not in self.logic_status[action].keys():
-            self.logic_status[action]['trade'] = [*args, 1, self.num_bars]
+            self.logic_status[action]['trade'] = [*args-1, 1, self.num_bars]
         else:
             self.logic_status[action]['trade'][0] -= 1
 
@@ -291,7 +301,7 @@ class Registry:
             if self.logic_status[action][signal][0] == -1:
                 del self.logic_status[action][signal]
         elif signal not in self.logic_status[action].keys():
-            self.logic_status[action][signal] = [1, 1, self.num_bars]
+            self.logic_status[action][signal] = [1-1, 1, self.num_bars]
 
     def n_per_signal(self, action, signal, *args):
         if signal in self.logic_status[action].keys():
@@ -301,4 +311,4 @@ class Registry:
             else:
                 self.logic_status[action][signal][0] -= 1
         elif signal not in self.logic_status[action].keys():
-            self.logic_status[action][signal] = [*args, 1, self.num_bars]
+            self.logic_status[action][signal] = [*args-1, 1, self.num_bars]
