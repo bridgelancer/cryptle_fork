@@ -70,7 +70,7 @@ class CandleStick(Timeseries):
         except:
             self.value = None
 
-    # temporariliy disabled pruning - buggy behaviour causing downstream TS objects fail to update
+    # @TODO temporariliy disabled pruning - buggy behaviour causing downstream TS objects fail to update
     # after 365 bars while self._ts remains pruned
     def prune(self):
         #if len(self._ts) >= 365:
