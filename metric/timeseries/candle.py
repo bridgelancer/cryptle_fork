@@ -53,8 +53,8 @@ class CandleStick(Timeseries):
     def appendTS(self, data):
         self._ts.append(data)
         self.evaluate()
-        self.prune()
         self.broadcast()
+        self.prune()
 
     def evaluate(self):
         # eval_func passed to GenericTS objects held within CandleStick
@@ -70,9 +70,12 @@ class CandleStick(Timeseries):
         except:
             self.value = None
 
+    # temporariliy disabled pruning - buggy behaviour causing downstream TS objects fail to update
+    # after 365 bars while self._ts remains pruned
     def prune(self):
-        if len(self._ts) > 365:
-            self._ts = self._ts[-365:]
+        #if len(self._ts) >= 365:
+        #   self._ts = self._ts[-365:]
+        pass
 
     def accessBar():
         return [float(x) for x in [self.o, self, c, self.h, self.l, self.v]]
