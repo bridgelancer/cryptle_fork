@@ -20,18 +20,33 @@ class RSI(Timeseries):
         self._cache.append(float(self._ts))
         if len(self._cache) < 2:
             return
+
+        # Calculate gain/lose
         if self._cache[-1] > self._cache[-2]:
             self._up.append(abs(self._cache[-1] - self._cache[-2]))
             self._down.append(0)
         else:
             self._down.append(abs(self._cache[-1] - self._cache[-2]))
             self._up.append(0)
+
+        # Return if insufficient
         if len(self._up) < self._lookback or len(self._down) < self._lookback:
             return
 
+        # keep the length of list of gain and loss to be the same as lookback
+        if (len(self._up) > self._lookback):
+            self._up = self._up[-self._lookback:]
+        if (len(self._down) > self._lookback):
+            self._down = self._down[-self._lookback:]
+
+        if len(self._cache) > 2:
+            self._cache = self._cache[-2:]
+        
+        
         price_up   = self._up[-1]
         price_down = self._down[-1]
 
+        #calculation of 'average gain' and 'average loss'
         if self._ema_up is None and self._ema_down is None:
             self._ema_up    = sum([x for x in self._up]) / len(self._up)
             self._ema_down  = sum([x for x in self._down]) / len(self._down)
@@ -49,7 +64,7 @@ class RSI(Timeseries):
         self._ema_up   = self._weight * price_up + (1 - self._weight) * self._ema_up
         self._ema_down = self._weight * price_down + (1 - self._weight) * self._ema_down
 
-
+        #calculation of RSI
         try:
             self.value = 100 - 100 / (1 + self._ema_up/self._ema_down)
         except ZeroDivisionError:
@@ -60,8 +75,7 @@ class RSI(Timeseries):
             elif self._ema_up == 0 and self._ema_down == 0:
                 self.value = 50
 
-        if len(self._cache) > 2:
-            self._cache = self._cache[-2:]
+
 
         self.broadcast()
 
