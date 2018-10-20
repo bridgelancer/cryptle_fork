@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 class Orderbook:
-    """In memory orderbook.
+    """In memory orderbook optimzed for orderbook data analysis.
 
     Args:
         bids: An array of tuples as [(price, volume), ...]
@@ -20,6 +20,16 @@ class Orderbook:
         # These lists are to be mainted sorted after modifications
         self._bid_prices = []
         self._ask_prices = []
+
+        self._prev_bp = None
+        self._prev_ap = None
+        self._prev_bv = None
+        self._prev_av = None
+
+        self._bp_grad = None
+        self._ap_grad = None
+        self._bv_grad = None
+        self._av_grad = None
 
         if bids:
             for price, volume in bids:
@@ -103,7 +113,7 @@ class Orderbook:
 
     def recorded_gradient(self):
         """Return order gradients as (bid price, ask price, bid vol, ask vol)."""
-        return self._bid_price_grad, self._ask_price_grad, self._bid_volume_grad, self._ask_volume_grad
+        return self._bp_grad, self._ap_grad, self._bv_grad, self._av_grad
 
     def recorded_events(self):
         """Return count of recorded events."""
@@ -147,6 +157,9 @@ class Orderbook:
 
     def apply_diffs_order_gradient(self, diffs, depth=10):
         """Compute gradient from applying diffs. The calling instance will be modified.
+
+        Note:
+            Deprecated.
 
         Args:
             diffs: List of dicts with keys conforming to :py:meth:`apply_diff`
@@ -209,7 +222,7 @@ class Orderbook:
             raise ValueError('No existing bid order at ${}'.format(price))
         else:
             self._bids[price] -= amount
-            if self._bid[price] < 0.0001:
+            if self._bids[price] < 0.0001:
                 self._bids.pop(price)
                 self._bid_prices.remove(price)
 

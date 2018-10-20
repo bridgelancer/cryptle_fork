@@ -44,6 +44,9 @@ Message Bus
 
    .. autofunction:: source
 
+   .. autoclass:: DeferedSource
+      :members:
+
    .. autoexception:: BusException
 
    .. autoexception:: ExtraEmit

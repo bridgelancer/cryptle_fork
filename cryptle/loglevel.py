@@ -11,11 +11,13 @@ severity below WARNING, described as follows:
 When imported to other modules, loggers created from logging.getLogger will have
 a log method for each corresponding new log level.
 
-Helper functions create handled loggers or loggers and handlers in pairs.
-
 Default formatters subclassed from logging.Formatter provide a unified log
 format for Cryptle. Indivial modules are recommended to use the formatters
 defined in this module, instead of defining their own.
+
+Root logger configs are initialised upon import.
+
+Helper functions create handled loggers or loggers and handlers in pairs.
 """
 import logging
 import sys
@@ -47,31 +49,29 @@ def _tick(self, message, *args, **kargs):
     if self.isEnabledFor(logging.TICK):
         self._log(logging.TICK, message, args, **kargs)
 
+
 logging.Logger.report = _report
 logging.Logger.signal = _signal
 logging.Logger.metric = _metric
 logging.Logger.tick   = _tick
 
 
+class DebugFormatter(logging.Formatter):
+    """Create detailed and machine parsable log messages."""
+    fmt = '{asctime}:{levelname}:{filename}:{lineno}:{message}'
+    datefmt = '%Y%m%dT%H%M%S'
 
-def defaultFormatter(notimestamp=False):
-    """Gets the default formatter."""
-    if notimestamp:
-        fmt = '%(name)-10s [%(levelname)-8s] %(message)s'
-    else:
-        fmt = '%(name)-10s %(asctime)s [%(levelname)-8s] %(message)s'
-    datefmt = '%Y-%m-%d %H:%M:%S'
-    return logging.Formatter(fmt=fmt, datefmt=datefmt)
-
-std_formatter = defaultFormatter
+    def __init__(self, **kwargs):
+        super().__init__(fmt=self.fmt, datefmt=self.datefmt, style='{', **kwargs)
 
 
-class DefaultFormatter(logging.Formatter):
-    fmt = '%(name)-10s %(asctime)s %(levelname)-10s %(message)s'
-    datefmt = '%Y-%m-%d %H:%M:%S'
+class SimpleFormatter(logging.Formatter):
+    """Create readable basic log messages."""
+    fmt = '{name:<12} {levelname:<8} {message}'
+    datefmt = '%Y%m%dT%H%M%S'
 
-    def __init__(self):
-        super().__init__(fmt=self.fmt, datefmt=self.datefmt)
+    def __init__(self, **kwargs):
+        super().__init__(fmt=self.fmt, datefmt=self.datefmt, style='{', **kwargs)
 
     def format(self, record):
         record.levelname = '[' + record.levelname + ']'
@@ -80,8 +80,8 @@ class DefaultFormatter(logging.Formatter):
 
 
 class ColorFormatter(logging.Formatter):
-    """Formatter that colors the levelname and logged message."""
-    fmt = '%(name)-10s %(asctime)s %(levelname)-19s %(message)s'
+    """Create colorize log messages with terminal control characters."""
+    fmt = '{name:<10} {asctime} {levelname:<8} {message}'
     datefmt = '%Y-%m-%d %H:%M:%S'
 
     RESET   = '\033[0m'
@@ -91,8 +91,8 @@ class ColorFormatter(logging.Formatter):
     GREEN   = COLOR % 32
     BLUE    = COLOR % 34
 
-    def __init__(self):
-        super().__init__(fmt=self.fmt, datefmt=self.datefmt)
+    def __init__(self, **kwargs):
+        super().__init__(fmt=self.fmt, datefmt=self.datefmt, style='{', **kwargs)
 
     def format(self, record):
         self._format_levelname(record)
@@ -130,7 +130,7 @@ def make_logger(name, *handlers, level=logging.DEBUG):
     return logger
 
 
-def get_filehandler(fname, level=logging.DEBUG, formatter=DefaultFormatter()):
+def get_filehandler(fname, level=logging.DEBUG, formatter=DebugFormatter()):
     fh = logging.FileHandler(fname)
     fh.setLevel(level)
     fh.setFormatter(formatter)

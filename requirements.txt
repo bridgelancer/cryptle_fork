@@ -1,2 +1,0 @@
-numpy>=1.13
-websocket-client>=0.45.0
