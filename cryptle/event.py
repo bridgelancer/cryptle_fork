@@ -1,5 +1,6 @@
 import inspect
 import logging
+import threading
 from functools import wraps
 from collections import defaultdict
 
@@ -27,7 +28,7 @@ class _Emitter:
     """Functor descriptor for wrapper functions and instance methods into bindable emitters."""
     def __init__(self, event, func):
         if isinstance(func, self.__class__):
-            raise ExtraEmitError('An emitter may only emit one type of event.')
+            raise ExtraEmit('An emitter may only emit one type of event.')
         self.func = func
         self.buses = []
         self.event = event
@@ -117,8 +118,9 @@ class Bus:
             pass
             #raise NotListened('No registered callbacks for "{}" in this bus.'.format(event))
 
-        for cb in self._callbacks[event]:
-            cb(data)
+        with threading.Lock():
+            for cb in self._callbacks[event]:
+                cb(data)
 
     def on(self, event):
         """Decorator for global functions as bound event callbacks.
@@ -167,7 +169,7 @@ class Bus:
         """Return an emitter function binded to the caller bus."""
         if isinstance(func, _Emitter):
             if not func.event == event:
-                raise ExtraEmitError('An emitter may only emit one type of event.')
+                raise ExtraEmit('An emitter may only emit one type of event.')
             func.buses.append(self)
             self._emitters[event].append(func)
             return func
@@ -214,6 +216,15 @@ def source(event):
 
 
 class DeferedSource:
+    """Mixin class that enables binded objects to emit custom events at runtime.
+
+    class A(DeferedSource):
+        def emit_custom_event(self, event, data):
+            @self.source(event)
+            def _():
+                return data
+            _()
+    """
     def source(self, event):
         def wrapper(method):
             try:

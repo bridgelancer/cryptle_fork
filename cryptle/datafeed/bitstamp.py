@@ -192,8 +192,8 @@ class BitstampFeed:
         self._send({'event': 'pusher:unsubscribe',  'data': {'channel': channel}})
 
     def _pong(self):
-        _log.info('Ping')
-        self._send({'event': 'pusher:unsubscribe',  'data': {'channel': channel}})
+        _log.info('Ping-pong')
+        self._send({'event': 'pusher:pong'})
 
     def _send(self, msg):
         """Low level method to send a websocket message.

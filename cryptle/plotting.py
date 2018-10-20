@@ -1,5 +1,5 @@
 from datetime import datetime
-from colorsys import *
+from colorsys import hsv_to_rgb
 import matplotlib.pyplot as plt
 
 # @Temporary wrapper for transitioning
@@ -83,7 +83,7 @@ class CandleStickChart:
         # Plots volume
         if plot_volume:
             volume = [x[5] for x in candle.bars]
-            self._axes[1].bar(x, volume, color=candle_colors)
+            self._axes[1].bar(ts, volume, color=candle_colors)
             volume_title = 'Volume'
             self._axes[1].set_title(volume_title)
             self._axes[1].xaxis.grid(False)
@@ -101,14 +101,14 @@ class CandleStickChart:
     def plotTrade(self, trades, trade_color_mid_pt=0.025):
         for trade in trades:
             try:
-                entry = int(trade[0]) # entry time (buy)
-                exit  = int(trade[2]) # exit time (sell)
+                entry_time = int(trade[0]) # entry time (buy)
+                exit_time  = int(trade[2]) # exit time (sell)
                 p_and_l = (trade[3] - trade[1])/trade[1]
 
             except IndexError:
                 # when the strategy terminated without selling (still holding a position)
-                entry = int(trade[0])
-                exit = self._axes[0].get_xbound()[1]
+                entry_time = int(trade[0])
+                exit_time  = self._axes[0].get_xbound()[1]
                 p_and_l = 0
 
             color = '#ffff96'
@@ -130,7 +130,7 @@ class CandleStickChart:
                 v = 0.1 + inv_pl * 0.9
                 color = hsv_to_rgb(h, s, v)
 
-            self._axes[0].axvspan(entry, exit, facecolor=color, alpha=0.4)
+            self._axes[0].axvspan(entry_time, exit_time, facecolor=color, alpha=0.4)
 
 
     def plotSignal(self, signal):

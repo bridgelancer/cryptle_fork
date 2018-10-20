@@ -97,6 +97,8 @@ class Backtest:
         Args:
             callback: A function taking (price, volume, timestamp, action) as parameter
         """
+        if not tick:
+            raise ValueError('Expected dataset to be loaded, none found.')
 
         for tick in self.ticks:
             if not tick:
