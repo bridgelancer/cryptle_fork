@@ -1,20 +1,21 @@
 from cryptle.event import source, on, Bus
 
 class Registry:
-    '''Registry class keeps record of the various important state information for the Strategy
-    class. Registry is also responsible for dispatching Events that signifiy the execution of logical tests
+    """Registry class keeps record of the Strategy class's state information.
+    It is also responsible for dispatching Events that signifiy the execution of logical tests
     at desired time and frequency as time elapsed.
 
     Args:
-        setup (Dictionary): {'actionname': [[when to execute], {constraints after triggered}, order
+        setup (Dictionary): {'actionname': [[when to execute], {constraints in getting triggered}, order
         of execution (optional)]}
 
-    Registry would control the order and when these logical tests execute. The client codes of the Strategy class
-    should only execute when they receive their corresponding "registry:execute" signals. Different
-    "registry:execute" signals are discerned by the first item in the list returned. The Signals
-    are "triggered" if their test return True. In this situation, triggered tests of the client should
-    emit a "strategy:triggered" event with its name (in string) as the associated value.
-    '''
+    "registry:execute" signals are emitted upon completion of logical tests. Strategy class's client codes
+    will be executed only when corresponding signals are received. Different
+    "registry:execute" signals are identified by the first item returned in a list and the Signals are
+    "triggered" only if their tests return True. Triggered tests of the client should
+    emit a "strategy:triggered" event with its name (in string) as the associated value to
+    interact with the constraints desirable in the Registry.
+    """
     # Terminology used in in-line comments:
     #   client codes/tests = the functions of client codes which their behaviour are regulated by Registry
     #   whenexec           = the [0][0] of the value of setup.items() (str)

@@ -26,6 +26,13 @@ function.
    bus.
 
 
+
+Registry
+--------
+
+
+Registry keeps record of the 
+
 Exchange
 --------
 Todo.

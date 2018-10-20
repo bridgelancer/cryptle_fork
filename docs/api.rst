@@ -24,6 +24,13 @@ Datafeed
 .. automodule:: cryptle.datafeed
    :members:
 
+Registry
+--------
+
+.. automodule:: cryptle.registry
+
+   .. autoclass:: Registry
+      :members:
 
 Exchange
 --------
