@@ -13,6 +13,7 @@
 *.pyc
 *.out
 *.exe
+.~*
 
 *.sqlite
 
