@@ -11,65 +11,6 @@ from metric.candle import *
 from metric.generic import *
 
 
-# Unittest logging helpers
-RESET   = '\033[0m'
-COLOR   = '\033[%dm'
-DIM     = '\033[%d;2m'
-BOLD    = '\033[01;%dm'
-RED     = BOLD % 31
-YELLOW  = BOLD % 33
-GREEN   = COLOR % 32
-GREY    = COLOR % 90
-
-
-def PASS(testname):
-    logger.report(GREEN + 'Passed ' + GREY + testname + RESET)
-
-
-def FAIL(testname):
-    logger.report(YELLOW + 'Failed ' + RESET + testname)
-
-
-def FATAL(testname):
-    logger.report(RED + 'ERROR  ' + RESET + testname)
-
-
-# Unittest testsuite setup
-tests = []
-def unittest(func):
-    if __name__ != '__main__':
-        return func
-
-    @wraps(func)
-    def func_wrapper(*args, **kargs):
-        try:
-            func(*args, **kargs)
-            PASS(func.__name__)
-        except AssertionError:
-            _, _, tb = sys.exc_info()
-            tb_info = traceback.extract_tb(tb)
-            _, line, _, text = tb_info[-1]
-            FAIL('{}: Line {} {}'.format(func.__name__, line, text))
-        except Exception as e:
-            _, _, tb = sys.exc_info()
-            tb_info = traceback.extract_tb(tb)
-            filename, line, funcname, text = tb_info[-1]
-            FATAL('{}: Line {} {}'.format(func.__name__, line, type(e).__name__))
-            for tb in tb_info[1:]:
-                filename, line, funcname, text = tb
-                print('  File "{}", line {}, in {}'.format(filename, line, funcname))
-                print('    {}'.format(text))
-
-    tests.append(func_wrapper)
-    return func_wrapper
-
-
-def run_all_tests():
-    global tests
-    for test in tests:
-        test()
-
-
 # Initialise sample series
 const       = [3 for i in range(1, 100)]
 lin         = [i for i in  range(1, 100)]
@@ -95,7 +36,6 @@ def gaussian(mu, sig, start=0, end=100, interval=1):
     return [math.exp((x - mu) ** 2 / (2 * sig ** 2)) for x in range(start, end, interval)]
 
 
-@unittest
 def test_generic_sma():
     sma = simple_moving_average(const, 3)
     for val in sma:
@@ -106,7 +46,6 @@ def test_generic_sma():
         assert val == i + 2
 
 
-@unittest
 def test_generic_wma():
     wma = weighted_moving_average(const, 5)
     for val in wma:
@@ -121,7 +60,6 @@ def test_generic_wma():
         assert val - (i**2 + 6*i + 10) < 1e-6
 
 
-@unittest
 def test_generic_ema():
     ema = exponential_moving_average(const, 3)
     for val in ema:
@@ -132,13 +70,11 @@ def test_generic_ema():
         assert val/(i + 3) < 1
 
 
-@unittest
 def test_generic_bollinger_width():
     result = bollinger_width(quad, 5)
     assert result[-1] - 274.36253388 < 1e-5
 
 
-@unittest
 def test_generic_macd():
     diff, diff_ma  = macd(sine, 5, 8, 3)
     assert abs(diff[-1] + 3.08097455232022) < 1e-6
@@ -146,7 +82,6 @@ def test_generic_macd():
     assert len(diff) == len(diff_ma)
 
 
-@unittest
 def test_generic_pelt():
     gauss = gaussian(0, 1, start=-10, end=10, interval=1)
     random_shit = [1, -10, 100, -1000]
@@ -159,13 +94,13 @@ def test_generic_pelt():
     #cps = pelt(linear, cost_normal_var)
     #cps = pelt(lin, cost_normal_var)
     #cps = pelt(quad, cost_normal_var)
-@unittest
+
+
 def test_generic_difference():
     result = difference(quad)
     assert result[-1] - 197 < 1e-5
 
 
-@unittest
 def test_metric_base():
     a = Metric()
     b = Metric()
@@ -183,7 +118,6 @@ def test_metric_base():
     assert c % b == 1
 
 
-@unittest
 def test_candle():
     c = Candle(4, 7, 10, 3, 12316, 1, 1)
     assert c.open == 4
@@ -207,7 +141,6 @@ def test_candle():
     assert c.netvol == 0
 
 
-@unittest
 def test_candelbar():
     bar = CandleBar(10)
     for i, tick in enumerate(const):
@@ -240,7 +173,6 @@ def test_candelbar():
         assert len(bar) == i * 2 + 1
 
 
-@unittest
 def test_candle_sma():
     bar = CandleBar(4)
     ma = SMA(bar, 5)
@@ -256,7 +188,6 @@ def test_candle_sma():
             assert ma == i - 2
 
 
-@unittest
 def test_candle_wma():
     bar = CandleBar(4)
     ma = WMA(bar, 5)
@@ -272,7 +203,6 @@ def test_candle_wma():
             assert ma - i + 1
 
 
-@unittest
 def test_candle_ema():
     bar = CandleBar(4)
     ma = EMA(bar, 5)
@@ -288,7 +218,6 @@ def test_candle_ema():
             assert ma - 3 < 1e-6
 
 
-@unittest
 def test_candle_bollinger():
     bar = CandleBar(1)
     boll = BollingerBand(bar, 5)
@@ -298,7 +227,6 @@ def test_candle_bollinger():
     assert boll.width - 274.36253388 < 1e-5
 
 
-@unittest
 def test_candle_atr():
     bar = CandleBar(4)
     atr = ATR(bar, 5)
@@ -312,7 +240,6 @@ def test_candle_atr():
     assert atr - 3.9799 < 1e-3
 
 
-@unittest
 def test_candle_rsi():
     bar = CandleBar(1)
     rsi = RSI(bar, 14)
@@ -327,7 +254,6 @@ def test_candle_rsi():
     assert rsi - 55.48924 < 1e-5
 
 
-@unittest
 def test_candle_macd():
     bar = CandleBar(1)
     wma1 = WMA(bar, 5)
@@ -339,7 +265,6 @@ def test_candle_macd():
     assert macd.diff_ma - 0.5843467703997498 < 1e-5
 
 
-@unittest
 def test_candle_manb():
     bar = CandleBar(5)
     boll = BollingerBand(bar, 5)
@@ -348,7 +273,6 @@ def test_candle_manb():
         bar.pushTick(price, i)
     assert snb == 0
 
-@unittest
 def test_candle_diffMACD():
     bar = CandleBar(1)
     wma1 = WMA(bar, 5)
