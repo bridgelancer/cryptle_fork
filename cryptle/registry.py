@@ -11,8 +11,6 @@ class Registry:
              {constraints}, \
              order of execution (optional) ] }
         bus: Event Bus object
-
-    All actionnames and constraints supported are documented in Registry under User Guides.
     """
     # Terminology used in in-line comments:
     #   client codes/tests = the functions of client codes which their behaviour are regulated by Registry

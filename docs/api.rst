@@ -32,6 +32,9 @@ Registry
    .. autoclass:: Registry
       :members:
 
+All actionnames and constraints supported are documented in 
+:ref:`Registry <registry_ref>` under User Guides.
+
 Exchange
 --------
 
