@@ -6,15 +6,13 @@ class Registry:
     at desired time and frequency as time elapsed.
 
     Args:
-        setup (Dictionary): {'actionname': [[when to execute], {constraints in getting triggered}, order
-        of execution (optional)]}
+        setup (Dictionary): A Dictionary taking { 'actionname':
+             [ [timing], \
+             {constraints}, \
+             order of execution (optional) ] }
+        bus: Event Bus object
 
-    "registry:execute" signals are emitted upon completion of logical tests. Strategy class's client codes
-    will be executed only when corresponding signals are received. Different
-    "registry:execute" signals are identified by the first item returned in a list and the Signals are
-    "triggered" only if their tests return True. Triggered tests of the client should
-    emit a "strategy:triggered" event with its name (in string) as the associated value to
-    interact with the constraints desirable in the Registry.
+    All actionnames and constraints supported are documented in Registry under User Guides.
     """
     # Terminology used in in-line comments:
     #   client codes/tests = the functions of client codes which their behaviour are regulated by Registry
