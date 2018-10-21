@@ -1,10 +1,5 @@
-.PHONY: doc awsdoc test clean lint
-
 doc:
 	@$(MAKE) -C docs html
-
-awsdoc: doc
-	@aws s3 sync ./docs/_build/html s3://cryptle-docs
 
 test:
 	@pytest --ignore test/test_feed.py
@@ -24,3 +19,5 @@ lint:
 clean:
 	rm -rf **/__pycache__
 	$(MAKE) -C docs clean
+
+.PHONY: doc test clean lint
