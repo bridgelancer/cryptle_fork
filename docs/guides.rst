@@ -27,11 +27,6 @@ function.
 
 
 
-Registry
---------
-
-
-Registry keeps record of the 
 
 Exchange
 --------
@@ -131,3 +126,42 @@ An asynchronous protocol could be implemented in the future.
    each callback. Hence if a piece of event data is modifible objects such as
    dictionary, callbacks that are called earlier could modify the value passed
    into later callbacks.
+
+
+Registry
+--------
+
+Registry handles :class:`Strategy` class's state information and controls the order
+and timing of logical tests' execution. The logical tests to be ran should be
+submitted in a Dictionary to the **setup** argument with an 'actionname' as a key
+followed by timing,constraints and order contained in a list. The following is 
+an example::
+
+   setup = {'doneInit': [['open'], [['once per bar'], {}], 1],
+            'wma':      [['open'], [['once per bar'], {'n per signal': ['doneInit', 10]}], 2]}
+
+In the above scenario, the :class:`Registry` class will be dynamically listening
+for tick and once the timing of execution is met and the constraints fulfiled. A
+:class:`registry:execute` signal will be emitted. The planned action :meth:`doneInit`
+will be triggered upon receiving the signal. :class:`Registry` will then start
+to look at the timing of execution and contraints chosen for the next action.
+We see that the second item
+:meth:`wma`  in `setup` differs to the former in one extra constraint which 
+translates to only performing the action 10 times in maxima per signal upon
+the completion of `doneInit`.
+
+Currently the following actions and constraints are supported.
+
+Actions:
+   - :class:`open`
+   - :class:`close`
+
+Constraints:
+   - :class:`once per bar`
+   - :class:`once per trade`
+   - :class:`once per period`
+   - :class:`once per signal`
+   - :class:`n per bar`
+   - :class:`n per period`
+   - :class:`n per trade`
+   - :class:`n per signal`
