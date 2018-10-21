@@ -28,11 +28,14 @@ class Registry:
 
     def __init__(self, setup, bus=None):
         # setup in conventional form - see test_registry.py for reference
-        if all(len(x)>2 for x in setup.items()):
-            self.setup = OrderedDict(sorted(setup.items(), key=lambda x: x[2]))
+        if all(len(item)>2 for x, item in setup.items()):
+            print('fuck')
+            self.setup = OrderedDict(sorted(setup.items(), key=lambda x: x[1][2]))
         else:
+            print('fuck you')
             self.setup = setup
         # in plain dictionary form, holds all logical states for limiting further triggering of
+        print(self.setup)
         self.logic_status = {key: {} for key in setup.keys()}
 
         # bar-related states that should be sourced from aggregator
