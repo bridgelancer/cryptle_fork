@@ -1,4 +1,5 @@
 from cryptle.event import source, on, Bus
+from collections import OrderedDict
 
 class Registry:
     """Registry class keeps record of the Strategy class's state information.
@@ -27,7 +28,10 @@ class Registry:
 
     def __init__(self, setup, bus=None):
         # setup in conventional form - see test_registry.py for reference
-        self.setup = setup
+        if all(len(x)>2 for x in setup.items()):
+            self.setup = OrderedDict(sorted(setup.items(), key=lambda x: x[2]))
+        else:
+            self.setup = setup
         # in plain dictionary form, holds all logical states for limiting further triggering of
         self.logic_status = {key: {} for key in setup.keys()}
 
@@ -67,11 +71,11 @@ class Registry:
                 n = 'n per signal'
 
                 # to append order information to all actions
-                for item in action[1][0]:
-                    self.appendOrder(key)
+                #for item in action[1][0]:
+                #    self.appendOrder(key)
 
-                for itme in action[1][1]:
-                    self.appendOrder(key)
+                #for itme in action[1][1]:
+                #    self.appendOrder(key)
 
                 # Special handling: set the logic status of signal influencing the action to be [-1, 1, 0]
                 if 'once per signal' in action[1][0]:
@@ -154,7 +158,7 @@ class Registry:
         signalname, boolean = signal
         # semi-hardcoded behaviour, hierachy structure to be implemented
 
-        for key, item in sorted(self.logic_status.items(), key=lambda test: test[1]['order']):
+        for key, item in sorted(self.logic_status.items()):
             if signalname in self.logic_status[key]:
                 # call refreshLogicStatus if signal returned false
                 if not boolean and self.logic_status[key][signalname][0] != -1:
@@ -232,7 +236,7 @@ class Registry:
     # status and emit 'registry:execute'
     def check(self, key, whenexec, triggerSetup, triggerConstraints):
         if (all(self.lookup_check[constraint] for constraint in whenexec) and
-           (all(triggerConstraints[logicStatus][0] > 0 for logicStatus in triggerConstraints) or
+           (all(triggerConstraints[logicStatus][0] > 1 for logicStatus in triggerConstraints) or
                (triggerConstraints == {}))):
                 # emitExecuted would be called if
                 # 1.  Fulfilled constraint in whenexec
@@ -262,31 +266,31 @@ class Registry:
 
     def once_per_bar(self, action):
         if 'bar' not in self.logic_status[action].keys():
-            self.logic_status[action]['bar'] = [1-1, 1, self.num_bars]
+            self.logic_status[action]['bar'] = [1, 1, self.num_bars]
 
     def n_per_bar(self, action, *args):
         if 'bar' not in self.logic_status[action].keys():
-            self.logic_status[action]['bar'] = [*args-1, 1, self.num_bars]
+            self.logic_status[action]['bar'] = [*args, 1, self.num_bars]
         else:
             self.logic_status[action]['bar'][0] -= 1
 
     def once_per_period(self, action, *args):
         if 'bar' not in self.logic_status[action].keys():
-            self.logic_status[action]['period'] = [1-1, *args, self.num_bars]
+            self.logic_status[action]['period'] = [1, *args, self.num_bars]
 
     def n_per_period(self, action, *args):
         if 'period' not in self.logic_status[action].keys():
-            self.logic_status[action]['period'] = [*args-1, self.num_bars]
+            self.logic_status[action]['period'] = [*args, self.num_bars]
         else:
             self.logic_status[action]['period'][0] -= 1
 
     def once_per_trade(self, action):
         if 'period' not in self.logic_status[action].keys():
-            self.logic_status[action]['trade'] = [1-1, 1, self.num_bars]
+            self.logic_status[action]['trade'] = [1, 1, self.num_bars]
 
     def n_per_trade(self, action, *args):
         if 'trade' not in self.logic_status[action].keys():
-            self.logic_status[action]['trade'] = [*args-1, 1, self.num_bars]
+            self.logic_status[action]['trade'] = [*args, 1, self.num_bars]
         else:
             self.logic_status[action]['trade'][0] -= 1
 
@@ -296,7 +300,7 @@ class Registry:
             if self.logic_status[action][signal][0] == -1:
                 del self.logic_status[action][signal]
         elif signal not in self.logic_status[action].keys():
-            self.logic_status[action][signal] = [1-1, 1, self.num_bars]
+            self.logic_status[action][signal] = [1, 1, self.num_bars]
 
     def n_per_signal(self, action, signal, *args):
         if signal in self.logic_status[action].keys():
@@ -306,4 +310,4 @@ class Registry:
             else:
                 self.logic_status[action][signal][0] -= 1
         elif signal not in self.logic_status[action].keys():
-            self.logic_status[action][signal] = [*args-1, 1, self.num_bars]
+            self.logic_status[action][signal] = [*args, 1, self.num_bars]
