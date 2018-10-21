@@ -13,7 +13,6 @@ test-event:
 test-feed:
 	@pytest test/test_feed.py --rootdir=./
 
-
 PYLINT_DISABLES := C  # Ignore convention warnings
 
 comma := ,
@@ -27,8 +26,14 @@ lint:
 	    --disable=$(PYLINT_DISABLES_FINAL) \
 	    || true
 
+uml:
+	@pyreverse cryptle
+	@dot -Tpng classes.dot > classes.png
+	@dot -Tpng packages.dot > packages.png
+	@rm classes.dot packages.dot
+
 clean:
 	rm -rf **/__pycache__
 	$(MAKE) -C docs clean
 
-.PHONY: doc test clean lint
+.PHONY: doc test clean lint uml
