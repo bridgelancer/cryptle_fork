@@ -29,10 +29,8 @@ class Registry:
     def __init__(self, setup, bus=None):
         # setup in conventional form - see test_registry.py for reference
         if all(len(item)>2 for x, item in setup.items()):
-            print('fuck')
             self.setup = OrderedDict(sorted(setup.items(), key=lambda x: x[1][2]))
         else:
-            print('fuck you')
             self.setup = setup
         # in plain dictionary form, holds all logical states for limiting further triggering of
         print(self.setup)
@@ -175,8 +173,9 @@ class Registry:
             if applyConstraint:
                 dictionary = self.setup[key][1][1]
                 item = [k for k,v in dictionary.items() if v[0] == signalname]
-                constraint = self.lookup_trigger[item[-1]]
-                constraint(key, *dictionary[item[-1]])
+                if len(item) > 0:
+                    constraint = self.lookup_trigger[item[-1]]
+                    constraint(key, *dictionary[item[-1]])
 
     def handleLogicStatus(self, key, timeEvent):
         # Draft hierachy - bar < period < trade < someshit(s) or < someshit(s) < trade? (or customizable?)
