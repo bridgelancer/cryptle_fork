@@ -26,11 +26,15 @@ lint:
 	    --disable=$(PYLINT_DISABLES_FINAL) \
 	    || true
 
+PROJECT := cryptle
+CLASS_DIAG := classes_$(PROJECT)
+PACK_DIAG  := packages_$(PROJECT)
+
 uml:
-	@pyreverse cryptle
-	@dot -Tpng classes.dot > classes.png
-	@dot -Tpng packages.dot > packages.png
-	@rm classes.dot packages.dot
+	@pyreverse -k cryptle -p $(PROJECT)
+	@dot -Tpng $(CLASS_DIAG).dot > $(CLASS_DIAG).png
+	@dot -Tpng $(PACK_DIAG).dot > $(PACK_DIAG).png
+	@rm $(CLASS_DIAG).dot $(PACK_DIAG).dot
 
 clean:
 	rm -rf **/__pycache__
