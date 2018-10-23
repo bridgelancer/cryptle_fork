@@ -34,11 +34,12 @@ class DummyStrat(NewStrategy):
         s.init_bar = max(scope1, scope2, macd_scope, rsi_period)
         super().__init__(**kws)
         # Specify setup for local registry - @TODO
-        setup = {'doneInit': [['open'], [['once per bar'], {}], 1],
+        setup = {'doneInit': [s.doneInit, ['open'], [['once per bar'], {}], 1],
                  #'belowRSIthresh':  [['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}, 2]],
-                 'wma':      [['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 2],
-                 'singular': [['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 3],
-                 'aboveRSISellFlag': [['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 4]
+                 'wma':      [s.signifyWMA, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 2],
+                 'singular': [s.signifySingularity, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 3],
+                 'RSISellFlag': [s.signifyRSISellFlag, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 4],
+                 'belowRSIthresh'  : [s.signifyRSIBelowThresh, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 5],
                 }
 
         # Initiate candle aggregator and CandleStick
@@ -70,30 +71,24 @@ class DummyStrat(NewStrategy):
         return triggerName
 
     # at least it kinda works
-    @on('registry:execute')
-    def doneInit(s, data):
+    def doneInit(s):
         # check at every tick initially to see if s.registry.num_bars > s.init_bar
         # whenexec: after self.registry.num_bars > s.init_bars, triggerConstraint:[['open'],
         # [['once'], {}]]
-        if data[0] == 'doneInit':
-            if s.registry.num_bars > s.init_bar:
-                s.emitSignal('doneInit', True)
-                s.emitTriggered('doneInit')
+        if s.registry.num_bars > s.init_bar:
+            s.emitSignal('doneInit', True)
+        else:
+            print('doneInit checked', s.registry.num_bars, s.init_bar)
+
+
+    def signifyWMA(s):
+        try:
+            if s.wma1 < s.stick.o:
+                s.emitTriggered('wma')
             else:
-                print('doneInit checked', s.registry.num_bars, s.init_bar)
-
-
-    @on('registry:execute')
-    def signifyWMA(s, data):
-        if data[0] == 'wma':
-            try:
-                if s.wma1 < s.stick.o:
-                    s.emitTriggered('wma')
-                else:
-                    s.emitTriggered('wma')
-                print('finished wma')
-            except:
-                pass
+                s.emitTriggered('wma')
+        except:
+            pass
 
     #@on('registry:execute')
     #def signifyDLC(s, data):
@@ -125,61 +120,66 @@ class DummyStrat(NewStrategy):
     #        except:
     #            pass
 
-    @on('registry:execute')
-    def signifySingularity(s, data):
-        if data[0] == 'singular':
-            try:
-                if (s.rsi_diff > s.reaper.upperband):
-                    print(s.rsi_diff, s.reaper.upperband, s.registry.num_bars)
-                    s.emitSignal('singular', True)
-                    s.emitTriggered('singular')
-                else:
-                    s.emitSignal('singular', False)
-                    s.emitTriggered('singular')
-            except:
-                pass
+    def signifySingularity(s):
+        try:
+            if (s.rsi_diff > s.reaper.upperband):
+                print(s.rsi_diff, s.reaper.upperband, s.registry.num_bars)
+                s.emitSignal('singular', True)
+                s.emitTriggered('singular')
+            else:
+                s.emitSignal('singular', False)
+                s.emitTriggered('singular')
+        except:
+            pass
 
-    @on('registry:execute')
-    def signifyRSISellFlag(s, data):
-        # whenexec = 'open'; triggerConstraint: [['once'], {}]
-        if data[0] == 'aboveRSISellFlag':
-            try:
-                if s.rsi > s.rsi_upperthresh:
-                    s.emitSignal('aboveRSISellFlag', True)
-                    s.emitTriggered('aboveRSISellFlag')
-            except:
-                pass
+    def signifyRSISellFlag(s):
+    # whenexec = 'open'; triggerConstraint: [['once'], {}]
+        try:
+            if s.rsi > s.rsi_upperthresh:
+                s.emitSignal('RSISellFlag', True)
+                s.emitSignal('notRSISellFlag', False)
+                print(s.rsi, s.registry.num_bars)
+                s.emitTriggered('RSISellFlag')
+            else:
+                s.emitSignal('notRSISellFlag')
+        except:
+            pass
 
-    #@on('registry:execute')
-    #def signifyRSIBelowThresh(s, data):
-    #    # whenexec = 'open'; triggerConstraint: [['once'], {}]
-    #    if data[0] == 'belowRSIthresh':
-    #        try:
-    #            if s.rsi < s.rsi_thresh:
-    #                s.emitSignal('belowRSIthresh', True)
-    #                s.emitSignal('aboveRSISellFlag', False)
-    #                s.emitTriggered('belowRSIthres')
-    #            print('partailly fucking works')
-    #        except:
-    #            pass
+    def signifyRSIBelowThresh(s):
+    # whenexec = 'open'; triggerConstraint: [['once'], {}]
+        try:
+            if s.rsi < s.rsi_thresh:
+                s.emitSignal('belowRSIthresh', True)
+                s.emitSignal('RSISellFlag', False)
+                print(s.rsi, s.registry.num_bars)
+                s.emitTriggered('belowRSIthres')
+            else:
+                s.emitSignal('belowRSIthresh', False)
+        except:
+            pass
 
-    ## now trying to solve the issue of running at the first instance before doneInit is called
-    #@on('registry:execute')
-    #def signifyRSIAbove50(s, data):
-    #    # whenexec = 'open'; triggerConstraint: [['once'], {}]
-    #    if data[0] == 'aboveRSI50':
-    #        try:
-    #            someConditionToBeImplemented = True
-    #            if s.rsi > 50:
-    #                s.emitSignal('aboveRSI50', True)
-    #            elif s.rsi > 40 and someConditionToBeImplemented:
-    #                s.emitSignal('aboveRSI50', False)
-    #                s.emitSignal('belowRSIthresh', False)
-    #            elif s.rsi < 40:
-    #                s.emitSignal('aboveRSI50', False)
-    #            s.emitTriggered('aboveRSI50')
-    #        except:
-    #            pass
+    def signifyRSIAbove50F(s):
+    # whenexec = 'open'; triggerConstraint: [['once per bar'], {'once per signal:
+    # ['RSISellFlag']}, x]
+        try:
+            if s.rsi > 50:
+                s.emitSignal('aboveRSI50F', True)
+            elif s.rsi < 50:
+                s.emitSignal('aboveRSI50F', False)
+                s.emitSignal('RSISellFlag', False)
+            s.emitTriggered('aboveRSI50F')
+        except:
+            pass
+
+    def signifyRSIAbove50NF(s):
+        try:
+            if s.rsi > 50:
+                s.emitSignal('aboveRSI50NF', True)
+            elif s.rsi < 50:
+                s.emitSignal('aboveRSI50NF', False)
+            s.emitTriggered('aboveRSI50NF')
+        except:
+            pass
 
 
     #@on('registry:execute')
@@ -242,14 +242,11 @@ if __name__ == '__main__':
     from cryptle.event import source, on, Bus
     from cryptle.loglevel import *
 
-    formatter = defaultFormatter(notimestamp=True)
     fh = logging.FileHandler('dummy.log', mode='w')
     fh.setLevel(logging.TICK)
-    fh.setFormatter(formatter)
 
     sh = logging.StreamHandler()
     sh.setLevel(logging.REPORT)
-    sh.setFormatter(formatter)
 
     logger.addHandler(sh)
     logger.addHandler(fh)
