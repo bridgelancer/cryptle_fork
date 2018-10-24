@@ -2,16 +2,16 @@ doc:
 	@$(MAKE) -C docs html
 
 test:
-	@pytest --ignore test/test_feed.py
-
-test-all:
 	@pytest
 
-test-event:
-	@pytest test/test_event.py --rootdir=./
+testcore:
+	@pytest test/test_cryptle.py test/test_event.py
 
-test-feed:
-	@pytest test/test_feed.py --rootdir=./
+testbacktest:
+	@pytest test/test_cryptle.py test/test_event.py test/test_paper.py
+
+test_%:
+	@pytest test/$@.py --rootdir=./
 
 PYLINT_DISABLES := C  # Ignore convention warnings
 
