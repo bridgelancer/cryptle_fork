@@ -37,11 +37,11 @@ class CandleStick(Timeseries):
         # self._ts needs pruning in this case - @TODO
         self._ts       = []
         # eval_func for GenericTS objects
-        self.o         = GenericTS(self._ts, lookback=lookback, eval_func=Open, args=[self._ts])
+        self.o         = GenericTS(self._ts, lookback=lookback, eval_func=Open,  args=[self._ts])
         self.c         = GenericTS(self._ts, lookback=lookback, eval_func=Close, args=[self._ts])
-        self.h         = GenericTS(self._ts, lookback=lookback, eval_func=High, args=[self._ts])
-        self.l         = GenericTS(self._ts, lookback=lookback, eval_func=Low, args=[self._ts])
-        self.v         = GenericTS(self._ts, lookback=lookback, eval_func=Volume, args=[self._ts])
+        self.h         = GenericTS(self._ts, lookback=lookback, eval_func=High,  args=[self._ts])
+        self.l         = GenericTS(self._ts, lookback=lookback, eval_func=Low,   args=[self._ts])
+        self.v         = GenericTS(self._ts, lookback=lookback, eval_func=Volume,args=[self._ts])
         self.value     = None
         self.bar       = bar
         if isinstance(bus, Bus):

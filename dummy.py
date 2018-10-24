@@ -35,11 +35,10 @@ class DummyStrat(NewStrategy):
         super().__init__(**kws)
         # Specify setup for local registry - @TODO
         setup = {'doneInit': [s.doneInit, ['open'], [['once per bar'], {}], 1],
-                 #'belowRSIthresh':  [['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}, 2]],
                  'wma':      [s.signifyWMA, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 2],
                  'singular': [s.signifySingularity, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 3],
-                 'RSISellFlag': [s.signifyRSISellFlag, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 4],
-                 'belowRSIthresh'  : [s.signifyRSIBelowThresh, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 5],
+                 'RSISellFlag': [s.signifyRSISellFlag, ['open'], [['once per bar'], {'once per signal': ['wma'], 'n per signal': ['doneInit', 10000]}], 4],
+                 'belowRSIthresh'  : [s.signifyRSIBelowThresh, ['open'], [['once per bar'], {'once per signal': ['wma'], 'n per signal': ['doneInit', 10000]}], 5],
                 }
 
         # Initiate candle aggregator and CandleStick
@@ -83,10 +82,12 @@ class DummyStrat(NewStrategy):
 
     def signifyWMA(s):
         try:
-            if s.wma1 < s.stick.o:
-                s.emitTriggered('wma')
+            #print('test successful')
+            if (s.stick.o > s.wma1):
+                s.emitSignal('wma', True)
             else:
-                s.emitTriggered('wma')
+                s.emitSignal('wma', False)
+            s.emitTriggered('wma')
         except:
             pass
 
@@ -136,12 +137,10 @@ class DummyStrat(NewStrategy):
     # whenexec = 'open'; triggerConstraint: [['once'], {}]
         try:
             if s.rsi > s.rsi_upperthresh:
-                s.emitSignal('RSISellFlag', True)
-                s.emitSignal('notRSISellFlag', False)
-                print(s.rsi, s.registry.num_bars)
+                print('fuck!!!!!!!!!!!', s.rsi, s.registry.num_bars)
                 s.emitTriggered('RSISellFlag')
             else:
-                s.emitSignal('notRSISellFlag')
+                pass
         except:
             pass
 
@@ -151,8 +150,7 @@ class DummyStrat(NewStrategy):
             if s.rsi < s.rsi_thresh:
                 s.emitSignal('belowRSIthresh', True)
                 s.emitSignal('RSISellFlag', False)
-                print(s.rsi, s.registry.num_bars)
-                s.emitTriggered('belowRSIthres')
+                s.emitTriggered('belowRSIthresh')
             else:
                 s.emitSignal('belowRSIthresh', False)
         except:
