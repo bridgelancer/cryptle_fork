@@ -22,7 +22,6 @@ from metric.timeseries.sma import SMA
 
 
 logging.basicConfig(level=logging.FATAL)
-#dataset = pd.read_csv(open('bitstamp.csv'))
 dataset = pd.read_csv(open('bitstamp.csv'))
 tickset = pd.read_json(open('bch1.log'), convert_dates=False, lines=True)
 
@@ -37,8 +36,9 @@ def test_registry_construction():
     registry = Registry(setup)
     assert registry.__dict__['setup'] == setup
 
-# only activate when it is bar close
+
 def test_on_close():
+    # only activate when it is bar close
     setup = {'close': [['close'], [['once per bar'], {}]]}
     registry = Registry(setup)
 
@@ -52,6 +52,7 @@ def test_on_close():
     for value in dataset['close']:
         parseClose(value)
     assert registry.close_price == 6453.99
+
 
 ## only activate when it is bar open
 def test_on_open():
@@ -69,6 +70,7 @@ def test_on_open():
         parseOpen(value)
     assert registry.open_price == 6375.11
 
+
 def test_on_tick():
     setup = {'close': [['open'], [['once per bar'], {}]]}
     registry = Registry(setup)
@@ -82,6 +84,7 @@ def test_on_tick():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
     assert registry.current_price == 995.0
+
 
 def test_aggregator():
     aggregator = Aggregator(3600)
@@ -113,9 +116,9 @@ def test_handleTrigger():
     emitTrigger()
     assert registry.logic_status == {'twokprice': {'bar': [1, 1, 0], 'trade': [1, 1, 0]}}
 
-# this also implicitly tested once per bar function, verify by using -s flag to observe the print
-# behaviour
+
 def test_execute_after_trigger():
+    # implicitly test once per bar function, verify by using -s flag to see stdout
     setup = {'twokprice': [[], [['once per bar'], {}]]}
     registry = Registry(setup)
     aggregator = Aggregator(3600)
@@ -147,6 +150,7 @@ def test_execute_after_trigger():
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
+
 
 def test_n_per_bar():
     setup = {'twokprice': [[], [[], {'n per bar': [3]}]]}
@@ -180,6 +184,7 @@ def test_n_per_bar():
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
+
 
 def test_one_per_period():
     setup = {'twokprice': [[], [[], {'once per period': [3]}]]}
@@ -215,6 +220,7 @@ def test_one_per_period():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
 
+
 def test_n_per_period():
     setup = {'twokprice': [[], [[], {'n per period': [3, 3]}]]}
     registry = Registry(setup)
@@ -249,6 +255,7 @@ def test_n_per_period():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
 
+
 def test_once_per_bar_n_per_period():
     setup = {'twokprice': [[], [['once per bar'], {'n per period': [3, 5]}]]}
     registry = Registry(setup)
@@ -282,6 +289,7 @@ def test_once_per_bar_n_per_period():
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
+
 
 def test_one_per_signal():
     setup      = {'sma': [['open'], [['once per bar'], {}], 1], 'twokprice': [['open'], [['once per bar'], {'once per signal': ['sma']}], 2]}
@@ -350,6 +358,7 @@ def test_one_per_signal():
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
+
 
 def test_n_per_signal():
     print('******************************N PER SIGNAL**************************')
@@ -420,6 +429,7 @@ def test_n_per_signal():
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
+
 
 def test_n_per_period_n_per_signal():
     print('**************************N PER PERIOD N PER SIGNAL**************************')
