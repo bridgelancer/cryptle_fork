@@ -34,6 +34,7 @@ class Registry:
             self.setup = setup
         # in plain dictionary form, holds all logical states for limiting further triggering of
         self.logic_status = {key: {} for key in setup.keys()}
+        self.check_order = [x for x in self.setup.keys()]
 
         # bar-related states that should be sourced from aggregator
         self.bars = []
@@ -134,8 +135,8 @@ class Registry:
             if 'period' not in self.logic_status[key]:
                 continue
             elif 'period' in self.logic_status[key]:
-                activated_time = self.logic_status[key]['period'][2]
                 period         = self.logic_status[key]['period'][1]
+                activated_time = self.logic_status[key]['period'][2]
                 if self.num_bars - activated_time >= period:
                     timeToRefresh = True
             if timeToRefresh:
@@ -152,7 +153,13 @@ class Registry:
         signalname, boolean = signal
         # semi-hardcoded behaviour, hierachy structure to be implemented
 
-        for key, item in sorted(self.logic_status.items()):
+        for key, item in sorted(self.logic_status.items(), key=lambda x: self.check_order.index(x[0])):
+            #print(key, item)
+            #print(signalname)
+            if signalname == 'wma':
+                #print(signalname)
+                #print('wtf', self.logic_status[key], boolean, self.num_bars)
+                pass
             if signalname in self.logic_status[key]:
                 # call refreshLogicStatus if signal returned false
                 if not boolean and self.logic_status[key][signalname][0] != -1:
@@ -169,6 +176,7 @@ class Registry:
                 if len(item) > 0:
                     constraint = self.lookup_trigger[item[-1]]
                     constraint(key, *dictionary[item[-1]])
+
     def handleLogicStatus(self, key, timeEvent):
         # Draft hierachy - bar < period < trade < someshit(s) or < someshit(s) < trade? (or customizable?)
         # In any way, when ambiguous -> always take the most lenient one as the one with lowest # hierachy, bar < period < anythng is not ambiguous
@@ -297,4 +305,3 @@ class Registry:
                 self.logic_status[action][signal][0] -= 1
         elif signal not in self.logic_status[action].keys():
             self.logic_status[action][signal] = [*args, 1, self.num_bars]
-        print(self.logic_status)
