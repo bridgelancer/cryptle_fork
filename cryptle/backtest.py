@@ -97,9 +97,6 @@ class Backtest:
         Args:
             callback: A function taking (price, volume, timestamp, action) as parameter
         """
-        if not tick:
-            raise ValueError('Expected dataset to be loaded, none found.')
-
         for tick in self.ticks:
             if not tick:
                 raise ValueError('Expected dataset to be loaded, none found.')
@@ -112,7 +109,7 @@ class Backtest:
             elif strat.__class__.__bases__[-1].__name__ == 'NewStrategy':
                 # emit a tick Event to kickstart the new strategy
                 # WARNING: check tick format to see whether it still fits dataset
-                self.emitTick([price, volume, timestamp, action])
+                self.emitTick([float(price), float(volume), float(timestamp), float(action)])
 
             if callback:
                 callback(strat)
