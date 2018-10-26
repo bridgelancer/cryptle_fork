@@ -157,14 +157,14 @@ Actions:
    - `close`
 
 Constraints:
-   - `once per bar`
-   - `once per trade`
-   - `once per period`
-   - `once per signal`
-   - `n per bar`
-   - `n per period`
-   - `n per trade`
-   - `n per signal`
+   - ``once per bar``
+   - ``once per trade``
+   - ``once per period``
+   - ``once per signal``
+   - ``n per bar``
+   - ``n per period``
+   - ``n per trade``
+   - ``n per signal``
 
 .. _timeseries_ref:
 
