@@ -153,8 +153,8 @@ the completion of `doneInit`.
 Currently the following actions and constraints are supported.
 
 Actions:
-   - `open`
-   - `close`
+   - ``open``
+   - ``close``
 
 Constraints:
    - ``once per bar``
@@ -179,7 +179,8 @@ implements a :meth:`evaluate` which runs on every update.
 
 An option of adding a decorator :meth:`Timeseries.cache` to :meth:`evaluate` has
 been provided. This creates a `self._cache`, which could be referenced to within
-the `evaluate` function for past values of the listened Timeseries.
+the `evaluate` function for past values of the listened Timeseries. The number
+of items stored is regulated by `lookback`.
 
 For any subseries held within a wrapper class intended to be accessed by the
 client, a :class:`GenericTS` could be implemented. The format of the function
