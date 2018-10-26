@@ -134,7 +134,7 @@ Registry
 Registry handles :class:`Strategy` class's state information and controls the order
 and timing of logical tests' execution. The logical tests to be ran should be
 submitted in a Dictionary to the **setup** argument with an 'actionname' as a key
-followed by timing,constraints and order contained in a list. The following is 
+followed by timing,constraints and order contained in a list. The following is
 an example::
 
    setup = {'doneInit': [['open'], [['once per bar'], {}], 1],
@@ -143,10 +143,10 @@ an example::
 In the above scenario, the :class:`Registry` class will be dynamically listening
 for tick. Once the timing of execution is met and the constraints fulfiled, a
 :class:`registry:execute` signal will be emitted. The planned action :meth:`doneInit`
-will be triggered upon receiving the signal. :class:`Registry` will then 
+will be triggered upon receiving the signal. :class:`Registry` will then
 look at the timing of execution and contraints chosen for the next action.
 We see that the second item
-:meth:`wma`  in `setup` differs to the former in one extra constraint which 
+:meth:`wma`  in `setup` differs to the former in one extra constraint which
 translates to only performing the action 10 times in maxima per signal upon
 the completion of `doneInit`.
 
@@ -165,3 +165,24 @@ Constraints:
    - `n per period`
    - `n per trade`
    - `n per signal`
+
+.. _timeseries_ref:
+
+Timeseries
+----------
+
+Timeseries is a stand alone class that handles a list-based data input and
+compute the value. Currently, the class only supports bar-by-bar update. For
+any Timeseries, a `self._ts` needs to be implemented during construction. The instance
+listens to any update in value of `self._ts`. Each realization of :class:`Timeseries`
+implements a :meth:`evaluate` which runs on every update.
+
+An option of adding a decorator :meth:`Timeseries.cache` to :meth:`evaluate` has
+been provided. This creates a `self._cache`, which could be referenced to within
+the `evaluate` function for past values of the listened Timeseries.
+
+For any subseries held within a wrapper class intended to be accessed by the
+client, a :class:`GenericTS` could be implemented. The format of the function
+signature is as following: (ts to be listened, lookback, eval_func, args).
+
+
