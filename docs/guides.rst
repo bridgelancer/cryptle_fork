@@ -7,25 +7,73 @@ This part of the documentation breaks down each Cryptle subsystems one by one.
 
 Datafeed
 --------
-Supported datafeeds include Bitstamp and Bitfinex. Datafeed classes are
-guaranteed to have the following methods:
+In Cryptle, datefeed is a package of drivers to streamed data with a unified set
+of methods. The intention is to provide a consistent interface for both internal
+and external data sources. A connection can be established using
+:func:`~cryptle.datafeed.connect`::
+
+   import cryptle.datafeed as datafeed
+
+   def print_ticks(tick):
+       print(tick)
+
+   feed = datafeed.connect(datafeed.BITSTAMP)
+   feed.on('tick', print_ticks)
+
+The example above used the :meth:`~cryptle.datafeed.Datafeed.on` method to setup
+callback for events from the datafeed object.
+
+Each datafeed driver has their own set of available events, more often than not
+named differently by it's respecitve sources, even when they're the same type of
+data. When this is the case, the driver module will provide helpers
+``decode_event`` and ``encode_event`` for conversion between the Cryptle
+standardised event names and the third party names. For datafeed users this
+should not be a concern as it should be hidden under the abstraction layer.
+
+The full list of standard datafeed events can be found at `todo`.
+
+Datafeed object can also be used as context managers that disconnects gracefully
+upon error::
+
+   with connect(datafeed.BITSTAMP) as feed:
+       # feed.on(...)
 
 These are the datafeeds that come with the default Cryptle distribution:
 
 - Bitstamp
 - Bitfinex
 
+.. seealso::
+   Some datafeeds have specialized :ref:`integration <datafeed_event>` with the
+   event bus.
+
 
 Exchange
 --------
-Exchanges are interface for placing orders to buy and sell assets. Some
-exchange interfaces includes account functionality.
+Exchanges are interfaces for placing orders to buy and sell assets. Some
+exchange interfaces includes account functionality. All supported exchanges at
+present use REST APIs, so no persistent connection is required. Nonetheless,
+the exchange creation function is named
+:meth:`~cryptle.exchange.Exchange.connect`, in case for forward compatibility.
+
+Creation of exchange objects follow a similar interface as the datafeed package.
+
+Example code::
+
+    from cryptle.exchange import connect, BITSTAMP
+
+    exchange = connect(BITSTAMP)
+    exchange.marketBuy('bchusd', 100.0)
+
+Functino call for limit orders return an order ID for tracking the order. The
+recommended method for using limit orders is with the event bus. This way the
+order tracking boilerplate code can be delegated to the framework.
 
 
 Backtesting and Paper Trading
 -----------------------------
-:mod:`backtest` :class:`Paper` is the heart and soul of backtesting in
-Cryptle.
+The module :mod:`backtest` and class :class:`Paper` is the heart and soul of
+backtesting in Cryptle.
 
 
 Event Bus
@@ -115,6 +163,13 @@ An asynchronous protocol could be implemented in the future.
    each callback. Hence if a piece of event data is modifible objects such as
    dictionary, callbacks that are called earlier could modify the value passed
    into later callbacks.
+
+
+.. _events:
+
+Standard Events
+---------------
+Todo.
 
 
 .. _registry_ref:

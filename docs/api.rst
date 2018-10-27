@@ -35,14 +35,9 @@ Datafeed
 
       Registers callback for provided events. Generally the most used function.
 
-
    .. py:attribute:: connected
 
       Boolean for whether the socket is connected to the data source server.
-
-   .. seealso::
-      Datafeeds have specialized :ref:`integration <datafeed_event>` with the
-      event bus.
 
 
 Exchange
