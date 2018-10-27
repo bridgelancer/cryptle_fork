@@ -2,33 +2,24 @@
 
 User guides
 ===========
-This part of the documentation breaks down each Cryptle subsystem one by one.
+This part of the documentation breaks down each Cryptle subsystems one by one.
 
 
 Datafeed
 --------
-Supported datafeeds include Bitstamp and Bitfinex. Datafeed classes generally
-has the following methods:
+Supported datafeeds include Bitstamp and Bitfinex. Datafeed classes are
+guaranteed to have the following methods:
 
-:code:`connect()` starts a thread for a long-polled socket that sends and
-receives messages.
+These are the datafeeds that come with the default Cryptle distribution:
 
-:code:`disconnect()` stops the socket and thread.
-
-:code:`connected` is a boolean for whether the socket is still connected to the
-data source server.
-
-:code:`on()` registers callback for provided events. Generally the most used
-function.
-
-.. seealso::
-   Datafeeds have specialized :ref:`integration <datafeed_event>` with the event
-   bus.
+- Bitstamp
+- Bitfinex
 
 
 Exchange
 --------
-Todo.
+Exchanges are interface for placing orders to buy and sell assets. Some
+exchange interfaces includes account functionality.
 
 
 Backtesting and Paper Trading
@@ -125,12 +116,11 @@ An asynchronous protocol could be implemented in the future.
    dictionary, callbacks that are called earlier could modify the value passed
    into later callbacks.
 
+
 .. _registry_ref:
 
 Registry
 --------
-
-
 Registry handles :class:`Strategy` class's state information and controls the order
 and timing of logical tests' execution. The logical tests to be ran should be
 submitted in a Dictionary to the **setup** argument with an 'actionname' as a key
@@ -166,11 +156,11 @@ Constraints:
    - ``n per trade``
    - ``n per signal``
 
+
 .. _timeseries_ref:
 
 Timeseries
 ----------
-
 Timeseries is a stand alone class that handles a list-based data input and
 compute the value. Currently, the class only supports bar-by-bar update. For
 any Timeseries, a `self._ts` needs to be implemented during construction. The instance
@@ -187,7 +177,6 @@ client, a :class:`GenericTS` could be implemented. The format of the function
 signature is as following: someGenericTS(ts to be listened, lookback, eval_func,
 args). The :meth:`eval_func` should be implemented in the wrapper class and the `args` are
 the arguments that are passed into the :meth:`eval_func`.
-
 
 
 
