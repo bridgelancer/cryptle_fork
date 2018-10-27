@@ -112,18 +112,19 @@ class Aggregator:
         round_ts = timestamp - timestamp % self.period
         new_candle = Candle(value, value, value, value, round_ts, volume, volume * action)
         self._bars.append(new_candle)
-        #if len(self._bars) > 1:
-        #    finished_candle = self._bars[-2]
-        #    self._pushAllMetrics(finished_candle.open, finished_candle.close, finished_candle.high,
-        #            finished_candle.low, finished_candle.timestamp, finished_candle.volume,
-        #            finished_candle.netvol)
-        #    return self._bars[-2]._bar
-        #else:
-        #    self._pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)
-        #    return new_candle._bar
+        if len(self._bars) > 1:
+            finished_candle = self._bars[-2]
+            self._pushAllMetrics(finished_candle.open, finished_candle.close, finished_candle.high,
+                    finished_candle.low, finished_candle.timestamp, finished_candle.volume,
+                    finished_candle.netvol)
+            print(finished_candle)
+            return finished_candle._bar
+        elif len(self._bars) == 1:
+            self._pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)
+            return new_candle._bar
 
-        self._pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)
-        return new_candle._bar
+        #self._pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)
+        #return new_candle._bar
 
     @source('aggregator:new_candle')
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
