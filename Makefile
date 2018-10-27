@@ -38,7 +38,7 @@ uml:
 
 clean:
 	rm -rf **/__pycache__
-	rm $(CLASS_DIAG).png $(PACK_DIAG).png
+	rm -f $(CLASS_DIAG).png $(PACK_DIAG).png
 	$(MAKE) -C docs clean
 
 .PHONY: doc test clean lint uml
