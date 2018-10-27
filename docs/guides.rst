@@ -72,8 +72,8 @@ order tracking boilerplate code can be delegated to the framework.
 
 Backtesting and Paper Trading
 -----------------------------
-The module :mod:`backtest` and class :class:`Paper` is the heart and soul of
-backtesting in Cryptle.
+The module :mod:`~cryptle.backtest` and class :class:`~cryptle.exchange.paper.Paper`
+is the heart and soul of backtesting in Cryptle.
 
 
 Event Bus
@@ -106,9 +106,16 @@ Lets see the event bus in action::
 
     tick(1)  // prints 1 to stdout
 
-Functions or methods can be marked for binding with the decorators
-:func:`source` and :func:`on`. :meth:`Bus.bind` registers marked functions and
-marked methods of instance objects to an instance event bus.
+Let break this down line by line.
+
+1. First we imported three things. The class :class:`~cryptle.event.Bus` is core
+   to the :mod:`~cryptle.event` module and serves as a message broker.  The
+   :func:`~cryptle.event.source` and :func:`~cryptle.event.on`, are
+   decorators for marking functions and methods and to be binded to an event
+   bus.
+
+2. Next we marked the function :code:`tick` as a *source* for the event `tick`.
+
 
 Methods decorated as listeners can still be called normally::
 
@@ -123,10 +130,11 @@ and methods decorated as emitter will also return the value after it's emitted::
    is 'subject:datatype'. (This is subject to change, a more powerful event
    parser is possibly coming soon.)
 
-:meth:`Bus.source` and :meth:`Bus.on` are decorators serving the same purpose as
-the module level decorators. These decorators associated with a bus instance
-save the need for binding the decorated functions to a bus. They however can
-only be used for module level functions::
+:meth:`~cryptle.event.Bus.source` and :meth:`~cryptle.event.Bus.on` are
+decorator methods serving the same purpose as the module level decorators. These
+decorators associated with a bus instance save the need for binding the
+decorated functions to a bus. They however can only be used for module level
+functions and not instance methods::
 
     bus = Bus()
 
@@ -140,29 +148,56 @@ only be used for module level functions::
 
     foo() // prints 1
 
-.. todo explain this more clearly, go into how we cannot track instances created
-   from class
 .. note::
-   The reason why this doesn't work on instance methods is due to the protocol
-   with which class instance inherits instance methods from the class template.
-   For example, :code:`A.f`, a method of class :code:`A`, is a actually global
+   The reason why this doesn't work on instance methods is due to the python
+   object protocol with method resolution. Python objects get their instance
+   methods from binding itself to the methods from the class template.
+
+   For example, :code:`A.f`, a method in class :code:`A`, is a actually global
    function, where as :code:`a.f`, where :code:`a = A()`, is a bound method.
 
-The event bus is a critical component of Cryptle. The event bus serves as the
-middleware for communication/data-passing between trading engine components.
-Unlike many well-established bus library, the Cryptle event bus processes events
-synchronously. This guarantees that for any root event (an event that was not
-emitted by callbacks in the same bus), all subsequenct callbacks and events that
-are triggered by the starting event will complete before the next emitted root
-event.
+   Since the Cryptle event bus works by tagging meta information onto marked
+   functions and methods, these information are lost when a bound method is
+   created from the function template in the class object. While a work around
+   exists by using metaclasses, it interfers too much with the user code and it
+   is therefore opted to leave this feature out of the framework.
 
-An asynchronous protocol could be implemented in the future.
+The event bus is a critical component of Cryptle. The event bus serves as the
+middleware for communication between trading engine components.
+
+Unlike many well-established message library, the Cryptle event bus processes
+events synchronously. This guarantees that for any root event (an event that was
+not emitted by callbacks in the same bus), all subsequenct callbacks and events
+that are triggered by the starting event will complete before the next emitted
+root event.
 
 .. note::
    The event bus does not make any effort in making a copy of event data for
    each callback. Hence if a piece of event data is modifible objects such as
    dictionary, callbacks that are called earlier could modify the value passed
    into later callbacks.
+
+Up until now all the emitted events by either functions or methods must be
+marked at the time of their declaration. This restricts the ability of objects
+to dynamically emit events into a bus. A solution to this is the base class
+:class:`~cryptle.event.DeferedSource`.
+
+:class:`~cryptle.event.DeferedSource` is a mixin class with a decorator method
+:meth:`~cryptle.event.DeferedSource.source` that allows objects to create an
+event emitting function in instance methods and emit arbitrary events.
+
+Here is an example from the datefeed module::
+
+   class Bitstamp(BitstampFeed, DeferedSource):
+       """Simple wrapper around BitstampFeed to emit data into a bus."""
+       def broadcast(self, event):
+           @self.source(event)
+           def dummy_func(data):
+               return data
+           self.on(event, dummy_func)
+
+   feed = Bitstamp()
+   feed.broadcast('tick')  # only tick data will be emitted into the event bus
 
 
 .. _events:
