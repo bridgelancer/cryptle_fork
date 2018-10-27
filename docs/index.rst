@@ -6,12 +6,11 @@ Welcome to Cryptle
 Welcome to Cryptle's documentation. Cryptle is a Python algorithmic trading
 framework. Get started with backtesting at :doc:`quickstart`, or go straight to
 :doc:`livetrade`. Once you are familiar with the basic concepts, we recommend
-you to proceed to the :doc:`User guides <guides>`, where there would be detailed
+you to proceed to the :doc:`Usage guides <guides>`, where there would be detailed
 information about individual components in Cryptle.
 
-Those who are familiar with the framework can head over to :doc:`advanced` to
-find specific task-oriented HOWTO recipes and explanation for core concepts used
-throughout the framework.
+Those who are familiar with the framework can head over to :doc:`api` for the
+Cryptle technical reference auto-generated from docstrings.
 
 .. toctree::
    :hidden:
@@ -24,9 +23,8 @@ throughout the framework.
    quickstart
    livetrade
    guides
-   advanced
 
-For Cryptle in detail, the full technical reference can be found in the 
+For Cryptle in detail, the full technical reference can be found in the
 :doc:`api` document.
 
 .. toctree::

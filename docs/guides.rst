@@ -1,7 +1,7 @@
 .. _guides:
 
-User guides
-===========
+Usage guides
+============
 This part of the documentation breaks down each Cryptle subsystems one by one.
 
 
@@ -42,10 +42,6 @@ These are the datafeeds that come with the default Cryptle distribution:
 
 - Bitstamp
 - Bitfinex
-
-.. seealso::
-   Some datafeeds have specialized :ref:`integration <datafeed_event>` with the
-   event bus.
 
 
 Exchange
@@ -198,6 +194,56 @@ Here is an example from the datefeed module::
 
    feed = Bitstamp()
    feed.broadcast('tick')  # only tick data will be emitted into the event bus
+
+The following are some more complex examples of using the event bus, such as
+binding a function to listen for multiple events.
+
+::
+
+    def test(data):
+        print(1)
+
+    bus = Bus()
+    bus.addListener('event', test)
+    bus.emit('tick', data=1) // print 1 twice
+
+::
+
+    class Test:
+        def __init__(self):
+            self.called = 0
+
+        @on('event')
+        @on('event')
+        def print_tick(self, _):
+            self.called += 1
+
+    test = Test()
+    bus = Bus()
+    bus.bind(test)
+    bus.emit('event', data=None)
+
+    assert test.called == 2  // True
+
+::
+
+    class Test:
+        def __init__(self):
+            self.data = 0
+
+        @on('foo')
+        @on('bar')
+        def print_tick(self, data):
+            self.data += data
+
+    test = Test()
+    bus = Bus()
+    bus.bind(test)
+    bus.emit('foo', data=1)
+    assert test.data = 1  // True
+
+    bus.emit('bar', data=2)
+    assert test.data = 3  // True
 
 
 .. _events:
