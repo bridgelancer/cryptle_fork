@@ -21,8 +21,38 @@ Strategy
 Datafeed
 --------
 
-.. automodule:: cryptle.datafeed
-   :members:
+.. py:class:: Datafeed
+
+   .. py:method:: connect()
+
+      Starts a thread for a long-polled socket that sends and receives messages.
+
+   .. py:method:: disconnect()
+
+      Stops the socket and thread.
+
+   .. py:method:: on(event, callback)
+
+      Registers callback for provided events. Generally the most used function.
+
+   .. py:attribute:: connected
+
+      Boolean for whether the socket is connected to the data source server.
+
+
+Exchange
+--------
+
+.. py:class:: Exchange
+
+   .. py:method:: marketBuy(amount: float)
+
+   .. py:method:: marketSell(amount: float)
+
+   .. py:method:: limitBuy(amount: float, price: float)
+
+   .. py:method:: limitSell(amount: float, price: float)
+
 
 Registry
 --------
@@ -32,14 +62,8 @@ Registry
    .. autoclass:: Registry
       :members:
 
-All actionnames and constraints supported are documented in 
+All actionnames and constraints supported are documented in
 :ref:`Registry <registry_ref>` under User Guides.
-
-Exchange
---------
-
-.. automodule:: cryptle.exchange
-   :members:
 
 
 Message Bus
