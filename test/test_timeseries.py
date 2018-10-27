@@ -178,6 +178,7 @@ def test_difference():
             print(stick.o, diff)
         except:
             pass
+    assert diff - -1212.8125 < 1e-3
 
 
 def test_atr():
