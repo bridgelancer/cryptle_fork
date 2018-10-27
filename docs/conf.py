@@ -8,8 +8,8 @@ project = 'Cryptle'
 author = 'CryptleFund'
 copyright = '2018, CryptleFund'
 
-version = '0.9'
-release = '0'
+import cryptle
+version = '.'.join((str(n) for n in cryptle.__version__))
 
 
 # General --------------------------------------------------------------------
