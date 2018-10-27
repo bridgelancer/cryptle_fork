@@ -166,7 +166,19 @@ def test_macd():
     assert macd.value - 34.696296296296 < 1e-7
 
 def test_difference():
-    pass
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus)
+    stick = CandleStick(1, bus=bus)
+
+    diff  = Difference(stick.o)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+        try:
+            print(stick.o, diff)
+        except:
+            pass
+
 
 def test_atr():
     @source('candle')
