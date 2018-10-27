@@ -184,6 +184,10 @@ of items stored is regulated by `lookback`.
 
 For any subseries held within a wrapper class intended to be accessed by the
 client, a :class:`GenericTS` could be implemented. The format of the function
-signature is as following: (ts to be listened, lookback, eval_func, args).
+signature is as following: someGenericTS(ts to be listened, lookback, eval_func,
+args). The :meth:`eval_func` should be implemented in the wrapper class and the `args` are
+the arguments that are passed into the :meth:`eval_func`.
+
+
 
 
