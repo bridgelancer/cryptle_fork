@@ -153,13 +153,11 @@ class Registry:
         signalname, boolean = signal
         # semi-hardcoded behaviour, hierachy structure to be implemented
 
+
+        # Iterating over all items in the setup using the key
         for key, item in sorted(self.logic_status.items(), key=lambda x: self.check_order.index(x[0])):
             #print(key, item)
             #print(signalname)
-            if signalname == 'wma':
-                #print(signalname)
-                #print('wtf', self.logic_status[key], boolean, self.num_bars)
-                pass
             if signalname in self.logic_status[key]:
                 # call refreshLogicStatus if signal returned false
                 if not boolean and self.logic_status[key][signalname][0] != -1:
@@ -171,11 +169,20 @@ class Registry:
             if signalToRefresh:
                 self.handleLogicStatus(key, signalname)
             if applyConstraint:
+
+                # dictionary here is the dictionary within the string
                 dictionary = self.setup[key][2][1]
-                item = [k for k,v in dictionary.items() if v[0] == signalname]
-                if len(item) > 0:
-                    constraint = self.lookup_trigger[item[-1]]
-                    constraint(key, *dictionary[item[-1]])
+                # we get the key in the dictionary that depends on the
+                # previous actions, i.e. once per signal which depends on doneInit
+                keyss = [k for k, v in dictionary.items() if v[0] == signalname]
+                if len(keyss) > 0:
+                    # keyss[-1] is the signal that passed and we want to tell
+                    # the actions that depend on it
+                    # constraint is a function referring to the keyss[-1] function
+                    # in the lookup_trigger
+                    # we give it the keyss[-1] function the items of keyss[-1]
+                    constraint = self.lookup_trigger[keyss[-1]]
+                    constraint(key, *dictionary[keyss[-1]])
 
     def handleLogicStatus(self, key, timeEvent):
         # Draft hierachy - bar < period < trade < someshit(s) or < someshit(s) < trade? (or customizable?)
@@ -185,8 +192,8 @@ class Registry:
         # specification: a dictionary with a string as key to specify constraint category and a
         # list as value.
 
-        # The current format is: {'cat_name': [permissible number + 1, # of bar/trade/signal, time
-        # of initiating constraint]
+        # The current format is: {'cat_name': [permissible number + 1,
+        # of bar/trade/signal, time of initiating constraint]
         # e.g. {'bar': [1, 1, 2], 'period': [2, 3, 2], 'trade': [4, 4, 2], 'signal1': [5, 1, 1], 'signal2':
         # [6, 2, 10]}
 
@@ -289,6 +296,7 @@ class Registry:
             self.logic_status[action]['trade'][0] -= 1
 
     def once_per_signal(self, action, signal, *args):
+        #
         if signal in self.logic_status[action].keys():
             # enter via refreshSignal
             if self.logic_status[action][signal][0] == -1:
@@ -296,7 +304,11 @@ class Registry:
         elif signal not in self.logic_status[action].keys():
             self.logic_status[action][signal] = [1, 1, self.num_bars]
 
+    # signal is say doneInit, its the dependancy
+    # action is say once per bar, listening when
+
     def n_per_signal(self, action, signal, *args):
+        # so if this action is listening for some signals
         if signal in self.logic_status[action].keys():
             # enter via refreshSignal
             if self.logic_status[action][signal][0] == -1:
