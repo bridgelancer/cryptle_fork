@@ -344,6 +344,7 @@ class Strategy:
         return self.portfolio.cash > 0
 
     # [ Helpers to access exchange ]
+    # Todo: fix the function signature for the exchange interface
     def marketBuy(self, asset, amount):
         """Send market buy request to associated exchange"""
         if amount <= 0:
@@ -431,6 +432,74 @@ class Strategy:
                 message,
                 datetime.fromtimestamp(timestamp)))
 
-    def _checkHasExchange(self):
-        if self.exchange is None:
-            raise AttributeError('An exchange has to be associated before strategy runs')
+
+class SingleAssetStrat(Strategy):
+    """A strategy that only trades a single asset against the base currency.
+
+    Overrides the buy sell methods to
+
+    Args
+    ----
+    pair: str
+        The traded asset (meta info)
+
+    Attributes
+    ----------
+    portfolio : :class:`Portfolio`
+
+    Note:
+        When given a portfolio, Strategy(Base) assumes that it is the only
+        strategy trading on that portfolio for the given pair.
+
+    """
+
+    def __init__(self, asset):
+        super().__init__()
+        self.asset = asset
+        self.equity_at_risk = 0.1
+
+    # Todo: fix the function signature for the exchange interface
+    def marketBuy(self, amount):
+        super().marketBuy(self.asset, amount)
+
+    def marketSell(self, amount):
+        super().marketSell(self.asset, amount)
+
+    def limitBuy(self, amount, price):
+        super().limitBuy(self.asset, amount, price)
+
+    def limitSell(self, amount, price):
+        super().limitSell(self.asset, amount, price)
+
+    @property
+    def maxBuyAmount(self):
+        max_equi = self.equity_at_risk * self.equity / self.last_price
+        max_cash = self.portfolio.cash / self.last_price
+        return min(max_equi, max_cash)
+
+    @property
+    def maxSellAmount(self):
+        return self.portfolio.balance[self.asset]
+
+    def hasBalance(self):
+        try:
+            return self.portfolio.balance[self.asset] > 0
+        except:
+            return False
+
+class OrderEventMixin:
+    @source('order:marketbuy')
+    def marketBuy(self, asset, amount):
+        return asset, amount
+
+    @source('order:marketsell')
+    def marketSell(self, asset, amount):
+        return asset, amount
+
+    @source('order:limitbuy')
+    def marketBuy(self, asset, amount, price):
+        return asset, amount
+
+    @source('order:limitsell')
+    def marketSell(self, asset, amount, price):
+        return asset, amount
