@@ -1,4 +1,4 @@
-# @Todo Module level doc
+"""Strategy base classes and related core componets."""
 
 import logging
 from collections import defaultdict
@@ -85,13 +85,13 @@ class Portfolio:
 
     def bought(self, asset, amount, cost):
         """Helper method to update a portfolio after buying."""
-        self.portfolio.deposit(asset, amount)
-        self.portfolio.cash -= cost
+        self.deposit(asset, amount)
+        self.cash -= cost
 
     def sold(self, asset, amount, cost):
         """Helper method to update a portfolio after selling."""
-        self.portfolio.withdraw(asset, amount)
-        self.portfolio.cash += cost
+        self.withdraw(asset, amount)
+        self.cash += cost
 
     def equity(self, asset_prices):
         """Calculate the current market value of this portfolio.
