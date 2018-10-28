@@ -260,20 +260,22 @@ class Strategy:
 class SingleAssetStrat(Strategy):
     """A strategy that only trades a single asset against the base currency.
 
-    Overrides the buy sell methods to
+    Overrides the buy sell methods to supply the same asset as argument
+    everytime in all buy/sell methods.
 
     Args
     ----
-    pair: str
-        The traded asset (meta info)
+    asset: str
+        The traded asset (meta info).
 
     Attributes
     ----------
     portfolio : :class:`Portfolio`
 
-    Note:
-        When given a portfolio, Strategy(Base) assumes that it is the only
-        strategy trading on that portfolio for the given pair.
+    Note
+    ----
+    When given a portfolio, Strategy(Base) assumes that it is the only strategy
+    trading on that portfolio for the given pair.
 
     """
 
@@ -295,13 +297,11 @@ class SingleAssetStrat(Strategy):
     def limitSell(self, amount, price):
         super().limitSell(self.asset, amount, price)
 
-    @property
     def maxBuyAmount(self):
         max_equi = self.equity_at_risk * self.equity / self.last_price
         max_cash = self.portfolio.cash / self.last_price
         return min(max_equi, max_cash)
 
-    @property
     def maxSellAmount(self):
         return self.portfolio.balance[self.asset]
 
@@ -321,9 +321,9 @@ class OrderEventMixin:
         return asset, amount
 
     @source('order:limitbuy')
-    def marketBuy(self, asset, amount, price):
+    def limitBuy(self, asset, amount, price):
         return asset, amount
 
     @source('order:limitsell')
-    def marketSell(self, asset, amount, price):
+    def limitSell(self, asset, amount, price):
         return asset, amount

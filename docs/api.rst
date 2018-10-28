@@ -18,6 +18,14 @@ Strategy
       :members:
       :undoc-members:
 
+   .. autoclass:: SingleAssetStrat
+      :members:
+      :undoc-members:
+
+   .. autoclass:: OrderEventMixin
+      :members:
+      :undoc-members:
+
 
 Datafeed
 --------
