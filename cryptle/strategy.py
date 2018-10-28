@@ -1,6 +1,8 @@
 # @Todo Module level doc
 
 import logging
+from collections import defaultdict
+
 from cryptle.event import source
 
 
@@ -8,73 +10,113 @@ logger = logging.getLogger(__name__)
 
 
 class Portfolio:
-    """A Portfolio object is a collection of assets.
+    """A Portfolio object is a container and manager of assets.
 
-    Note:
-        The value of balance[base_currency] will be overwritten by cash when
-        cash is not None. Only default __init__ allows custom balance_value.
+    Portfolio provides utilities for managing and computing meta information for
+    a basket of assets. Common operations which affects the basket state such as
+    buy or sell have corresponding methods in the portfolio class.
 
-    Attributes:
-        base_currency: The base currency that denominates the account balance.
-        balance: A dictionary with the portfolio balance values of each asset.
-        equity: Net balance value.
+    Args
+    ----
+    cash : float, optional
+        The amount of cash in the portfolio. Overwrites the base currency's
+        amount in the balance if this argument is provided.
+    balance : dict, optional
+        A dictionary with the portfolio balance amount of each asset.
+    base_currency : str, optional
+        The currency that denominates the portfolio balance. Defaults to 'usd'.
+
     """
 
-    def __init__(self, cash=None, balance=None, base_currency='usd', balance_value=None):
-        if cash is None and balance is None:
-            raise ValueError('Both cash and balance were None')
+    def __init__(self, cash=None, balance=None, base_currency='usd'):
 
-        self.balance = balance or {base_currency: cash}
+        # Init the internal representation of portfolio balance
+        self.balance = defaultdict(float)
+
+        if balance:
+            self.balance.update(balance)
+
+        # Set the amount of base currency in the balance, defaults to 0.0
         self.balance[base_currency] = cash or self.balance[base_currency]
+
         self.base_currency = base_currency
-        self.balance_value = balance_value or {}
 
     @classmethod
     def from_cash(cls, cash, base_currency='usd'):
+        """Alternative constructor."""
         return cls(balance={base_currency: cash}, base_currency=base_currency)
 
     @classmethod
     def from_balance(cls, balance, base_currency='usd'):
+        """Alternative constructor."""
         if base_currency not in balance:
             raise ValueError('No entry with base_currency in balance.')
         return cls(balance=balance, base_currency=base_currency)
 
-    def deposit(self, asset, amount, price=0):
-        try:
-            self.balance[asset] += amount
-            self.balance_value[asset] += amount * price
-        except KeyError:
-            self.balance[asset] = amount
-            self.balance_value = amount * price
+    def deposit(self, asset, amount):
+        """Increase the amount held of an asset from the balance."""
+        self.balance[asset] += amount
         logger.debug('Deposited {} {}'.format(amount, asset))
 
     def withdraw(self, asset, amount):
-        try:
-            self.balance_value *= (self.balance[asset] - amount) / self.balance[asset]
-            self.balance[asset] -= amount
-            logger.debug('Withdrew {} {}'.format(amount, asset))
-        except KeyError:
-            raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
+        """Decrease the amount held of an asset from the balance."""
+        if asset not in self.balance:
+            raise ValueError('Asset not found in the portfolio')
 
-    @property
-    def equity(self):
-        return sum(self.balance_value.values()) + self.cash
+        if self.balance[asset] < amount:
+            raise ValueError('Insufficient balance of %s' % asset)
+
+        self.balance[asset] -= amount
+        logger.debug('Withdrew {} {}'.format(amount, asset))
+
+        # Keep the internal balance free from 0 valued keys
+        if self.balance[asset] == 0:
+            self.clear(asset)
+
+    def clear(self, asset=None):
+        """Clear the portfolio of an asset. When no asset is provided, clear the whole portfolio
+        leaving only the base currency."""
+        if not asset:
+            cash = self.balance[self.base_currency]
+            self.balance = defaultdict(float)
+            self.balance[self.base_currency] = cash
+        else:
+            del self.balance[asset]
+
+    def bought(self, asset, amount, cost):
+        """Helper method to update a portfolio after buying."""
+        self.portfolio.deposit(asset, amount)
+        self.portfolio.cash -= cost
+
+    def sold(self, asset, amount, cost):
+        """Helper method to update a portfolio after selling."""
+        self.portfolio.withdraw(asset, amount)
+        self.portfolio.cash += cost
+
+    def equity(self, asset_prices):
+        """Calculate the current market value of this portfolio.
+
+        Args
+        ----
+        asset_prices : dict
+            Reference prices of each asset for calculating the total portfolio value. The
+            asset_prices is assumed to be be denominated in the portfolio base currency.
+
+        """
+        equity = 0.0
+        equity += self.balance[self.base_currency]
+        for asset, amount in filter(lambda x: x[0] != self.base_currency, self.balance.items()):
+            equity += amount * asset_prices[asset]
+        return equity
 
     @property
     def cash(self):
+        """float: """
         return self.balance[self.base_currency]
 
     @cash.setter
     def cash(self, value):
         self.balance[self.base_currency] = value
-
-    def updateEquity(self, price):
-        for asset, amount in filter(lambda x: x[0] != self.base_currency, self.balance.items()):
-            try:
-                self.balance_value[asset] = amount * price[asset]
-            except KeyError:
-                pass
-        return self.equity
 
 
 class NewStrategy:

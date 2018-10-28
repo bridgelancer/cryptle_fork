@@ -8,7 +8,7 @@ from functools import wraps
 from cryptle.backtest import Backtest
 from cryptle.exchange import Bitstamp
 from cryptle.strategy import Portfolio, Strategy
-import cryptle.loglevel
+import cryptle.logging
 
 
 class DummyStrat(Strategy):
@@ -23,43 +23,30 @@ class DummyStrat(Strategy):
         pass
 
 
+def test_portfolio_constructor():
+    port = Portfolio(cash=1000)
+    assert port.cash == 1000
+
+    port = Portfolio(cash=1000, balance={'usd': 3000})
+    assert port.cash == 1000
+
+    port = Portfolio(balance={'usd': 3000})
+    assert port.cash == 3000
+
+
 def test_equity():
-    port  = Portfolio(10000)
+    values = {'eth': 400}
+    port  = Portfolio()
 
-    port.deposit('ethusd', 10, 1300)
-    assert port.equity == 23000
+    port.deposit('eth', 10)
+    assert port.equity(values) == 4000
 
-    port.withdraw('ethusd', 5)
-    assert port.equity == 16500
+    port.withdraw('eth', 5)
+    assert port.equity(values) == 2000
 
-    port.deposit('ethusd', 5, 1000)
-    assert port.equity == 21500
+    port.deposit('eth', 10)
+    assert port.equity(values) == 6000
 
-    port.withdraw('ethusd', 10)
-    assert port.equity == 10000
-
-
-def test_backtest_class():
-    test = Backtest()
-
-
-if __name__ == '__main__':
-    formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')
-
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.REPORT)
-    sh.setFormatter(formatter)
-
-    logger = logging.getLogger('Unittest')
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(sh)
-
-    fh = logging.FileHandler('unittest.log', mode='w')
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(formatter)
-
-    crylog = logging.getLogger('Cryptle')
-    crylog.setLevel(logging.INFO)
-    crylog.addHandler(fh)
-
-    run_all_tests()
+    port.withdraw('eth', 15)
+    assert port.equity(values) == 0
+    assert 'eth' not in port.balance
