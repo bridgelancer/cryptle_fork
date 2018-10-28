@@ -6,7 +6,7 @@ class ATR(Timeseries):
 
     def __init__(self, candle, lookback, name=None):
         self._ts       = [candle.c, candle.h, candle.l]
-        super().__init__(ts=self._ts, name=None)
+        super().__init__(ts=self._ts)
         self._lookback = lookback
         self.value     = None
 

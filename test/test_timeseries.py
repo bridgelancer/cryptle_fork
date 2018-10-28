@@ -92,7 +92,7 @@ def test_sma():
     bus.bind(pushTick)
     aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
     stick = CandleStick(1, bus=bus)
-    ma = SMA(stick, 5, name='fuck')
+    ma = SMA(stick, 5)
 
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
@@ -155,8 +155,8 @@ def test_macd():
     aggregator = Aggregator(1, bus=bus)
     stick = CandleStick(1, bus=bus)
 
-    wma5  = WMA(stick, 5, name='wma5')
-    wma8  = WMA(stick, 8, name='wma8')
+    wma5  = WMA(stick.o, 5)
+    wma8  = WMA(stick.o, 8)
     macd  = MACD(wma5, wma8, 3)
 
     for i, price in enumerate(alt_quad):
@@ -174,12 +174,7 @@ def test_difference():
     diff  = Difference(stick.o)
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
-        try:
-            print(stick.o, diff)
-        except:
-            pass
     assert diff - -1212.8125 < 1e-3
-
 
 def test_atr():
     @source('candle')

@@ -14,7 +14,7 @@ class MACD(Timeseries):
     def __init__(self, fast, slow, lookback, name=None, weights=default):
         self._lookback = lookback
         self._ts       = [fast, slow]
-        super().__init__(ts=self._ts, name=name)
+        super().__init__(ts=self._ts)
         self._weights  = weights(lookback)
 
 

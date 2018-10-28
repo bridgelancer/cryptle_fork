@@ -192,7 +192,7 @@ class Timeseries:
         name = User given name of the Timeseries object (or the class name if not specified)
 
     For every Timeseries type object, the __init__ constructor of that type should first call
-    super().__init__(ts=ts, name=name) or suitable base class constructor to initialize the
+    super().__init__(ts=ts) or suitable base class constructor to initialize the
     observer-observable behaviour properly.
 
     '''
@@ -205,14 +205,13 @@ class Timeseries:
     #Any timeseries type should also support list-based initialization and update. The implementation
     #is deferred to a later stage due to prioritization of tasks.
 
-    def __init__(self, ts=None, name=None):
+    def __init__(self, ts=None):
         # self.subscribers are the list of references to timeseries objects that this instance subscribes to
         self.subscribers = []
         # self.subscribers_broadcasted is the set of timeseries that broadcasted previously
         self.subscribers_broadcasted = set()
         # self.listeners is the list of references to timeseries objects that listen to this timeseries
         self.listeners = []
-        self.name = name or self.__class__.__name__
 
         # ts is either a single ts object, or list containing multiple ts objects
         if ts is not None and not isinstance(ts, list):
@@ -449,7 +448,7 @@ class Timeseries:
 class GenericTS(Timeseries):
     ''' Generic Timeseries object for sub-timeseries held by wrapper Metric class '''
     def __init__(self, ts, name=None, lookback=None, eval_func=None, args=None):
-        super().__init__(ts=ts, name=name)
+        super().__init__(ts=ts)
         self._lookback  = lookback
         self._ts        = ts
         self._cache     = []

@@ -4,7 +4,7 @@ import numpy as np
 class WilliamPercentR(Timeseries):
     def __init__(self, candle, lookback, name=None):
         self._ts       = [candle.c, candle.h, candle.l]
-        super().__init__(ts=self._ts, name=name)
+        super().__init__(ts=self._ts)
         self._lookback = lookback
         self._cache    = []
         self.value     = 0

@@ -5,7 +5,7 @@ def default(lookback):
 
 class EMA(Timeseries):
     def __init__(self, ts, lookback, name=None, weight=default, bar=False):
-        super().__init__(ts=ts, name=name)
+        super().__init__(ts=ts)
         self._lookback = lookback
         self._weight = weight(lookback) # weight is a math function that takes lookback as argument and returns a float in range (0, 1)
         self._ts     = ts

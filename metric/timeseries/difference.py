@@ -3,7 +3,7 @@ import numpy as np
 
 class Difference(Timeseries):
     def __init__(self, ts, n=1, name=None):
-        super().__init__(ts=ts, name=name)
+        super().__init__(ts=ts)
         self._ts    = ts
         self._cache = []
         self._n     = n
