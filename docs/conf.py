@@ -9,6 +9,7 @@ author = 'CryptleFund'
 copyright = '2018, CryptleFund'
 
 import cryptle
+import metric
 version = '.'.join((str(n) for n in cryptle.__version__))
 
 
