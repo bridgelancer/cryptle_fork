@@ -388,7 +388,7 @@ class Strategy:
     # Reconcile actions made on the exchange with the portfolio
     def _cleanupBuy(self, asset, res):
         if res['status'] == 'error':
-            logger.error('Buy failed {}', asset))
+            logger.error('Buy failed {}', asset)
             return
 
         price = float(res['price'])
