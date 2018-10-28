@@ -206,11 +206,11 @@ class Timeseries:
     #is deferred to a later stage due to prioritization of tasks.
 
     def __init__(self, ts=None, name=None):
-        # self.subscribers are the dictionary of timeseries objects that this instance subscribes to
+        # self.subscribers are the list of references to timeseries objects that this instance subscribes to
         self.subscribers = []
         # self.subscribers_broadcasted is the set of timeseries that broadcasted previously
         self.subscribers_broadcasted = set()
-        # self.listeners is the dictionary of timeseries objects that listen to this timeseries
+        # self.listeners is the list of references to timeseries objects that listen to this timeseries
         self.listeners = []
         self.name = name or self.__class__.__name__
 
@@ -237,11 +237,11 @@ class Timeseries:
         raise NotImplementedError
 
     # by default, a listener would update only after all its subscribers updated once
-    def processBroadcast(self, index):
+    def processBroadcast(self, pos):
         if len(self.subscribers) == 1:
             self.update()
         else:
-            self.subscribers_broadcasted.add(self.subscribers[index].name)
+            self.subscribers_broadcasted.add(self.subscribers[pos])
             if len(self.subscribers_broadcasted) < len(self.subscribers):
                 pass
             else:
@@ -376,6 +376,9 @@ class Timeseries:
 
     def __bool__(self):
         return bool(self.value)
+
+    def __hash__(self):
+        return id(self)
 
     def __eq__(self, other):
         return self.value == other
