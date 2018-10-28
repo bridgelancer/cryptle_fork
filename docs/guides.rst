@@ -309,7 +309,7 @@ and listening functionalities provided by the Timeseries base class.
 An option of adding a decorator :meth:`Timeseries.cache` to :meth:`evaluate` has
 been provided. This creates a `self._cache`, which could be referenced to within
 the `evaluate` function for past values of the listened Timeseries. The number
-of items stored is regulated by `lookback`.
+of items stored is restricted by `self._lookback`.
 
 An example instance of Timeseries might look::
 
