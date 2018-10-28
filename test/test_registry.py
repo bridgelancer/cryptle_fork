@@ -15,7 +15,7 @@ from cryptle.exchange import Bitstamp
 from cryptle.strategy import *
 from cryptle.event import source, on, Bus
 from cryptle.registry import Registry
-from cryptle.loglevel import *
+from cryptle.logging import *
 from cryptle.aggregator import Aggregator
 from metric.timeseries.candle import CandleStick
 from metric.timeseries.sma import SMA

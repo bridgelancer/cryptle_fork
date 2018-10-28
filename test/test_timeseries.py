@@ -1,4 +1,4 @@
-from cryptle.loglevel import *
+from cryptle.logging import *
 from metric.base import Candle, Timeseries
 from metric.candle import CandleBar
 from cryptle.aggregator import Aggregator

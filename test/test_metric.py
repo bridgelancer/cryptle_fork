@@ -5,7 +5,7 @@ import time
 import sys
 import traceback
 
-from cryptle.loglevel import *
+from cryptle.logging import *
 from metric.base import *
 from metric.candle import *
 from metric.generic import *
