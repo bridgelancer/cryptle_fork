@@ -16,6 +16,7 @@ Strategy
 
    .. autoclass:: Portfolio
       :members:
+      :undoc-members:
 
 
 Datafeed
