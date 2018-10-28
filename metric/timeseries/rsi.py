@@ -6,7 +6,7 @@ def default(lookback):
 
 class RSI(Timeseries):
     def __init__(self, ts, lookback, name=None, weight=default):
-        super().__init__(ts=ts, name=name)
+        super().__init__(ts=ts)
         self._lookback = lookback
         self._ts       = ts
         self._cache    = []

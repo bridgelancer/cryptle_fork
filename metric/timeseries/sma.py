@@ -4,7 +4,7 @@ import numpy as np
 class SMA(Timeseries):
 
     def __init__(self, ts, lookback, name=None, bar=False, list=False):
-        super().__init__(ts=ts, name=name)
+        super().__init__(ts=ts)
         self._lookback = lookback
         self.name = name
         self._ts    = ts

@@ -4,7 +4,7 @@ import numpy as np
 
 class BollingerBand(Timeseries):
     def __init__(self, ts, lookback, sd=2, name=None, upper_sd=None, lower_sd=None):
-        super().__init__(ts=ts, name=name)
+        super().__init__(ts=ts)
         if upper_sd is None:
             self._uppersd = sd
         else:
