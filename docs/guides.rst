@@ -78,9 +78,8 @@ Here's a very basic strategy where we will buy whenever the price of the
 particular asset::
 
    class FooStrategy(SingleAssetStrategy):
-
-       def __init__(self, pair, target):
-           SingleAssetStrategy.__init__(self, pair)
+       def __init__(self, asset, target):
+           SingleAssetStrategy.__init__(self, asset)
            self.price_target = target
 
        def onTrade(self, price, timestamp, amount, action):
@@ -89,11 +88,33 @@ particular asset::
 
    exchange = cryptle.exchange.connect(BITSTAMP)
 
-   strat = FooStrategy('bchusd', 100)
+   strat = FooStrategy('bch', 100)
    strat.exchange = exchange
 
    # Setup and start a datafeed. Stream into the strategy using the pushTrade()
    # or pushCandle() methods.
+
+
+The event bus mechanicism is very useful for placing and keeping tracking of
+limit orders. The mixin class :class:`~cryptle.strategy.OrderEventMixin`
+overrides the normal buy/sell methods into marked instance methods that emit
+events into a :class:`~cryptle.event.Bus`. The mixin must come before the base
+strategy class. Detailed reference of the mixin events are at
+:class:`~cryptle.strategy.OrderEventMixin`.
+
+The code looks mostly the same::
+
+   class BusStrategy(OrderEventMixin, Strategy):
+       def onTrade(self, price, t, amount, action):
+           if price > self.price_target:
+               self.marketbuy(amount)
+
+   strat = BusStrategy()
+   exchange = cryptle.exchange.connect(BITSTAMP)
+
+   bus = Bus()
+   bus.bind(strat)
+   bus.bind(exchange)
 
 
 Backtesting and Paper Trading
