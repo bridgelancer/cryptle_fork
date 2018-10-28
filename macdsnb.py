@@ -1,5 +1,5 @@
 from cryptle.strategy import Strategy, Portfolio
-from cryptle.loglevel import *
+from cryptle.logging import *
 
 from ta import *
 

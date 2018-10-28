@@ -1,7 +1,7 @@
 from cryptle.datafeed import connect
 from cryptle.exchange import Bitstamp
 from cryptle.strategy import Portfolio
-from cryptle.loglevel import *
+from cryptle.logging import *
 
 from cryptle.runtime  import Runtime
 

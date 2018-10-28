@@ -1,5 +1,5 @@
 from cryptle.strategy import Strategy
-from cryptle.loglevel import *
+from cryptle.logging import *
 
 from metric.candle import *
 from metric.generic import *
