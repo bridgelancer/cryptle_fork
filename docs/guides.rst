@@ -299,12 +299,12 @@ Timeseries
 ----------
 Timeseries is a stand alone class that handles a list-based data input and
 compute the value. Currently, the class only supports bar-by-bar update. For
-any Timeseries, a `self._ts` needs to be implemented during construction. The instance
-listens to any update in value of `self._ts`. Each realization of :class:`Timeseries`
-implements a :meth:`evaluate` which runs on every update. The parent class
-constructor needs to be called during intialization of the instance and the
-listened ts needs to be passed into the parent in order to enable broadcasting
-and listening functionalities provided by the Timeseries base class.
+any Timeseries, a `self._ts` (ts shortform for timeseries) needs to be implemented
+during construction. The instance listens to any update in value of `self._ts`.
+Each realization of :class:`Timeseries` implements a :meth:`evaluate` which runs
+on every update. The parent class constructor needs to be called during intialization of
+the instance and the listened ts needs to be passed into the parent in order to enable
+broadcasting and listening functionalities provided by the Timeseries base class.
 
 An option of adding a decorator :meth:`Timeseries.cache` to :meth:`evaluate` has
 been provided. This creates a `self._cache`, which could be referenced to within
@@ -337,8 +337,8 @@ Timeseries objects to be listened to::
 
 For any subseries held within a wrapper class intended to be accessed by the
 client, a :class:`GenericTS` could be declared within the construction of the
-wrapper class. The format of the __init__ signature of :class:`GenericTS` is as following:
-someGenericTS(ts to be listened, lookback, eval_func, args). The :meth:`eval_func` should be
+wrapper class. The format of the :meth:`__init__` signature of :class:`GenericTS` follows:
+someGenericTS(timeseries to be listened, lookback, eval_func, args). The :meth:`eval_func` should be
 implemented in the wrapper class and the `args` are the arguments that are passed into the :meth:`eval_func`::
 
    class foo_with_GenereicTS(Timeseries):

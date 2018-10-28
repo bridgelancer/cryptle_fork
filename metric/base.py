@@ -446,20 +446,27 @@ class Timeseries:
         return other ** self.value
 
 class GenericTS(Timeseries):
-    ''' Generic Timeseries object for sub-timeseries held by wrapper Metric class '''
+    ''' Generic Timeseries object for sub-timeseries held by wrapper Metric class
+
+        Args:
+            ts = timeseries to be listened to, evalute meethod is called whevener ts broadcasts
+            lookback = same as Timeseries
+            eval_func = a function implemeneted in Wrapper class, equivalent to the evaluate method in Timeseries
+            args      = arguments required to pass into eval_func for proper evaluation of GenericTS value
+    '''
     def __init__(self, ts, name=None, lookback=None, eval_func=None, args=None):
         super().__init__(ts=ts)
         self._lookback  = lookback
         self._ts        = ts
         self._cache     = []
-        self._eval_func = eval_func
-        self._args      = args
+        self.eval_func = eval_func
+        self.args      = args
         self.value      = None
 
     @Timeseries.cache
     def evaluate(self):
         # pass a function "eval_func" reference to GenericTS.evaluate to update its value
         #eval_func should be defined in wrapper class
-        self.value = self._eval_func(*self._args)
+        self.value = self.eval_func(*self.args)
         self.broadcast()
 
