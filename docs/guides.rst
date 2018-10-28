@@ -312,15 +312,16 @@ the `evaluate` function for past values of the listened Timeseries. The number
 of items stored is regulated by `lookback`.
 
 An example instance of Timeseries might look::
-   class foo(Timeseries):
-      def __init__(self, ts, lookback):
-         super().__init__(ts=ts)
-         self._lookback = lookback
-         self._ts = ts
 
-      @Timeseries.cache # generate self._cache for accessing historical self._ts value
-      def evaluate(self):
-         # some code that would be updated when ts updates
+   class foo(Timeseries):
+       def __init__(self, ts, lookback):
+           super().__init__(ts=ts)
+           self._lookback = lookback
+           self._ts = ts
+
+       @Timeseries.cache # generate self._cache for accessing historical self._ts value
+       def evaluate(self):
+           # some code that would be updated when ts updates
 
 If a :class:`Timeseries` is designed to listen to multiple Timeseries objects
 for updates, the only supported behaviour of updating is to wait till all the
@@ -329,10 +330,10 @@ to run. In this case, the `self._ts` attribute should be set to a list of the
 Timeseries objects to be listened to::
 
    class foo_listenToMultipleTS(Timeseries):
-      def __init__(self, ts1, ts2, lookback):
-         self._ts       = [ts1, ts2]
-         self._lookback = lookback
-         super().__init__(ts=self._ts)
+       def __init__(self, ts1, ts2, lookback):
+           self._ts       = [ts1, ts2]
+           self._lookback = lookback
+           super().__init__(ts=self._ts)
 
 For any subseries held within a wrapper class intended to be accessed by the
 client, a :class:`GenericTS` could be declared within the construction of the
@@ -341,22 +342,17 @@ someGenericTS(ts to be listened, lookback, eval_func, args). The :meth:`eval_fun
 implemented in the wrapper class and the `args` are the arguments that are passed into the :meth:`eval_func`::
 
    class foo_with_GenereicTS(Timeseries):
-      def __init__(self, ts, lookback):
-         super().__init__(ts=ts)
-         self._lookback = lookback
-         self._ts = ts
+       def __init__(self, ts, lookback):
+           super().__init__(ts=ts)
+           self._lookback = lookback
+           self._ts = ts
 
-         def eval_foo1(*args):
-            # act as normal evaluate function in Timeseries, to be passed into Generic TS
+       def eval_foo1(*args):
+           # act as normal evaluate function in Timeseries, to be passed into Generic TS
 
-         def eval_foo2(*args, **kwargs):
-            # same as above
+       def eval_foo2(*args, **kwargs):
+           # same as above
 
-         # foo1 is the subseries that is held by foo_with_GenereicTS
-         self.foo1 = GenericTS(ts, lookback=lookback, eval_func=eval_foo1, args=[self])
-         self.foo2 = GenericTS(ts, lookback=lookback, eval_func=eval_foo2, args=[self])
-
-
-
-
-
+       # foo1 is the subseries that is held by foo_with_GenereicTS
+       self.foo1 = GenericTS(ts, lookback=lookback, eval_func=eval_foo1, args=[self])
+       self.foo2 = GenericTS(ts, lookback=lookback, eval_func=eval_foo2, args=[self])
