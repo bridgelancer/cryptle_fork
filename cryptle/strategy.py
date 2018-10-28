@@ -352,7 +352,7 @@ class Strategy:
 
         logger.debug('Placing market buy for {:.6g} {}', amount, asset)
         res = self.exchange.marketBuy(asset, amount)
-        self._cleanupBuy(res, message)
+        self._cleanupBuy(asset, res)
 
     def marketSell(self, asset, amount):
         """Send market sell request to associated exchange"""
@@ -361,7 +361,7 @@ class Strategy:
 
         logger.debug('Placing market sell for {:.6g} {}', amount, asset)
         res = self.exchange.marketSell(asset, amount)
-        self._cleanupSell(res, message)
+        self._cleanupSell(asset, res)
 
     def limitBuy(self, asset, amount, price):
         """Send limit buy request to associated exchange"""
@@ -372,7 +372,7 @@ class Strategy:
 
         logger.debug('Placing limit buy for {:.6g} {} @${:.6g}', amount, asset, price)
         res = self.exchange.limitBuy(asset, amount, price)
-        self._cleanupBuy(res, message)
+        self._cleanupBuy(asset, res)
 
     def limitSell(self, asset, amount, price):
         """Send market buy request to associated exchange"""
@@ -383,35 +383,33 @@ class Strategy:
 
         logger.debug('Placing limit sell for {:.6g} {} @${:.6g}', amount, asset, price)
         res = self.exchange.limitSell(asset, amount, price)
-        self._cleanupSell(res, message)
+        self._cleanupSell(asset, res)
 
     # Reconcile actions made on the exchange with the portfolio
-    def _cleanupBuy(self, res, message=None):
+    def _cleanupBuy(self, asset, res):
         if res['status'] == 'error':
-            logger.error('Buy failed {} {}'.format(self.asset.upper(), message))
+            logger.error('Buy failed {}', asset))
             return
 
         price = float(res['price'])
         amount = float(res['amount'])
         timestamp = int(res['timestamp'])
 
-        self.portfolio.deposit(self.asset, amount, price)
+        self.portfolio.deposit(asset, amount, price)
         self.portfolio.cash -= amount * price
-        self.trades.append([timestamp, price])
+        # self.trades.append([timestamp, price])
 
-        msg = 'Bought {:7.6g} {} @${:<7.6g} {:s}'
-        if self.print_timestamp:
-            msg += ' at {:%Y-%m-%d %H:%M:%S}'
-        logger.info(msg.format(
-                amount,
-                self.asset.upper(),
-                price,
-                message,
-                datetime.fromtimestamp(timestamp)))
+        logger.info(
+            'Bought {:7.6g} {} @${:<7.6g} {:s}',
+            amount,
+            asset,
+            price,
+            datetime.fromtimestamp(timestamp)
+        )
 
-    def _cleanupSell(self, res, message=None):
+    def _cleanupSell(self, asset, res):
         if res['status'] == 'error':
-            logger.error('Sell failed {} {}'.format(self.asset.upper(), message))
+            logger.error('Sell failed {}', asset)
             return
 
         price = float(res['price'])
@@ -420,17 +418,15 @@ class Strategy:
 
         self.portfolio.withdraw(self.asset, amount)
         self.portfolio.cash += amount * price
-        self.trades[-1] += [timestamp, price]
+        # self.trades[-1] += [timestamp, price]
 
-        msg = 'Sold   {:7.6g} {} @${:<7.6g} {:s}'
-        if self.print_timestamp:
-            msg += ' at {:%Y-%m-%d %H:%M:%S}'
-        logger.info(msg.format(
-                amount,
-                self.asset.upper(),
-                price,
-                message,
-                datetime.fromtimestamp(timestamp)))
+        logger.info(
+            'Sold   {:7.6g} {} @${:<7.6g} {:s}',
+            amount,
+            asset,
+            price,
+            datetime.fromtimestamp(timestamp)
+        )
 
 
 class SingleAssetStrat(Strategy):
