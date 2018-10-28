@@ -26,7 +26,7 @@ extensions = [
     'sphinx.ext.napoleon',
 ]
 
-autodoc_member_order = 'groupwise'
+autodoc_member_order = 'bysource'
 
 
 # HTML -----------------------------------------------------------------------
