@@ -332,33 +332,45 @@ class Strategy:
     def hasCash(self):
         return self.portfolio.cash > 0
 
-    @property
-    def equity(self):
-        return self.portfolio.equity
+    # [ Helpers to access exchange ]
+    def marketBuy(self, asset, amount):
+        """Send market buy request to associated exchange"""
+        if amount <= 0:
+            raise ValueError("Expect positive value for amount.")
 
+        logger.debug('Placing market buy for {:.6g} {}', amount, asset)
+        res = self.exchange.marketBuy(asset, amount)
         self._cleanupBuy(res, message)
 
-    def marketSell(self, amount, message=''):
-        if amount > 0: raise ValueError("Amount must be larger than zero")
-        msg = 'Placing market sell for {:.6g} {} {:s}'
-        logger.debug(msg.format(amount, self.asset.upper(), message))
-        res = self.exchange.sendMarketSell(self.asset, amount)
+    def marketSell(self, asset, amount):
+        """Send market sell request to associated exchange"""
+        if amount < 0:
+            raise ValueError("Expect positive value for amount.")
+
+        logger.debug('Placing market sell for {:.6g} {}', amount, asset)
+        res = self.exchange.marketSell(asset, amount)
         self._cleanupSell(res, message)
 
-    def limitBuy(self, amount, price, message=''):
-        if amount > 0: raise ValueError("Amount must be larger than zero")
-        if price  > 0: raise ValueError("Price must be larger than zero")
-        msg = 'Placing limit buy for {:.6g} {} @${:.6g} {:s}'
-        logger.debug(msg.format(amount, self.asset.upper(), price, message))
-        res = self.exchange.sendLimitBuy(self.asset, amount, price)
+    def limitBuy(self, asset, amount, price):
+        """Send limit buy request to associated exchange"""
+        if amount < 0:
+            raise ValueError("Expect positive value for amount.")
+        if price  < 0:
+            raise ValueError("Expect positive value for price.")
+
+        logger.debug('Placing limit buy for {:.6g} {} @${:.6g}', amount, asset, price)
+        res = self.exchange.limitBuy(asset, amount, price)
         self._cleanupBuy(res, message)
 
-    def limitSell(self, amount, price, message=''):
-        if amount > 0: raise ValueError("Amount must be larger than zero")
-        if price  > 0: raise ValueError("Price must be larger than zero")
-        msg = 'Placing limit sell for {:.6g} {} @${:.6g} {:s}'
-        logger.debug(msg.format(amount, self.asset.upper(), price, message))
-        res = self.exchange.sendLimitSell(self.asset, amount, price)
+    def limitSell(self, asset, amount, price):
+        """Send market buy request to associated exchange"""
+        if amount < 0:
+            raise ValueError("Expect positive value for amount.")
+        if price  < 0:
+            raise ValueError("Expect positive value for price.")
+
+        logger.debug('Placing limit sell for {:.6g} {} @${:.6g}', amount, asset, price)
+        res = self.exchange.limitSell(asset, amount, price)
         self._cleanupSell(res, message)
 
     # Reconcile actions made on the exchange with the portfolio
