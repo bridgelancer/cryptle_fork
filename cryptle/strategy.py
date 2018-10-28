@@ -29,18 +29,15 @@ class Portfolio:
         self.base_currency = base_currency
         self.balance_value = balance_value or {}
 
-
     @classmethod
     def from_cash(cls, cash, base_currency='usd'):
         return cls(balance={base_currency: cash}, base_currency=base_currency)
-
 
     @classmethod
     def from_balance(cls, balance, base_currency='usd'):
         if base_currency not in balance:
             raise ValueError('No entry with base_currency in balance.')
         return cls(balance=balance, base_currency=base_currency)
-
 
     def deposit(self, asset, amount, price=0):
         try:
@@ -51,7 +48,6 @@ class Portfolio:
             self.balance_value = amount * price
         logger.debug('Deposited {} {}'.format(amount, asset))
 
-
     def withdraw(self, asset, amount):
         try:
             self.balance_value *= (self.balance[asset] - amount) / self.balance[asset]
@@ -60,21 +56,17 @@ class Portfolio:
         except KeyError:
             raise RuntimeWarning('Attempt was made to withdraw from an empty balance')
 
-
     @property
     def equity(self):
         return sum(self.balance_value.values()) + self.cash
-
 
     @property
     def cash(self):
         return self.balance[self.base_currency]
 
-
     @cash.setter
     def cash(self, value):
         self.balance[self.base_currency] = value
-
 
     def updateEquity(self, price):
         for asset, amount in filter(lambda x: x[0] != self.base_currency, self.balance.items()):
@@ -83,6 +75,7 @@ class Portfolio:
             except KeyError:
                 pass
         return self.equity
+
 
 class NewStrategy:
     """Base class of the new verison of strategies using the Event bus architecture.
@@ -145,18 +138,15 @@ class NewStrategy:
     def hasCash(self):
         return self.portfolio.cash > 0
 
-
     @property
     def equity(self):
         return self.portfolio.equity
-
 
     @property
     def maxBuyAmount(self):
         max_equi = self.equity_at_risk * self.equity / self.last_price
         max_cash = self.portfolio.cash / self.last_price
         return min(max_equi, max_cash)
-
 
     @property
     def maxSellAmount(self):
@@ -199,7 +189,6 @@ class NewStrategy:
         res = self.exchange.sendLimitBuy(self.asset, amount, price)
         self._cleanupBuy(res, message)
 
-
     def limitSell(self, amount, price, message=''):
         if amount > 0: raise ValueError("Amount must be larger than zero")
         if price  > 0: raise ValueError("Price must be larger than zero")
@@ -207,7 +196,6 @@ class NewStrategy:
         logger.debug(msg.format(amount, self.asset.upper(), price, message))
         res = self.exchange.sendLimitSell(self.asset, amount, price)
         self._cleanupSell(res, message)
-
 
     # Reconcile actions made on the exchange with the portfolio
     def _cleanupBuy(self, res, message=None):
@@ -232,7 +220,6 @@ class NewStrategy:
                 price,
                 message,
                 datetime.fromtimestamp(timestamp)))
-
 
     def _cleanupSell(self, res, message=None):
         if res['status'] == 'error':
@@ -287,7 +274,6 @@ class Strategy:
         When given a portfolio, Strategy(Base) assumes that it is the only
         strategy trading on that portfolio for the given pair.
     """
-
     def __init__(self,
             *,
             asset,
@@ -309,7 +295,6 @@ class Strategy:
             for k, v in self.indicators.items():
                 self.__dict__[k] = v
 
-
     # [Data input interface]
     # Wrappers for trade logical steps
     def pushTick(self, price, timestamp, volume, action):
@@ -330,7 +315,6 @@ class Strategy:
         if self.handleTick(price, timestamp, volume, action) is None:
             self.execute(timestamp)
 
-
     def pushCandle(self, op, cl, hi, lo, ts, vol):
         """Public inferface for aggregated candlestick"""
 
@@ -350,31 +334,25 @@ class Strategy:
         if self.handleCandle(op, cl, hi, lo, ts, vol) is None:
             self.execute(ts)
 
-
     def handleTick(self):
         """Process tick data and generate trade signals."""
         raise NotImplementedError
-
 
     def handleCandle(self):
         """Process candlestick data and generate trade signals."""
         raise NotImplementedError
 
-
     def execute(self):
         """Execute the trade signals raised by handling new data"""
         raise NotImplementedError
-
 
     def pushText(self, string, timestamp):
         """Stub method as example of future possible data types."""
         raise NotImplementedError
 
-
     def handleText(self, string, timestamp):
         """Process textmethod as example of future possible data types."""
         raise NotImplementedError
-
 
     # [Portfolio interface]
     # Wrappers of portfolio object, mostly for convenience purpose
@@ -385,16 +363,13 @@ class Strategy:
         except:
             return False
 
-
     @property
     def hasCash(self):
         return self.portfolio.cash > 0
 
-
     @property
     def equity(self):
         return self.portfolio.equity
-
 
     @property
     def maxBuyAmount(self):
@@ -402,11 +377,9 @@ class Strategy:
         max_cash = self.portfolio.cash / self.last_price
         return min(max_equi, max_cash)
 
-
     @property
     def maxSellAmount(self):
         return self.portfolio.balance[self.asset]
-
 
     # [Exchange interface]
     # Wrappers of exchange object for fine grain control/monitor over buy/sell process
@@ -417,14 +390,12 @@ class Strategy:
         res = self.exchange.sendMarketBuy(self.asset, amount)
         self._cleanupBuy(res, message)
 
-
     def marketSell(self, amount, message=''):
         if amount > 0: raise ValueError("Amount must be larger than zero")
         msg = 'Placing market sell for {:.6g} {} {:s}'
         logger.debug(msg.format(amount, self.asset.upper(), message))
         res = self.exchange.sendMarketSell(self.asset, amount)
         self._cleanupSell(res, message)
-
 
     def limitBuy(self, amount, price, message=''):
         if amount > 0: raise ValueError("Amount must be larger than zero")
@@ -434,7 +405,6 @@ class Strategy:
         res = self.exchange.sendLimitBuy(self.asset, amount, price)
         self._cleanupBuy(res, message)
 
-
     def limitSell(self, amount, price, message=''):
         if amount > 0: raise ValueError("Amount must be larger than zero")
         if price  > 0: raise ValueError("Price must be larger than zero")
@@ -442,7 +412,6 @@ class Strategy:
         logger.debug(msg.format(amount, self.asset.upper(), price, message))
         res = self.exchange.sendLimitSell(self.asset, amount, price)
         self._cleanupSell(res, message)
-
 
     # Reconcile actions made on the exchange with the portfolio
     def _cleanupBuy(self, res, message=None):
@@ -468,7 +437,6 @@ class Strategy:
                 message,
                 datetime.fromtimestamp(timestamp)))
 
-
     def _cleanupSell(self, res, message=None):
         if res['status'] == 'error':
             logger.error('Sell failed {} {}'.format(self.asset.upper(), message))
@@ -491,7 +459,6 @@ class Strategy:
                 price,
                 message,
                 datetime.fromtimestamp(timestamp)))
-
 
     def _checkHasExchange(self):
         if self.exchange is None:
