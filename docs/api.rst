@@ -12,14 +12,17 @@ Strategy
 .. automodule:: cryptle.strategy
 
    .. autoclass:: Strategy
-      :members: handleTick, handleCandle, handleText, execute
+      :members:
 
    .. autoclass:: Portfolio
       :members:
+      :undoc-members:
 
 
 Datafeed
 --------
+
+.. autofunction:: cryptle.datafeed.connect
 
 .. py:class:: Datafeed
 

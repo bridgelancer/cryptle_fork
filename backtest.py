@@ -1,6 +1,6 @@
 from cryptle.backtest import *
 from cryptle.strategy import Portfolio
-from cryptle.loglevel import *
+from cryptle.logging import *
 #from cryptle.plotting import *
 
 import logging
