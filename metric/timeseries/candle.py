@@ -3,7 +3,7 @@ from cryptle.event import source, on, Bus
 
 '''Candle-related Timeseries object.
 
-These objecbar are unique as client must pass a candle-like object that is in a format similar to [o,
+These objects are unique as client must pass a candle-like object that is in a format similar to [o,
 c, h, l, (v)] in order to initialize these Timeseries. This makes intuitive sense as these objecbar
 are not aggregating facility of ticks but rather a reducing facility that output the latest value of
 the aggreagated bar. There is currently no generic bar aggregating objecbar

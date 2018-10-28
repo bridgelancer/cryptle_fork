@@ -5,225 +5,90 @@ from cryptle.registry   import Registry
 from cryptle.event      import source, on
 from cryptle.strategy   import Strategy, NewStrategy
 
-from metric.timeseries.bollinger  import BollingerBand
-from metric.timeseries.candle     import CandleStick
-from metric.timeseries.difference import Difference
-from metric.timeseries.macd       import MACD
-from metric.timeseries.rsi        import RSI
-from metric.timeseries.wma        import WMA
+from metric.timeseries.___  import imported_func1
+
 
 import logging
 logger = logging.getLogger('Strategy')
 
-# requires linking from pine's work
+
 class Skeleton_Strat(NewStrategy):
 
     def __init__(self,
         any_predefined_arg,
         **kws):
 
-        s.init_bar = max(scope1, scope2, macd_scope, rsi_period)
         super().__init__(**kws)
-        # Specify setup for local registry - @TODO
-        setup = {'doneInit': [s.doneInit, ['open'], [['once per bar'], {}], 1],
-                 'wma':      [s.signifyWMA, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 2],
-                 'singular': [s.signifySingularity, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 3],
-                 'RSISellFlag': [s.signifyRSISellFlag, ['open'], [['once per bar'], {'once per signal': ['wma'], 'n per signal': ['doneInit', 10000]}], 4],
-                 'belowRSIthresh'  : [s.signifyRSIBelowThresh, ['open'], [['once per bar'], {'once per signal': ['wma'], 'n per signal': ['doneInit', 10000]}], 5],
-                }
+
+
+        setup = {'actionname1': [self.func1, ["one of the lookup_check"], [['one of the
+            lookup_trigger (for bar)'], {'one of the lookup_trigger (for
+            signal)': ['actionname_to_listen_for', max_iterations], ...}],
+            order_of_execution], ...}
+
 
         # Initiate candle aggregator and CandleStick
-        s.registry     = Registry(setup, bus=s.bus)
-        s.aggregator   = Aggregator(3600, bus=s.bus)
-        s.stick        = CandleStick(3600, bus=s.bus)
+        self.registry     = Registry(setup, bus=self.bus)
+        self.aggregator   = Aggregator(bar_interval, bus=self.bus)
+        self.stick        = CandleStick(bar_interval, bus=self.bus)
 
-        # Indicators
-        s.wma1 = WMA(s.stick.o, scope1)
-        s.wma2 = WMA(s.stick.o, scope2)
-        s.macd = MACD(s.wma1, s.wma2, macd_scope)
-        s.rsi  = RSI(s.stick.o, rsi_period)
-        s.macd_value = Difference(s.macd)
-        s.macd_diff  = Difference(s.macd.diff)
-        s.rsi_diff = Difference(s.rsi)
-        s.reaper   = BollingerBand(s.rsi_diff, s.rsi._lookback, sd=2)
 
-        # Parameters
-        s.rsi_upperthresh = rsi_upperthresh
-        s.rsi_thresh      = rsi_thresh
+        # Indicators, used in making the requirements before emitting signals, see below
+        self.indi1 = imported_func1(args)
+
+        # Parameters, usually for using pre_defined_args directly before emitting
+        self.para = para1
 
 
     @source('signal')
-    def emitSignal(s, signalName, boolean):
+    def emitSignal(self, signalName, boolean):
         return [signalName, boolean]
 
     @source('strategy:triggered')
-    def emitTriggered(s, triggerName):
+    def emitTriggered(self, triggerName):
         return triggerName
 
-    # at least it kinda works
-    def doneInit(s):
-        # check at every tick initially to see if s.registry.num_bars > s.init_bar
-        # whenexec: after self.registry.num_bars > s.init_bars, triggerConstraint:[['open'],
-        # [['once'], {}]]
-        if s.registry.num_bars > s.init_bar:
-            s.emitSignal('doneInit', True)
+    def func1(self):
+
+        if requirements_are_fulfiled:
+            # emit signal with True will start the applying the constraints, i.e. the
+            # limitation on number of times ran
+            self.emitSignal('actionname1', True)
+
         else:
-            print('doneInit checked', s.registry.num_bars, s.init_bar)
+            # emit signal with False will block the client codes execution, needed because
+            # of hardcoding restart of the signal
+            self.emitSignal('actionname1', False)
+
+        # executing the action with the following action name, the registry will check
+        # whether all constraints are fulfiled
+        self.emitTriggered('actionname1')
 
 
-    def signifyWMA(s):
-        try:
-            #print('test successful')
-            if (s.stick.o > s.wma1):
-                s.emitSignal('wma', True)
-            else:
-                s.emitSignal('wma', False)
-            s.emitTriggered('wma')
-        except:
-            pass
+    def entry(self, data):
 
-    #@on('registry:execute')
-    #def signifyDLC(s, data):
-    #    if data[0] == 'dlc':
-    #        # emit dlc signal
-    #        try:
-    #            if float(s.macd_val) > 0 and float(s.macd_diff) > 0:
-    #                s.emitSignal('dlc', True)
-    #                s.emitTriggered('dlc')
-    #            else:
-    #                s.emitSignal('dlc', False)
-    #                s.emitTriggered('dlc')
-    #        except:
-    #            pass
+        if all_requirements_met:
 
-    ## issue on retrieving past Timeseries data
-    #@on('registry:execute')
-    #def signifyDIDO(s, data):
-    #    if data[0] == 'dido':
-    #        # emit dlc signal
-    #        someConditionToBeImplemented = True
-    #        try:
-    #            if someConditionToBeImplemented:
-    #                s.emitSignal('dido', True)
-    #                s.emitTriggered('dido')
-    #            else:
-    #                s.emitSignal('dido', False)
-    #                s.emitTriggered('dido')
-    #        except:
-    #            pass
+            if self.hasCash and not self.hasBalance:
 
-    def signifySingularity(s):
-        try:
-            if (s.rsi_diff > s.reaper.upperband):
-                print(s.rsi_diff, s.reaper.upperband, s.registry.num_bars)
-                s.emitSignal('singular', True)
-                s.emitTriggered('singular')
-            else:
-                s.emitSignal('singular', False)
-                s.emitTriggered('singular')
-        except:
-            pass
+                self.marketBuy(self.maxBuyAmount)
+                self.sell_amount = self.maxSellAmount * scale_off
 
-    def signifyRSISellFlag(s):
-    # whenexec = 'open'; triggerConstraint: [['once'], {}]
-        try:
-            if s.rsi > s.rsi_upperthresh:
-                print('fuck!!!!!!!!!!!', s.rsi, s.registry.num_bars)
-                s.emitTriggered('RSISellFlag')
-            else:
-                pass
-        except:
-            pass
-
-    def signifyRSIBelowThresh(s):
-    # whenexec = 'open'; triggerConstraint: [['once'], {}]
-        try:
-            if s.rsi < s.rsi_thresh:
-                s.emitSignal('belowRSIthresh', True)
-                s.emitSignal('RSISellFlag', False)
-                s.emitTriggered('belowRSIthresh')
-            else:
-                s.emitSignal('belowRSIthresh', False)
-        except:
-            pass
-
-    def signifyRSIAbove50F(s):
-    # whenexec = 'open'; triggerConstraint: [['once per bar'], {'once per signal:
-    # ['RSISellFlag']}, x]
-        try:
-            if s.rsi > 50:
-                s.emitSignal('aboveRSI50F', True)
-            elif s.rsi < 50:
-                s.emitSignal('aboveRSI50F', False)
-                s.emitSignal('RSISellFlag', False)
-            s.emitTriggered('aboveRSI50F')
-        except:
-            pass
-
-    def signifyRSIAbove50NF(s):
-        try:
-            if s.rsi > 50:
-                s.emitSignal('aboveRSI50NF', True)
-            elif s.rsi < 50:
-                s.emitSignal('aboveRSI50NF', False)
-            s.emitTriggered('aboveRSI50NF')
-        except:
-            pass
+                logger.signal()
+                self.emitTriggered('marketBuy')
 
 
-    #@on('registry:execute')
-    #def screenRSIDiff(s, data):
-    #    if data[0] == 'rsi_diff':
-    #        try:
-    #            if float(s.rsi_diff) > float(s.reaper.upperband):
-    #                s.emitSignal('singular', True)
-    #                s.emitTriggered('singular')
-    #            else:
-    #                s.emitSignal('singular', False)
-    #                s.emitTriggered('singular')
-    #        except:
-    #            pass
+    def exit(self, data):
 
-    #@on('registry:execute')
-    #def marketBuy(s, data):
-    #    # execute only when RSI, DLC signal returns True and not screened
-    #    if data[0] == 'marketBuy':
-    #        try:
-    #            if s.hasCash and not s.hasBalance:
-    #                s.marketBuy(s.maxBuyAmount)
-    #                s.sell_amount = s.maxSellAmount * 0.3
-    #                s.emitTriggered('marketBuy')
-    #        except:
-    #            pass
+        if requirements_met:
 
-    #@on('registry:exectue')
-    #def exit(s, data):
-    #    # execute via normal rsi exits
-    #    if data[0] == 'exit':
-    #        s.marketSell(s.maxSellAmount)
-    #        logger.signal('Sell: Exit')
-    #        s.emitTriggered('exit')
+            self.marketSell(self.maxSellAmount)
 
-    #@on('registry:execute')
-    #def dido_scale(s, data):
-    #    # execute scale off, max 3 + 1 times per trade, 30% each time
-    #    if data[0] == 'dido_scale':
-    #        if s.maxSellAmount > s.sell_amount:
-    #            s.marketScaleOut(s.sell_amount)
-    #        else:
-    #            s.marketScaleOut(s.maxSellAmount * 0.999)
-    #        s.emitTriggered('dido_scale')
+            logger.signal()
+            self.emitTriggered('exit')
 
-    #@on('registry:execute')
-    #def singular_scale(s, data):
-    #    # execute singular scale off, max 3 + 1 times per trade, 30% each time
-    #    if data[0] == 'singular_scale':
-    #        if s.maxSellAmount > s.sell_amount:
-    #            s.marketScaleOut(s.sell_amount)
-    #        else:
-    #            s.marketScaleOut(s.maxSellAmount * 0.999)
-    #        s.emitTriggered('singular_scale')
 
+# Temporary
 if __name__ == '__main__':
     from cryptle.backtest import backtest_tick, Backtest, PaperExchange
     from cryptle.strategy import Portfolio
@@ -231,7 +96,7 @@ if __name__ == '__main__':
     from cryptle.event import source, on, Bus
     from cryptle.loglevel import *
 
-    fh = logging.FileHandler('dummy.log', mode='w')
+    fh = logging.FileHandler('skt.log', mode='w')
     fh.setLevel(logging.TICK)
 
     sh = logging.StreamHandler()
@@ -283,4 +148,3 @@ if __name__ == '__main__':
         indicators=[[equity]])
 
     plot.show()
-

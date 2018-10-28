@@ -184,6 +184,7 @@ class Registry:
                     constraint = self.lookup_trigger[keyss[-1]]
                     constraint(key, *dictionary[keyss[-1]])
 
+    # timeEvent and signalname inconsistent
     def handleLogicStatus(self, key, timeEvent):
         # Draft hierachy - bar < period < trade < someshit(s) or < someshit(s) < trade? (or customizable?)
         # In any way, when ambiguous -> always take the most lenient one as the one with lowest # hierachy, bar < period < anythng is not ambiguous
@@ -214,12 +215,15 @@ class Registry:
         # This control flow is hardcoded - any signal or trade Event that blocks further triggering
         # of client codes would be the only relevant condition for this temporary implementation. Only
         # reversal of that signal/trade event could lead to another execution of client codes. In the future,
-        # an explicit hierachy structure should be implemented to clearly state the behaviour instead of relying the
-        # constraint functions and refresh functions to achieve a more fine-grained control of the execution of client codes.
+        # an explicit hierachy structure should be implemented to clearly state the behaviour
+        # instead of relying on the constraint functions and refresh functions to achieve a
+        # more fine-grained control of the execution of client codes.
         else:
             # the logic_status of the client test would be rewritten to 'signalName": [-1, args*],
             # any subsequent triggering requires a refresh of this signal (hardcoded in constraint
             # functions)
+
+            # basically set the count to -1
             self.logic_status[key] = {cat:[-1] + [x for i, x in enumerate(val) if i != 0] for cat, val in test.items() if cat == timeEvent}
 
     # On arrival of tick, handleCheck calls check and carries out checking
