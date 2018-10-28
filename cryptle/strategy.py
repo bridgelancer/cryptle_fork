@@ -300,17 +300,27 @@ class Strategy:
     Market data (or any data for that matter) can be pushed to a strategy through dedicated methods
     for each individual type of market data. The supported interfaces are the following methods:
 
-    - :meth:`pushTick`
+    - :meth:`pushTrade`
     - :meth:`pushCandle`
 
     The input interface is decoupled from the callback interface. Each of the above methods have a
     corresponding virtual method, with *push* replaced by *on*, such as:
 
-    - :meth:`onTick`
+    - :meth:`onTrade`
     - :meth:`onCandle`
 
     Concrete implementations of :class:`Strategy` must implement at least one of the above methods
     in order to actually perform any reaction to the market.
+
+    .. py:method:: onTrade(pair, price, timestamp, volumn, action)
+
+        This callback handles trade data in the form of price and timestamp. *action* is a boolean
+        on whether this trade was a buy or sell.
+
+    .. py:method:: onCandle(pair, open, close, high, low, timestamp, volumn)
+
+        This callback handles candlestick data.
+
     """
 
     def __init__(self):
@@ -318,18 +328,19 @@ class Strategy:
         self.exchange = None
 
     # [ Data input interface ]
-    def pushTick(self, price, timestamp, volume, action):
-        """Public inferface for tick data"""
-        logger.tick('Received tick')
-        self.onTick(price, timestamp, volume, action)
+    def pushTrade(self, pair, price, timestamp, volume, action):
+        """Input tick data."""
+        logger.tick('Received tick of {}', pair)
+        self.onTrade(pair, price, timestamp, volume, action)
 
-    def pushCandle(self, op, cl, hi, lo, ts, vol):
-        """Public inferface for aggregated candlestick"""
-        logger.tick('Received candle')
-        self.onCandle(op, cl, hi, lo, ts, vol)
+    def pushCandle(self, pair, op, cl, hi, lo, ts, vol):
+        """Input candlestick data."""
+        logger.tick('Received candle of {}', pair)
+        self.onCandle(pair, op, cl, hi, lo, ts, vol)
 
     # [ Helpers to access portfolio object ]
     def hasCash(self):
+        """Return a boolean on whether the strategy has available cash."""
         return self.portfolio.cash > 0
 
     # [ Helpers to access exchange ]

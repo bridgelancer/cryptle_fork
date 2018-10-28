@@ -12,6 +12,7 @@ Strategy
 .. automodule:: cryptle.strategy
 
    .. autoclass:: Strategy
+      :members:
 
    .. autoclass:: Portfolio
       :members:

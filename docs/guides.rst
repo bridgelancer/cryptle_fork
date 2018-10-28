@@ -66,6 +66,36 @@ recommended method for using limit orders is with the event bus. This way the
 order tracking boilerplate code can be delegated to the framework.
 
 
+Strategy
+--------
+In Cryptle, all concrete implementations of strategies must inherit from
+:class:`~cryptle.strategy.Strategy`. The Strategy base class provides basic
+features in managing ownership to a :class:`~cryptle.strategy.Portfolio` and
+relationship to a :class:`Datafeed`.
+
+Events from the market are handle by callbacks for each corresponding data type.
+Here's a very basic strategy where we will buy whenever the price of the
+particular asset::
+
+   class FooStrategy(SingleAssetStrategy):
+
+       def __init__(self, pair, target):
+           SingleAssetStrategy.__init__(self, pair)
+           self.price_target = target
+
+       def onTrade(self, price, timestamp, amount, action):
+           if price > self.price_target:
+               self.buy(amount)
+
+   exchange = cryptle.exchange.connect(BITSTAMP)
+
+   strat = FooStrategy('bchusd', 100)
+   strat.exchange = exchange
+
+   # Setup and start a datafeed. Stream into the strategy using the pushTrade()
+   # or pushCandle() methods.
+
+
 Backtesting and Paper Trading
 -----------------------------
 The module :mod:`~cryptle.backtest` and class :class:`~cryptle.exchange.paper.Paper`
