@@ -147,6 +147,10 @@ class Strategy:
 
         This callback handles candlestick data.
 
+    Attributes
+    ----------
+    portfolio : :class:`Portfolio`
+    exchange : :class:`cryptle.exchange.Exchange`
     """
 
     def __init__(self):
@@ -264,11 +268,14 @@ class SingleAssetStrat(Strategy):
     Args
     ----
     asset: str
-        The traded asset (meta info).
+        The traded asset.
 
     Attributes
     ----------
-    portfolio : :class:`Portfolio`
+    asset : str
+        The traded asset of this strategy
+    equity_at_risk : float
+        Maximum amount of equity that can be used in a single trade.
 
     Note
     ----
@@ -284,23 +291,38 @@ class SingleAssetStrat(Strategy):
 
     # Todo: fix the function signature for the exchange interface
     def marketBuy(self, amount):
+        """Wrapper over the base Strategy.marketBuy() for single asset."""
         super().marketBuy(self.asset, amount)
 
     def marketSell(self, amount):
+        """Wrapper over the base Strategy.marketSell() for single asset."""
         super().marketSell(self.asset, amount)
 
     def limitBuy(self, amount, price):
+        """Wrapper over the base Strategy.limitBuy() for single asset."""
         super().limitBuy(self.asset, amount, price)
 
     def limitSell(self, amount, price):
+        """Wrapper over the base Strategy.limitSell() for single asset."""
         super().limitSell(self.asset, amount, price)
 
-    def maxBuyAmount(self):
-        max_equi = self.equity_at_risk * self.equity / self.last_price
-        max_cash = self.portfolio.cash / self.last_price
+    def maxBuyAmount(self, price):
+        """Return the maximum amount of asset that the portfolio can afford
+        given the current price.
+
+        Args
+        ----
+        price : float
+            Current price of the asset to buy.
+
+        """
+        equity = self.portfolio.equity({self.asset[price]})
+        max_equi = self.equity_at_risk * equity / price
+        max_cash = self.portfolio.cash / price
         return min(max_equi, max_cash)
 
     def maxSellAmount(self):
+        """Return the maximum amount of asset that the portfolio can sell."""
         return self.portfolio.balance[self.asset]
 
     def hasBalance(self):
@@ -309,7 +331,9 @@ class SingleAssetStrat(Strategy):
         except:
             return False
 
+
 from cryptle.event import on, source
+
 
 class EventMarketDataMixin:
     @on('candle')
@@ -321,7 +345,6 @@ class EventMarketDataMixin:
     def pushTrade(self, data):
         pair, price, timestamp, volume, action = data
         super().pushTrade(pair, price, timestamp, volume, action)
-
 
 
 class EventOrderMixin:
