@@ -1,7 +1,8 @@
 import sys
+
 import logging
 
-from cryptle.strategy import Portfolio, Strategy
+from cryptle.strategy import Portfolio, Strategy, EventOrderMixin
 import cryptle.logging
 
 
@@ -44,3 +45,17 @@ def test_equity():
     port.withdraw('eth', 15)
     assert port.equity(values) == 0
     assert 'eth' not in port.balance
+
+
+def test_strategy_base():
+    strat = Strategy()
+    assert strat.portfolio.cash == 0
+    assert strat.exchange is None
+
+
+def test_extended_strategy():
+    class Strat(EventOrderMixin, Strategy):
+        pass
+
+    strat = Strat()
+    assert strat.marketBuy.__func__ is EventOrderMixin.marketBuy

@@ -34,6 +34,9 @@ class _Emitter:
         self.event = event
         self.instance = None
 
+        # Fix comparions for bound methods to unbound methods
+        self.__func__ = self
+
     def __repr__(self):
         return 'Emitter({}, {})'.format(self.event, self.func)
 
