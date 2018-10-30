@@ -32,7 +32,7 @@ Datafeed
 
 .. autofunction:: cryptle.datafeed.connect
 
-.. py:class:: Datafeed
+.. py:class:: cryptle.datafeed.Datafeed
 
    .. py:method:: connect()
 

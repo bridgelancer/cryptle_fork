@@ -50,7 +50,7 @@ Exchanges are interfaces for placing orders to buy and sell assets. Some
 exchange interfaces includes account functionality. All supported exchanges at
 present use REST APIs, so no persistent connection is required. Nonetheless,
 the exchange creation function is named
-:meth:`~cryptle.exchange.Exchange.connect`, in case for forward compatibility.
+:meth:`~cryptle.exchange.connect`, in case for forward compatibility.
 
 Creation of exchange objects follow a similar interface as the datafeed package.
 
@@ -68,12 +68,20 @@ order tracking boilerplate code can be delegated to the framework.
 
 Strategy
 --------
-In Cryptle, all concrete implementations of strategies must inherit from
-:class:`~cryptle.strategy.Strategy`. The Strategy base class provides basic
-features in managing ownership to a :class:`~cryptle.strategy.Portfolio` and
-relationship to a :class:`Datafeed`.
+In Cryptle, all concrete implementations of strategies must inherit from the
+base :class:`~cryptle.strategy.Strategy` class, or generic strategy classes that
+are children of Straegy. These generic strategies provide take common idioms and
+patterns in stratgy development and abstract them. The Strategy base class
+provides basic features that manages ownership of a
+:class:`~cryptle.strategy.Portfolio` object and relationship to a
+:class:`~cryptle.datafeed.Datafeed`.
 
 Events from the market are handle by callbacks for each corresponding data type.
+For instance, to recieve live market trade data, implement the ``onTrade()``
+method. The input data can be provided through by the corresponding
+``pushTrade()``. The full list of supported data input interface can be found
+in the :class:`~cryptle.strategy.Strategy` reference.
+
 Here's a very basic strategy where we will buy whenever the price of the
 particular asset::
 
@@ -115,6 +123,17 @@ The code looks mostly the same::
    bus = Bus()
    bus.bind(strat)
    bus.bind(exchange)
+
+Other mixins are covered in the :mod:`strategy <cryptle.strategy>` module
+reference documentation.
+
+.. seealso::
+   For questions about what is a mixin and why are they useful, StackOverflow
+   has an excellent `explanation
+   <https://stackoverflow.com/questions/533631/what-is-a-mixin-and-why-are-they-useful>`_.
+   Furthermore, Django is a great framework to for more `examples
+   <https://docs.djangoproject.com/en/2.0/topics/class-based-views/mixins/>`_
+   of mixins.
 
 
 Backtesting and Paper Trading
