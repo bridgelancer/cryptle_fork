@@ -1,5 +1,5 @@
-from cryptle.logging import *
-from metric.base import Candle, Timeseries
+from cryptle.loglevel import *
+from metric.base import Candle, Timeseries, TimeseriesWrapper, HistoricalTS
 from metric.candle import CandleBar
 from cryptle.aggregator import Aggregator
 from cryptle.event import source, on, Bus
@@ -239,3 +239,19 @@ def test_diff():
         pushTick([price, 0, i, 0])
     assert diff.value - -3.2466947194 * 1e-5 < 1e-7
 
+def test_TimeseriesWrapperRetrieval():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    sd = Difference(stick.o, 1)
+    sd_w = TimeseriesWrapper(sd, store_num=10)
+    print('length of alt_quad: {}'.format(len(alt_quad)))
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+
+    assert sd_w[-21:-19] == [750.8125, -770.3125]
+    assert sd_w[-9] == 1001.3125
+
+def test_hisotiralTS():
+    pass

@@ -1,5 +1,8 @@
 from functools import wraps
 
+import logging
+import csv
+
 class Metric:
     '''Base class with common functions of single valued metrics'''
 
@@ -172,9 +175,115 @@ class Model:
     def report(self):
         pass
 
+class TimeseriesWrapper:
+    ''' Wrapper class for Timeseries and HistoricalTS. The naming of TimeseriesWrapper, Timeseries
+    and Historical TS might subject to further changes.
+
+    The Timeseries wrapper class is the encapsulation of the value-computing part and historical
+    values. It contains the value-computing object (Timeseries at the moment) and historical values
+    (HistoricalTS at the moment).
+
+    '''
+    def __init__(self, ts, store_num =10000, **kwargs):
+        self.timeseries = ts
+        self.hxtimeseries = HistoricalTS(self.timeseries, store_num)
+
+    def __getitem__(self, index):
+        # this only works for ts with one Timeseries
+        return self.hxtimeseries.retrieve(index)
+
+    def __int__(self):
+        return int(self.timeseries.value)
+
+    def __float__(self):
+        return float(self.timeseries.value)
+
+    def __neg__(self):
+        return -self.timeseries.value
+
+    def __abs__(self):
+        return abs(self.timeseries.value)
+
+    def __str__(self):
+        return str(self.timeseries.value)
+
+    def __repr__(self):
+        return str(self.timeseries.value)
+
+    def __bool__(self):
+        return bool(self.timeseries.value)
+
+    def __hash__(self):
+        return id(self)
+
+    def __eq__(self, other):
+        return self.timeseries.value == other
+
+    def __ne__(self, other):
+        return self.timeseries.value != other
+
+    def __lt__(self, other):
+        return self.timeseries.value < other
+
+    def __gt__(self, other):
+        return self.timeseries.value > other
+
+    def __le__(self, other):
+        return self.timeseries.value <= other
+
+    def __ge__(self, other):
+        return self.timeseries.value >= other
+
+    def __add__(self, other):
+        return self.timeseries.value + other
+
+    def __sub__(self, other):
+        return self.timeseries.value - other
+
+    def __mul__(self, other):
+        return self.timeseries.value * other
+
+    def __truediv__(self, other):
+        return self.timeseries.value / other
+
+    def __floordiv__(self, other):
+        return self.timeseries.value // other
+
+    def __divmod__(self, other):
+        return divmod(self.timeseries.value, other)
+
+    def __mod__(self, other):
+        return self.timeseries.value % other
+
+    def __pow__(self, other):
+        return self.timeseries.value ** other
+
+    def __radd__(self, other):
+        return other + self.timeseries.value
+
+    def __rsub__(self, other):
+        return other - self.timeseries.value
+
+    def __rmul__(self, other):
+        return other * self.timeseries.value
+
+    def __rtruediv__(self, other):
+        return other / self.timeseries.value
+
+    def __rfloordiv__(self, other):
+        return other // self.timeseries.value
+
+    def __rdivmod__(self, other):
+        return divmod(other, self.timeseries.value)
+
+    def __rmod__(self, other):
+        return other % self.timeseries.value
+
+    def __rpow__(self, other):
+        return other ** self.timeseries.value
 
 class Timeseries:
-    ''' Base class for times series that encapsulate current Candle and Metric objects.
+    ''' Base class for time series.
 
     TimeSeries object should only concern about the updating of its series upon arrival of tick or
     candle and no more. The calculation part of the class should only hold the most updated
@@ -470,3 +579,110 @@ class GenericTS(Timeseries):
         self.value = self.eval_func(*self.args)
         self.broadcast()
 
+class HistoricalTS(Timeseries):
+    ''' Providing methods for historical Timeseries data management, storage and handling retrieval'''
+    def __init__(self, ts, store_num = 10000):
+        super().__init__(ts=ts)
+        self._ts = ts
+        self._lookback = store_num
+        self._cache = []
+        self.value = None
+        self.flashed = False
+
+    # write to disk
+    def write(self):
+    # this function should periodically write to disk
+    # write to a file, the filename should be changes accorindgly
+        filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
+        if not self.flashed:
+            with open(filename, 'w', newline='') as file:
+                file.write("Beginning of new file: should record the running instance metainfo \n")
+            self.flashed = True
+
+        with open(filename, "a", newline='') as file:
+            wr = csv.writer(file)
+            wr.writerow(self._cache[:self._lookback])
+        del self._cache[:self._lookback]
+
+    # update historical cache based on updated value
+    def prune(self, lst):
+        if 2 * self._lookback >= len(self._cache):
+            return lst
+        else:
+            self.write()
+            return lst[-self._lookback-1:]
+
+    def evaluate(self):
+        # this function should update whenever a change in the ts is present
+        if isinstance(self._ts, list):
+            if self._ts[-1] is None or isinstance(self._ts[-1], float):
+                self._cache.append(self._ts[-1])
+            if isinstance(self._ts[-1], Timeseries):
+                zip(*self._cache)
+                try:
+                    self._cache.append([float(ts) for ts in self._ts])
+                except:
+                    pass
+                zip(*self._cache)
+        elif isinstance(self._ts, Timeseries):
+            try:
+                self._cache.append(float(self._ts))
+            except:
+                pass
+        self._cache = self.prune(self._cache)
+
+        if len(self._cache) > 0:
+            self.value = self._cache[-1]
+        else:
+            pass
+
+    # index is a slice object enetered by user - only allows -xxx:-xx retrieval method
+    def retrieve(self, index):
+        # this function should return a list of value including start but excluding end
+        # also, this function should be able to redirect retrieval request to own cache/disk memory
+
+        # only support this shit currently
+        #if index.end > 0 or index.start > 0:
+        #    return ValueError('The slice object input for referencing historical value should be by
+        #    negative integers (i.e. ts[-1000:-800] for the 200 values starting from 800 bars from
+        #    now)')
+
+        ## row counts from bottom to top (end to beginning)
+        #rowstart = abs(index.start % self._lookback)
+        #rowend   = abs(index.stop % self._lookback)
+        ## col counts from right to left (end to beginning)
+        #colstart = abs(index.start) - rowstart * self._lookback
+        #colend   = abs(index.end) - rowed * self._lookback
+        print('entering hxts retrieve')
+        filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
+        print('printing csv filename in hxts retrieve {}'.format(filename))
+        print(index)
+        lst = []
+        if isinstance(index, slice):
+            if abs(index.stop) < self._lookback and abs(index.start) < self._lookback:
+                # if still within caching limit, retrieve from cache
+                return self._cache[index]
+            else:
+                with open(filename, "r") as f:
+                    reader = csv.reader(f, delimiter=',')
+                    for i, row in enumerate(f):
+                        if i == 0: pass
+                        else:
+                            row = [float(x) for x in row.rstrip('\n').split(',')]
+                            lst += row
+                    lst += self._cache
+                return lst[index]
+
+        elif isinstance(index, int):
+            if abs(index) < self._lookback:
+                return self._cache[index]
+            else:
+                with open(filename, "r") as f:
+                    reader = csv.reader(f, delimiter=',')
+                    for i, row in enumerate(f):
+                        if i == 0: pass
+                        else:
+                            row = [float(x) for x in row.rstrip('\n').split(',')]
+                            lst += row
+                    lst += self._cache
+                return lst[index]
