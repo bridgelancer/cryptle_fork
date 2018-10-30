@@ -147,10 +147,12 @@ class Strategy:
 
         This callback handles candlestick data.
 
-    Attributes
-    ----------
+    Attribute
+    ---------
     portfolio : :class:`Portfolio`
-    exchange : :class:`cryptle.exchange.Exchange`
+        A portfolio object that a strategy instance owns and manges.
+    exchange : :class:`~cryptle.exchange.Exchange`
+        The exchange that will be used to place orders from the strategy.
     """
 
     def __init__(self):
@@ -270,8 +272,8 @@ class SingleAssetStrat(Strategy):
     asset: str
         The traded asset.
 
-    Attributes
-    ----------
+    Attribute
+    ---------
     asset : str
         The traded asset of this strategy
     equity_at_risk : float
