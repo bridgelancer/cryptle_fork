@@ -22,7 +22,11 @@ Strategy
       :members:
       :undoc-members:
 
-   .. autoclass:: OrderEventMixin
+   .. autoclass:: EventMarketDataMixin
+      :members:
+      :undoc-members:
+
+   .. autoclass:: EventOrderMixin
       :members:
       :undoc-members:
 

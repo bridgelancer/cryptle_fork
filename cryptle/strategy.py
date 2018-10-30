@@ -3,8 +3,6 @@
 import logging
 from collections import defaultdict
 
-from cryptle.event import source
-
 
 logger = logging.getLogger(__name__)
 
@@ -311,7 +309,22 @@ class SingleAssetStrat(Strategy):
         except:
             return False
 
-class OrderEventMixin:
+from cryptle.event import on, source
+
+class EventMarketDataMixin:
+    @on('candle')
+    def pushCandle(self, data):
+        pair, op, cl, hi, lo, ts, vol = data
+        super().pushCandle(pair, op, cl, hi, lo, ts, vol)
+
+    @on('trade')
+    def pushTrade(self, data):
+        pair, price, timestamp, volume, action = data
+        super().pushTrade(pair, price, timestamp, volume, action)
+
+
+
+class EventOrderMixin:
     @source('order:marketbuy')
     def marketBuy(self, asset, amount):
         return asset, amount

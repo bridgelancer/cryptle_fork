@@ -108,11 +108,11 @@ limit orders. The mixin class :class:`~cryptle.strategy.OrderEventMixin`
 overrides the normal buy/sell methods into marked instance methods that emit
 events into a :class:`~cryptle.event.Bus`. The mixin must come before the base
 strategy class. Detailed reference of the mixin events are at
-:class:`~cryptle.strategy.OrderEventMixin`.
+:class:`~cryptle.strategy.EventOrderMixin`.
 
 The code looks mostly the same::
 
-   class BusStrategy(OrderEventMixin, Strategy):
+   class BusStrategy(EventOrderMixin, Strategy):
        def onTrade(self, price, t, amount, action):
            if price > self.price_target:
                self.marketbuy(amount)
