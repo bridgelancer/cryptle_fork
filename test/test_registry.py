@@ -4,7 +4,6 @@ import math
 import time
 import sys
 import traceback
-import log
 import datetime
 
 import pytest
