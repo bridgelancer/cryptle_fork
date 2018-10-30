@@ -1,11 +1,11 @@
 from metric.base import Timeseries
 
 class PivotPoints(Timeseries):
-    def __init__(self, timestamp, interval, high, low, close, days, n=8, list=False):
+    def __init__(self, timestamp, interval, high, low, close, days=1, n=8, list=False):
         self._ts       = [timestamp, high, low, close]
         super().__init__(ts=self._ts)
         self._days = days
-        self._lookback = (days*24*60*60) / interval     #the number of bars required to be cached
+        self._lookback = (days*24*60*60) / interval  #the number of bars required to be cached
         self._cache    = []
         self.period_high, self.period_low, self.period_close = None, None, None
         self.pp = None

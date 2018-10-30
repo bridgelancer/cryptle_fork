@@ -57,7 +57,6 @@ def backtest_tick(strat, dataset, bus=None, pair=None, portfolio=None, exchange=
         bus.bind(test)
 
     test.read(dataset)
-    print(dataset)
     test.run(strat, callback)
 
 
@@ -155,8 +154,8 @@ class Backtest:
             self.exchange.timestamp = timestamp
             if strat.__class__.__bases__[-1].__name__ == 'Strategy':
                 strat.pushTick(price, timestamp, volume, action) # push the tick to strat
-            elif strat.__class__.__bases__[-1].__name__ == 'NewStrategy':
-                # emit a tick Event to kickstart the new strategy
+            elif strat.__class__.__bases__[-1].__name__ == 'SingleAssetStrat':
+                # emit a tick Event to kickstart the SingleAssetStrat strategy
                 # WARNING: check tick format to see whether it still fits dataset
                 self.emitTick([float(price), float(volume), float(timestamp), float(action)])
 

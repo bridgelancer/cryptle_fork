@@ -151,7 +151,6 @@ class Registry:
         # first item be the name of signal regestered as the signalConstraint of some other client
         # and second item be the boolean status of the signal.
         signalname, boolean = signal
-        # semi-hardcoded behaviour, hierachy structure to be implemented
 
 
         # Iterating over all items in the setup using the key

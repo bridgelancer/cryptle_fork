@@ -199,6 +199,7 @@ class Strategy:
             raise AttributeError('Expected implementation of onCandle()')
 
     # [ Helpers to access portfolio object ]
+    @property
     def hasCash(self):
         """Return a boolean on whether the strategy has available cash."""
         return self.portfolio.cash > 0
@@ -390,6 +391,7 @@ class SingleAssetStrategy(TradingStrategy):
         """Return the maximum amount of asset that the portfolio can sell."""
         return self.portfolio.balance[self.asset]
 
+    @property
     def hasBalance(self):
         try:
             return self.portfolio.balance[self.asset] > 0

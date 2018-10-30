@@ -3,7 +3,7 @@
 from cryptle.aggregator import Aggregator
 from cryptle.registry   import Registry
 from cryptle.event      import source, on
-from cryptle.strategy   import Strategy, NewStrategy
+from cryptle.strategy   import SingleAssetStrat, OrderEventMixin
 
 from metric.timeseries.bollinger  import BollingerBand
 from metric.timeseries.candle     import CandleStick
@@ -16,10 +16,14 @@ import logging
 logger = logging.getLogger('Strategy')
 
 # requires linking from pine's work
-class DummyStrat(NewStrategy):
+class DummyStrat(SingleAssetStrat):
 
     def __init__(s,
+        portfolio,
         message='New Era',
+        bus    = None, # event bus passed into the DummyStrat
+        pair   = 'btcusd',
+        asset  = 'btc',
         period = 300,
         scope1 = 12,
         scope2 = 26,
@@ -30,22 +34,28 @@ class DummyStrat(NewStrategy):
         rsi_upperthresh = 70,
         **kws):
 
-        s.message = message
-        s.init_bar = max(scope1, scope2, macd_scope, rsi_period)
-        super().__init__(**kws)
+        SingleAssetStrat.__init__(s, asset)
         # Specify setup for local registry - @TODO
-        setup = {'doneInit': [s.doneInit, ['open'], [['once per bar'], {}], 1],
-                 'wma':      [s.signifyWMA, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 2],
-                 'singular': [s.signifySingularity, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 3],
-                 'RSISellFlag': [s.signifyRSISellFlag, ['open'], [['once per bar'], {'once per signal': ['wma'], 'n per signal': ['doneInit', 10000]}], 4],
-                 'belowRSIthresh'  : [s.signifyRSIBelowThresh, ['open'], [['once per bar'], {'once per signal': ['wma'], 'n per signal': ['doneInit', 10000]}], 5],
+        setup = {'doneInit':   [s.doneInit, ['open'], [['once per bar'], {}], 1],
+                 'wma':        [s.signifyWMA, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 2],
+                 'singular':   [s.signifySingularity, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 3],
+                 'rsi':        [s.signifyRSI, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 4],
+                 'dlc':        [s.signifyDLC, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 5],
+                 'enter':  [s.enter, ['open'], [['once per bar'], {'once per signal': ['dlc'], 'n per signal': ['doneInit', 10000]}], 6],
+                 'exit':       [s.exit, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 7],
+                 #'dido_scale': [s.dido_scale, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 8],
                 }
 
         # Initiate candle aggregator and CandleStick
+        s.bus          = bus
+        s.portfolio    = portfolio
         s.registry     = Registry(setup, bus=s.bus)
         s.aggregator   = Aggregator(3600, bus=s.bus)
         s.stick        = CandleStick(3600, bus=s.bus)
 
+        s.init_bar = max(scope1, scope2, macd_scope, rsi_period)
+        s.message = message
+        s.pair    = pair
         # Indicators
         s.wma1 = WMA(s.stick.o, scope1)
         s.wma2 = WMA(s.stick.o, scope2)
@@ -60,6 +70,12 @@ class DummyStrat(NewStrategy):
         s.rsi_upperthresh = rsi_upperthresh
         s.rsi_thresh      = rsi_thresh
 
+        # Flags
+        s.rsi_sell_flag = False
+        s.rsi_signal = False
+
+        # Trade-related flags
+        s.sell_amount = None
 
     @source('signal')
     def emitSignal(s, signalName, boolean):
@@ -91,154 +107,111 @@ class DummyStrat(NewStrategy):
         except:
             pass
 
-    #@on('registry:execute')
-    #def signifyDLC(s, data):
-    #    if data[0] == 'dlc':
-    #        # emit dlc signal
-    #        try:
-    #            if float(s.macd_val) > 0 and float(s.macd_diff) > 0:
-    #                s.emitSignal('dlc', True)
-    #                s.emitTriggered('dlc')
-    #            else:
-    #                s.emitSignal('dlc', False)
-    #                s.emitTriggered('dlc')
-    #        except:
-    #            pass
+    # This function uses flags instead of signals1 - conventional way
+    def signifyRSI(s):
+        # only updates signal
+        try:
+            if s.rsi > s.rsi_upperthresh:
+                s.rsi_sell_flag = True
+                s.rsi_signal = True
+            elif s.rsi > 50:
+                s.rsi_signal = True
+
+            if s.rsi_sell_flag and s.rsi < 50:
+                s.rsi_signal = False
+            if s.rsi < s.rsi_thresh:
+                s.rsi_sell_flag = False
+                s.rsi_signal = False
+        except:
+            pass
+
+    def signifyDLC(s):
+        try:
+            if float(s.macd_value) > 0 and float(s.macd_diff) > 0:
+                # emit signal for entry
+                s.emitSignal('dlc', True)
+            else:
+                # emit signal for entry
+                s.emitSignal('dlc', False)
+            s.emitTriggered('dlc')
+        except:
+            pass
 
     ## issue on retrieving past Timeseries data
-    #@on('registry:execute')
     #def signifyDIDO(s, data):
-    #    if data[0] == 'dido':
-    #        # emit dlc signal
-    #        someConditionToBeImplemented = True
-    #        try:
-    #            if someConditionToBeImplemented:
-    #                s.emitSignal('dido', True)
-    #                s.emitTriggered('dido')
-    #            else:
-    #                s.emitSignal('dido', False)
-    #                s.emitTriggered('dido')
-    #        except:
-    #            pass
+    #    # emit dlc signal
+    #    someConditionToBeImplemented = True
+    #    try:
+    #        if someConditionToBeImplemented:
+    #            s.emitSignal('dido', True)
+    #            s.emitTriggered('dido')
+    #        else:
+    #            s.emitSignal('dido', False)
+    #            s.emitTriggered('dido')
+    #    except:
+    #        pass
 
     def signifySingularity(s):
         try:
             if (s.rsi_diff > s.reaper.upperband):
-                print(s.rsi_diff, s.reaper.upperband, s.registry.num_bars)
-                s.emitSignal('singular', True)
-                s.emitTriggered('singular')
-            else:
                 s.emitSignal('singular', False)
                 s.emitTriggered('singular')
-        except:
-            pass
-
-    def signifyRSISellFlag(s):
-    # whenexec = 'open'; triggerConstraint: [['once'], {}]
-        try:
-            if s.rsi > s.rsi_upperthresh:
-                print('fuck!!!!!!!!!!!', s.rsi, s.registry.num_bars)
-                s.emitTriggered('RSISellFlag')
             else:
-                pass
+                s.emitSignal('singular', True)
+                s.emitTriggered('singular')
         except:
             pass
 
-    def signifyRSIBelowThresh(s):
-    # whenexec = 'open'; triggerConstraint: [['once'], {}]
-        try:
-            if s.rsi < s.rsi_thresh:
-                s.emitSignal('belowRSIthresh', True)
-                s.emitSignal('RSISellFlag', False)
-                s.emitTriggered('belowRSIthresh')
-            else:
-                s.emitSignal('belowRSIthresh', False)
-        except:
-            pass
+    def enter(s):
+    # execute only when RSI, DLC signal returns True and not screened
+        print(s.hasCash, s.hasBalance)
+        if s.hasCash and not s.hasBalance and s.rsi_signal:
+            print('buying?', s.maxBuyAmount(s.registry.current_price), s.registry.num_bars)
+            s.buy(s.maxBuyAmount(s.registry.current_price))
+            s.sell_amount = s.maxSellAmount * 0.3
+            print('Sell amount: {}'.format(s.sell_amount))
+            s.emitTriggered('enter')
+        print(s.maxBuyAmount(s.registry.current_price))
 
-    def signifyRSIAbove50F(s):
-    # whenexec = 'open'; triggerConstraint: [['once per bar'], {'once per signal:
-    # ['RSISellFlag']}, x]
-        try:
-            if s.rsi > 50:
-                s.emitSignal('aboveRSI50F', True)
-            elif s.rsi < 50:
-                s.emitSignal('aboveRSI50F', False)
-                s.emitSignal('RSISellFlag', False)
-            s.emitTriggered('aboveRSI50F')
-        except:
-            pass
+    def buy(s):
+        print(s.registry.num_bars)
+        s.bought = True
 
-    def signifyRSIAbove50NF(s):
-        try:
-            if s.rsi > 50:
-                s.emitSignal('aboveRSI50NF', True)
-            elif s.rsi < 50:
-                s.emitSignal('aboveRSI50NF', False)
-            s.emitTriggered('aboveRSI50NF')
-        except:
-            pass
+    def sell(s)L
+        print(s.registry.num_bars)
+        s.sold = True
 
 
-    #@on('registry:execute')
-    #def screenRSIDiff(s, data):
-    #    if data[0] == 'rsi_diff':
-    #        try:
-    #            if float(s.rsi_diff) > float(s.reaper.upperband):
-    #                s.emitSignal('singular', True)
-    #                s.emitTriggered('singular')
-    #            else:
-    #                s.emitSignal('singular', False)
-    #                s.emitTriggered('singular')
-    #        except:
-    #            pass
+    def exit(s):
+    # execute via normal rsi exits
+        if not s.rsi_signal and s.hasBalance:
+            print('selling?', s.registry.num_bars)
+            s.marketSell(s.maxSellAmount)
+            s.emitTriggered('exit')
 
-    #@on('registry:execute')
-    #def marketBuy(s, data):
-    #    # execute only when RSI, DLC signal returns True and not screened
-    #    if data[0] == 'marketBuy':
-    #        try:
-    #            if s.hasCash and not s.hasBalance:
-    #                s.marketBuy(s.maxBuyAmount)
-    #                s.sell_amount = s.maxSellAmount * 0.3
-    #                s.emitTriggered('marketBuy')
-    #        except:
-    #            pass
+    #def dido_scale(s):
+    ## execute scale off, max 3 + 1 times per trade, 30% each time
+    #    if s.maxSellAmount > s.sell_amount:
+    #        s.marketScaleOut(s.sell_amount)
+    #    else:
+    #        s.marketScaleOut(s.maxSellAmount * 0.999)
+    #    s.emitTriggered('dido_scale')
 
-    #@on('registry:exectue')
-    #def exit(s, data):
-    #    # execute via normal rsi exits
-    #    if data[0] == 'exit':
-    #        s.marketSell(s.maxSellAmount)
-    #        logger.signal('Sell: Exit')
-    #        s.emitTriggered('exit')
-
-    #@on('registry:execute')
-    #def dido_scale(s, data):
-    #    # execute scale off, max 3 + 1 times per trade, 30% each time
-    #    if data[0] == 'dido_scale':
-    #        if s.maxSellAmount > s.sell_amount:
-    #            s.marketScaleOut(s.sell_amount)
-    #        else:
-    #            s.marketScaleOut(s.maxSellAmount * 0.999)
-    #        s.emitTriggered('dido_scale')
-
-    #@on('registry:execute')
-    #def singular_scale(s, data):
-    #    # execute singular scale off, max 3 + 1 times per trade, 30% each time
-    #    if data[0] == 'singular_scale':
-    #        if s.maxSellAmount > s.sell_amount:
-    #            s.marketScaleOut(s.sell_amount)
-    #        else:
-    #            s.marketScaleOut(s.maxSellAmount * 0.999)
-    #        s.emitTriggered('singular_scale')
+    #def singular_scale(s):
+    ## execute singular scale off, max 3 + 1 times per trade, 30% each time
+    #    if s.maxSellAmount > s.sell_amount:
+    #        s.marketScaleOut(s.sell_amount)
+    #    else:
+    #        s.marketScaleOut(s.maxSellAmount * 0.999)
+    #    s.emitTriggered('singular_scale')
 
 if __name__ == '__main__':
-    from cryptle.backtest import backtest_tick, Backtest, PaperExchange
+    from cryptle.backtest import backtest_tick, Backtest
+    from cryptle.exchange.paper import Paper
     from cryptle.strategy import Portfolio
     from cryptle.plotting import *
     from cryptle.event import source, on, Bus
-    from cryptle.loglevel import *
+    from cryptle.logging import *
 
     fh = logging.FileHandler('dummy.log', mode='w')
     fh.setLevel(logging.TICK)
@@ -266,20 +239,19 @@ if __name__ == '__main__':
     dataset = 'btc01.log'
 
     pair = 'btcusd'
-    asset = 'usd'
-    base_currency = 'BTCUSD'
-    port = Portfolio(10000)
-    exchange = PaperExchange(commission=0.0013, slippage=0)
+    asset = 'btc'
+    base_currency = 'usd'
+    port = Portfolio(cash=10000, base_currency=base_currency)
+    exchange = Paper(0, commission=0.0013, slippage=0)
     bus = Bus()
 
-    strat = DummyStrat(portfolio=port, exchange=exchange, bus=bus, asset=asset,
-            base_currency=base_currency, pair=pair)
+    strat = DummyStrat(port, asset=asset, exchange=exchange, bus=bus, pair=pair)
     bus.bind(strat)
     #for i, item in bus._callbacks.items():
     #    print(i, item)
     backtest_tick(strat, dataset, bus=bus, pair=pair, portfolio=port, exchange=exchange, callback=record_indicators)
 
-    logger.report('Equity:  %.2f' % port.equity)
+    logger.report('Equity:  %.2f' % port.equity({'btc': strat.registry.current_price}))
     logger.report('Cash:    %.2f' % port.cash)
     logger.report('Asset:   %s' % str(port.balance))
     logger.report('No. of trades;   %d' % len(strat.trades))
