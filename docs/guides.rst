@@ -66,6 +66,8 @@ recommended method for using limit orders is with the event bus. This way the
 order tracking boilerplate code can be delegated to the framework.
 
 
+.. _strategy:
+
 Strategy
 --------
 In Cryptle, all concrete implementations of strategies must inherit from the
@@ -134,12 +136,6 @@ reference documentation.
    Furthermore, Django is a great framework to for more `examples
    <https://docs.djangoproject.com/en/2.0/topics/class-based-views/mixins/>`_
    of mixins.
-
-
-Backtesting and Paper Trading
------------------------------
-The module :mod:`~cryptle.backtest` and class :class:`~cryptle.exchange.paper.Paper`
-is the heart and soul of backtesting in Cryptle.
 
 
 Event Bus
@@ -320,7 +316,11 @@ binding a function to listen for multiple events.
 
 Standard Events
 ---------------
-Todo.
+- ``trades(price, timestamp, volume, type)`` new trade market event
+- ``candles(open, high, low, close, volume, timestamp)`` new candlesticks
+- ``minute(now)`` a minute passed
+- ``hour(now)`` an hour passed
+- ``day(now)`` a day passed
 
 
 .. _registry_ref:
