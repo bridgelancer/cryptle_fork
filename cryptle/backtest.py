@@ -1,13 +1,29 @@
 # @Incomplete data format is hardwired for bitstamp (or are we?)
 # @Incomplete candle formatted data is not properly implemented
 
-from .strategy import Portfolio
+from .strategy import Portfolio, Strategy
 from .event import source, Bus
 
 import json
 import csv
 import logging
 logger = logging.getLogger(__name__)
+
+
+def backtest_with_bus(strat, dataset, dtype, *bindables, bus=None):
+    """Convenience function for backtesting trade data with an event bus."""
+    data_iterator = DataEmitter(dtype)
+
+    if bus is None:
+        bus = Bus()
+
+    for bindable in bindables:
+        bus.bind(bindable)
+
+    bus.bind(strat)
+    bus.bind(data_iterator)
+
+    data_iterator.emitAll(dataset)
 
 
 def backtest_tick(strat, dataset, bus=None, pair=None, portfolio=None, exchange=None,
@@ -74,6 +90,39 @@ def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
     test = Backtest(exchange)
     test.read(dataset)
     test.runCandle(strat, callback)
+
+
+class DataEmitter:
+    """Emitter that iterate over provided datasets and broadcast row by row.
+
+    Attribute
+    ---------
+    dtype : str
+        The expected financial data type of. Must be set before :meth:`emitAll()` is called.
+    """
+    def __init__(self, dtype):
+        self.dtype = dtype
+
+    def emitAll(self, dataset):
+        if not self.dtype:
+            raise ValueError('Expect emitter data type to be set')
+
+        if self.dtype == 'candle':
+            for data in dataset:
+                self.emitCandle(data)
+        elif self.dtype == 'trade':
+            for data in dataset:
+                self.emitTrade(data)
+        else:
+            raise TypeError('Unrecognized data type')
+
+    @source('candles')
+    def emitCandle(self, data):
+        return data
+
+    @source('trades')
+    def emitTick(self, data):
+        return data
 
 
 class Backtest:

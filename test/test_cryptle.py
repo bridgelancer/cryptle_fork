@@ -1,21 +1,16 @@
 import sys
-
 import logging
 
-from cryptle.strategy import Portfolio, Strategy, EventOrderMixin
+import pytest
+
 import cryptle.logging
+import test.utils as utils
+from cryptle.backtest import DataEmitter, backtest_with_bus
+from cryptle.strategy import Portfolio, Strategy, EventOrderMixin
 
 
-class DummyStrat(Strategy):
-    def __init__(s, **kws):
-        s.indicators = {}
-        super().__init__(**kws)
-
-    def generateSignal(s, price, ts, volume, action):
-        pass
-
-    def execute(s, ts):
-        pass
+sample_trades = utils.get_sample_trades()
+sample_candles = utils.get_sample_candles()
 
 
 def test_portfolio_constructor():
@@ -53,9 +48,22 @@ def test_strategy_base():
     assert strat.exchange is None
 
 
-def test_extended_strategy():
+def test_strategy_mixin_mro():
     class Strat(EventOrderMixin, Strategy):
         pass
 
     strat = Strat()
+
+    # unbound methods
+    assert Strat.__init__ is Strategy.__init__
+
+    # bound methods
+    assert strat.__init__.__func__ is Strategy.__init__
     assert strat.marketBuy.__func__ is EventOrderMixin.marketBuy
+
+
+def test_backtest_helpers():
+    strat = Strategy()
+
+    with pytest.raises(ValueError):
+        backtest_with_bus(strat, sample_trades, 'trade')
