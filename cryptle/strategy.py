@@ -163,12 +163,22 @@ class Strategy:
     def pushTrade(self, pair, price, timestamp, volume, action):
         """Input tick data."""
         logger.tick('Received tick of {}', pair)
-        self.onTrade(pair, price, timestamp, volume, action)
+
+        meth = 'onTrade'
+        if meth in self.__dict__:
+            self.onTrade(pair, price, timestamp, volume, action)
+        else:
+            raise AttributeError('Expected implementation of %s()' % meth)
 
     def pushCandle(self, pair, op, cl, hi, lo, ts, vol):
         """Input candlestick data."""
         logger.tick('Received candle of {}', pair)
-        self.onCandle(pair, op, cl, hi, lo, ts, vol)
+
+        meth = 'onCandle'
+        if meth in self.__dict__:
+            self.onCandle(pair, op, cl, hi, lo, ts, vol)
+        else:
+            raise AttributeError('Expected implementation of %s()' % meth)
 
     # [ Helpers to access portfolio object ]
     def hasCash(self):

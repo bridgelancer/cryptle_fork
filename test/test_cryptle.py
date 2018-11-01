@@ -5,7 +5,7 @@ import pytest
 
 import cryptle.logging
 import test.utils as utils
-from cryptle.backtest import DataEmitter, backtest_with_bus
+from cryptle.backtest import DataEmitter, backtest_tick, backtest_with_bus
 from cryptle.strategy import Portfolio, Strategy, EventOrderMixin
 
 
@@ -63,7 +63,14 @@ def test_strategy_mixin_mro():
 
 
 def test_backtest_helpers():
-    strat = Strategy()
 
+    # strategy has no marked methods for binding, bus raise
+    strat = Strategy()
     with pytest.raises(ValueError):
         backtest_with_bus(strat, sample_trades, 'trade')
+
+    # base strategy raises from lack of callback implementations
+    # create an instance of temporary type from oneline
+    strat = type('QuickStrat', (EventOrderMixin, Strategy), {})()
+    with pytest.raises(AttributeError):
+        backtest_tick(strat, sample_trades)
