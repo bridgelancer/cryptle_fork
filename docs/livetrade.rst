@@ -2,29 +2,26 @@
 
 Livetrade
 =========
-This page is a 5 minute tutorial of livetrading with Cryptle. You will be
-accompanied by step-by-step explanation of the examples, with a polished
-script at the end.
+This page is a continuation of the :doc:`backtesting <quickstart>` tutorial.
+The previous guide left you off with a strategy that has been backtested and has
+shown promising returns. If you haven't yet seen the backtesting tutorial, it
+goes through several key components in the Cryptle that will be skipped in this
+document, So please first go through that if you're not familiar with the
+framework.
 
-Say one day you have the ingenious idea of buying BTC whenever it goes over
-$200 and selling it whenever it's above $400. Let's put that to action with
-code:::
-
-    def winning_strategy(self, price):
-        if price > 200:
-            # buy
-        if price < 400:
-            # sell
-
-Now that's you have this killer strategy, you just need to hook it up to the
-exchange for streamed real time data and to place buy/sell orders.
+Now that you have the killer strategy that's been proven to work by historical
+data, you just need to hook it up to streamed live-data and to an exchange for
+placing buy/sell orders.
 
 
-Stream live data
+Streaming live-data
 ----------------
-Cryptle framework to the rescue. Let us start with the importing a data source:::
+Cryptle provides a number of data sources out of the box, most of which are
+cryptocurrency market data. Let us start with an example using the bitstamp
+exchange data source:::
 
     from cryptle.datafeed import Bitstamp as Feed
+
     feed = Feed()
     feed.connect()
     feed.on('trades:btcusd', winning_strategy)
@@ -38,7 +35,7 @@ Here's what we've done:
    the :code:`trades:btcusd` event.
 
 
-Place orders
+Placing orders
 ------------
 The next thing to do is actually send our orders to an exchange:::
 
@@ -59,7 +56,7 @@ The number calls to `bind()` is starting to fill most of the code. We've also
 used global variables to keep track of our portfolio. Lets refactor all of this
 and bundle the strategy into a class:::
 
-    class Strat(StrateMixin):
+    class Strat(Strategy):
         def __init__(self):
             # todo
 
