@@ -26,7 +26,7 @@ strategy, Cryptle can only help strategies that are written as a
             # ... same as  above
 
 
-Another core mechanicism in Cryptle is the :ref:`Event Bus <event>`.
+Another core mechanicism in Cryptle is the :ref:`Event Bus <events>`.
 
 Helper functions
 ----------------

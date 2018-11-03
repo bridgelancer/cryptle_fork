@@ -15,7 +15,7 @@ placing buy/sell orders.
 
 
 Streaming live-data
-----------------
+-------------------
 Cryptle provides a number of data sources out of the box, most of which are
 cryptocurrency market data. Let us start with an example using the bitstamp
 exchange data source:::
@@ -36,7 +36,7 @@ Here's what we've done:
 
 
 Placing orders
-------------
+--------------
 The next thing to do is actually send our orders to an exchange:::
 
     from cryptle.exchange import Bitstamp

@@ -147,8 +147,8 @@ class Strategy:
 
         This callback handles candlestick data.
 
-    Attribute
-    ---------
+    Attributes
+    ----------
     portfolio : :class:`Portfolio`
         A portfolio object that a strategy instance owns and manges.
     exchange : :class:`~cryptle.exchange.Exchange`
@@ -281,8 +281,8 @@ class SingleAssetStrat(Strategy):
     asset: str
         The traded asset.
 
-    Attribute
-    ---------
+    Attributes
+    ----------
     asset : str
         The traded asset of this strategy
     equity_at_risk : float

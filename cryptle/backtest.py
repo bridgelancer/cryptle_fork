@@ -95,8 +95,8 @@ def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
 class DataEmitter:
     """Emitter that iterate over provided datasets and broadcast row by row.
 
-    Attribute
-    ---------
+    Attributes
+    ----------
     dtype : str
         The expected financial data type of. Must be set before :meth:`emitAll()` is called.
     """
