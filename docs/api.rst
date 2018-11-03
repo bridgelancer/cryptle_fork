@@ -18,7 +18,11 @@ Strategy
       :members:
       :undoc-members:
 
-   .. autoclass:: SingleAssetStrat
+   .. autoclass:: TradingStrategy
+      :members:
+      :undoc-members:
+
+   .. autoclass:: SingleAssetStrategy
       :members:
       :undoc-members:
 

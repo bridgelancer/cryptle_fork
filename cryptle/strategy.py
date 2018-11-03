@@ -118,7 +118,7 @@ class Portfolio:
 
 
 class Strategy:
-    """Abstract base class of strategies.
+    """Abstract base class of all strategies.
 
     All strategy implementations should inherit from :class:`~cryptle.strategy.Strategy`. This base
     class provide common configurations and utilities for strategies.
@@ -166,15 +166,11 @@ class Strategy:
     ----------
     portfolio : :class:`Portfolio`
         A portfolio object that a strategy instance owns and manges.
-    exchange : :class:`~cryptle.exchange.Exchange`
-        The exchange that will be used to place orders from the strategy.
 
     """
 
     def __init__(self):
         self.portfolio = Portfolio()
-        self.equity_at_risk = 0.1
-        self.exchange = None
 
     @property
     def base(self):
@@ -204,8 +200,34 @@ class Strategy:
         """Return a boolean on whether the strategy has available cash."""
         return self.portfolio.cash > 0
 
+
+class ExchangeError(Exception):
+    pass
+
+
+class TradingStrategy(Strategy):
+    """Base class for strategies that will directly place orders at exchanges.
+
+    Args
+    ----
+    exchange : :class:`~cryptle.exchange.Exchange`
+        The exchange that will be used to place orders from the strategy.
+
+    Attributes
+    ----------
+    exchange : :class:`~cryptle.exchange.Exchange`
+        The exchange that will be used to place orders from the strategy.
+    equity_at_risk : float
+        Maximum fraction of total captial that can be used in any 1 trade.
+
+    """
+
+    def __init__(self, exchange):
+        Strategy.__init__(self)
+        self.exchange = exchange
+        self.equity_at_risk = 0.1
+
     # [ Helpers to access exchange ]
-    # Todo: fix the function signature for the exchange interface
     def marketBuy(self, asset, amount):
         """Send market buy request to associated exchange"""
         if amount <= 0:
@@ -217,8 +239,7 @@ class Strategy:
         if success:
             self._cleanupBuy(asset, price, amount)
         else:
-            # Todo: Use custom exception
-            raise Exception('Order placement failed')
+            raise ExchangeError('Order placement failed')
 
     def marketSell(self, asset, amount):
         """Send market sell request to associated exchange"""
@@ -231,8 +252,7 @@ class Strategy:
         if success:
             self._cleanupSell(asset, price)
         else:
-            # Todo: Use custom exception
-            raise Exception('Order placement failed')
+            raise ExchangeError('Order placement failed')
 
     def limitBuy(self, asset, amount, price):
         """Send limit buy request to associated exchange"""
@@ -247,8 +267,7 @@ class Strategy:
         if success:
             return oid
         else:
-            # Todo: Use custom exception
-            raise Exception('Order placement failed')
+            raise ExchangeError('Order placement failed')
 
     def limitSell(self, asset, amount, price):
         """Send market buy request to associated exchange"""
@@ -263,8 +282,7 @@ class Strategy:
         if success:
             return oid
         else:
-            # Todo: Use custom exception
-            raise Exception('Order placement failed')
+            raise ExchangeError('Order placement failed')
 
     def _cleanupBuy(self, asset, price, amount):
         self.portfolio.bought(asset, price, amount)
@@ -289,7 +307,7 @@ class Strategy:
         )
 
 
-class SingleAssetStrat(Strategy):
+class SingleAssetStrategy(TradingStrategy):
     """A strategy that only trades a single asset against the base currency.
 
     Overrides the buy sell methods to supply the same asset as argument
@@ -297,7 +315,9 @@ class SingleAssetStrat(Strategy):
 
     Args
     ----
-    asset: str
+    exchange : :class:`~cryptle.exchange.Exchange`
+        The exchange that will be used to place orders from the strategy.
+    asset : str
         The traded asset.
 
     Attributes
@@ -314,11 +334,9 @@ class SingleAssetStrat(Strategy):
 
     """
 
-    def __init__(self, asset, base_currency='usd'):
-        super().__init__()
+    def __init__(self, exchange, asset):
+        TradingStrategy.__init__(self, exchange)
         self.asset = asset
-        self.base_currency = base_currency
-        self.portfolio.base_currency = base_currency
 
     def pushTrade(self, price, timestamp, volume, action):
         try:
@@ -334,7 +352,6 @@ class SingleAssetStrat(Strategy):
         except AttributeError:
             raise AttributeError('Expected implementation of onCandle()')
 
-    # Todo: fix the function signature for the exchange interface
     def marketBuy(self, amount):
         """Wrapper over the base Strategy.marketBuy() for single asset."""
         super().marketBuy(self.asset, amount)
