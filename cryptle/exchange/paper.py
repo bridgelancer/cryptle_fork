@@ -24,7 +24,7 @@ from .exception import ExchangeError, OrderError
 
 
 # Module logger
-_LOG = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 # Type alias for compound return type in orderbook
@@ -332,8 +332,8 @@ class Paper:
         self.capital -= amount * exec_price
         pair = encode_pair(asset, base)
 
-        _LOG.info('Market buy {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
-        _LOG.info('Paid {:.5} commission', self._last_price * self.commission)
+        logger.info('Market buy {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
+        logger.info('Paid {:.5} commission', self._last_price * self.commission)
 
         # Order placement always succeeds
         return True, self._last_price
@@ -343,8 +343,8 @@ class Paper:
         self.capital += amount * exec_price
         pair = encode_pair(asset, base)
 
-        _LOG.info('Market sell {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
-        _LOG.info('Paid {:.5} commission', self._last_price * self.commission)
+        logger.info('Market sell {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
+        logger.info('Paid {:.5} commission', self._last_price * self.commission)
 
         # Order placement always succeeds
         return True, self._last_price
@@ -354,8 +354,8 @@ class Paper:
         self.capital -= amount * exec_price
         pair = encode_pair(asset, base)
 
-        _LOG.info('Limit buy {:7.5} {} ${:.5}', amount, pair.upper(), price)
-        _LOG.info('Paid {:.5} commission', price * self.commission)
+        logger.info('Limit buy {:7.5} {} ${:.5}', amount, pair.upper(), price)
+        logger.info('Paid {:.5} commission', price * self.commission)
 
         # Order placement always succeeds
         return True, self._orderbooks[pair].create_bid(amount, price)
@@ -365,8 +365,8 @@ class Paper:
         self.capital += amount * exec_price
         pair = encode_pair(asset, base)
 
-        _LOG.info('Limit sell {:7.5} {} ${:.5}', amount, pair.upper(), price)
-        _LOG.info('Paid {:.5} commission', price * self.commission)
+        logger.info('Limit sell {:7.5} {} ${:.5}', amount, pair.upper(), price)
+        logger.info('Paid {:.5} commission', price * self.commission)
 
         # Order placement always succeeds
         return True, self._orderbooks[pair].create_ask(amount, price)

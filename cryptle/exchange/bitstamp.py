@@ -11,7 +11,7 @@ from cryptle.event import source, on
 from .exception import ExchangeError, OrderError
 
 
-_LOG = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _log_http_error(res):
@@ -30,7 +30,7 @@ def _log_http_error(res):
     else:
         msg = '{} Error'.format(code)
 
-    _LOG.error(msg + '\n' + res.text)
+    logger.error(msg + '\n' + res.text)
 
 
 def encode_pair(asset, base_currency):
@@ -103,7 +103,7 @@ class Bitstamp:
         res = self._private('/balance/' + encode_pair(asset, base_currency))
 
         if self.hasBitstampError(res):
-            _LOG.error('Balance request failed')
+            logger.error('Balance request failed')
             raise ExchangeError
 
         return decode_balance(res)
@@ -112,7 +112,7 @@ class Bitstamp:
         res = self._private('/order_status/', params={'id': order_id})
 
         if self.hasBitstampError(res):
-            _LOG.error('Open orders request failed')
+            logger.error('Open orders request failed')
             raise ExchangeError
 
         return res
@@ -121,7 +121,7 @@ class Bitstamp:
         res = self._private('/open_orders/' + encode_pair(asset, base_currency))
 
         if self.hasBitstampError(res):
-            _LOG.error('Open orders request failed')
+            logger.error('Open orders request failed')
             raise ExchangeError
 
         return res
@@ -161,7 +161,7 @@ class Bitstamp:
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
-            _LOG.error('Market buy {} failed: {}', asset.upper(), res['reason'])
+            logger.error('Market buy {} failed: {}', asset.upper(), res['reason'])
             raise OrderError
 
         res['timestamp'] = now()
@@ -187,7 +187,7 @@ class Bitstamp:
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
-            _LOG.error('Market sell {} failed: {}', asset.upper(), res['reason'])
+            logger.error('Market sell {} failed: {}', asset.upper(), res['reason'])
             raise OrderError
 
         res['timestamp'] = now()
@@ -219,7 +219,7 @@ class Bitstamp:
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
-            _LOG.error('Limit buy {} failed: {}', asset.upper(), res['reason'])
+            logger.error('Limit buy {} failed: {}', asset.upper(), res['reason'])
             raise OrderError
 
         res['timestamp'] = now()
@@ -252,7 +252,7 @@ class Bitstamp:
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
 
         if self.hasBitstampError(res):
-            _LOG.error('Limit sell {} failed: {}', asset.upper(), res['reason'])
+            logger.error('Limit sell {} failed: {}', asset.upper(), res['reason'])
             raise OrderError
 
         res['timestamp'] = now()
@@ -292,7 +292,7 @@ class Bitstamp:
 
         url = self.url + endpoint
 
-        _LOG.debug('Sending GET request: {}', url)
+        logger.debug('Sending GET request: {}', url)
         res = req.get(url)
 
         if res.status_code // 100 != 2:
@@ -308,7 +308,7 @@ class Bitstamp:
         params.update(self._authParams())
         url = self.url + endpoint
 
-        _LOG.debug('Sending POST request: {}', url)
+        logger.debug('Sending POST request: {}', url)
         res = req.post(url, params)
 
         if res.status_code // 100 != 2:
