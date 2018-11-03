@@ -157,6 +157,7 @@ class Strategy:
 
     def __init__(self):
         self.portfolio = Portfolio()
+        self.equity_at_risk = 0.1
         self.exchange = None
 
     # [ Data input interface ]
@@ -164,21 +165,19 @@ class Strategy:
         """Input tick data."""
         logger.tick('Received tick of {}', pair)
 
-        meth = 'onTrade'
-        if meth in self.__dict__:
+        try:
             self.onTrade(pair, price, timestamp, volume, action)
-        else:
-            raise AttributeError('Expected implementation of %s()' % meth)
+        except AttributeError:
+            raise AttributeError('Expected implementation of onTrade()')
 
     def pushCandle(self, pair, op, cl, hi, lo, ts, vol):
         """Input candlestick data."""
         logger.tick('Received candle of {}', pair)
 
-        meth = 'onCandle'
-        if meth in self.__dict__:
+        try:
             self.onCandle(pair, op, cl, hi, lo, ts, vol)
-        else:
-            raise AttributeError('Expected implementation of %s()' % meth)
+        except AttributeError:
+            raise AttributeError('Expected implementation of onCandle()')
 
     # [ Helpers to access portfolio object ]
     def hasCash(self):
@@ -296,10 +295,25 @@ class SingleAssetStrat(Strategy):
 
     """
 
-    def __init__(self, asset):
+    def __init__(self, asset, base_currency='usd'):
         super().__init__()
         self.asset = asset
-        self.equity_at_risk = 0.1
+        self.base_currency = base_currency
+        self.portfolio.base_currency = base_currency
+
+    def pushTrade(self, price, timestamp, volume, action):
+        try:
+            self.onTrade(price, timestamp, volume, action)
+        except AttributeError:
+            raise AttributeError('Expected implementation of onTrade()')
+
+    def pushCandle(self, op, cl, hi, lo, ts, vol):
+        # todo: input validation
+
+        try:
+            self.onCandle(op, cl, hi, lo, ts, vol)
+        except AttributeError:
+            raise AttributeError('Expected implementation of onCandle()')
 
     # Todo: fix the function signature for the exchange interface
     def marketBuy(self, amount):
