@@ -56,6 +56,16 @@ logging.Logger.metric = _metric
 logging.Logger.tick   = _tick
 
 
+# Monkey patch LogRecord.getMessage() method in logging module
+def _logrecord_getmessage_fix(self):
+    msg = str(self.msg)
+    if self.args:
+        msg = msg.format(*self.args)
+    return msg
+
+logging.LogRecord.getMessage = _logrecord_getmessage_fix
+
+
 class DebugFormatter(logging.Formatter):
     """Create detailed and machine parsable log messages."""
     fmt = '{asctime}:{levelname}:{filename}:{lineno}:{message}'
@@ -106,7 +116,8 @@ class ColorFormatter(logging.Formatter):
         record.levelname = '[' + record.levelname + ']'
         return record
 
-    def _format_name(self, record):
+    @staticmethod
+    def _format_name(record):
         record.name = record.name.capitalize()
         return record
 
