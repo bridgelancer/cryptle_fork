@@ -140,12 +140,27 @@ class Strategy:
 
     .. py:method:: onTrade(pair, price, timestamp, volumn, action)
 
-        This callback handles trade data in the form of price and timestamp. *action* is a boolean
+        This callback handles trade data in the form of price and timestamp.
         on whether this trade was a buy or sell.
+
+        :param str pair: A str code traded pair
+        :param float price: Traded price
+        :param int timestamp: UNIX timestamp
+        :param float volumn: Traded amount
+        :param bool action: 0 (buy), 1 (sell)
 
     .. py:method:: onCandle(pair, open, close, high, low, timestamp, volumn)
 
         This callback handles candlestick data.
+
+        :param str pair: A str code traded pair
+        :param float open: Open price
+        :param float high: High price
+        :param float low: Low price
+        :param float close: Close price
+        :param float open: Open price
+        :param int timestamp: UNIX timestamp
+        :param float volumn: Total traded amount
 
     Attributes
     ----------
@@ -153,12 +168,17 @@ class Strategy:
         A portfolio object that a strategy instance owns and manges.
     exchange : :class:`~cryptle.exchange.Exchange`
         The exchange that will be used to place orders from the strategy.
+
     """
 
     def __init__(self):
         self.portfolio = Portfolio()
         self.equity_at_risk = 0.1
         self.exchange = None
+
+    @property
+    def base(self):
+        return self.portfolio.base_currency
 
     # [ Data input interface ]
     def pushTrade(self, pair, price, timestamp, volume, action):
@@ -192,8 +212,13 @@ class Strategy:
             raise ValueError("Expect positive value for amount.")
 
         logger.debug('Placing market buy for {:.6g} {}', amount, asset)
-        res = self.exchange.marketBuy(asset, amount)
-        self._cleanupBuy(asset, res)
+        success, price = self.exchange.marketBuy(asset, self.base, amount)
+
+        if success:
+            self._cleanupBuy(asset, price, amount)
+        else:
+            # Todo: Use custom exception
+            raise Exception('Order placement failed')
 
     def marketSell(self, asset, amount):
         """Send market sell request to associated exchange"""
@@ -201,8 +226,13 @@ class Strategy:
             raise ValueError("Expect positive value for amount.")
 
         logger.debug('Placing market sell for {:.6g} {}', amount, asset)
-        res = self.exchange.marketSell(asset, amount)
-        self._cleanupSell(asset, res)
+        success, price = self.exchange.marketSell(asset, self.base, amount)
+
+        if success:
+            self._cleanupSell(asset, price)
+        else:
+            # Todo: Use custom exception
+            raise Exception('Order placement failed')
 
     def limitBuy(self, asset, amount, price):
         """Send limit buy request to associated exchange"""
@@ -212,8 +242,13 @@ class Strategy:
             raise ValueError("Expect positive value for price.")
 
         logger.debug('Placing limit buy for {:.6g} {} @${:.6g}', amount, asset, price)
-        res = self.exchange.limitBuy(asset, amount, price)
-        self._cleanupBuy(asset, res)
+        success, oid = self.exchange.limitBuy(asset, self.base, amount, price)
+
+        if success:
+            return oid
+        else:
+            # Todo: Use custom exception
+            raise Exception('Order placement failed')
 
     def limitSell(self, asset, amount, price):
         """Send market buy request to associated exchange"""
@@ -223,50 +258,34 @@ class Strategy:
             raise ValueError("Expect positive value for price.")
 
         logger.debug('Placing limit sell for {:.6g} {} @${:.6g}', amount, asset, price)
-        res = self.exchange.limitSell(asset, amount, price)
-        self._cleanupSell(asset, res)
+        success, oid = self.exchange.limitSell(asset, self.base, amount, price)
 
-    # Reconcile actions made on the exchange with the portfolio
-    def _cleanupBuy(self, asset, res):
-        if res['status'] == 'error':
-            logger.error('Buy failed {}', asset)
-            return
+        if success:
+            return oid
+        else:
+            # Todo: Use custom exception
+            raise Exception('Order placement failed')
 
-        price = float(res['price'])
-        amount = float(res['amount'])
-        timestamp = int(res['timestamp'])
-
-        self.portfolio.deposit(asset, amount, price)
-        self.portfolio.cash -= amount * price
+    def _cleanupBuy(self, asset, price, amount):
+        self.portfolio.bought(asset, price, amount)
         # self.trades.append([timestamp, price])
 
         logger.info(
-            'Bought {:7.6g} {} @${:<7.6g} {:s}',
+            'Bought {:7.6g} {} @${:<7.6g}',
             amount,
             asset,
             price,
-            datetime.fromtimestamp(timestamp)
         )
 
-    def _cleanupSell(self, asset, res):
-        if res['status'] == 'error':
-            logger.error('Sell failed {}', asset)
-            return
-
-        price = float(res['price'])
-        amount = float(res['amount'])
-        timestamp = int(res['timestamp'])
-
-        self.portfolio.withdraw(self.asset, amount)
-        self.portfolio.cash += amount * price
+    def _cleanupSell(self, asset, price, amount):
+        self.portfolio.sold(asset, price, amount)
         # self.trades[-1] += [timestamp, price]
 
         logger.info(
-            'Sold   {:7.6g} {} @${:<7.6g} {:s}',
+            'Sold   {:7.6g} {} @${:<7.6g}',
             amount,
             asset,
             price,
-            datetime.fromtimestamp(timestamp)
         )
 
 
