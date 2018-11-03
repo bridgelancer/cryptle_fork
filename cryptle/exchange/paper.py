@@ -282,8 +282,7 @@ class Paper:
 
         # Each traded pair will have it's own orderbook
         self._orderbooks = defaultdict(Orderbook)  # type: Dict[str, Orderbook]
-        self._last_price = 0
-        self._last_time = 0
+        self._last_price = defaultdict(float)
 
     def __repr__(self):
         return "<{}(capital={})>".format(
@@ -293,8 +292,7 @@ class Paper:
 
     # Todo emit events for each filled order
     def update(self, pair: str, amount: float, price: float, time=None):
-        self._last_time  = time or self._last_time
-        self._last_price = price
+        self._last_price[pair] = price
         book = self._orderbooks[pair]
 
         # use market buy/sell to do this part
@@ -310,8 +308,8 @@ class Paper:
         except IndexError:
             pass
 
-    def update_price(self, pair: str, price: float):
-        raise NotImplementedError
+    def updatePrice(self, pair: str, price: float):
+        self._last_price[pair] = price
 
     def buy(self, asset, base, amount, price=None):
         """Automatically decides whether to use market or limit order."""
@@ -328,31 +326,37 @@ class Paper:
             self.marketSell(asset, base, amount, price)
 
     def marketBuy(self, asset, base, amount):
-        exec_price = self._last_price * (1 + self.commission) * (1 + self.slippage)
-        self.capital -= amount * exec_price
         pair = encode_pair(asset, base)
+        last_price = self._last_price[pair]
+
+        exec_price = last_price * (1 + self.commission) * (1 + self.slippage)
+        self.capital -= amount * exec_price
 
         logger.info('Market buy {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
-        logger.info('Paid {:.5} commission', self._last_price * self.commission)
+        logger.info('Paid {:.5} commission', last_price * self.commission)
 
         # Order placement always succeeds
-        return True, self._last_price
+        return True, last_price
 
     def marketSell(self, asset, base, amount):
-        exec_price = self._last_price * (1 - self.commission) * (1 - self.slippage)
-        self.capital += amount * exec_price
         pair = encode_pair(asset, base)
+        last_price = self._last_price[pair]
+
+        exec_price = last_price * (1 - self.commission) * (1 - self.slippage)
+        self.capital += amount * exec_price
 
         logger.info('Market sell {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
-        logger.info('Paid {:.5} commission', self._last_price * self.commission)
+        logger.info('Paid {:.5} commission', last_price * self.commission)
 
         # Order placement always succeeds
-        return True, self._last_price
+        return True, last_price
 
     def limitBuy(self, asset, base, amount, price):
-        exec_price = self._last_price * (1 + self.commission)
-        self.capital -= amount * exec_price
         pair = encode_pair(asset, base)
+        last_price = self._last_price[pair]
+
+        exec_price = last_price * (1 + self.commission)
+        self.capital -= amount * exec_price
 
         logger.info('Limit buy {:7.5} {} ${:.5}', amount, pair.upper(), price)
         logger.info('Paid {:.5} commission', price * self.commission)
@@ -361,7 +365,10 @@ class Paper:
         return True, self._orderbooks[pair].create_bid(amount, price)
 
     def limitSell(self, asset, base, amount, price):
-        exec_price = self._last_price * (1 - self.commission)
+        pair = encode_pair(asset, base)
+        last_price = self._last_price[pair]
+
+        exec_price = last_price * (1 - self.commission)
         self.capital += amount * exec_price
         pair = encode_pair(asset, base)
 

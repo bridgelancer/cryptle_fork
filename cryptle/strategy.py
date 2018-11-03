@@ -39,6 +39,9 @@ class Portfolio:
 
         self.base_currency = base_currency
 
+    def __repr__(self):
+        return '<{}({})>'.format(self.__class__.__name__, dict(self.balance))
+
     @classmethod
     def from_cash(cls, cash, base_currency='usd'):
         """Alternative constructor."""
@@ -250,7 +253,7 @@ class TradingStrategy(Strategy):
         success, price = self.exchange.marketSell(asset, self.base, amount)
 
         if success:
-            self._cleanupSell(asset, price)
+            self._cleanupSell(asset, amount, price)
         else:
             raise ExchangeError('Order placement failed')
 
@@ -284,8 +287,8 @@ class TradingStrategy(Strategy):
         else:
             raise ExchangeError('Order placement failed')
 
-    def _cleanupBuy(self, asset, price, amount):
-        self.portfolio.bought(asset, price, amount)
+    def _cleanupBuy(self, asset, amount, price):
+        self.portfolio.bought(asset, amount, price)
         # self.trades.append([timestamp, price])
 
         logger.info(
@@ -295,8 +298,8 @@ class TradingStrategy(Strategy):
             price,
         )
 
-    def _cleanupSell(self, asset, price, amount):
-        self.portfolio.sold(asset, price, amount)
+    def _cleanupSell(self, asset, amount, price):
+        self.portfolio.sold(asset, amount, price)
         # self.trades[-1] += [timestamp, price]
 
         logger.info(
