@@ -38,21 +38,22 @@ Datafeed
 
 .. py:class:: cryptle.datafeed.Datafeed
 
-   .. py:method:: connect()
+   .. py:method:: connect() -> None
 
       Starts a thread for a long-polled socket that sends and receives messages.
 
-   .. py:method:: disconnect()
+   .. py:method:: disconnect() -> None
 
       Stops the socket and thread.
 
-   .. py:method:: on(event, callback)
+   .. py:method:: on(event, callback) -> None
 
       Registers callback for provided events. Generally the most used function.
 
-   .. py:attribute:: connected
+   .. py:attribute:: connected -> bool
 
-      Boolean for whether the socket is connected to the data source server.
+      Returns a boolean for whether the socket is connected to the data source
+      server.
 
 
 Exchange
@@ -60,13 +61,37 @@ Exchange
 
 .. py:class:: Exchange
 
-   .. py:method:: marketBuy(amount: float)
+   .. py:method:: marketBuy(asset: str, base: str, amount: float) -> Tuple[bool, price]
 
-   .. py:method:: marketSell(amount: float)
+      Place market buy order. Returns two values, first being the whether the
+      order were successfully placed, second being the average execution price.
 
-   .. py:method:: limitBuy(amount: float, price: float)
+   .. py:method:: marketSell(asset: str, base: str, amount: float) -> Tuple[bool, price]
 
-   .. py:method:: limitSell(amount: float, price: float)
+      Place market sell order. Returns two values, first being the whether the
+      order were successfully placed, second being the average execution price.
+
+   .. py:method:: limitBuy(asset: str, base: str, amount: float, price: float) -> Tuple[bool, int]
+
+      Place limit buy order.
+
+      :param str asset: Asset to be bought.
+      :param str base: Currency used for the buy.
+      :param float amount: Amount of the asset to buy.
+      :param float price: Bid price of the limit buy.
+      :return: Returns two values, first being the whether the order were
+         successfully placed, second being the order id.
+
+   .. py:method:: limitSell(asset: str, base: str, amount: float, price: float) -> Tuple[bool, int]
+
+      Place limit sell order.
+
+      :param str asset: Asset to be sold.
+      :param str base: Currency used for the sell.
+      :param float amount: Amount of the asset to sell.
+      :param float price: Ask price of the limit sell.
+      :return: Returns two values, first being the whether the order were
+         successfully placed, second being the order id.
 
 
 Registry

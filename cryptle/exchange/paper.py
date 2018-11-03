@@ -265,7 +265,7 @@ class Orderbook:
 
 
 class Paper:
-    """Stub for exchange objects. Only supports market/limit orders.
+    """Stub for exchange objects. Supports market/limit orders.
 
     When used with the OO backtest interface, it should be passed to the
     Backtest object such that the market price is updated while the strategy
@@ -330,6 +330,9 @@ class Paper:
         _LOG.info('Market buy {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
         _LOG.info('Paid {:.5} commission', self._last_price * self.commission)
 
+        # Order placement always succeeds
+        return True, self._last_price
+
     def marketSell(self, pair, amount):
         exec_price = self._last_price * (1 - self.commission) * (1 - self.slippage)
         self.capital += amount * exec_price
@@ -337,20 +340,27 @@ class Paper:
         _LOG.info('Market buy {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
         _LOG.info('Paid {:.5} commission', self._last_price * self.commission)
 
+        # Order placement always succeeds
+        return True, self._last_price
+
     def limitBuy(self, pair, amount, price):
         exec_price = self._last_price * (1 + self.commission)
         self.capital -= amount * exec_price
 
         _LOG.info('Limit buy {:7.5} {} ${:.5}', amount, pair.upper(), price)
         _LOG.info('Paid {:.5} commission', price * self.commission)
-        return self._orderbooks[pair].create_bid(amount, price)
+
+        # Order placement always succeeds
+        return True, self._orderbooks[pair].create_bid(amount, price)
 
     def limitSell(self, pair, amount, price):
         exec_price = self._last_price * (1 - self.commission)
 
         _LOG.info('Limit sell {:7.5} {} ${:.5}', amount, pair.upper(), price)
         _LOG.info('Paid {:.5} commission', price * self.commission)
-        return self._orderbooks[pair].create_ask(amount, price)
+
+        # Order placement always succeeds
+        return True, self._orderbooks[pair].create_ask(amount, price)
 
     def stopBuy(self, pair, amount):
         NotImplementedError
