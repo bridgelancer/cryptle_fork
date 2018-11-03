@@ -264,6 +264,10 @@ class Orderbook:
         return filled_orders, partial, amount
 
 
+def encode_pair(asset, base):
+    return asset + base
+
+
 class Paper:
     """Stub for exchange objects. Supports market/limit orders.
 
@@ -309,23 +313,24 @@ class Paper:
     def update_price(self, pair: str, price: float):
         raise NotImplementedError
 
-    def buy(self, pair, amount, price=None):
+    def buy(self, asset, base, amount, price=None):
         """Automatically decides whether to use market or limit order."""
         if price:
-            return self.limitBuy(pair, amount, price)
+            return self.limitBuy(asset, base, amount, price)
         else:
-            self.marketBuy(pair, amount, price)
+            self.marketBuy(asset, base, amount, price)
 
-    def sell(self, pair, amount, price=None):
+    def sell(self, asset, base, amount, price=None):
         """Automatically decides whether to use market or limit order."""
         if price:
-            return self.limitSell(pair, amount, price)
+            return self.limitSell(asset, base, amount, price)
         else:
-            self.marketSell(pair, amount, price)
+            self.marketSell(asset, base, amount, price)
 
-    def marketBuy(self, pair, amount):
+    def marketBuy(self, asset, base, amount):
         exec_price = self._last_price * (1 + self.commission) * (1 + self.slippage)
         self.capital -= amount * exec_price
+        pair = encode_pair(asset, base)
 
         _LOG.info('Market buy {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
         _LOG.info('Paid {:.5} commission', self._last_price * self.commission)
@@ -333,19 +338,21 @@ class Paper:
         # Order placement always succeeds
         return True, self._last_price
 
-    def marketSell(self, pair, amount):
+    def marketSell(self, asset, base, amount):
         exec_price = self._last_price * (1 - self.commission) * (1 - self.slippage)
         self.capital += amount * exec_price
+        pair = encode_pair(asset, base)
 
-        _LOG.info('Market buy {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
+        _LOG.info('Market sell {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
         _LOG.info('Paid {:.5} commission', self._last_price * self.commission)
 
         # Order placement always succeeds
         return True, self._last_price
 
-    def limitBuy(self, pair, amount, price):
+    def limitBuy(self, asset, base, amount, price):
         exec_price = self._last_price * (1 + self.commission)
         self.capital -= amount * exec_price
+        pair = encode_pair(asset, base)
 
         _LOG.info('Limit buy {:7.5} {} ${:.5}', amount, pair.upper(), price)
         _LOG.info('Paid {:.5} commission', price * self.commission)
@@ -353,20 +360,16 @@ class Paper:
         # Order placement always succeeds
         return True, self._orderbooks[pair].create_bid(amount, price)
 
-    def limitSell(self, pair, amount, price):
+    def limitSell(self, asset, base, amount, price):
         exec_price = self._last_price * (1 - self.commission)
+        self.capital += amount * exec_price
+        pair = encode_pair(asset, base)
 
         _LOG.info('Limit sell {:7.5} {} ${:.5}', amount, pair.upper(), price)
         _LOG.info('Paid {:.5} commission', price * self.commission)
 
         # Order placement always succeeds
         return True, self._orderbooks[pair].create_ask(amount, price)
-
-    def stopBuy(self, pair, amount):
-        NotImplementedError
-
-    def stopSell(self, pair, amount):
-        NotImplementedError
 
     def cancelOrder(self, orderid):
         NotImplementedError
