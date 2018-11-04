@@ -115,12 +115,12 @@ Event Bus
 
 .. automodule:: cryptle.event
 
-   .. autoclass:: Bus
-      :members:
-
    .. autofunction:: on
 
    .. autofunction:: source
+
+   .. autoclass:: Bus
+      :members:
 
    .. autoclass:: DeferedSource
       :members:

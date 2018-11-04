@@ -126,10 +126,11 @@ class Bus:
         The same callback can listen to multiple events. Callbacks must take a
         single argument positional for the event data.
 
-        Warning:
-            Does not work on instance methods. This is because without the use
-            of metaclasses, bound methods do not inherit the template function
-            of a class.
+        Warning
+        -------
+        Does not work on instance methods. This is because without the use of
+        metaclasses, bound methods do not inherit attributes from template
+        functions in the class.
         """
         def decorator(func):
             self.addListener(event, func)
@@ -151,7 +152,7 @@ class Bus:
             detail and is subject to change. Multi-thread usage is thus discouraged.
 
         Warning:
-            Does not work on instance methods.
+            Does not work on instance methods with the same reason as :meth:`Bus.on`
         """
         def decorator(func):
             emitter = self.makeEmitter(event, func)
