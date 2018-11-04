@@ -4,7 +4,7 @@ import threading
 from functools import wraps
 from collections import defaultdict
 
-_log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class BusException(Exception):
@@ -34,7 +34,7 @@ class _Emitter:
         self.__func__ = self
 
     def __repr__(self):
-        return 'Emitter({}, {})'.format(self.event, self.func)
+        return '<Emitter({}, {})>'.format(self.event, self.func)
 
     def __get__(self, instance, owner=None):
         self.instance = instance
@@ -57,11 +57,26 @@ class Bus:
     The purpose of an event bus is to decoupled hardcoded function chains into
     modular components that are agnostic about the implementation and existance
     of its dependency.
+
+    Attributes
+    ----------
+    name : str
+        An optional name. Defaults to the object id.
+
+    Note
+    ----
+    Todo - Allow removal of callback/emitter bindings.
+
     """
-    # Todo: Allow removal of callback/emitter bindings.
     def __init__(self):
         self._callbacks = defaultdict(list)
         self._emitters  = defaultdict(list)
+
+        # Default to object id
+        self.name = id(self)
+
+    def __repr__(self):
+        return '<Bus({})>'.format(self.name)
 
     def bind(self, object):
         """Catch all method for binding objects, methods, or functions to the bus.
@@ -104,6 +119,7 @@ class Bus:
 
                 # bind emitters
                 if isinstance(attr, _Emitter):
+                    logger.info('Added emitter {}', attr)
                     attr.buses.append(self)
                     decorated = True
 
@@ -114,7 +130,7 @@ class Bus:
         """Directly emit events into the event bus."""
 
         if event not in self._callbacks:
-            _log.info('{} not listened', event)
+            logger.debug('{} not listened', event)
 
         with threading.Lock():
             for cb in self._callbacks[event]:
@@ -162,7 +178,7 @@ class Bus:
     def addListener(self, event, func):
         """Add the provided function to the list of listeners of the provided event."""
         self._callbacks[event].append(func)
-        _log.info('Add listener {} for event "{}"'.format(func, event))
+        logger.info('Added listener {} for event "{}" to {}', func, event, self)
 
     def makeEmitter(self, event, func):
         """Return an emitter function binded to the caller bus."""
@@ -177,7 +193,7 @@ class Bus:
         emitter.buses.append(self)
         self._emitters[event].append(emitter)
 
-        _log.info('Created emitter {} for event "{}"'.format(func, event))
+        logger.info('Created emitter {} for event "{}"'.format(func, event))
         return emitter
 
 
