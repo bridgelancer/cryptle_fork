@@ -366,7 +366,9 @@ class Timeseries:
         # 1. find the index corresponds to the root instance in each listener.subscribers
         # 2. pass the index to listener
         for listener in self.listeners:
-            pos = listener.subscribers.index(self)
+            pos = [id(x) for x in listener.subscribers].index(id(self)) # @TODO this breaks when there are identical values
+            print([x.name for x in listener.subscribers])
+            print("in indiviudal broadcast", self.name, type(listener), listener.subscribers, pos)
             listener.processBroadcast(pos)
 
     # currently not in use
@@ -568,8 +570,9 @@ class GenericTS(Timeseries):
         self._lookback  = lookback
         self._ts        = ts
         self._cache     = []
-        self.eval_func = eval_func
-        self.args      = args
+        self.eval_func  = eval_func
+        self.args       = args
+        self.name       = name
         self.value      = None
 
     @Timeseries.cache
