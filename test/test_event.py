@@ -20,8 +20,7 @@ def reached(func):
 
 def test_empty_emit():
     bus = event.Bus()
-    with pytest.raises(event.NotListened):
-        bus.emit('test_event', None)
+    bus.emit('test_event', None)
 
 
 def test_direct_emit():
@@ -78,7 +77,7 @@ def test_Bus_source_to_function():
     def test():
         return 1
 
-    with pytest.raises(event.NotListened):
+    with pytest.raises(CallbackReached):
         test()
 
 
@@ -121,9 +120,7 @@ def test_unbound_source_method_unbound_bus():
     bus.bind(tick)
     assert tick.test.buses[0] == bus
     assert tick.test.event
-
-    with pytest.raises(event.NotListened):
-        assert tick.test() == 1
+    assert tick.test() == 1
 
 
 def test_1_source_callback_combined_instance():

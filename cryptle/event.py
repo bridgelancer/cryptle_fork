@@ -16,10 +16,6 @@ class ExtraEmit(BusException):
     pass
 
 
-class NotListened(Warning):
-    pass
-
-
 class UnboundEmitter(BusException):
     pass
 
@@ -118,7 +114,7 @@ class Bus:
         """Directly emit events into the event bus."""
 
         if event not in self._callbacks:
-            raise NotListened('No registered callbacks for "{}" in this bus.'.format(event))
+            _log.info('{} not listened', event)
 
         with threading.Lock():
             for cb in self._callbacks[event]:

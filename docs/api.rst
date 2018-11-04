@@ -110,8 +110,8 @@ All actionnames and constraints supported are documented in
 :ref:`Registry <registry_ref>` under User Guides.
 
 
-Message Bus
------------
+Event Bus
+---------
 
 .. automodule:: cryptle.event
 
@@ -128,8 +128,6 @@ Message Bus
    .. autoexception:: BusException
 
    .. autoexception:: ExtraEmit
-
-   .. autoexception:: NotListened
 
    .. autoexception:: UnboundEmitter
 
