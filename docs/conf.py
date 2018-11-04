@@ -15,7 +15,7 @@ version = '.'.join((str(n) for n in cryptle.__version__))
 
 # General --------------------------------------------------------------------
 
-add_module_names = False
+add_module_names = True
 master_doc = 'index'
 pygments_style = 'sphinx'
 source_suffix = '.rst'
