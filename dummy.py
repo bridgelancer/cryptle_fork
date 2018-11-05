@@ -3,7 +3,7 @@
 from cryptle.aggregator import Aggregator
 from cryptle.registry   import Registry
 from cryptle.event      import source, on
-from cryptle.strategy   import SingleAssetStrat, OrderEventMixin
+from cryptle.strategy   import SingleAssetStrat
 
 from metric.timeseries.bollinger  import BollingerBand
 from metric.timeseries.candle     import CandleStick
@@ -37,13 +37,13 @@ class DummyStrat(SingleAssetStrat):
         SingleAssetStrat.__init__(s, asset)
         # Specify setup for local registry - @TODO
         setup = {'doneInit':   [s.doneInit, ['open'], [['once per bar'], {}], 1],
-                 'wma':        [s.signifyWMA, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 2],
-                 'singular':   [s.signifySingularity, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 3],
-                 'rsi':        [s.signifyRSI, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 4],
-                 'dlc':        [s.signifyDLC, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 5],
-                 'enter':  [s.enter, ['open'], [['once per bar'], {'once per signal': ['dlc'], 'n per signal': ['doneInit', 10000]}], 6],
-                 'exit':       [s.exit, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 7],
-                 #'dido_scale': [s.dido_scale, ['open'], [['once per bar'], {'n per signal': ['doneInit', 10000]}], 8],
+                 'wma':        [s.signifyWMA, ['open'], [['once per bar'], {'n per signal': [['doneInit', 10000],]}], 2],
+                 'singular':   [s.signifySingularity, ['open'], [['once per bar'], {'n per signal': [['doneInit', 10000],]}], 3],
+                 'rsi':        [s.signifyRSI, ['open'], [['once per bar'], {'n per signal': [['doneInit', 10000],]}], 4],
+                 'dlc':        [s.signifyDLC, ['open'], [['once per bar'], {'n per signal': [['doneInit', 10000], ]}], 5],
+                 'enter':  [s.enter, ['open'], [['once per bar'], {'n per signal': [['doneInit', 10000],]}], 6],
+                 'exit':       [s.exit, ['open'], [['once per bar'], {'n per signal': [['doneInit', 10000],]}], 7],
+                 'singular_scale': [s.singular_scale, ['open'], [['once per bar'], {'n per signal': [['doneInit', 10000],]}], 8],
                 }
 
         # Initiate candle aggregator and CandleStick
@@ -66,13 +66,14 @@ class DummyStrat(SingleAssetStrat):
         s.rsi_diff = Difference(s.rsi)
         s.reaper   = BollingerBand(s.rsi_diff, s.rsi._lookback, sd=2)
 
-        # Parameters
+        # Parameter     s
         s.rsi_upperthresh = rsi_upperthresh
         s.rsi_thresh      = rsi_thresh
 
         # Flags
         s.rsi_sell_flag = False
         s.rsi_signal = False
+        s.macd_signal = False
 
         # Trade-related flags
         s.sell_amount = None
@@ -85,7 +86,7 @@ class DummyStrat(SingleAssetStrat):
     def emitTriggered(s, triggerName):
         return triggerName
 
-    # at least it kinda works
+    # at least it kinda works - the signal is refreshed
     def doneInit(s):
         # check at every tick initially to see if s.registry.num_bars > s.init_bar
         # whenexec: after self.registry.num_bars > s.init_bars, triggerConstraint:[['open'],
@@ -97,15 +98,16 @@ class DummyStrat(SingleAssetStrat):
 
 
     def signifyWMA(s):
-        try:
-            #print('test successful')
-            if (s.stick.o > s.wma1):
-                s.emitSignal('wma', True)
-            else:
-                s.emitSignal('wma', False)
-            s.emitTriggered('wma')
-        except:
-            pass
+        pass
+    #    try:
+    #        #print('test successful')
+    #        if (s.stick.o > s.wma1):
+    #            s.emitSignal('wma', True)
+    #        else:
+    #            s.emitSignal('wma', False)
+    #        s.emitTriggered('wma')
+    #    except:
+    #        pass
 
     # This function uses flags instead of signals1 - conventional way
     def signifyRSI(s):
@@ -128,9 +130,11 @@ class DummyStrat(SingleAssetStrat):
     def signifyDLC(s):
         try:
             if float(s.macd_value) > 0 and float(s.macd_diff) > 0:
+                s.macd_signal = True
                 # emit signal for entry
                 s.emitSignal('dlc', True)
             else:
+                s.macd_signal = False
                 # emit signal for entry
                 s.emitSignal('dlc', False)
             s.emitTriggered('dlc')
@@ -151,59 +155,72 @@ class DummyStrat(SingleAssetStrat):
     #    except:
     #        pass
 
+    # buggy behaviour of signal
     def signifySingularity(s):
         try:
             if (s.rsi_diff > s.reaper.upperband):
+                s.screened = True
                 s.emitSignal('singular', False)
-                s.emitTriggered('singular')
             else:
                 s.emitSignal('singular', True)
-                s.emitTriggered('singular')
+                s.screened = False
+            s.emitTriggered('singular')
         except:
             pass
 
     def enter(s):
     # execute only when RSI, DLC signal returns True and not screened
-        print(s.hasCash, s.hasBalance)
-        if s.hasCash and not s.hasBalance and s.rsi_signal:
-            print('buying?', s.maxBuyAmount(s.registry.current_price), s.registry.num_bars)
-            s.buy(s.maxBuyAmount(s.registry.current_price))
-            s.sell_amount = s.maxSellAmount * 0.3
-            print('Sell amount: {}'.format(s.sell_amount))
-            s.emitTriggered('enter')
-        print(s.maxBuyAmount(s.registry.current_price))
-
-    def buy(s):
-        print(s.registry.num_bars)
-        s.bought = True
-
-    def sell(s)L
-        print(s.registry.num_bars)
-        s.sold = True
-
+        if s.sell_amount is None and s.rsi_signal and s.macd_signal and not s.screened:
+            s.buy(10000/s.registry.current_price)
+            s.sell_amount = 10000/s.registry.current_price
+            s.maxSellAmount = s.sell_amount
 
     def exit(s):
     # execute via normal rsi exits
-        if not s.rsi_signal and s.hasBalance:
-            print('selling?', s.registry.num_bars)
-            s.marketSell(s.maxSellAmount)
+        if not s.rsi_signal and s.sell_amount is not None:
+            s.sell(s.sell_amount)
+            s.sell_amount = None
+            s.maxSellAmount = None
             s.emitTriggered('exit')
+
+    def buy(s, amount):
+        print("Buy:", amount, s.registry.current_price, s.registry.num_bars)
+
+    def sell(s, amount):
+        print("Sell:", amount, s.registry.current_price, s.registry.num_bars)
+
+    def scaleout(s, amount):
+        print("Scale out: ", amount, s.registry.current_price, s.registry.num_bars)
+
 
     #def dido_scale(s):
     ## execute scale off, max 3 + 1 times per trade, 30% each time
-    #    if s.maxSellAmount > s.sell_amount:
-    #        s.marketScaleOut(s.sell_amount)
-    #    else:
-    #        s.marketScaleOut(s.maxSellAmount * 0.999)
-    #    s.emitTriggered('dido_scale')
+    #    print(s.maxSellAmount)
+    #    try:
+    #        if s.maxSellAmount > s.sell_amount * 0.3:
+    #            s.marketScaleOut(s.sell_amount * 0.3)
+    #            s.sell_amount -= s.sell_amount *0.3
+    #        else:
+    #            s.marketScaleOut(s.maxSellAmount * 0.999)
+    #            s.sell_amount -= s.sell_amount *0.999
+    #        s.emitTriggered('dido_scale')
+    #    except:
+    #        pass
 
-    #def singular_scale(s):
-    ## execute singular scale off, max 3 + 1 times per trade, 30% each time
-    #    if s.maxSellAmount > s.sell_amount:
-    #        s.marketScaleOut(s.sell_amount)
-    #    else:
-    #        s.marketScaleOut(s.maxSellAmount * 0.999)
-    #    s.emitTriggered('singular_scale')
+    # now will scale out at first bar
+    def singular_scale(s):
+    # execute singular scale off, max 3 + 1 times per trade, 30% each time
+        try:
+            if s.rsi_diff > s.reaper.upperband:
+                if s.maxSellAmount > s.sell_amount * 0.3:
+                    s.scaleout(s.sell_amount * 0.3)
+                    s.sell_amount -= s.sell_amount * 0.3
+                else:
+                    s.scaleout(s.maxSellAmount * 0.999)
+                    s.sell_amount -= s.sell_amount * 0.999
+                s.emitTriggered('singular_scale')
+        except:
+            pass
 
 if __name__ == '__main__':
     from cryptle.backtest import backtest_tick, Backtest

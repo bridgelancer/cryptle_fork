@@ -41,8 +41,8 @@ class RSI(Timeseries):
 
         if len(self._cache) > 2:
             self._cache = self._cache[-2:]
-        
-        
+
+
         price_up   = self._up[-1]
         price_down = self._down[-1]
 
@@ -74,8 +74,6 @@ class RSI(Timeseries):
                 self.value = 0
             elif self._ema_up == 0 and self._ema_down == 0:
                 self.value = 50
-
-
 
         self.broadcast()
 

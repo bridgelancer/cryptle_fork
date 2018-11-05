@@ -68,15 +68,17 @@ class Registry:
             cs = self.setup
             for key, action in self.setup.items():
                 onceTrigger = action[2][0]
-                nTrigger = action[2][1]
+                signalTrigger = action[2][1]
                 o = 'once per signal'
                 n = 'n per signal'
 
                 # Special handling: set the logic status of signal influencing the action to be [-1, 1, 0]
-                if 'once per signal' in action[2][0]:
-                    ls[key][action[2][0]['once per signal'][0]] = [-1, 1, 0]
+                if 'once per signal' in action[2][1]:
+                    for x in signalTrigger['once per signal']:
+                        ls[key][x[0]] = [-1, 1, 0]
                 if 'n per signal' in action[2][1]:
-                    ls[key][action[2][1]['n per signal'][0]] = [-1, 1, 0]
+                    for x in signalTrigger['n per signal']:
+                        ls[key][x[0]] = [-1, 1, 0]
         initialize()
 
         if isinstance(bus, Bus):
@@ -151,29 +153,37 @@ class Registry:
         # first item be the name of signal regestered as the signalConstraint of some other client
         # and second item be the boolean status of the signal.
         signalname, boolean = signal
-
+        if signalname == 'singular':
+            #print(signalname, boolean, self.num_bars)
+            pass
 
         # Iterating over all items in the setup using the key
         for key, item in sorted(self.logic_status.items(), key=lambda x: self.check_order.index(x[0])):
+            #print(signalname, key, item)
             #print(key, item)
             #print(signalname)
-            if signalname in self.logic_status[key]:
+            #print(key, signalname, self.logic_status['enter'], self.num_bars)
+            if signalname in item:
+                if signalname == 'singular':
+                    pass
+                    #print("Before:", self.logic_status['enter'])
                 # call refreshLogicStatus if signal returned false
                 if not boolean and self.logic_status[key][signalname][0] != -1:
                     signalToRefresh = True
                 # apply suitable constraint if signal returned true and the test is locked
-                if boolean and self.logic_status[key][signalname][0] == -1:
+                if boolean and self.logic_status[key][signalname][0] == -1 or self.logic_status[key][signalname] == {}:
                     applyConstraint = True
             # cleanup actions resulting from the actions of refreshing signal
             if signalToRefresh:
                 self.handleLogicStatus(key, signalname)
             if applyConstraint:
-
                 # dictionary here is the dictionary within the string
                 dictionary = self.setup[key][2][1]
                 # we get the key in the dictionary that depends on the
                 # previous actions, i.e. once per signal which depends on doneInit
-                keyss = [k for k, v in dictionary.items() if v[0] == signalname]
+                keyss = [v[0] for v in dictionary.items() if signalname in [w[0] for w in v[1]]]
+                valuess = [v[1] for v in dictionary.items() if signalname in [w[0] for w in v[1]]]
+                print("keyss:", keyss, "valuess:", valuess)
                 if len(keyss) > 0:
                     # keyss[-1] is the signal that passed and we want to tell
                     # the actions that depend on it
@@ -181,7 +191,15 @@ class Registry:
                     # in the lookup_trigger
                     # we give it the keyss[-1] function the items of keyss[-1]
                     constraint = self.lookup_trigger[keyss[-1]]
-                    constraint(key, *dictionary[keyss[-1]])
+                    #print(dictionary[keyss[-1]])
+                    if keyss[-1] == 'once per signal':
+                        constraint(key, signalname)
+                    elif keyss[-1] == 'n per signal':
+                        #print('fuck it', [x for x in dictionary[keyss[-1]] if x[0] == signalname])
+                        constraint(key, *[x for x in dictionary[keyss[-1]] if x[0] == signalname])
+                if signalname == 'singular':
+                    pass
+                    #print("After:", self.logic_status['enter'])
 
     # timeEvent and signalname inconsistent
     def handleLogicStatus(self, key, timeEvent):
@@ -299,24 +317,26 @@ class Registry:
             self.logic_status[action]['trade'][0] -= 1
 
     def once_per_signal(self, action, signal, *args):
-        #
+        print('entering once per signal', action, signal, *args)
         if signal in self.logic_status[action].keys():
             # enter via refreshSignal
+            print(self.logic_status[action])
             if self.logic_status[action][signal][0] == -1:
                 del self.logic_status[action][signal]
         elif signal not in self.logic_status[action].keys():
             self.logic_status[action][signal] = [1, 1, self.num_bars]
+        print(self.logic_status[action])
 
     # signal is say doneInit, its the dependancy
     # action is say once per bar, listening when
 
     def n_per_signal(self, action, signal, *args):
         # so if this action is listening for some signals
-        if signal in self.logic_status[action].keys():
+        if signal[0] in self.logic_status[action]:
             # enter via refreshSignal
-            if self.logic_status[action][signal][0] == -1:
-                del self.logic_status[action][signal]
+            if self.logic_status[action][signal[0]][0] == -1:
+                del self.logic_status[action][signal[0]]
             else:
-                self.logic_status[action][signal][0] -= 1
-        elif signal not in self.logic_status[action].keys():
-            self.logic_status[action][signal] = [*args, 1, self.num_bars]
+                self.logic_status[action][signal[0]][0] -= 1
+        elif signal[0] not in self.logic_status[action]:
+            self.logic_status[action][signal[0]] = [signal[1], 1, self.num_bars]

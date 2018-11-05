@@ -367,8 +367,6 @@ class Timeseries:
         # 2. pass the index to listener
         for listener in self.listeners:
             pos = [id(x) for x in listener.subscribers].index(id(self)) # @TODO this breaks when there are identical values
-            print([x.name for x in listener.subscribers])
-            print("in indiviudal broadcast", self.name, type(listener), listener.subscribers, pos)
             listener.processBroadcast(pos)
 
     # currently not in use

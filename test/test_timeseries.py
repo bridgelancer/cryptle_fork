@@ -69,11 +69,11 @@ bars         = [[1,3,4,0,0,0], [2,4,5,1,1,7], [6,6,6,6,2,8], [1,3,4,0,0,0], [2,4
 #        pushCandle([*bar, 0])
 #
 #    assert stick._ts[-1] == [6, 6, 6, 6, 2, 8, 0]
-#
+
 @source('tick')
 def pushTick(tick):
     return tick
-#
+
 #def test_sma():
 #    bus = Bus()
 #    bus.bind(pushTick)
@@ -84,7 +84,7 @@ def pushTick(tick):
 #    for i, price in enumerate(alt_quad):
 #        pushTick([price, 0, i, 0])
 #    assert ma.value - 17.6875 < 1e-7
-#
+
 #def test_wma():
 #    bus = Bus()
 #    bus.bind(pushTick)
@@ -94,7 +94,7 @@ def pushTick(tick):
 #    for i, price in enumerate(alt_quad):
 #        pushTick([price, 0, i, 0])
 #    assert ma.value - 22.5375 < 1e-7
-#
+
 #def test_recursive():
 #    bus = Bus()
 #    bus.bind(pushTick)
@@ -104,7 +104,7 @@ def pushTick(tick):
 #    for i, price in enumerate(alt_quad):
 #        pushTick([price, 0, i, 0])
 #    assert ma.value - 59.9666667 < 1e-7
-#
+
 #def test_ema():
 #    bus = Bus()
 #    bus.bind(pushTick)
@@ -114,18 +114,18 @@ def pushTick(tick):
 #    for i, price in enumerate(alt_quad):
 #        pushTick([price, 0, i, 0])
 #    assert ma.value - -23.5015 < 1e-7
-#
-#def test_bollinger():
-#    bus = Bus()
-#    bus.bind(pushTick)
-#    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
-#    stick = CandleStick(1, bus=bus)
-#    bollinger = BollingerBand(stick, 5)
-#    for i, price in enumerate(alt_quad):
-#        pushTick([price, 0, i, 0])
-#
-#    assert bollinger.upperband -  1271.5142485395759 < 1e-7
-#    assert bollinger.lowerband - -1306.8892485395759 < 1e-7
+
+def test_bollinger():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1, bus=bus) # set to be a 1 second aggregator
+    stick = CandleStick(1, bus=bus)
+    bollinger = BollingerBand(stick, 5)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+
+    assert bollinger.upperband -  1271.5142485395759 < 1e-7
+    assert bollinger.lowerband - -1306.8892485395759 < 1e-7
 #
 #def test_rsi():
 #    bus = Bus()
@@ -266,9 +266,12 @@ def testPivotPoints():
     pivot = PivotPoints(timestamp, 3600, stick.h, stick.l, stick.c,)
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i*3600 + 1, 0])
-        print(timestamp.value, stick.h, stick.l, stick.c)
+        print(timestamp.value, stick.h, stick.l, stick.c, (timestamp.value + 3600) / 3600)
         try:
             print("Pivot point", pivot, pivot.r, pivot.s)
+            #print("Pivot point", pivot, "\n")
+            #print("Supports:", pivot.s[:4])
+            #print("Resistances:", pivot.r[:4], "\n")
         except:
             pass
 

@@ -20,7 +20,7 @@ class PivotPoints(Timeseries):
 
     @Timeseries.cache
     def evaluate(self):
-        if self.timestamp % (24*60*60) == 0:    #Only update at specific time
+        if self.timestamp % (24*60*60) == 0:    # Only update at specific time
             #update the essential values of the previous period
             self.period_high = max([i[1] for i in self._cache])
             self.period_low = min([i[2] for i in self._cache])
@@ -34,13 +34,8 @@ class PivotPoints(Timeseries):
             for i in range(2, self.n +1):
                 self.r[i] = self.period_high + (i-1) * (self.pp - self.period_low)
                 self.s[i] = self.period_low - (i-1) * (self.period_high - self.pp)
+
         self.value = self.pp
 
     def onList(self):
         pass
-
-
-
-
-
-
