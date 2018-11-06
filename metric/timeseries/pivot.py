@@ -35,6 +35,7 @@ class PivotPoints(Timeseries):
                 self.r[i] = self.period_high + (i-1) * (self.pp - self.period_low)
                 self.s[i] = self.period_low - (i-1) * (self.period_high - self.pp)
 
+        self.cabins = self.s[::-1] + self.r[1:]
         self.value = self.pp
 
     def onList(self):

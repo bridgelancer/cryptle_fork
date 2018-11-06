@@ -40,7 +40,7 @@ class BollingerBand(Timeseries):
 
     def evaluate(self):
         try:
-            self.value = (float(self._upperband) / float(self._lowerband) - 1) * 100
+            self.value = (self.upperband / self.lowerband - 1) * 100
         except:
             pass
 
