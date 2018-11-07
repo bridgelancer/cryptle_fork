@@ -184,7 +184,8 @@ class Model:
     def report(self):
         pass
 
-class TimeseriesWrapper:
+
+class TimeseriesWrapper(Metric):
     """Wrapper class for Timeseries and HistoricalTS.
 
     The Timeseries wrapper class is the encapsulation of the value-computing
@@ -201,95 +202,13 @@ class TimeseriesWrapper:
         # this only works for ts with one Timeseries
         return self.hxtimeseries.retrieve(index)
 
-    def __int__(self):
-        return int(self.timeseries.value)
-
-    def __float__(self):
-        return float(self.timeseries.value)
-
-    def __neg__(self):
-        return -self.timeseries.value
-
-    def __abs__(self):
-        return abs(self.timeseries.value)
-
-    def __str__(self):
-        return str(self.timeseries.value)
-
-    def __repr__(self):
-        return str(self.timeseries.value)
-
-    def __bool__(self):
-        return bool(self.timeseries.value)
+    @property
+    def value(self):
+        return self.timeseries.value
 
     def __hash__(self):
         return id(self)
 
-    def __eq__(self, other):
-        return self.timeseries.value == other
-
-    def __ne__(self, other):
-        return self.timeseries.value != other
-
-    def __lt__(self, other):
-        return self.timeseries.value < other
-
-    def __gt__(self, other):
-        return self.timeseries.value > other
-
-    def __le__(self, other):
-        return self.timeseries.value <= other
-
-    def __ge__(self, other):
-        return self.timeseries.value >= other
-
-    def __add__(self, other):
-        return self.timeseries.value + other
-
-    def __sub__(self, other):
-        return self.timeseries.value - other
-
-    def __mul__(self, other):
-        return self.timeseries.value * other
-
-    def __truediv__(self, other):
-        return self.timeseries.value / other
-
-    def __floordiv__(self, other):
-        return self.timeseries.value // other
-
-    def __divmod__(self, other):
-        return divmod(self.timeseries.value, other)
-
-    def __mod__(self, other):
-        return self.timeseries.value % other
-
-    def __pow__(self, other):
-        return self.timeseries.value ** other
-
-    def __radd__(self, other):
-        return other + self.timeseries.value
-
-    def __rsub__(self, other):
-        return other - self.timeseries.value
-
-    def __rmul__(self, other):
-        return other * self.timeseries.value
-
-    def __rtruediv__(self, other):
-        return other / self.timeseries.value
-
-    def __rfloordiv__(self, other):
-        return other // self.timeseries.value
-
-    def __rdivmod__(self, other):
-        return divmod(other, self.timeseries.value)
-
-    def __rmod__(self, other):
-        return other % self.timeseries.value
-
-    def __rpow__(self, other):
-        return other ** self.timeseries.value
 
 class Timeseries(Metric):
     """Base class for time series.
