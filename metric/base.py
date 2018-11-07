@@ -3,14 +3,15 @@ Base classes for time series data structures.
 
 Warning
 -------
-The class names TimeseriesWrapper, Timeseries, and HistoricalTS are temporary
-and are subject to change.
+The class names :class:`TimeseriesWrapper`, :class:`Timeseries`, and :class:`HistoricalTS` are
+temporary and are subject to change.
 """
 
 from functools import wraps
 
 import logging
 import csv
+
 
 class Metric:
     """Mixin class that provides dunder methods for of data objects witha single value."""
@@ -177,6 +178,7 @@ class Candle:
     def netvol(self, value):
         self._bar[6] = value
 
+
 class Model:
     """Base class for holding statistical model."""
 
@@ -188,9 +190,9 @@ class Model:
 class TimeseriesWrapper(Metric):
     """Wrapper class for Timeseries and HistoricalTS.
 
-    The Timeseries wrapper class is the encapsulation of the value-computing
-    part and historical values. It contains the value-computing object
-    (Timeseries at the moment) and historical values (HistoricalTS at the
+    This class encapsulated the computational part and history storage part of
+    time series data containers. It contains the value-computing object
+    (Timeseries at the moment) and historical data object (HistoricalTS at the
     moment).
 
     """
@@ -211,7 +213,7 @@ class TimeseriesWrapper(Metric):
 
 
 class Timeseries(Metric):
-    """Base class for time series.
+    """Container for time series data.
 
     TimeSeries object should only concern about the updating of its series upon arrival of tick or
     candle and no more. The calculation part of the class should only hold the most updated
@@ -224,29 +226,25 @@ class Timeseries(Metric):
     functionality that allows it to broadcast its changes to Timeseries that are listening
     to its updates/listen to updates from other timeseries.
 
-    Args:
-        ts   = Timeseries object to subscribe (or not rely on a TS if not specified)
-        name = User given name of the Timeseries object (or the class name if not specified)
-
-    For every Timeseries type object, the __init__ constructor of that type should first call
-    super().__init__(ts=ts) or suitable base class constructor to initialize the
-    observer-observable behaviour properly.
+    Args
+    ----
+    ts : :class:`Timeseries`
+        Timeseries object to subscribe (or not rely on a TS if not specified)
 
     """
 
-    #Note that some particular Timseries object (e.g. CandleStick) has no observable to keep track of.
-    #Rather, they act as a source of data for other types of Timeseries objects to listen to. Hence,
-    #for CandleStick (or other source Timeseries), their data source should be constructed by an Event
-    #via the Event bus architecture.
-
-    #Any timeseries type should also support list-based initialization and update. The implementation
-    #is deferred to a later stage due to prioritization of tasks.
+    # Any timeseries type should also support list-based initialization and
+    # update. The implementation is deferred to a later stage due to
+    # prioritization of tasks.
 
     def __init__(self, ts=None):
+
         # self.subscribers are the list of references to timeseries objects that this instance subscribes to
         self.subscribers = []
+
         # self.subscribers_broadcasted is the set of timeseries that broadcasted previously
         self.subscribers_broadcasted = set()
+
         # self.listeners is the list of references to timeseries objects that listen to this timeseries
         self.listeners = []
 
@@ -274,6 +272,7 @@ class Timeseries(Metric):
 
     # by default, a listener would update only after all its subscribers updated once
     def processBroadcast(self, pos):
+        """To be called when the upstream"""
         if len(self.subscribers) == 1:
             self.update()
         else:
@@ -288,8 +287,8 @@ class Timeseries(Metric):
         # by current design, all evaluate of listeners would be called if candle decides to broadcast
         self.evaluate()
 
-    # this calls all the processBroadcast methods of the instances which subscribe to the root timeseries
     def broadcast(self):
+        """Call :meth:`processBroadcast` of all listeners."""
         # for list version of this paradigm
         # 1. find the index corresponds to the root instance in each listener.subscribers
         # 2. pass the index to listener
@@ -299,22 +298,24 @@ class Timeseries(Metric):
 
     # currently not in use
     def register(self, new_ts):
-        # this registers listener to the self.listeners dictionary
+        """Registers another :class:`Timeseries` object as a listener."""
         self.listeners[new_ts.name] = new_ts
         #self.listners.append(new_ts)
 
     # currently not in use
     def unregister(self, ts):
+        """Unregister the provided listener."""
         del self.listeners[ts.name]
         #self.listeners.pop(ts)
 
-    # pseudo-decorator for maintainng valid main cache in any instance of any Timeseries object
+    @staticmethod
     def cache(func):
-        """Decorator function for any Timeseries to maintain its valid main cache for calculating its output value.
+        """Decorator for any Timeseries method to maintain its valid main cache
+        for calculating its output value.
 
-        The class method to be decorated should initialize self._cache as empty list. The class should also
-        contain an attribute self._lookback for caching purpose.
-
+        The class method to be decorated should initialize self._cache as empty
+        list. The class should also contain an attribute self._lookback for
+        caching purpose.
         """
         def prune(lst, lookback):
             if len(lst) < lookback:
@@ -361,14 +362,13 @@ class Timeseries(Metric):
             func(*args, **kwargs)
         return wrapper
 
-
-    # psuedo-decorator for maintaining valid open, close, high, low caches in any instance of any base class
+    @staticmethod
     def bar_cache(func):
-        """Decorator function for any class to maintain valid open, close, high and low caches.
+        """Decorator for instance methods to keep a cache for open, close, high, and low values.
 
-        The class method to be decorated should initialize self.o, self.c, self.h, self.l as
-        empty lists. It should also contain an attribute self._lookback for caching purpose.
-
+        The class that owns the method to be decorated needs to initialize self.o, self.c, self.h,
+        self.l as empty lists. It should also contain an attribute self._lookback for caching
+        purpose.
         """
         def wrapper(self, **kwargs):
             self.o.append(float(candle.o))
@@ -422,11 +422,9 @@ class GenericTS(Timeseries):
         self.value = self.eval_func(*self.args)
         self.broadcast()
 
-class HistoricalTS(Timeseries):
-    """Providing methods for historical Timeseries data management, storage and
-    handling retrieval
 
-    """
+class HistoricalTS(Timeseries):
+    """Base class for management, storage, and retrieval of historical :class:`Timeseries` data."""
 
     def __init__(self, ts, store_num = 10000):
         super().__init__(ts=ts)
@@ -438,8 +436,8 @@ class HistoricalTS(Timeseries):
 
     # write to disk
     def write(self):
-    # this function should periodically write to disk
-    # write to a file, the filename should be changes accorindgly
+        """Write stored data to disk."""
+        # filename changes accorindgly
         filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
         if not self.flashed:
             with open(filename, 'w', newline='') as file:
@@ -453,6 +451,7 @@ class HistoricalTS(Timeseries):
 
     # update historical cache based on updated value
     def prune(self, lst):
+        """Write cache to disk and delete them from main memory."""
         if 2 * self._lookback >= len(self._cache):
             return lst
         else:
@@ -483,11 +482,19 @@ class HistoricalTS(Timeseries):
         else:
             pass
 
-    # index is a slice object enetered by user - only allows -xxx:-xx retrieval method
     def retrieve(self, index):
-        # this function should return a list of value including start but excluding end
-        # also, this function should be able to redirect retrieval request to own cache/disk memory
+        """Get historical values.
 
+        Args
+        ----
+        index : slice
+            A slice object - only allows -xxx:-xx retrieval method
+
+        Returns
+        -------
+        List of requested values.
+
+        """
         # only support this shit currently
         #if index.end > 0 or index.start > 0:
         #    return ValueError('The slice object input for referencing historical value should be by

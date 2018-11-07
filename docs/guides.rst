@@ -367,49 +367,81 @@ Constraints:
 
 Timeseries
 ----------
-Timeseries is a stand alone class that handles a list-based data input and
-compute the value. Currently, the class only supports bar-by-bar update. For
-any Timeseries, a `self._ts` (ts shortform for timeseries) needs to be implemented
-during construction. The instance listens to any update in value of `self._ts`.
-Each realization of :class:`Timeseries` implements a :meth:`evaluate` which runs
-on every update. The parent class constructor needs to be called during intialization of
-the instance and the listened ts needs to be passed into the parent in order to enable
-broadcasting and listening functionalities provided by the Timeseries base class.
+Finanical data can often be organised into time series. This goes for both raw
+data (e.g. price ticker) and processed data (e.g. moving average).
+:class:`~metric.base.Timeseries` class is a data container for handling such data, especailly
+when the data is being streamed in real-time.
 
-An option of adding a decorator :meth:`Timeseries.cache` to :meth:`evaluate` has
-been provided. This creates a `self._cache`, which could be referenced to within
-the `evaluate` function for past values of the listened Timeseries. The number
-of items stored is restricted by `self._lookback`.
+.. warning::
+   This section only documents :class:`~metric.base.Timeseries`, the class
+   responsible for computation and dependencies of a time series. The new
+   components in the time series hierarchy: :class:`~metric.base.TimeseriesWrapper`,
+   and :class:`~metric.base.HistoricalTS` were left out. Full documentation is
+   under way.
 
-An example instance of Timeseries might look::
+To allow time series data to be collected and computed in real-time, the
+`observer pattern <https://en.wikipedia.org/wiki/Observer_pattern>`_ is
+integrated into the class's interface.
 
-   class foo(Timeseries):
+The timeseries base class is designed to be both an observable and an observer.
+This means that each instance of a Timeseries class has corresponding
+`publish-subscribe <https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern>`_
+methods that lets it broadcast changes to other objects that are listening to
+its updates, while also listening for updates from other timeseries.
+
+To make all this work, subclasses of :class:`Timeseries` must do the following:
+
+1. Call the base :meth:`Timeseries.__init__`, passing the upstream Timeseries
+   object as argument.
+2. Implement :meth:`~metric.base.Timeseries.evaluate` which gets called on
+   updates of what they.
+3. Declare an attribute ``_ts`` (ts shortform for timeseries) in the
+   constructor. The instance will listen for any update in ``self._ts``.
+
+.. note::
+   Some Timseries object (e.g. CandleStick) has no observable to keep track of.
+   Rather, they act as a source of data for other types of Timeseries objects to
+   listen to. Hence, for CandleStick (or other source Timeseries), their data
+   source should be constructed by an Event via the Event bus architecture.
+
+Another feature Timeseries is the decorator :meth:`~metric.base.Timeseries.cache`.
+This decorator can be used on :meth:`~metric.base.Timeseries.evaluate` to
+provide a local copy of historical values of the upstream Timeseries, stored in
+``self._cache``. The number of items stored is restricted by
+``self._lookback``.
+
+An example of Timeseries might look like::
+
+   class Foo(Timeseries):
        def __init__(self, ts, lookback):
            super().__init__(ts=ts)
            self._lookback = lookback
            self._ts = ts
 
-       @Timeseries.cache # generate self._cache for accessing historical self._ts value
+       # generate self._cache for accessing historical self._ts value
+       @Timeseries.cache
        def evaluate(self):
            # some code that would be updated when ts updates
 
-If a :class:`Timeseries` is designed to listen to multiple Timeseries objects
+If a Timeseries is designed to listen to multiple Timeseries objects
 for updates, the only supported behaviour of updating is to wait till all the
 listened timeseries to update at least once before its :meth:`evaluate` function
-to run. In this case, the `self._ts` attribute should be set to a list of the
+to run. In this case, the ``self._ts`` attribute should be set to a list of the
 Timeseries objects to be listened to::
 
-   class foo_listenToMultipleTS(Timeseries):
+   class FooMultiListen(Timeseries):
        def __init__(self, ts1, ts2, lookback):
            self._ts       = [ts1, ts2]
            self._lookback = lookback
            super().__init__(ts=self._ts)
 
 For any subseries held within a wrapper class intended to be accessed by the
-client, a :class:`GenericTS` could be declared within the construction of the
-wrapper class. The format of the :meth:`__init__` signature of :class:`GenericTS` follows:
-someGenericTS(timeseries to be listened, lookback, eval_func, args). The :meth:`eval_func` should be
-implemented in the wrapper class and the `args` are the arguments that are passed into the :meth:`eval_func`::
+client, a :class:`~metric.base.GenericTS` could be declared within the
+construction of the wrapper class. The format of the
+:meth:`~metric.base.GenericTS.__init__` follows:
+:code:`someGenericTS(timeseries_to_be_listened, lookback, eval_func, args)`. The
+:meth:`eval_func` should be implemented in the wrapper class and the `args` are
+the arguments that are passed into the :meth:`eval_func`::
 
    class foo_with_GenereicTS(Timeseries):
        def __init__(self, ts, lookback):
