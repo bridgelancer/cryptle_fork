@@ -7,6 +7,9 @@ The class names :class:`TimeseriesWrapper`, :class:`Timeseries`, and :class:`His
 temporary and are subject to change.
 """
 
+# Todo(pine): Refactor observer pattern into reusable set of mixins.
+
+
 from functools import wraps
 
 import logging
@@ -237,6 +240,8 @@ class Timeseries(Metric):
     # update. The implementation is deferred to a later stage due to
     # prioritization of tasks.
 
+    # Todo(pine): Replace ts with vargs for upstream timeseries. An argument accepting different
+    # types leads to user code that's prone to errors.
     def __init__(self, ts=None):
 
         # self.subscribers are the list of references to timeseries objects that this instance subscribes to
@@ -266,6 +271,8 @@ class Timeseries(Metric):
         except:
             return None
 
+    # Todo(pine): Add docstring as API documentationA
+    # Todo(pine): Determine how to handle function arguments
     # should implement for every child class of Timeseries
     def evaluate(self):
         raise NotImplementedError
@@ -283,6 +290,8 @@ class Timeseries(Metric):
                 self.subscribers_broadcasted.clear()
                 self.update()
 
+    # Todo(pine): This should take arguments, requiring subclasses to know the internals of the
+    # observables defeats the purpose of having this interface
     def update(self):
         # by current design, all evaluate of listeners would be called if candle decides to broadcast
         self.evaluate()
@@ -308,6 +317,7 @@ class Timeseries(Metric):
         del self.listeners[ts.name]
         #self.listeners.pop(ts)
 
+    # Todo(pine): Take lookback as a decorator argument
     @staticmethod
     def cache(func):
         """Decorator for any Timeseries method to maintain its valid main cache
@@ -362,6 +372,8 @@ class Timeseries(Metric):
             func(*args, **kwargs)
         return wrapper
 
+    # Todo(pine): Take lookback as a decorator argument, what if a timeseries wants a different
+    # lenght of bar_cache and cache? (To be fair that a super rare use case example)
     @staticmethod
     def bar_cache(func):
         """Decorator for instance methods to keep a cache for open, close, high, and low values.
@@ -449,6 +461,7 @@ class HistoricalTS(Timeseries):
             wr.writerow(self._cache[:self._lookback])
         del self._cache[:self._lookback]
 
+    # Todo(pine): Implement the memory cleanup
     # update historical cache based on updated value
     def prune(self, lst):
         """Write cache to disk and delete them from main memory."""
@@ -482,6 +495,7 @@ class HistoricalTS(Timeseries):
         else:
             pass
 
+    # Todo(pine): Change this to __getitem__()
     def retrieve(self, index):
         """Get historical values.
 
