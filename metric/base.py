@@ -1,10 +1,19 @@
+"""
+Base classes for time series data structures.
+
+Warning
+-------
+The class names TimeseriesWrapper, Timeseries, and HistoricalTS are temporary
+and are subject to change.
+"""
+
 from functools import wraps
 
 import logging
 import csv
 
 class Metric:
-    '''Base class with common functions of single valued metrics'''
+    """Base class with common functions of single valued metrics"""
 
     def __int__(self):
         return int(self.value)
@@ -95,7 +104,7 @@ class Metric:
 
 
 class Candle:
-    '''Mutable candle stick with namedtuple-like API.'''
+    """Mutable candle stick with namedtuple-like API."""
 
     def __init__(self, o, c, h, l, t, v, nv):
         self._bar = [o, c, h, l, t, v, nv]
@@ -169,21 +178,21 @@ class Candle:
         self._bar[6] = value
 
 class Model:
-    ''' Base class for holding statistical model '''
+    """Base class for holding statistical model."""
 
     # reporting function for model exploration and verification
     def report(self):
         pass
 
 class TimeseriesWrapper:
-    ''' Wrapper class for Timeseries and HistoricalTS. The naming of TimeseriesWrapper, Timeseries
-    and Historical TS might subject to further changes.
+    """Wrapper class for Timeseries and HistoricalTS.
 
-    The Timeseries wrapper class is the encapsulation of the value-computing part and historical
-    values. It contains the value-computing object (Timeseries at the moment) and historical values
-    (HistoricalTS at the moment).
+    The Timeseries wrapper class is the encapsulation of the value-computing
+    part and historical values. It contains the value-computing object
+    (Timeseries at the moment) and historical values (HistoricalTS at the
+    moment).
 
-    '''
+    """
     def __init__(self, ts, store_num =10000, **kwargs):
         self.timeseries = ts
         self.hxtimeseries = HistoricalTS(self.timeseries, store_num)
@@ -283,7 +292,7 @@ class TimeseriesWrapper:
         return other ** self.timeseries.value
 
 class Timeseries:
-    ''' Base class for time series.
+    """Base class for time series.
 
     TimeSeries object should only concern about the updating of its series upon arrival of tick or
     candle and no more. The calculation part of the class should only hold the most updated
@@ -304,7 +313,7 @@ class Timeseries:
     super().__init__(ts=ts) or suitable base class constructor to initialize the
     observer-observable behaviour properly.
 
-    '''
+    """
 
     #Note that some particular Timseries object (e.g. CandleStick) has no observable to keep track of.
     #Rather, they act as a source of data for other types of Timeseries objects to listen to. Hence,
@@ -382,12 +391,12 @@ class Timeseries:
 
     # pseudo-decorator for maintainng valid main cache in any instance of any Timeseries object
     def cache(func):
-        '''Decorator function for any Timeseries to maintain its valid main cache for calculating its output value.
+        """Decorator function for any Timeseries to maintain its valid main cache for calculating its output value.
 
         The class method to be decorated should initialize self._cache as empty list. The class should also
         contain an attribute self._lookback for caching purpose.
 
-        '''
+        """
         def prune(lst, lookback):
             if len(lst) < lookback:
                 return lst
@@ -436,12 +445,12 @@ class Timeseries:
 
     # psuedo-decorator for maintaining valid open, close, high, low caches in any instance of any base class
     def bar_cache(func):
-        '''Decorator function for any class to maintain valid open, close, high and low caches.
+        """Decorator function for any class to maintain valid open, close, high and low caches.
 
         The class method to be decorated should initialize self.o, self.c, self.h, self.l as
         empty lists. It should also contain an attribute self._lookback for caching purpose.
 
-        '''
+        """
         def wrapper(self, **kwargs):
             self.o.append(float(candle.o))
             self.c.append(float(candle.c))
@@ -461,7 +470,7 @@ class Timeseries:
         return wrapper
 
     def importBars(self):
-        ''' import functionality to import well defined excel columns as Timeseries objects '''
+        """ import functionality to import well defined excel columns as Timeseries objects """
         raise NotImplementedError
 
     def __int__(self):
@@ -555,14 +564,14 @@ class Timeseries:
         return other ** self.value
 
 class GenericTS(Timeseries):
-    ''' Generic Timeseries object for sub-timeseries held by wrapper Metric class
+    """Generic Timeseries object for sub-timeseries held by wrapper Metric class
 
-        Args:
-            ts = timeseries to be listened to, evalute meethod is called whevener ts broadcasts
-            lookback = same as Timeseries
-            eval_func = a function implemeneted in Wrapper class, equivalent to the evaluate method in Timeseries
-            args      = arguments required to pass into eval_func for proper evaluation of GenericTS value
-    '''
+    Args:
+        ts = timeseries to be listened to, evalute meethod is called whevener ts broadcasts
+        lookback = same as Timeseries
+        eval_func = a function implemeneted in Wrapper class, equivalent to the evaluate method in Timeseries
+        args      = arguments required to pass into eval_func for proper evaluation of GenericTS value
+    """
     def __init__(self, ts, name=None, lookback=None, eval_func=None, args=None):
         super().__init__(ts=ts)
         self._lookback  = lookback
@@ -580,7 +589,11 @@ class GenericTS(Timeseries):
         self.broadcast()
 
 class HistoricalTS(Timeseries):
-    ''' Providing methods for historical Timeseries data management, storage and handling retrieval'''
+    """Providing methods for historical Timeseries data management, storage and
+    handling retrieval
+
+    """
+
     def __init__(self, ts, store_num = 10000):
         super().__init__(ts=ts)
         self._ts = ts

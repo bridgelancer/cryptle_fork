@@ -157,3 +157,10 @@ Orderbook
 
 .. automodule:: cryptle.orderbook
    :members:
+
+
+Timeseries
+----------
+
+.. automodule:: metric.base
+   :members:
