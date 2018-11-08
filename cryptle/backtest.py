@@ -11,7 +11,23 @@ logger = logging.getLogger(__name__)
 
 
 def backtest_with_bus(strat, dataset, dtype, *bindables, bus=None):
-    """Convenience function for backtesting trade data with an event bus."""
+    """Convenience function for backtesting with an event bus.
+
+    Handles the bus creation and binding boilerplate code, followed by going
+    through the provided dataset by emitting them into the bus with the
+    corresponding dtype as event name.
+
+    Args
+    ----
+    strat : :class:`~cryptle.strategy.Strategy`
+    dataset : Iteratable
+    dtype : str
+        Label for the type of input financial data, e.g. 'candle', 'trade'
+    *bindables : Event listener or emitters (vargs)
+        Any number of listener or emitter objects to be binded to the bus.
+    bus : :class:`~cryptle.event.Bus`
+        An optional keyword argument to accept a ready made event bus.
+    """
     data_iterator = DataEmitter(dtype)
 
     if bus is None:

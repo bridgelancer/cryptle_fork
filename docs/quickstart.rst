@@ -30,15 +30,13 @@ Another core mechanicism in Cryptle is the :ref:`Event Bus <events>`.
 
 Helper functions
 ----------------
-The `backtest module <:mod:cryptle.backtest>` has many helper functions to
+The :mod:`~cryptle.backtest` module has many helper functions to
 backtest strategies of various types of financial data. The
 
 ::
+
     import json
     from cryptle.backtest import backtest_with_bus
 
     strat = BTCStrat()
     backtest_with_bus(strat, data)
-
-
-
