@@ -318,9 +318,7 @@ Standard Events
 ---------------
 - ``trades(price, timestamp, volume, type)`` new trade market event
 - ``candles(open, high, low, close, volume, timestamp)`` new candlesticks
-- ``minute(now)`` a minute passed
-- ``hour(now)`` an hour passed
-- ``day(now)`` a day passed
+- Time related: :class:`~cryptle.clock.Clock`
 
 
 .. _registry_ref:

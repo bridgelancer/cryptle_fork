@@ -131,6 +131,9 @@ Event Bus
 
    .. autoexception:: UnboundEmitter
 
+.. autoclass:: cryptle.clock.Clock
+
+
 Backtest
 --------
 
