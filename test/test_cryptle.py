@@ -9,8 +9,14 @@ from cryptle.backtest import DataEmitter, backtest_tick, backtest_with_bus
 from cryptle.strategy import Portfolio, Strategy, EventOrderMixin
 
 
-sample_trades = utils.get_sample_trades()
-sample_candles = utils.get_sample_candles()
+@pytest.fixture
+def trades(scope='module'):
+    return utils.get_sample_trades()
+
+
+@pytest.fixture
+def candles(scope='module'):
+    return utils.get_sample_candles()
 
 
 def test_portfolio_constructor():
@@ -45,7 +51,6 @@ def test_equity():
 def test_strategy_base():
     strat = Strategy()
     assert strat.portfolio.cash == 0
-    assert strat.exchange is None
 
 
 def test_strategy_mixin_mro():
@@ -62,15 +67,16 @@ def test_strategy_mixin_mro():
     assert strat.marketBuy.__func__ is EventOrderMixin.marketBuy
 
 
-def test_backtest_helpers():
+def test_backtest_helpers(trades):
 
-    # strategy has no marked methods for binding, bus raise
+    # bus raises when an unbindable object is passed to bind() method
+    # (strategy has no marked methods)
     strat = Strategy()
     with pytest.raises(ValueError):
-        backtest_with_bus(strat, sample_trades, 'trade')
+        backtest_with_bus(strat, trades, 'trade')
 
     # base strategy raises from lack of callback implementations
     # create an instance of temporary type from oneline
     strat = type('QuickStrat', (EventOrderMixin, Strategy), {})()
     with pytest.raises(AttributeError):
-        backtest_tick(strat, sample_trades)
+        backtest_tick(strat, trades)
