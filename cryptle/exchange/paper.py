@@ -292,6 +292,7 @@ class Paper:
 
     # Todo emit events for each filled order
     def update(self, pair: str, amount: float, price: float, time=None):
+        """Update the orderbook based on the provided new trade."""
         self._last_price[pair] = price
         book = self._orderbooks[pair]
 
@@ -309,6 +310,7 @@ class Paper:
             pass
 
     def updatePrice(self, pair: str, price: float):
+        """Update the latest reference price without affecting the orderbook."""
         self._last_price[pair] = price
 
     def buy(self, asset, base, amount, price=None):
@@ -325,7 +327,23 @@ class Paper:
         else:
             self.marketSell(asset, base, amount, price)
 
-    def marketBuy(self, asset, base, amount):
+    def marketBuy(self, asset, base, amount) -> Tuple[bool, float]:
+        """Place a market buy order.
+
+        Args
+        ----
+        asset : str
+            The asset to buy
+        base : str
+            Currency to denominate the asset
+        amount : float
+
+        Returns
+        -------
+        A two valued tuple. First value is a boolean indicating success of the
+        order placement. Second value is the average bought price.
+
+        """
         pair = encode_pair(asset, base)
         last_price = self._last_price[pair]
 
@@ -338,7 +356,23 @@ class Paper:
         # Order placement always succeeds
         return True, last_price
 
-    def marketSell(self, asset, base, amount):
+    def marketSell(self, asset, base, amount) -> Tuple[bool, float]:
+        """Place a market sell order.
+
+        Args
+        ----
+        asset : str
+            The asset to buy
+        base : str
+            Currency to denominate the asset
+        amount : float
+
+        Returns
+        -------
+        A two valued tuple. First value is a boolean indicating success of the
+        order placement. Second value is the average sold price.
+
+        """
         pair = encode_pair(asset, base)
         last_price = self._last_price[pair]
 
@@ -351,7 +385,24 @@ class Paper:
         # Order placement always succeeds
         return True, last_price
 
-    def limitBuy(self, asset, base, amount, price):
+    def limitBuy(self, asset, base, amount, price) -> Tuple[bool, int]:
+        """Place a limit buy order.
+
+        Args
+        ----
+        asset : str
+            The asset to buy
+        base : str
+            Currency to denominate the asset
+        amount : float
+        price : float
+
+        Returns
+        -------
+        A two valued tuple. First value is a boolean indicating success of the
+        order placement. Second value is the order ID.
+
+        """
         pair = encode_pair(asset, base)
         last_price = self._last_price[pair]
 
@@ -364,7 +415,24 @@ class Paper:
         # Order placement always succeeds
         return True, self._orderbooks[pair].create_bid(amount, price)
 
-    def limitSell(self, asset, base, amount, price):
+    def limitSell(self, asset, base, amount, price) -> Tuple[bool, int]:
+        """Place a limit sell order.
+
+        Args
+        ----
+        asset : str
+            The asset to buy
+        base : str
+            Currency to denominate the asset
+        amount : float
+        price : float
+
+        Returns
+        -------
+        A two valued tuple. First value is a boolean indicating success of the
+        order placement. Second value is the order ID.
+
+        """
         pair = encode_pair(asset, base)
         last_price = self._last_price[pair]
 

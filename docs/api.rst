@@ -97,6 +97,14 @@ Exchange
       :return: Returns two values, first being the whether the order were
          successfully placed, second being the order id.
 
+.. autoclass:: cryptle.exchange.Paper
+   :members:
+   :undoc-members:
+
+.. autoclass:: cryptle.exchange.paper.Orderbook
+   :members:
+   :undoc-members:
+
 
 Registry
 --------
