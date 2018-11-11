@@ -256,7 +256,6 @@ def test_bollinger():
 #            pass
 #
 
-# seemingly functional, results unverified
 def testPivotPoints():
     bus = Bus()
     bus.bind(pushTick)
