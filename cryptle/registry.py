@@ -1,6 +1,7 @@
 from cryptle.event import source, on, Bus
 from collections import OrderedDict
 
+# BIG FIX NEEDED - To fix the behaviour of refreshSignals or come up with another idea to replace it
 class Registry:
     """Registry class keeps record of the Strategy class's state information.
     It is also responsible for dispatching Events that signifiy the execution of logical tests
@@ -92,7 +93,7 @@ class Registry:
         self.lookup_check   = {'open': self.new_open,
                                'close': self.new_close,}
         self.current_price = tick[0]
-        self.current_time = tick[2]
+        self.current_time  = tick[2]
 
     @on('aggregator:new_open') # 'open', 'close' events should be emitted by aggregator
     def refreshOpen(self, price):
@@ -153,20 +154,15 @@ class Registry:
         # first item be the name of signal regestered as the signalConstraint of some other client
         # and second item be the boolean status of the signal.
         signalname, boolean = signal
-        if signalname == 'singular':
-            #print(signalname, boolean, self.num_bars)
-            pass
 
         # Iterating over all items in the setup using the key
         for key, item in sorted(self.logic_status.items(), key=lambda x: self.check_order.index(x[0])):
             #print(signalname, key, item)
             #print(key, item)
             #print(signalname)
-            #print(key, signalname, self.logic_status['enter'], self.num_bars)
+
             if signalname in item:
-                if signalname == 'singular':
-                    pass
-                    #print("Before:", self.logic_status['enter'])
+                #print(signalname, item, self.logic_status[key][signalname][0])
                 # call refreshLogicStatus if signal returned false
                 if not boolean and self.logic_status[key][signalname][0] != -1:
                     signalToRefresh = True
@@ -183,7 +179,6 @@ class Registry:
                 # previous actions, i.e. once per signal which depends on doneInit
                 keyss = [v[0] for v in dictionary.items() if signalname in [w[0] for w in v[1]]]
                 valuess = [v[1] for v in dictionary.items() if signalname in [w[0] for w in v[1]]]
-                print("keyss:", keyss, "valuess:", valuess)
                 if len(keyss) > 0:
                     # keyss[-1] is the signal that passed and we want to tell
                     # the actions that depend on it
@@ -191,15 +186,11 @@ class Registry:
                     # in the lookup_trigger
                     # we give it the keyss[-1] function the items of keyss[-1]
                     constraint = self.lookup_trigger[keyss[-1]]
-                    #print(dictionary[keyss[-1]])
                     if keyss[-1] == 'once per signal':
                         constraint(key, signalname)
                     elif keyss[-1] == 'n per signal':
                         #print('fuck it', [x for x in dictionary[keyss[-1]] if x[0] == signalname])
                         constraint(key, *[x for x in dictionary[keyss[-1]] if x[0] == signalname])
-                if signalname == 'singular':
-                    pass
-                    #print("After:", self.logic_status['enter'])
 
     # timeEvent and signalname inconsistent
     def handleLogicStatus(self, key, timeEvent):
@@ -304,7 +295,7 @@ class Registry:
             self.logic_status[action]['period'] = [*args, self.num_bars]
         else:
             self.logic_status[action]['period'][0] -= 1
-        print(self.logic_status)
+        #print(self.logic_status)
 
     def once_per_trade(self, action):
         if 'period' not in self.logic_status[action].keys():
@@ -317,7 +308,7 @@ class Registry:
             self.logic_status[action]['trade'][0] -= 1
 
     def once_per_signal(self, action, signal, *args):
-        print('entering once per signal', action, signal, *args)
+        #print('entering once per signal', action, signal, *args)
         if signal in self.logic_status[action].keys():
             # enter via refreshSignal
             print(self.logic_status[action])
@@ -325,7 +316,7 @@ class Registry:
                 del self.logic_status[action][signal]
         elif signal not in self.logic_status[action].keys():
             self.logic_status[action][signal] = [1, 1, self.num_bars]
-        print(self.logic_status[action])
+        #print(self.logic_status[action])
 
     # signal is say doneInit, its the dependancy
     # action is say once per bar, listening when
