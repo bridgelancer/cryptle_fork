@@ -18,12 +18,13 @@ version = '.'.join((str(n) for n in cryptle.__version__))
 add_module_names = True
 master_doc = 'index'
 pygments_style = 'sphinx'
-source_suffix = '.rst'
+source_suffix = ['.rst', 'md']
 today_fmt = '%B %d, %Y'
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    'm2r',
 ]
 
 autodoc_member_order = 'bysource'
