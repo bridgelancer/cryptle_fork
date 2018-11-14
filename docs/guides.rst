@@ -1,6 +1,6 @@
 .. _guides:
 
-Usage guides
+Topic guides
 ============
 This part of the documentation breaks down each Cryptle subsystems one by one.
 

@@ -1,5 +1,5 @@
 # Cryptle: Algorithmic trading framework
-Cryptle [documentation](http://cryptle-docs.s3-website-ap-southeast-1.amazonaws.com/).
+Cryptle's [documentation](http://cryptle-docs.s3-website-ap-southeast-1.amazonaws.com/).
 
 Cryptle is a Python algorithmic trading framework with batteries included.  It
 comes with a number of data sources and API implementations of cryptocurrency
