@@ -45,4 +45,4 @@ directory:
 ```bash
 make doc
 ```
-The compiled documentation in HTML can be found at 'docs/\_build/html/index.html'.
+The compiled documentation in HTML can be found at `docs/\_build/html/index.html`.
