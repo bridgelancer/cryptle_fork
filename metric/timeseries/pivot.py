@@ -22,9 +22,9 @@ class PivotPoints(Timeseries):
     def evaluate(self):
         if self.timestamp % (24*60*60) == 86400 - 3600:
             #update the essential values of the previous period
-            self.period_high = max([i[1] for i in self._cache])
-            self.period_low = min([i[2] for i in self._cache])
-            self.period_close = self._cache[-1][3]
+            self.period_high = max([i[2] for i in self._cache])
+            self.period_low = min([i[3] for i in self._cache])
+            self.period_close = self._cache[-1][1]
 
             # calculate pivot point, support and resistance levels
             self.pp = (self.period_high + self.period_low + self.period_close) / 3
