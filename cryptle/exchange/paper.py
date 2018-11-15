@@ -328,7 +328,6 @@ class Paper:
     def marketBuy(self, asset, base, amount):
         pair = encode_pair(asset, base)
         last_price = self._last_price[pair]
-
         exec_price = last_price * (1 + self.commission) * (1 + self.slippage)
         self.capital -= amount * exec_price
 

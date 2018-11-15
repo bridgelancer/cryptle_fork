@@ -84,15 +84,17 @@ class Portfolio:
         else:
             del self.balance[asset]
 
-    def bought(self, asset, amount, cost):
+    def bought(self, asset, amount, price):
         """Helper method to update a portfolio after buying."""
         self.deposit(asset, amount)
-        self.cash -= cost
+        self.cash -= price * amount
+        print('bought:', self.balance)
 
-    def sold(self, asset, amount, cost):
+    def sold(self, asset, amount, price):
         """Helper method to update a portfolio after selling."""
         self.withdraw(asset, amount)
-        self.cash += cost
+        self.cash += price * amount
+        print('sold:', self.balance)
 
     def equity(self, asset_prices):
         """Calculate the current market value of this portfolio.
@@ -288,7 +290,7 @@ class TradingStrategy(Strategy):
         else:
             raise ExchangeError('Order placement failed')
 
-    def _cleanupBuy(self, asset, amount, price):
+    def _cleanupBuy(self, asset, price, amount):
         self.portfolio.bought(asset, amount, price)
         # self.trades.append([timestamp, price])
 
