@@ -10,7 +10,9 @@ Datafeed
 In Cryptle, datefeed is a package of drivers to streamed data with a unified set
 of methods. The intention is to provide a consistent interface for both internal
 and external data sources. A connection can be established using
-:func:`~cryptle.datafeed.connect`::
+:func:`~cryptle.datafeed.connect`:
+
+.. code:: python
 
    import cryptle.datafeed as datafeed
 
@@ -33,7 +35,9 @@ should not be a concern as it should be hidden under the abstraction layer.
 The full list of standard datafeed events can be found at `todo`.
 
 Datafeed object can also be used as context managers that disconnects gracefully
-upon error::
+upon error:
+
+.. code:: python
 
    with connect(datafeed.BITSTAMP) as feed:
        # feed.on(...)
@@ -54,7 +58,9 @@ the exchange creation function is named
 
 Creation of exchange objects follow a similar interface as the datafeed package.
 
-Example code::
+Example code:
+
+.. code:: python
 
     from cryptle.exchange import connect, BITSTAMP
 
@@ -85,7 +91,9 @@ method. The input data can be provided through by the corresponding
 in the :class:`~cryptle.strategy.Strategy` reference.
 
 Here's a very basic strategy where we will buy whenever the price of the
-particular asset::
+particular asset:
+
+.. code:: python
 
    class FooStrategy(SingleAssetStrategy):
        def __init__(self, asset, target):
@@ -112,7 +120,9 @@ events into a :class:`~cryptle.event.Bus`. The mixin must come before the base
 strategy class. Detailed reference of the mixin events are at
 :class:`~cryptle.strategy.EventOrderMixin`.
 
-The code looks mostly the same::
+The code looks mostly the same:
+
+.. code:: python
 
    class BusStrategy(EventOrderMixin, Strategy):
        def onTrade(self, price, t, amount, action):
@@ -130,6 +140,7 @@ Other mixins are covered in the :mod:`strategy <cryptle.strategy>` module
 reference documentation.
 
 .. seealso::
+
    For questions about what is a mixin and why are they useful, StackOverflow
    has an excellent `explanation
    <https://stackoverflow.com/questions/533631/what-is-a-mixin-and-why-are-they-useful>`_.
@@ -147,7 +158,9 @@ These data objects comes from return values of emitters. When emitter functions
 are called, an event with the return value as data is loaded into the event bus
 binded to the emitter function.
 
-Lets see the event bus in action::
+Lets see the event bus in action:
+
+.. code:: python
 
     from event import source, on, Bus
 
@@ -179,15 +192,20 @@ Let break this down line by line.
 2. Next we marked the function :code:`tick` as a *source* for the event `tick`.
 
 
-Methods decorated as listeners can still be called normally::
+Methods decorated as listeners can still be called normally:
+
+.. code:: python
 
     candle.recv(2)  // prints 2
 
-and methods decorated as emitter will also return the value after it's emitted::
+and methods decorated as emitter will also return the value after it's emitted:
+
+.. code:: python
 
     assert 1 == tick(1)  // True
 
 .. note::
+
    Event name can be any Python valid strings. However the recommended convention
    is 'subject:datatype'. (This is subject to change, a more powerful event
    parser is possibly coming soon.)
@@ -196,7 +214,9 @@ and methods decorated as emitter will also return the value after it's emitted::
 decorator methods serving the same purpose as the module level decorators. These
 decorators associated with a bus instance save the need for binding the
 decorated functions to a bus. They however can only be used for module level
-functions and not instance methods::
+functions and not instance methods:
+
+.. code:: python
 
     bus = Bus()
 
@@ -211,6 +231,7 @@ functions and not instance methods::
     foo() // prints 1
 
 .. note::
+
    The reason why this doesn't work on instance methods is due to the python
    object protocol with method resolution. Python objects get their instance
    methods from binding itself to the methods from the class template.
@@ -234,6 +255,7 @@ that are triggered by the starting event will complete before the next emitted
 root event.
 
 .. note::
+
    The event bus does not make any effort in making a copy of event data for
    each callback. Hence if a piece of event data is modifible objects such as
    dictionary, callbacks that are called earlier could modify the value passed
@@ -248,7 +270,9 @@ to dynamically emit events into a bus. A solution to this is the base class
 :meth:`~cryptle.event.DeferedSource.source` that allows objects to create an
 event emitting function in instance methods and emit arbitrary events.
 
-Here is an example from the datefeed module::
+Here is an example from the datefeed module:
+
+.. code:: python
 
    class Bitstamp(BitstampFeed, DeferedSource):
        """Simple wrapper around BitstampFeed to emit data into a bus."""
@@ -264,7 +288,7 @@ Here is an example from the datefeed module::
 The following are some more complex examples of using the event bus, such as
 binding a function to listen for multiple events.
 
-::
+.. code:: python
 
     def test(data):
         print(1)
@@ -273,7 +297,7 @@ binding a function to listen for multiple events.
     bus.addListener('event', test)
     bus.emit('tick', data=1) // print 1 twice
 
-::
+.. code:: python
 
     class Test:
         def __init__(self):
@@ -291,7 +315,7 @@ binding a function to listen for multiple events.
 
     assert test.called == 2  // True
 
-::
+.. code:: python
 
     class Test:
         def __init__(self):
@@ -329,7 +353,9 @@ Registry handles :class:`Strategy` class's state information and controls the or
 and timing of logical tests' execution. The logical tests to be ran should be
 submitted in a Dictionary to the **setup** argument with an 'actionname' as a key
 followed by timing,constraints and order contained in a list. The following is
-an example::
+an example:
+
+.. code:: python
 
    setup = {'doneInit': [['open'], [['once per bar'], {}], 1],
             'wma':      [['open'], [['once per bar'], {'n per signal': ['doneInit', 10]}], 2]}
@@ -371,6 +397,7 @@ data (e.g. price ticker) and processed data (e.g. moving average).
 when the data is being streamed in real-time.
 
 .. warning::
+
    This section only documents :class:`~metric.base.Timeseries`, the class
    responsible for computation and dependencies of a time series. The new
    components in the time series hierarchy: :class:`~metric.base.TimeseriesWrapper`,
@@ -397,6 +424,7 @@ To make all this work, subclasses of :class:`Timeseries` must do the following:
    constructor. The instance will listen for any update in ``self._ts``.
 
 .. note::
+
    Some Timseries object (e.g. CandleStick) has no observable to keep track of.
    Rather, they act as a source of data for other types of Timeseries objects to
    listen to. Hence, for CandleStick (or other source Timeseries), their data
@@ -408,7 +436,9 @@ provide a local copy of historical values of the upstream Timeseries, stored in
 ``self._cache``. The number of items stored is restricted by
 ``self._lookback``.
 
-An example of Timeseries might look like::
+An example of Timeseries might look like:
+
+.. code:: python
 
    class Foo(Timeseries):
        def __init__(self, ts, lookback):
@@ -425,7 +455,9 @@ If a Timeseries is designed to listen to multiple Timeseries objects
 for updates, the only supported behaviour of updating is to wait till all the
 listened timeseries to update at least once before its :meth:`evaluate` function
 to run. In this case, the ``self._ts`` attribute should be set to a list of the
-Timeseries objects to be listened to::
+Timeseries objects to be listened to:
+
+.. code:: python
 
    class FooMultiListen(Timeseries):
        def __init__(self, ts1, ts2, lookback):
@@ -439,7 +471,9 @@ construction of the wrapper class. The format of the
 :meth:`~metric.base.GenericTS.__init__` follows:
 :code:`someGenericTS(timeseries_to_be_listened, lookback, eval_func, args)`. The
 :meth:`eval_func` should be implemented in the wrapper class and the `args` are
-the arguments that are passed into the :meth:`eval_func`::
+the arguments that are passed into the :meth:`eval_func`:
+
+.. code:: python
 
    class foo_with_GenereicTS(Timeseries):
        def __init__(self, ts, lookback):
