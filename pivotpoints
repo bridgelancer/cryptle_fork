@@ -33,10 +33,10 @@ Scaling out
 
 Exit
 -   Always take highest cabinet reached on close price
+-   Always exit the entire position
+
 1.  Fail safe
-        at the floor of the cabinet below the reference cabinet - exit all if reached
+    -   at the floor of the cabinet below the reference cabinet
 
 2.  Stop loss
-    -   at the midpoint between the lower cabinet - trigger only if not uptrend - exit all if
-        reached
-
+    -   at the midpoint between the lower cabinet - trigger only if not uptrend
