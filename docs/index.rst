@@ -53,7 +53,7 @@ repository directory:
    make doc
 
 The successfully compiled documentation in HTML can be found at
-`docs/\_build/html/index.html`.
+``docs/\_build/html/index.html``.
 
 
 User Guides

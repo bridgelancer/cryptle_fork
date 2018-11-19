@@ -32,7 +32,7 @@ Here's what we've done:
 2. Then we create an instance of this class.
 3. Establish connection to the data server.
 4. We use :meth:`~cryptle.base.Datafeed.on` to setup :code:`winning_strategy` as a callback for
-   the :code:`trades:btcusd` event.
+   the ``trades:btcusd`` event.
 
 
 Placing orders
@@ -46,13 +46,14 @@ We will also have to keep track of our portfolio on the exchange. Make let's
 make a few calls
 
 .. note::
+
    Depending on your exchange, your portfolio status might be available as a
    data stream which would be accessed through a :class:`Datafeed` instance.
 
 
 Refactor
 --------
-The number calls to `bind()` is starting to fill most of the code. We've also
+The number calls to ``bind()`` is starting to fill most of the code. We've also
 used global variables to keep track of our portfolio. Lets refactor all of this
 and bundle the strategy into a class:::
 

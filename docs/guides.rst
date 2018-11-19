@@ -32,7 +32,7 @@ data. When this is the case, the driver module will provide helpers
 standardised event names and the third party names. For datafeed users this
 should not be a concern as it should be hidden under the abstraction layer.
 
-The full list of standard datafeed events can be found at `todo`.
+The full list of standard datafeed events can be found at ``todo``.
 
 Datafeed object can also be used as context managers that disconnects gracefully
 upon error:
@@ -152,7 +152,7 @@ reference documentation.
 Event Bus
 ---------
 Event buses allow events to be generated and observed. An event always come with
-a data object, though this object can be :code:`None`.
+a data object, though this object can be ``None``.
 
 These data objects comes from return values of emitters. When emitter functions
 are called, an event with the return value as data is loaded into the event bus
@@ -189,8 +189,7 @@ Let break this down line by line.
    decorators for marking functions and methods and to be binded to an event
    bus.
 
-2. Next we marked the function :code:`tick` as a *source* for the event `tick`.
-
+2. Next we marked the function ``tick`` as a *source* for the event ``tick``.
 
 Methods decorated as listeners can still be called normally:
 
@@ -236,8 +235,8 @@ functions and not instance methods:
    object protocol with method resolution. Python objects get their instance
    methods from binding itself to the methods from the class template.
 
-   For example, :code:`A.f`, a method in class :code:`A`, is a actually global
-   function, where as :code:`a.f`, where :code:`a = A()`, is a bound method.
+   For example, ``A.f``, a method in class ``A``, is a actually global
+   function, where as ``a.f``, where ``a = A()``, is a bound method.
 
    Since the Cryptle event bus works by tagging meta information onto marked
    functions and methods, these information are lost when a bound method is
@@ -362,13 +361,13 @@ an example:
 
 In the above scenario, the :class:`Registry` class will be dynamically listening
 for tick. Once the timing of execution is met and the constraints fulfiled, a
-:class:`registry:execute` signal will be emitted. The planned action :meth:`doneInit`
+``registry:execute`` signal will be emitted. The planned action :meth:`doneInit`
 will be triggered upon receiving the signal. :class:`Registry` will then
 look at the timing of execution and contraints chosen for the next action.
 We see that the second item
-:meth:`wma`  in `setup` differs to the former in one extra constraint which
+:meth:`wma`  in ``setup`` differs to the former in one extra constraint which
 translates to only performing the action 10 times in maxima per signal upon
-the completion of `doneInit`.
+the completion of ``doneInit``.
 
 Currently the following actions and constraints are supported.
 
@@ -469,8 +468,8 @@ For any subseries held within a wrapper class intended to be accessed by the
 client, a :class:`~metric.base.GenericTS` could be declared within the
 construction of the wrapper class. The format of the
 :meth:`~metric.base.GenericTS.__init__` follows:
-:code:`someGenericTS(timeseries_to_be_listened, lookback, eval_func, args)`. The
-:meth:`eval_func` should be implemented in the wrapper class and the `args` are
+``someGenericTS(timeseries_to_be_listened, lookback, eval_func, args)``. The
+:meth:`eval_func` should be implemented in the wrapper class and the ``args`` are
 the arguments that are passed into the :meth:`eval_func`:
 
 .. code:: python
