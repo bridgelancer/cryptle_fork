@@ -1,5 +1,5 @@
 from metric.base import Timeseries, GenericTS
-from cryptle.event import source, on, Bus
+from cryptle.event import on, Bus
 
 '''Candle-related Timeseries object.
 
@@ -48,7 +48,6 @@ class CandleStick(Timeseries):
             bus.bind(self)
 
     # CandleStick has a unique functino appendTS that makes itself a ts generating source
-
     @on('aggregator:new_candle')
     def appendTS(self, data):
         self._ts.append(data)

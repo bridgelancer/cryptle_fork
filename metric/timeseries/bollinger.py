@@ -17,7 +17,7 @@ class BollingerBand(Timeseries):
 
         # eval_func for computing subseries
         def width(bb):
-            return np.std(bb.width._cache, ddof=1)
+            return np.std(bb.width._cache, ddof=0)
 
         # eval_func for computing subseries
         def upperband(bb):
@@ -40,24 +40,9 @@ class BollingerBand(Timeseries):
 
     def evaluate(self):
         try:
-            self.value = (float(self._upperband) / float(self._lowerband) - 1) * 100
+            self.value = (self.upperband / self.lowerband - 1) * 100
         except:
             pass
 
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError
-
-#class band(Timeseries):
-#    def __init__(self, ts, lookback, upper_sd, lower_sd):
-#        self._lookback = lookback
-#        self._ts       = ts
-#        self._upperband = upperband(ts, lookback, upper_sd)
-#        self._lowerband = lowerband(ts, lookback, lower_sd)
-#
-#    def evaluate(self):
-#        self.value = ((float(self._upperband) / float(self._lowerband)) - 1) * 100
-#
-#    def onTick(self, price, timestamp, volume, action):
-#        raise NotImplementedError
-
-

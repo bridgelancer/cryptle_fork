@@ -7,7 +7,6 @@ import numpy as np
 def default(lookback):
     return [2 * (i + 1) / (lookback * (lookback + 1)) for i in range(lookback)]
 
-# how to solve the problem of two updates arising from two timeseries?
 class MACD(Timeseries):
     # MACD takes two timeseries. The two timeseries should update concurrently in order for a valid
     # value produed
@@ -15,33 +14,35 @@ class MACD(Timeseries):
         self._lookback = lookback
         self._ts       = [fast, slow]
         super().__init__(ts=self._ts)
+
         self._weights  = weights(lookback)
+        self.value     = None
 
 
         def diff(fast, slow):
             try:
-                return float(fast) - float(slow)
+                return fast - slow
             except:
-                pass
+                return None
 
         def diff_ma(macd, weights, lookback):
             if len(macd.diff_ma._cache) == lookback:
                 return np.average(macd.diff_ma._cache, axis=0, weights=weights)
 
-        self.diff      = GenericTS([fast, slow], lookback=lookback, eval_func=diff,
-                args=[fast, slow])
-        self.diff_ma   = GenericTS(self.diff, lookback=lookback, eval_func=diff_ma,
-                args=[self, self._weights, lookback])
-        #self.diff      = diff(self._fast, self._slow)
-        #self.diff_ma   = diff_ma(self.diff, lookback, self._weights)
-        self.value = None
+        def signal(macd):
+            if len(macd.diff_ma._cache) == lookback:
+                return macd.diff - macd.diff_ma
+
+        self.diff    = GenericTS([fast, slow], \
+                            lookback=lookback, eval_func=diff, args=[fast, slow])
+        self.diff_ma = GenericTS(self.diff, \
+                            lookback=lookback, eval_func=diff_ma, args=[self, self._weights, lookback])
+        self.signal   = GenericTS([self.diff, self.diff_ma], \
+                            lookback=lookback, eval_func=signal, args=[self])
+
 
     def evaluate(self):
-        try:
-            self.value = float(self.diff) - float(self.diff_ma)
-        except:
-            pass
-        self.broadcast()
+        pass
 
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError

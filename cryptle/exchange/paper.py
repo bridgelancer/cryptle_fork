@@ -275,7 +275,7 @@ class Paper:
     Backtest object such that the market price is updated while the strategy
     processeses incoming market information.
     """
-    def __init__(self, capital: float):
+    def __init__(self, capital: float, commission=0, slippage=0):
         self.capital = capital
         self.commission = 0
         self.slippage   = 0
@@ -346,7 +346,6 @@ class Paper:
         """
         pair = encode_pair(asset, base)
         last_price = self._last_price[pair]
-
         exec_price = last_price * (1 + self.commission) * (1 + self.slippage)
         self.capital -= amount * exec_price
 

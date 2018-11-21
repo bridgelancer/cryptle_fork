@@ -302,7 +302,7 @@ class Timeseries(Metric):
         # 1. find the index corresponds to the root instance in each listener.subscribers
         # 2. pass the index to listener
         for listener in self.listeners:
-            pos = listener.subscribers.index(self)
+            pos = [id(x) for x in listener.subscribers].index(id(self)) # @TODO this breaks when there are identical values
             listener.processBroadcast(pos)
 
     # currently not in use
@@ -423,8 +423,9 @@ class GenericTS(Timeseries):
         self._lookback  = lookback
         self._ts        = ts
         self._cache     = []
-        self.eval_func = eval_func
-        self.args      = args
+        self.eval_func  = eval_func
+        self.args       = args
+        self.name       = name
         self.value      = None
 
     @Timeseries.cache
@@ -521,15 +522,30 @@ class HistoricalTS(Timeseries):
         ## col counts from right to left (end to beginning)
         #colstart = abs(index.start) - rowstart * self._lookback
         #colend   = abs(index.end) - rowed * self._lookback
-        print('entering hxts retrieve')
         filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
-        print('printing csv filename in hxts retrieve {}'.format(filename))
-        print(index)
         lst = []
         if isinstance(index, slice):
-            if abs(index.stop) < self._lookback and abs(index.start) < self._lookback:
-                # if still within caching limit, retrieve from cache
-                return self._cache[index]
+            try:
+                # for handling index cases with integer bounded intervals and steps i.e. [-4:-2]
+                if abs(index.stop) < self._lookback and abs(index.start) < self._lookback:
+                    # if still within caching limit, retrieve from cache
+                    return self._cache[index]
+            except TypeError as e:
+                # for handling index cases without integer bounded intervals and steps i.e. [-2:]
+                if index.stop is None and abs(index.start) < self._lookback:
+                    # if still within caching limit, retrieve from cache
+                    return self._cache[index]
+                if index.stop is None and abs(index.start) >= self._lookback:
+                    # if not within caching limit, retrieve from file
+                    with open(filename, "r") as f:
+                        reader = csv.reader(f, delimiter=',')
+                        for i, row in enumerate(f):
+                            if i == 0: pass
+                            else:
+                                row = [float(x) for x in row.rstrip('\n').split(',')]
+                                lst += row
+                        lst += self._cache
+
             else:
                 with open(filename, "r") as f:
                     reader = csv.reader(f, delimiter=',')

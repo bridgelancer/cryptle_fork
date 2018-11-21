@@ -84,15 +84,17 @@ class Portfolio:
         else:
             del self.balance[asset]
 
-    def bought(self, asset, amount, cost):
+    def bought(self, asset, amount, price):
         """Helper method to update a portfolio after buying."""
         self.deposit(asset, amount)
-        self.cash -= cost
+        self.cash -= price * amount
+        print('bought:', self.balance)
 
-    def sold(self, asset, amount, cost):
+    def sold(self, asset, amount, price):
         """Helper method to update a portfolio after selling."""
         self.withdraw(asset, amount)
-        self.cash += cost
+        self.cash += price * amount
+        print('sold:', self.balance)
 
     def equity(self, asset_prices):
         """Calculate the current market value of this portfolio.
@@ -199,6 +201,7 @@ class Strategy:
             raise AttributeError('Expected implementation of onCandle()')
 
     # [ Helpers to access portfolio object ]
+    @property
     def hasCash(self):
         """Return a boolean on whether the strategy has available cash."""
         return self.portfolio.cash > 0
@@ -287,7 +290,7 @@ class TradingStrategy(Strategy):
         else:
             raise ExchangeError('Order placement failed')
 
-    def _cleanupBuy(self, asset, amount, price):
+    def _cleanupBuy(self, asset, price, amount):
         self.portfolio.bought(asset, amount, price)
         # self.trades.append([timestamp, price])
 
@@ -390,6 +393,7 @@ class SingleAssetStrategy(TradingStrategy):
         """Return the maximum amount of asset that the portfolio can sell."""
         return self.portfolio.balance[self.asset]
 
+    @property
     def hasBalance(self):
         try:
             return self.portfolio.balance[self.asset] > 0

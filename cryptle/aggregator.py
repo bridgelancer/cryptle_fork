@@ -117,7 +117,6 @@ class Aggregator:
             self._pushAllMetrics(finished_candle.open, finished_candle.close, finished_candle.high,
                     finished_candle.low, finished_candle.timestamp, finished_candle.volume,
                     finished_candle.netvol)
-            print(finished_candle)
             return finished_candle._bar
         elif len(self._bars) == 1:
             self._pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)

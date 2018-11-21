@@ -1,0 +1,42 @@
+pivot points
+line 62 - 75 = definition of pivot points
+
+Definition
+
+uptrend window: dlc > 0, rsi > 50
+end of uptrend window = rsi <40 or rsi <50 if rsi reached 70 at some point
+cabinet = the price range between a pair of ceiling/floor of a pivot table
+
+***cabinet duration is 1d***
+
+Four scenarios for entry:
+1.  deltarsi > upperband of itself
+    -   if in lower half of the cabinet:
+            the target entry price is the midpoint between the ceiling/floor
+    -   elif in upper half of the cabinet:
+            the target entry price is 1/4 of current cabinet greater than the ceiling
+2.  deltarsi < upperband of itself
+    -  if in lower half of the cabinet:
+            enter immediately
+    -   elif in upper half ot he cabinet:
+            the target entry price is 1/4 of current cabinet greater than the ceiling
+
+Special handling of edge cases:
+    When determining the reference cabinet:
+    -   Determine on the fly, based on where the cabinet of the first bar of uppertrend is located
+
+    If uptrend is to be rollover:
+    -   set the target cabinet to the one where the starting rollovered bar is located
+
+Scaling out
+-   RSI diff > upperband and current price > buy price => scale out 30% of initial equity
+
+Exit
+-   Always take highest cabinet reached on close price
+-   Always exit the entire position
+
+1.  Fail safe
+    -   at the floor of the cabinet below the reference cabinet
+
+2.  Stop loss
+    -   at the midpoint between the lower cabinet - trigger only if not uptrend
