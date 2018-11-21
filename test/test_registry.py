@@ -20,9 +20,12 @@ from metric.timeseries.candle import CandleStick
 from metric.timeseries.sma import SMA
 
 
-logging.basicConfig(level=logging.FATAL)
-dataset = pd.read_csv(open('bitstamp.csv'))
-tickset = pd.read_json(open('bch1.log'), convert_dates=False, lines=True)
+try:
+    dataset = pd.read_csv(open('bitstamp.csv'))
+    tickset = pd.read_json(open('bch1.log'), convert_dates=False, lines=True)
+except FileNotFoundError:
+    dataset = pd.DataFrame()
+    tickset = pd.DataFrame()
 
 # **********************************************************************************************
 # IMPORTANT NOTES: apart from basic construction tests, all the following tests are checked via
