@@ -1,13 +1,13 @@
+import sys
+import time
+import random
+import logging
+import argparse
+import itertools
+
 from cryptle.backtest import *
 from cryptle.strategy import Portfolio
-#from cryptle.plotting import *
 import cryptle.logging
-
-import logging
-import time
-import sys
-import itertools
-import random
 
 
 sh = cryptle.logging.get_streamhandler()              # defaults to logging.INFO
@@ -109,13 +109,6 @@ def snoop_random(Strat, dataset, pair, runs, **kws):
             print ('%i Strategy configs' % run + ' finished parsing')
 
 
-from wmabollingerrsi import WMAForceBollingerRSIStrat
-from wmamacdrsi import WMAMACDRSIStrat
-from wmarsiobc import WMARSIOBCStrat
-
-#import matplotlib.pyplot as plt
-
-
 def demoRSIOBC(dataset, pair):
     port = Portfolio(10000)
     exchange = PaperExchange(commission=0.0012, slippage=0)
@@ -194,8 +187,6 @@ def demoMACDStrat(dataset, pair):
         indicators=[[bband], [equity]])
 
 
-from macdsnb_v2 import SNBStrat
-
 def snoop_macdsnb(dataset, pair, **kws):
     """Snoop necessary parameters for a paritcular strategy on a single run.
 
@@ -262,6 +253,4 @@ def snoop_macdsnb(dataset, pair, **kws):
 
 
 if __name__ == '__main__':
-    snoop_macdsnb('xrp.log', 'xrpusd')
-    #demoMACDStrat('data/bch_correct.log',  'bchusd')
-    #plt.show()
+    pass
