@@ -24,7 +24,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    'm2r',
 ]
 
 autodoc_member_order = 'bysource'
@@ -33,7 +32,6 @@ autodoc_member_order = 'bysource'
 # HTML -----------------------------------------------------------------------
 
 html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
 html_last_updated_fmt = '%b %d, %Y'
 htmlhelp_basename = 'Cryptledoc'
 html_theme_options = {
