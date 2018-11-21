@@ -28,20 +28,6 @@ import time
 import sys
 import traceback
 
-formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')
-
-sh = logging.StreamHandler()
-sh.setLevel(logging.INFO)
-sh.setFormatter(formatter)
-
-fh = logging.FileHandler('timeseriestest.log', mode='w')
-fh.setLevel(logging.DEBUG)
-fh.setFormatter(formatter)
-
-logger = logging.getLogger('Timeseries')
-logger.setLevel(logging.DEBUG)
-logger.addHandler(sh)
-logger.addHandler(fh)
 
 const        = [3 for i in range(1, 100)]
 lin          = [i for i in range(1, 100)]
