@@ -1,7 +1,7 @@
 from cryptle.backtest import *
 from cryptle.strategy import Portfolio
-from cryptle.logging import *
 #from cryptle.plotting import *
+import cryptle.logging
 
 import logging
 import time
@@ -10,24 +10,13 @@ import itertools
 import random
 
 
-formatter = defaultFormatter(notimestamp=True)
+sh = cryptle.logging.get_streamhandler()              # defaults to logging.INFO
+fh = cryptle.logging.get_filehandler('backtest.log')  # defaults to logging.DEBUG
 
-sh = logging.StreamHandler()
-sh.setLevel(logging.REPORT)
-sh.setFormatter(formatter)
-
-fh = logging.FileHandler('backtest.1.log', mode='w')
-fh.setLevel(logging.METRIC)
-fh.setFormatter(formatter)
-
-logger = logging.getLogger('Backtest')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(sh)
 logger.addHandler(fh)
-
-stratlog = logging.getLogger('Strategy')
-stratlog.setLevel(logging.METRIC)
-stratlog.addHandler(fh)
 
 baselog = logging.getLogger('cryptle')
 baselog.setLevel(logging.METRIC)
