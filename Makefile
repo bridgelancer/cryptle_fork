@@ -40,7 +40,10 @@ test_%:
 
 
 # Linting configuration
-PYLINT_DISABLES := C  # Ignore convention warnings
+PYLINT_DISABLES := C      # Ignore convention linting
+PYLINT_DISABLES += W0221  # Ignore warnings of function signature overloading
+PYLINT_DISABLES += E1205  # Ignore errors of logging args since we're using custom log formatting
+# support for str.format() log message format will be in the next release of pylint
 
 comma := ,
 empty :=

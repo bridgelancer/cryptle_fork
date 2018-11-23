@@ -11,7 +11,7 @@ import websocket as ws
 from .exception import *
 
 
-_log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 KEY       = 'de504dc5763aeef9ff52'
 CLIENT_ID = 'PythonPusherClient'
 VERSION   = '0.2.0'
@@ -138,10 +138,10 @@ class BitstampFeed:
         if self.connected:
             return
 
-        _log.info('Attempting to connect')
+        logger.info('Attempting to connect')
         url = _build_bitstamp_url()
         self._ws.connect(url)
-        _log.info('Connection establishedd')
+        logger.info('Connection establishedd')
 
         self._recv_thread = Thread(target=self._recvForever)
         self._recv_thread.setDaemon(True)
@@ -175,24 +175,24 @@ class BitstampFeed:
         self._callbacks[event].append(cb)
         try:
             # functions
-            _log.info('Add callback <{}> for event "{}"'.format(cb.__name__, event))
+            logger.info('Add callback <{}> for event "{}"', cb.__name__, event)
         except AttributeError:
             # functors
-            _log.info('Add callback {} for event "{}"'.format(repr(cb), event))
+            logger.info('Add callback {} for event "{}"', repr(cb), event)
 
     # ----------
     # Outgoing messages complying to Pusher API
     # ----------
     def _subscribe(self, channel):
-        _log.info('Subscribing to channel: {}'.format(channel))
+        logger.info('Subscribing to channel: {}', channel)
         self._send({'event': 'pusher:subscribe',  'data': {'channel': channel}})
 
     def _unsubscribe(self, channel):
-        _log.info('Unsubscribing from channel: {}'.format(channel))
+        logger.info('Unsubscribing from channel: {}', channel)
         self._send({'event': 'pusher:unsubscribe',  'data': {'channel': channel}})
 
     def _pong(self):
-        _log.info('Ping-pong')
+        logger.info('Ping-pong')
         self._send({'event': 'pusher:pong'})
 
     def _send(self, msg):
@@ -203,7 +203,7 @@ class BitstampFeed:
         """
         raw_msg = json.dumps(msg)
         self._ws.send(raw_msg)
-        _log.debug('Sent: {}'.format(raw_msg))
+        logger.debug('Sent: {}', raw_msg)
 
     # ----------
     # Process incoming messages
@@ -215,15 +215,15 @@ class BitstampFeed:
         raw string messages are then parsed into python objects and passed onto
         the appropriate methods for the corresponding types of message.
         """
-        _log.info('Receiver thread started')
+        logger.info('Receiver thread started')
         while self.connected and self.running:
             try:
                 # Recevive low level websocket message
                 try:
                     raw_msg = self._ws.recv()
                 except ws.WebSocketConnectionClosedException:
-                    # @Todo: restart?
-                    _log.warning('Websocket closed')
+                    # Todo: restart?
+                    logger.warning('Websocket closed')
                     break
                 except ws.WebSocketTimeoutException:
                     continue
@@ -253,7 +253,7 @@ class BitstampFeed:
             except Exception as e:
                 _, _, tb = sys.exc_info()
                 traceback.print_tb(tb)
-                _log.error('(callback error):{}({})'.format(type(e).__name__, e))
+                logger.error('(callback error):{}({})', type(e).__name__, e)
 
             else:
-                _log.debug('Received: {}'.format(raw_msg))
+                logger.debug('Received: {}', raw_msg)

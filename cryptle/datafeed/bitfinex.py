@@ -13,7 +13,7 @@ import websocket as ws
 from .exception import *
 
 
-_log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 WSURL = 'wss://api.bitfinex.com/ws/2'
 
 
@@ -121,9 +121,9 @@ class BitfinexFeed:
         if self.connected:
             return
 
-        _log.info('Attempting to connect')
+        logger.info('Attempting to connect')
         self._ws.connect(WSURL, **options)
-        _log.info('Connection establishedd')
+        logger.info('Connection establishedd')
 
         self._recv_thread = Thread(target=self._recvForever)
         self._recv_thread.setDaemon(True)
@@ -158,11 +158,11 @@ class BitfinexFeed:
             msg = {'event': 'subscribe', 'channel': channel}
             msg.update(kwargs)
 
-            _log.info('Subscribing: {}'.format(event))
+            logger.info('Subscribing: {}', event)
             self._send(msg)
 
         self._callbacks[event].append(callback)
-        _log.info('Add callback: "{}"'.format(event))
+        logger.info('Add callback: "{}"', event)
 
     # ----------
     # Send outgoing messages
@@ -170,7 +170,7 @@ class BitfinexFeed:
     def _send(self, msg):
         raw_msg = json.dumps(msg)
         self._ws.send(raw_msg)
-        _log.debug('Sent: {}'.format(raw_msg))
+        logger.debug('Sent: {}', raw_msg)
 
     # ----------
     # Process incoming messages
@@ -182,14 +182,14 @@ class BitfinexFeed:
         raw string messages are then parsed into python objects and passed onto
         the appropriate methods for the corresponding types of message.
         """
-        _log.info('Receiver thread started')
+        logger.info('Receiver thread started')
         while self.connected and self.running:
             try:
                 try:
                     raw_msg = self._ws.recv()
                 except ws.WebSocketConnectionClosedException:
                     # @Todo: restart?
-                    _log.warning('Websocket closed')
+                    logger.warning('Websocket closed')
                     break
                 except ws.WebSocketTimeoutException:
                     continue
@@ -203,10 +203,10 @@ class BitfinexFeed:
             except Exception as e:
                 _, _, tb = sys.exc_info()
                 traceback.print_tb(tb)
-                _log.error('(callback error):{}:{}'.format(type(e).__name__, e))
+                logger.error('(callback error):{}:{}', type(e).__name__, e)
 
             else:
-                _log.debug('Received: {}'.format(raw_msg))
+                logger.debug('Received: {}', raw_msg)
 
     def _handleMessage(self, msg):
         bfx_event = msg['event']
@@ -214,33 +214,33 @@ class BitfinexFeed:
         if bfx_event == 'info':
             code = msg.pop('code', 0)
             if not code:
-                _log.info('Connection acknowledged')
+                logger.info('Connection acknowledged')
             elif code == Code.EVT_STOP:
                 # @Todo handle reconnect
-                _log.info('Server stopped. Reconnect later')
+                logger.info('Server stopped. Reconnect later')
             elif code == Code.EVT_RESYNC_START:
                 # @Todo handle reconnect
-                _log.info('Server resyncing. Reconnect later')
+                logger.info('Server resyncing. Reconnect later')
             elif code == Code.EVT_RESYNC_STOP:
                 # @Todo handle reconnect
-                _log.info('Server stopped. Reconnecting')
+                logger.info('Server stopped. Reconnecting')
 
         elif bfx_event == 'error':
             code      = msg['code']
             event_msg = msg['msg']
 
             if code not in Code or code == Code.ERR_UNK:
-                _log.error('{}:Unknown error'.format(code))
+                logger.error('{}:Unknown error', code)
             elif code == Code.ERR_READY:
                 # @Todo not ready to reconnect
                 pass
             else:
-                _log.error('{}:{}'.format(code, event_msg))
+                logger.error('{}:{}', code, event_msg)
 
         elif bfx_event == 'subscribed':
             cid, event = encode_event(msg)
             self._id_event[cid] = event
-            _log.info('Subscription success "{}":{}'.format(event, cid))
+            logger.info('Subscription success "{}":{}', event, cid)
 
         elif bfx_event == 'pong':
             pass
@@ -251,7 +251,7 @@ class BitfinexFeed:
     def _handleUpdate(self, msg):
         # Ignore heartbeat
         if msg[1] == 'hb':
-            _log.info('Heartbeat {}'.format(msg[0]))
+            logger.info('Heartbeat {}', msg[0])
             return
         cid = msg.pop(0)
         event= self._id_event[cid]

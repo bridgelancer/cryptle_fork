@@ -57,7 +57,7 @@ class Portfolio:
     def deposit(self, asset, amount):
         """Increase the amount held of an asset from the balance."""
         self.balance[asset] += amount
-        logger.debug('Deposited {} {}'.format(amount, asset))
+        logger.debug('Deposited {} {}', amount, asset)
 
     def withdraw(self, asset, amount):
         """Decrease the amount held of an asset from the balance."""
@@ -68,7 +68,7 @@ class Portfolio:
             raise ValueError('Insufficient balance of %s' % asset)
 
         self.balance[asset] -= amount
-        logger.debug('Withdrew {} {}'.format(amount, asset))
+        logger.debug('Withdrew {} {}', amount, asset)
 
         # Keep the internal balance free from 0 valued keys
         if self.balance[asset] == 0:
@@ -350,23 +350,22 @@ class SingleAssetStrategy(TradingStrategy):
         except AttributeError:
             raise AttributeError('Expected implementation of onTrade()')
 
-    def pushCandle(self, op, cl, hi, lo, ts, vol):
+    def pushCandle(self, op: float, cl:float, hi:float, lo:float, ts:int, vol:float):
         # todo: input validation
-
         try:
             self.onCandle(op, cl, hi, lo, ts, vol)
         except AttributeError:
             raise AttributeError('Expected implementation of onCandle()')
 
-    def marketBuy(self, amount):
+    def marketBuy(self, amount:float):
         """Wrapper over the base Strategy.marketBuy() for single asset."""
         super().marketBuy(self.asset, amount)
 
-    def marketSell(self, amount):
+    def marketSell(self, amount:float):
         """Wrapper over the base Strategy.marketSell() for single asset."""
         super().marketSell(self.asset, amount)
 
-    def limitBuy(self, amount, price):
+    def limitBuy(self, amount:float, price:float):
         """Wrapper over the base Strategy.limitBuy() for single asset."""
         super().limitBuy(self.asset, amount, price)
 
