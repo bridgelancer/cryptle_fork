@@ -13,6 +13,9 @@ setup(
     python_requires='>=3.5',
     install_requires=[
         'numpy>=1.13',
+        'pandas>=0.21.0',
+        'scipy>=1.1.0',
+        'requests>=2.18.4',
         'websocket-client>=0.45',
     ],
     extras_require={
