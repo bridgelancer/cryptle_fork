@@ -22,6 +22,9 @@ setup(
         'dev': [
             'pylint>=2',
             'pytest>=3',
+            'Sphinx>=1.7.2',
+            'sphinx-autodoc-typehints>=1.5.1',
+            'sphinx-rtd-theme>=0.4.0',
         ]
     }
 )
