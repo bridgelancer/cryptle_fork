@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 # Type alias for compound return type in orderbook
+# (filled ids, (partial filled id, partial fill amount), partial fill amount)
 FilledOrders = Tuple[Set[int], Union[Tuple[int, float], None]]
 
 
@@ -274,7 +275,18 @@ class Paper:
     When used with the OO backtest interface, it should be passed to the
     Backtest object such that the market price is updated while the strategy
     processeses incoming market information.
+
+    Attributes
+    ----------
+    capital : float
+        Amount of cash deposit in the stub exchange account
+    commission : float
+        Commission for each order transaction
+    slippage : float
+        Slippage for each order transaction
+
     """
+
     def __init__(self, capital: float, commission=0, slippage=0):
         self.capital = capital
         self.commission = 0
@@ -282,7 +294,7 @@ class Paper:
 
         # Each traded pair will have it's own orderbook
         self._orderbooks = defaultdict(Orderbook)  # type: Dict[str, Orderbook]
-        self._last_price = defaultdict(float)
+        self._last_price = defaultdict(float)  # type: Dict[str, float]
 
     def __repr__(self):
         return "<{}(capital={})>".format(
@@ -290,23 +302,41 @@ class Paper:
             self.capital,
         )
 
-    # Todo emit events for each filled order
-    def update(self, pair: str, amount: float, price: float, time=None):
-        """Update the orderbook based on the provided new trade."""
+    def update(
+            self,
+            pair: str,
+            amount: float,
+            price: float,
+            time=None) -> FilledOrders:
+        """Update the orderbook based on the provided new trade.
+
+        Args
+        ----
+        pair : str
+            Identifer for the updated traded pair.
+        amount : float
+            Amount of last trade of updated pair.
+        pair : float
+            Price of last trade of updated pair.
+
+        """
+        # Accept order type (buy, sell) as a parameter.
         self._last_price[pair] = price
         book = self._orderbooks[pair]
 
-        # use market buy/sell to do this part
-        try:
-            if price <= book.top_bid:
-                return book.fill_bid(amount, price)
-        except IndexError:
-            pass
+        # Todo: optionally enable market buy/sell to clear this part
+        if len(book.bid_prices) > 0 and price <= book.top_bid:
+            filled_ids, partial = book.fill_bid(amount, price)
+        elif len(book.ask_prices) > 0 and price >= book.top_ask:
+            filled_ids, partial = book.fill_ask(amount, price)
 
         try:
-            if price >= book.top_ask:
-                return book.fill_ask(amount, price)
-        except IndexError:
+            for oid in filled_ids:
+                self._announce_orderfilled(oid)
+            if partial:
+                self._announce_orderpartail(*partial)
+            return filled_ids, partial
+        except NameError:  # no filled orders were found, skip
             pass
 
     def updatePrice(self, pair: str, price: float):
@@ -318,14 +348,14 @@ class Paper:
         if price:
             return self.limitBuy(asset, base, amount, price)
         else:
-            self.marketBuy(asset, base, amount, price)
+            self.marketBuy(asset, base, amount)
 
     def sell(self, asset, base, amount, price=None):
         """Automatically decides whether to use market or limit order."""
         if price:
             return self.limitSell(asset, base, amount, price)
         else:
-            self.marketSell(asset, base, amount, price)
+            self.marketSell(asset, base, amount)
 
     def marketBuy(self, asset, base, amount) -> Tuple[bool, float]:
         """Place a market buy order.
@@ -449,11 +479,9 @@ class Paper:
         NotImplementedError
 
     @source('order:partialfill:paper')
-    @staticmethod
-    def _announce_orderpartail(oid):
+    def _announce_orderpartail(self, oid, amount):
         return (oid, amount)
 
     @source('order:fill:paper')
-    @staticmethod
-    def _announce_orderfilled(oid):
+    def _announce_orderfilled(self, oid):
         return oid
