@@ -4,14 +4,12 @@ from cryptle.event import on, Bus
 ''' Temporary solution for passing timestamp to various Timeseries object '''
 
 class Timestamp(Timeseries):
-    def __init__(self, lookback, bus=None):
+    def __init__(self, lookback):
         super().__init__()
         self._lookback = lookback
         self._ts        = []
         self.value     = None
         self.name      = 'Timestamp'
-        if isinstance(bus, Bus):
-            bus.bind(self)
 
     @on('aggregator:new_timestamp')
     def appendTS(self, timestamp):

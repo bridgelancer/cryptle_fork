@@ -426,8 +426,12 @@ def test_n_per_period_n_per_signal():
     print('**************************N PER PERIOD N PER SIGNAL**************************')
     # sourcing 'strategy:triggered', only triggered if last open > sma.value
     bus        = Bus()
-    aggregator = Aggregator(3600, bus=bus)
-    stick      = CandleStick(1, bus=bus)
+    aggregator = Aggregator(3600)
+    stick      = CandleStick(1)
+
+    bus.bind(aggregator)
+    bus.bind(stick)
+
     def aboveSMA():
         try:
             if sma.value < float(stick.o):

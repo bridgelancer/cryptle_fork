@@ -27,7 +27,7 @@ class Registry:
     #   trigger (verb)     = refers to a successful run of client codes that emits
     #                        'strategy:triggered' or any execution of signal
 
-    def __init__(self, setup, bus=None):
+    def __init__(self, setup):
         # setup in conventional form - see test_registry.py for reference
         if all(len(item)>2 for x, item in setup.items()):
             self.setup = OrderedDict(sorted(setup.items(), key=lambda x: x[1][3]))
@@ -81,9 +81,6 @@ class Registry:
                     for x in signalTrigger['n per signal']:
                         ls[key][x[0]] = [-1, 1, 0]
         initialize()
-
-        if isinstance(bus, Bus):
-            bus.bind(self)
 
     # Refresh methods to maintain correct states
     @on('tick') # tick should be agnostic to source of origin, but should take predefined format

@@ -12,14 +12,12 @@ class Aggregator:
 
     '''
 
-    def __init__(self, period, auto_prune=False, maxsize=500, bus=None):
+    def __init__(self, period, auto_prune=False, maxsize=500):
         self.period         = period
         self._bars          = [] # this construct might be unnecessary
         self._auto_prune    = auto_prune
         self._maxsize       = maxsize
         self.last_timestamp = None
-        if isinstance(bus, Bus):
-            bus.bind(self)
 
     @on('tick')
     def pushTick(self, data):
