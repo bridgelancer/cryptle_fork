@@ -9,15 +9,16 @@ CORE_TESTS += test/test_cryptle.py
 CORE_TESTS += test/test_event.py
 CORE_TESTS += test/test_metric.py
 CORE_TESTS += test/test_registry.py
-CORE_TESTS += test/test_timeseries.py
 
-PLUGIN_TESTS += test/test_clock.py
 PLUGIN_TESTS += test/test_paper.py
 
-IO_TESTS += test_feed.py
+# tests that takes a long time e.g. IO intensive
+SLOW_TESTS += test/test_feed.py
+SLOW_TESTS += test/test_timeseries.py
+SLOW_TESTS += test/test_clock.py
 
 UNIT_TESTS = $(CORE_TESTS) $(PLUGIN_TESTS)
-ALL_TESTS  = $(CORE_TESTS) $(PLUGIN_TESTS) $(IO_TESTS)
+ALL_TESTS  = $(CORE_TESTS) $(PLUGIN_TESTS) $(SLOW_TESTS)
 
 test:
 	@pytest $(UNIT_TESTS)
@@ -25,8 +26,8 @@ test:
 testplugin:
 	@pytest $(PLUGIN_TESTS)
 
-testio:
-	@pytest $(IO_TESTS)
+testslow:
+	@pytest $(SLOW_TESTS)
 
 testall:
 	@pytest $(ALL_TESTS)
@@ -67,4 +68,4 @@ clean:
 	$(MAKE) -C docs clean
 
 
-.PHONY: doc test testall testio clean lint uml
+.PHONY: doc test testall testslow testpluging clean lint uml
