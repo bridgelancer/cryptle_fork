@@ -24,6 +24,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    'sphinx.ext.todo',
+    'sphinx_autodoc_typehints',
 ]
 
 autodoc_member_order = 'bysource'

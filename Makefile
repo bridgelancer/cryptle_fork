@@ -2,6 +2,9 @@
 doc:
 	@$(MAKE) -C docs html
 
+serve-doc:
+	@cd docs/_build/html && python3 -m http.server 5000
+
 
 # Unit test configuration
 # defeats the purpose of using pytest for test discovery, consider refactoring test layout

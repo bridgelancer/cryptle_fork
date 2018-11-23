@@ -319,12 +319,15 @@ class Paper:
         pair : float
             Price of last trade of updated pair.
 
+        Todo
+        -----
+        Optionally enable market buy/sell to clear this part
+
         """
         # Accept order type (buy, sell) as a parameter.
         self._last_price[pair] = price
         book = self._orderbooks[pair]
 
-        # Todo: optionally enable market buy/sell to clear this part
         if len(book.bid_prices) > 0 and price <= book.top_bid:
             filled_ids, partial = book.fill_bid(amount, price)
         elif len(book.ask_prices) > 0 and price >= book.top_ask:

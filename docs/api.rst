@@ -65,17 +65,17 @@ Exchange
 
 .. py:class:: Exchange
 
-   .. py:method:: marketBuy(asset: str, base: str, amount: float) -> Tuple[bool, price]
+   .. py:method:: marketBuy(asset, base, amount) -> Tuple[bool, price]
 
       Place market buy order. Returns two values, first being the whether the
       order were successfully placed, second being the average execution price.
 
-   .. py:method:: marketSell(asset: str, base: str, amount: float) -> Tuple[bool, price]
+   .. py:method:: marketSell(asset, base, amount) -> Tuple[bool, price]
 
       Place market sell order. Returns two values, first being the whether the
       order were successfully placed, second being the average execution price.
 
-   .. py:method:: limitBuy(asset: str, base: str, amount: float, price: float) -> Tuple[bool, int]
+   .. py:method:: limitBuy(asset, base, amount, price) -> Tuple[bool, int]
 
       Place limit buy order.
 
@@ -86,7 +86,7 @@ Exchange
       :return: Returns two values, first being the whether the order were
          successfully placed, second being the order id.
 
-   .. py:method:: limitSell(asset: str, base: str, amount: float, price: float) -> Tuple[bool, int]
+   .. py:method:: limitSell(asset, base, amount, price) -> Tuple[bool, int]
 
       Place limit sell order.
 
