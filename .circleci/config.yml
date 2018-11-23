@@ -1,0 +1,40 @@
+version: 2
+jobs:
+  test:
+    working_directory: ~/repo
+    docker:
+      # specify the python version
+      - image: circleci/python:3.5.6
+    steps:
+      - checkout
+      # give circlci permission to python install directories
+      - run: sudo chown -R circleci:circleci /usr/local/bin
+      - run: sudo chown -R circleci:circleci /usr/local/lib/python3.5/site-packages
+      # download and cache pip dependencies
+      - restore_cache:
+          keys:
+            - python-{{ .Branch }}
+            - python-
+      - run:
+          name: Install python dependencies
+          command: sudo pip install .[dev]
+      - save_cache:
+          key: python-{{ .Branch }}
+          paths:
+            - "/usr/local/bin"
+            - "/usr/local/lib/python3.5/site-packages"
+      # run linter
+      - run:
+          name: Start linter
+          command: make lint
+      # run tester, "when: always" makes sure tester is always run whether linting fail or succeed
+      - run:
+          name: Start tester
+          command: make test
+          when: always
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test
