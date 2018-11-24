@@ -11,7 +11,6 @@ serve-doc:
 CORE_TESTS += test/test_cryptle.py
 CORE_TESTS += test/test_event.py
 CORE_TESTS += test/test_metric.py
-CORE_TESTS += test/test_registry.py
 
 PLUGIN_TESTS += test/test_paper.py
 
