@@ -16,20 +16,18 @@ class CodeBlock:
     states =  ['initialized', 'rest', 'checked', 'executed', 'triggered']
     def __init__(self, funcpt, setup):
         self.name = funcpt.__name__
+        self.func = funcpt
         self.logic_status = {}
 
         self.machine = Machine(model=self, states=CodeBlock.states, initial='initialized')
 
         # transition that a CodeBlock possesses; add suitable callbacks and
         # before/after/conditions/unless to transitions for controlling behaviour of codeblocks
-        self.machine.add_transition(trigger='', source='initialized', dest='rest')
-        self.machine.add_transition(trigger='', source='rest', dest='checked')
+        self.machine.add_transition(trigger='initialize', source='initialized', dest='rest')
+        self.machine.add_transition(trigger='checking', source='rest', dest='executed',
+                before=self.func)
 
-        self.machine.add_transition(trigger='', source='checked', dest='executed')
-        self.machine.add_transition(trigger='', source='checked', dest='rest')
+        self.machine.add_transition(trigger='passTrigger', source='executed', dest='triggered')
+        self.machine.add_transition(trigger='failTrigger', source='executed', dest='rest')
 
-        self.machine.add_transition(trigger='', source='executed', dest='triggered')
-        self.machine.add_transition(trigger='', source='executed', dest='rest')
-
-        self.machine.add_transition(trigger='', source='triggered', dest='rest')
-
+        self.machine.add_transition(trigger='cleanup', source='triggered', dest='rest')
