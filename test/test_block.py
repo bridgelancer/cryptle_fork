@@ -54,7 +54,6 @@ def test_registration_to_reigstry():
     registry = Registry(setup)
     for item in registry.codeblocks:
         assert item.name == 'CB' + str(registry.codeblocks.index(item) + 1)
-        item.initialize()
         #item.checking()
 
 def test_initialization():
@@ -101,6 +100,12 @@ def test_initialization():
     assert registry.codeblocks[5].logic_status.logic_status == {'period': [3, 2]}
     assert registry.codeblocks[6].logic_status.logic_status == {'trade': [3, 1]}
     assert registry.codeblocks[7].logic_status.logic_status == {'damnson': [10000, 1]}
+
+    assert registry.codeblocks[0].state == 'rest'
+
+def is_executable():
+    pass
+
 
 #def test_checking():
 #    def CB1():

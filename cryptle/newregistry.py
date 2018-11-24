@@ -56,7 +56,7 @@ class Registry:
                                'close': self.new_close,}
 
         for code in self.codeblocks:
-            code.initialization()
+            code.initialize()
 
 
     # Refresh methods to maintain correct states
