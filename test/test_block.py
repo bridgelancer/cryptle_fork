@@ -93,8 +93,14 @@ def test_initialization():
              }
 
     registry = Registry(setup)
-    for i in range(0, 8, 1):
-        print(registry.codeblocks[i].logic_status.logic_status)
+    assert registry.codeblocks[0].logic_status.logic_status == {'bar': [1, 1]}
+    assert registry.codeblocks[1].logic_status.logic_status == {'trade': [1, 1]}
+    assert registry.codeblocks[2].logic_status.logic_status == {'period': [1, 2]}
+    assert registry.codeblocks[3].logic_status.logic_status == {'damn': [1, 1]}
+    assert registry.codeblocks[4].logic_status.logic_status == {'bar': [3, 1]}
+    assert registry.codeblocks[5].logic_status.logic_status == {'period': [3, 2]}
+    assert registry.codeblocks[6].logic_status.logic_status == {'trade': [3, 1]}
+    assert registry.codeblocks[7].logic_status.logic_status == {'damnson': [10000, 1]}
 
 #def test_checking():
 #    def CB1():
