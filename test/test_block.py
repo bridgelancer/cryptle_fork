@@ -1,5 +1,7 @@
 from cryptle.codeblock import CodeBlock
+from cryptle.newregistry import Registry
 import transitions
+
 
 def test_construction():
     def CB1():
@@ -26,3 +28,24 @@ def test_transition():
     assert cb1.state == 'triggered'
     cb1.cleanup()
     assert cb1.state == 'rest'
+
+def test_registration_to_reigstry():
+    def CB1():
+        print('successful regisration and execution CB1')
+
+    def CB2():
+        print('successful registration and execution CB2')
+
+    def CB3():
+        print('successful registration and execution CB3')
+
+    setup = {CB1: ['open', [['once per bar'], {}], 1],
+             CB2: ['close', [['once per bar'], {}], 2],
+             CB3: ['open', [['once per bar'], {}], 3],
+             }
+    registry = Registry(setup)
+    for item in registry.codeblocks:
+        assert item.name == 'CB' + str(registry.codeblocks.index(item) + 1)
+        item.initialize()
+        item.checking()
+
