@@ -3,6 +3,7 @@
 *.csv
 *.json
 *.xlsx
+*.conf
 *.config
 
 *.png

@@ -1,9 +1,12 @@
+#!/usr/bin/env python3
+
 import sys
 import time
 import random
 import logging
 import argparse
 import itertools
+import importlib
 
 from cryptle.backtest import *
 from cryptle.strategy import Portfolio
@@ -252,5 +255,46 @@ def snoop_macdsnb(dataset, pair, **kws):
             print('%i configs' % i + ' finished running')
 
 
+description = '''
+Run a simple backtest for a provided strategy class from a provided module. The
+strategy setup parameters are collected from a file formatted a key-value pair
+on every line, with a file name the same as the class (lowercased), but with
+".conf" extension.
+
+i.e. module_name.conf
+'''
+
+
+def main():
+    parser = argparse.ArgumentParser('backtest', description=description)
+    parser.add_argument('module', type=str, help='Module name that contains the strategy')
+    parser.add_argument('klass', type=str, metavar='class', help='Class name of the strategy')
+    parser.add_argument('dataset', type=argparse.FileType(), help='Dataset to use')
+
+    # Todo: Implement logging modes for both file and stdout
+    #parser.add_argument('--report-level', type=int, help='Logging level to stdout')
+    # Todo: Implement different backtest modes such single run, snooping, and batched
+    #parser.add_argument('--mode', choices=['single, snoop, batch'], default='single', help='todo')
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(2)
+
+    args = parser.parse_args()
+
+    lib = importlib.import_module(args.module)
+    logger.debug('Imported {}', args.module)
+
+    Strat = lib.__dict__[args.klass]
+    logger.debug('Found strategy class {}', args.klass)
+
+    config_file = args.klass.lower() + '.conf'
+    with open(config_file) as f:
+        config = {line.split('=') for line in f}
+    logger.debug('Loaded config file {}', config_file)
+
+    Strat(**{k: v for k, v in config})
+
+
 if __name__ == '__main__':
-    pass
+    main()
