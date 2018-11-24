@@ -54,34 +54,10 @@ class Registry:
         self.sell_count = 0
         self.lookup_check   = {'open': self.new_open,
                                'close': self.new_close,}
-        # key-value pair with class method as value to predefined name of contraints
-        self.lookup_trigger = {#'once': self.once,
-                               'once per bar': self.once_per_bar,
-                               'once per trade': self.once_per_trade,
-                               'once per period': self.once_per_period,
-                               'once per signal': self.once_per_signal,
-                               'n per bar': self.n_per_bar,
-                               'n per period': self.n_per_period,
-                               'n per trade': self.n_per_trade,
-                               'n per signal': self.n_per_signal}
 
-        # this is hardcoded fix -> registry should be revamped to be more concise
-        def initialize():
-            ls = self.logic_status
-            cs = self.setup
-            for key, action in self.setup.items():
-                onceTrigger = action[2][0]
-                signalTrigger = action[2][1]
-                o = 'once per signal'
-                n = 'n per signal'
+        for code in self.codeblocks:
+            code.initialization()
 
-                # Special handling: set the logic status of signal influencing the action to be [-1, 1, 0]
-                if 'once per signal' in action[2][1]:
-                    for x in signalTrigger['once per signal']:
-                        ls[key][x[0]] = [-1, 1, 0]
-                if 'n per signal' in action[2][1]:
-                    for x in signalTrigger['n per signal']:
-                        ls[key][x[0]] = [-1, 1, 0]
 
     # Refresh methods to maintain correct states
     @on('tick') # tick should be agnostic to source of origin, but should take predefined format
@@ -232,100 +208,15 @@ class Registry:
             # basically set the count to -1
             self.logic_status[key] = {cat:[-1] + [x for i, x in enumerate(val) if i != 0] for cat, val in test.items() if cat == timeEvent}
 
-    # On arrival of tick, handleCheck calls check and carries out checking
     @on('tick')
-    def handleCheck(self, tick):
-        if any(len(item) < 4 for k, item in self.setup.items()):
-            # for unspecified/incomplete order, the test would be run according to alphabetical
-            # order of test keys
-            for k, test in sorted(self.setup.items()):
-                self.check(test[0], test[1], test[2][0], self.logic_status[k])
-        else:
-            # execute the tests in setup in predefined order specified by the int of test[1][2]
-            for k, test in sorted(self.setup.items(), key=lambda s: s[1][3]):
-                self.check(test[0], test[1], test[2][0], self.logic_status[k])
+    def handleCheck(self):
+        for code in self.codeblocks:
+            setup = code.setup
+            self.check(code, setup[0], setup[1][0], code.logic_status)
 
-    # check should be able to enforce all constraints of client codes/tests against setup and logic
-    # status and emit 'registry:execute'
-    def check(self, pointer, whenexec, triggerSetup, triggerConstraints):
-        if (all(self.lookup_check[constraint] for constraint in whenexec) and
-           (all(triggerConstraints[logicStatus][0] > 1 for logicStatus in triggerConstraints) or
-               (triggerConstraints == {}))):
-                # emitExecuted would be called if
-                # 1.  Fulfilled constraint in whenexec
-                # 2.  Either all triggerConstraints allow execution or no triggerConstraint present
-                pointer()
+    def check(self, codeblock, whenexec, triggerSetup, logicConstraints):
+        if (all(self.lookup_check[constraint] for contraint in whenexec) and
+            all(logicConstraints[logicStatus][0] > 1 for logicStatus in logicConstraints) or
+                (logicConstraints == {})):
+            codeblock.checked()
 
-    # handleTrigger handles all the triggered client tests and apply suitable constraints via constraint functions
-    @on('strategy:triggered')
-    def handleTrigger(self, action):
-        # for updating constraints in the list of setup[1]
-        for item in self.setup[action][2][0]:
-            # reference of the constraint function stored in self.lookup_trigger
-            constraint = self.lookup_trigger[item]
-            constraint(action)
-        # for updating constraints in the dictionary of the setup[1]
-        for item in self.setup[action][2][1].keys():
-            # reference of the constraint function stored in self.lookup_trigger
-            constraint = self.lookup_trigger[item]
-            constraint(action, *self.setup[action][2][1][item])
-
-    ##################################CONSTRAINT FUNCTIONS##################################
-    # These are the functions that are called by handleTrigger and refreshSignal by iterating
-    # through the items of the list and keys of the dictionary of triggerConstraints
-
-    def once_per_bar(self, action):
-        if 'bar' not in self.logic_status[action].keys():
-            self.logic_status[action]['bar'] = [1, 1, self.num_bars]
-
-    def n_per_bar(self, action, *args):
-        if 'bar' not in self.logic_status[action].keys():
-            self.logic_status[action]['bar'] = [*args, 1, self.num_bars]
-        else:
-            self.logic_status[action]['bar'][0] -= 1
-
-    def once_per_period(self, action, *args):
-        if 'bar' not in self.logic_status[action].keys():
-            self.logic_status[action]['period'] = [1, *args, self.num_bars]
-
-    def n_per_period(self, action, *args):
-        if 'period' not in self.logic_status[action].keys():
-            self.logic_status[action]['period'] = [*args, self.num_bars]
-        else:
-            self.logic_status[action]['period'][0] -= 1
-        #print(self.logic_status)
-
-    def once_per_trade(self, action):
-        if 'period' not in self.logic_status[action].keys():
-            self.logic_status[action]['trade'] = [1, 1, self.num_bars]
-
-    def n_per_trade(self, action, *args):
-        if 'trade' not in self.logic_status[action].keys():
-            self.logic_status[action]['trade'] = [*args, 1, self.num_bars]
-        else:
-            self.logic_status[action]['trade'][0] -= 1
-
-    def once_per_signal(self, action, signal, *args):
-        #print('entering once per signal', action, signal, *args)
-        if signal in self.logic_status[action].keys():
-            # enter via refreshSignal
-            print(self.logic_status[action])
-            if self.logic_status[action][signal][0] == -1:
-                del self.logic_status[action][signal]
-        elif signal not in self.logic_status[action].keys():
-            self.logic_status[action][signal] = [1, 1, self.num_bars]
-        #print(self.logic_status[action])
-
-    # signal is say doneInit, its the dependancy
-    # action is say once per bar, listening when
-
-    def n_per_signal(self, action, signal, *args):
-        # so if this action is listening for some signals
-        if signal[0] in self.logic_status[action]:
-            # enter via refreshSignal
-            if self.logic_status[action][signal[0]][0] == -1:
-                del self.logic_status[action][signal[0]]
-            else:
-                self.logic_status[action][signal[0]][0] -= 1
-        elif signal[0] not in self.logic_status[action]:
-            self.logic_status[action][signal[0]] = [signal[1], 1, self.num_bars]
