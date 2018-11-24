@@ -149,6 +149,8 @@ reference documentation.
    of mixins.
 
 
+.. _events:
+
 Event Bus
 ---------
 Event buses allow events to be generated and observed. An event always come with
@@ -335,7 +337,7 @@ binding a function to listen for multiple events.
     assert test.data = 3  // True
 
 
-.. _events:
+.. _std_events:
 
 Standard Events
 ---------------

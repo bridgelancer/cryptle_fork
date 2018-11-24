@@ -63,9 +63,9 @@ class Bus:
     name : str
         An optional name. Defaults to the object id.
 
-    Note
+    Todo
     ----
-    Todo - Allow removal of callback/emitter bindings.
+    Allow removal of callback/emitter bindings.
 
     """
     def __init__(self):
@@ -85,11 +85,15 @@ class Bus:
         normal. Instance objects will be inspected, and methods decorated as
         source or callbacks will be bound.
 
-        Args:
-            object: The object to be bound/inspected.
+        Args
+        ----
+        object
+            The object to be bound/inspected.
 
-        Note:
-            Functors will not be treated as functions.
+        Note
+        ----
+        Functors will not be treated as functions.
+
         """
         decorated = False
 
@@ -146,7 +150,9 @@ class Bus:
         -------
         Does not work on instance methods. This is because without the use of
         metaclasses, bound methods do not inherit attributes from template
-        functions in the class.
+        functions in the class. Use the module level :func:`on` decorator
+        instead.
+
         """
         def decorator(func):
             self.addListener(event, func)
@@ -162,13 +168,17 @@ class Bus:
         A source can only emit one event. Multiple buses may be bounded to a source.
         When the source is called all binded buses will receive the event.
 
-        Note:
-            In use cases with multiple buses, the order that the buses receive the
-            event is in order that they were binded. This is an implementation
-            detail and is subject to change. Multi-thread usage is thus discouraged.
+        Note
+        ----
+        In use cases with multiple buses, the order that the buses receive the
+        event is in order that they were binded. This is an implementation
+        detail and is subject to change. Multi-thread usage is thus discouraged.
 
-        Warning:
-            Does not work on instance methods with the same reason as :meth:`Bus.on`
+        Warning
+        -------
+        Does not work on instance methods. Same reason as :meth:`Bus.on`. use
+        :func:`source`.
+
         """
         def decorator(func):
             emitter = self.makeEmitter(event, func)
