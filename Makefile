@@ -1,5 +1,5 @@
 install:
-	@PIPENV_VENV_IN_PROJECT=true pipenv install
+	@PIPENV_VENV_IN_PROJECT=true pipenv install -e .
 
 # Generate documentation
 doc:

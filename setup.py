@@ -1,10 +1,12 @@
 from setuptools import setup
 
+import cryptle
+
 
 setup(
     name='Cryptle',
-    version='0.11',
-    author='Twelve brothers',
+    version='.'.join(str(i) for i in cryptle.get_version()),
+    author='Glasphere',
     author_email='',
     description='Cryptle: Algorithmic trading framework',
     packages=['cryptle'],

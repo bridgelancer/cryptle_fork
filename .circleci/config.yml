@@ -13,11 +13,12 @@ jobs:
       # give circlci permission to python install directories
       - run: sudo chown -R circleci:circleci /usr/local/bin
       - run: sudo chown -R circleci:circleci /usr/local/lib/python3.5/site-packages
-      # download and cache pip dependencies
+      # download and cache python dependencies with pipenv
       - restore_cache:
           keys:
             - python-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "Pipfile.lock" }}
-            - python-{{ .Branch }}-{{ checksum "setup.py" }}
+            - python-{{ .Branch }}-{{ checksum "setup.py" }}-
+            - python-{{ .Branch }}-
             - python-
       - run:
           name: Install python dependencies
@@ -30,6 +31,8 @@ jobs:
             - ".venv"
             - "/usr/local/bin"
             - "/usr/local/lib/python3.5/site-packages"
+      # actiavte the pipenv
+      - run: source .venv/bin/activate
       # run linter
       - run:
           name: Start linter
