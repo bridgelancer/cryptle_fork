@@ -31,13 +31,9 @@ def test_transition():
     setup = ['open', [['once per bar'], {}], 1]
     cb1 = CodeBlock(CB1, setup)
     assert cb1.state == 'initialized'
-    cb1.initialize()
+    cb1.initializing()
     assert cb1.state == 'rest'
-    cb1.checking()
-    assert cb1.state == 'executed'
-    cb1.passTrigger()
-    assert cb1.state == 'triggered'
-    cb1.cleanup()
+    cb1.checking(2)
     assert cb1.state == 'rest'
 
 
@@ -96,14 +92,14 @@ def test_initialization():
              }
 
     registry = Registry(setup)
-    assert registry.codeblocks[0].logic_status.logic_status == {'bar': [1, 1]}
-    assert registry.codeblocks[1].logic_status.logic_status == {'trade': [1, 1]}
-    assert registry.codeblocks[2].logic_status.logic_status == {'period': [1, 2]}
-    assert registry.codeblocks[3].logic_status.logic_status == {'damn': [1, 1]}
-    assert registry.codeblocks[4].logic_status.logic_status == {'bar': [3, 1]}
-    assert registry.codeblocks[5].logic_status.logic_status == {'period': [3, 2]}
-    assert registry.codeblocks[6].logic_status.logic_status == {'trade': [3, 1]}
-    assert registry.codeblocks[7].logic_status.logic_status == {'damnson': [10000, 1]}
+    assert registry.codeblocks[0].logic_status.logic_status == {'bar': [1, 1, 0]}
+    assert registry.codeblocks[1].logic_status.logic_status == {'trade': [1, 1, 0]}
+    assert registry.codeblocks[2].logic_status.logic_status == {'period': [1, 2, 0]}
+    assert registry.codeblocks[3].logic_status.logic_status == {'damn': [1, 1, 0]}
+    assert registry.codeblocks[4].logic_status.logic_status == {'bar': [3, 1, 0]}
+    assert registry.codeblocks[5].logic_status.logic_status == {'period': [3, 2, 0]}
+    assert registry.codeblocks[6].logic_status.logic_status == {'trade': [3, 1, 0]}
+    assert registry.codeblocks[7].logic_status.logic_status == {'damnson': [10000, 1, 0]}
 
     for i in range(0, 8, 1):
         assert registry.codeblocks[i].state == 'rest'
@@ -113,20 +109,29 @@ def test_initialization():
 def test_is_executable():
     pass
 
-@pytest.mark.skip(reason='still implementing')
+#@pytest.mark.skip(reason='still implementing')
 def test_checking():
     def CB1():
-        print('successful enforce rudimentary checking CB1')
+        #print('successful enforce rudimentary checking CB1')
+        return True
 
     def CB2():
-        print('successful enforce rudimentary checking CB2')
+        #print('successful enforce rudimentary checking CB2', registry.current_time)
+        return True
 
     def CB3():
-        print('successful enforce rudimentary checking CB3')
+        #print('successful enforce rudimentary checking CB3')
+        return True
 
-    setup = {CB1: ['open', [['once per bar'], {}], 1],
-             CB2: ['close', [['once per bar'], {}], 2],
+    def CB4():
+        print('successful enforce rudimentary checking CB4', registry.current_time)
+        return True
+
+    setup = {
+             CB1: ['open', [['once per bar'], {}], 1],
+             CB2: ['open', [[], {'n per bar': [3]}], 2],
              CB3: ['open', [['once per bar'], {}], 3],
+             CB4: ['open', [[], {'n per period': [4, 2]}], 4],
              }
 
     @source('tick')
