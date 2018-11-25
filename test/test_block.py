@@ -107,9 +107,46 @@ def test_initialization():
         assert registry.codeblocks[i].state == 'rest'
 
 
-@pytest.mark.skip(reason='not implemented')
+#@pytest.mark.skip(reason='not implemented')
 def test_is_executable():
-    pass
+    def CB1():
+        print('successful regisration and execution CB1')
+
+    def CB2():
+        print('successful registration and execution CB2')
+
+    def CB3():
+        print('successful registration and execution CB3')
+
+    def CB4():
+        print('successful registration and execution CB4')
+
+    def CB5():
+        print('successful registration and execution CB5')
+
+    def CB6():
+        print('successful registration and execution CB6')
+
+    def CB7():
+        print('successful registration and execution CB7')
+
+    def CB8():
+        print('successful registration and execution CB8')
+
+    setup = {CB1: ['open', [['once per bar'], {}], 1],
+             CB2: ['close', [['once per trade'], {}], 2],
+             CB3: ['close', [[], {'once per period': [2]}], 3],
+             CB4: ['open', [[], {'once per signal': [CB3, 'damn']}], 4],
+             CB5: ['open', [[], {'n per bar': [3]}], 5],
+             CB6: ['open', [[], {'n per period':[3, 2]}], 6],
+             CB7: ['open', [[], {'n per trade':[3, 1]}], 7],
+             CB8: ['open', [[], {'n per signal': [[CB6, 'damnson', 10000], ]}], 8],
+             }
+
+    registry = Registry(setup)
+    for i in range(0, 8, 1):
+        assert registry.codeblocks[i].logic_status.is_executable() == True
+
 
 def test_checking():
     def CB1():

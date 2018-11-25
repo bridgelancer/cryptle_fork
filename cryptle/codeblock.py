@@ -27,8 +27,8 @@ class LogicStatus:
                              }
 
     def is_executable(self):
-        assert self.logic_status == {} or len(self.logic_status) == 2 and \
-            all(all(isinstance(value, int) for val in item) for k, item in self.logic_status.items())
+        assert all(len(item) == 3 for item in self.logic_status.values()) and \
+            all(all(isinstance(val, int) for val in item) for k, item in self.logic_status.items())
 
         if all(item[0] > 0 for k, item in self.logic_status.items()):
             return True
