@@ -24,6 +24,58 @@ def test_construction():
     assert cb1.name == 'CB1'
     assert cb1.states == ['initialized', 'rest', 'checked', 'executed', 'triggered']
 
+def test_on_close():
+    def twokprice():
+        flags = {"twokflag": True, 'twokflagfuckyou': True}
+        if registry.current_price is not None:
+            if registry.current_price > 1000:
+                flags['twokflag'] = True
+            else:
+                flags['twokflag'] = False
+
+        return True, flags
+
+    setup = {twokprice: ['close', [['once per bar'], {}], 1]}
+    registry = Registry(setup)
+
+    @source('aggregator:new_close')
+    def parseClose(val):
+        return val
+
+    bus = Bus()
+    bus.bind(parseClose)
+    bus.bind(registry)
+
+    for value in dataset['close']:
+        parseClose(value)
+    assert registry.close_price == 6453.99
+
+## only activate when it is bar open
+def test_on_open():
+
+    def twokprice():
+        flags = {"twokflag": True, 'twokflagfuckyou': True}
+        if registry.current_price is not None:
+            if registry.current_price > 1000:
+                flags['twokflag'] = True
+            else:
+                flags['twokflag'] = False
+
+        return True, flags
+
+    setup = {twokprice: [['open'], [['once per bar'],{}], 1]}
+    registry = Registry(setup)
+
+    @source('aggregator:new_open')
+    def parseOpen(val):
+        return val
+
+    bus = Bus()
+    bus.bind(parseOpen)
+    bus.bind(registry)
+    for value in dataset['open']:
+        parseOpen(value)
+    assert registry.open_price == 6375.11
 
 def test_transition():
     def CB1():
@@ -191,7 +243,6 @@ def test_checking():
 # Seems like it is working
 def test_signals():
     def doneInit():
-        #print('successful enforce rudimentary checking CB1')
         flags = {"doneInitflag": True}
         return True, flags
 
@@ -206,9 +257,8 @@ def test_signals():
         return True, flags
 
     def CB2():
-        #print('successful enforce rudimentary checking CB2', registry.current_time)
-        flags = {"c": False, "d":False}
         print('successfully check according to flag', registry.current_time, registry.current_price)
+        flags = {"c": False, "d":False}
         return True, flags
 
     setup = {
