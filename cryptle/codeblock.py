@@ -96,16 +96,17 @@ class LogicStatus:
         else:
             self.logic_status['trade'][0] -= 1
 
-    def once_per_signal(self, signal, *args, num_bars):
-        if signal not in self.logic_status.keys():
-            self.logic_status[signal] = [1, 1, num_bars]
+    # might as well change to once_per_flag instead
+    def once_per_signal(self, codeblock, flag, *args, num_bars):
+        if flag not in self.logic_status.keys():
+            self.logic_status[flag] = [1, 1, num_bars]
 
-    def n_per_signal(self, signal, *args, num_bars):
-        if signal[0] in self.logic_status:
-            self.logic_status[signal[0]][0] -= 1
+    # might as well change to n_per_flag instead
+    def n_per_signal(self, lst, *args, num_bars):
+        if lst[1] in self.logic_status:
+            self.logic_status[lst[1]][0] -= 1
         else:
-            self.logic_status[signal[0]] = [signal[1], 1, num_bars]
-
+            self.logic_status[lst[1]] = [lst[2], 1, num_bars]
 
 
 class CodeBlock:
@@ -124,6 +125,7 @@ class CodeBlock:
         self.logic_status = LogicStatus(setup, {})
         self.triggered = False
         self.last_triggered = None
+        self.flags = {}
 
         self.machine = Machine(model=self, states=CodeBlock.states, initial='initialized')
 
@@ -132,16 +134,16 @@ class CodeBlock:
         self.machine.add_transition(trigger='initializing', source='initialized', dest='rest',
                 before='initialize')
         self.machine.add_transition(trigger='checking', source='rest', dest='executed',
-                after=self.check)
+                after='check')
 
-        self.machine.add_transition(trigger='passTrigger', source='executed', dest='triggered')
-        self.machine.add_transition(trigger='failTrigger', source='executed', dest='rest')
+        self.machine.add_transition(trigger='passingTrigger', source='executed', dest='triggered')
+        self.machine.add_transition(trigger='failingTrigger', source='executed', dest='rest')
 
         self.machine.add_transition(trigger='cleaningUp', source='triggered', dest='rest',
                 after='update')
 
         self.machine.add_transition(trigger='refreshing', source='rest', dest='rest',
-                before=self.refresh)
+                before='refresh')
 
     # run initialization for each item in Registry.codeblocks
     def initialize(self):
@@ -149,13 +151,14 @@ class CodeBlock:
         self.logic_status.resetAll(0)
 
     def check(self, num_bars):
-        self.triggered = self.func()
+        self.triggered, self.flags = self.func()
+
         if self.triggered:
             self.last_triggered = num_bars
-            self.passTrigger()
+            self.passingTrigger()
             self.cleaningUp(num_bars) # need to pass updateConstraint to update
         else:
-            self.failTrigger()
+            self.failingTrigger()
 
     def update(self, num_bars):
         self.logic_status.resetAll(num_bars) # all to be updated once -> correct implementation

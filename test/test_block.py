@@ -17,6 +17,7 @@ except FileNotFoundError:
 def test_construction():
     def CB1():
         print('successful construction')
+        return True, {}
 
     setup = ['open', [['once per bar'], {}], 1]
     cb1 = CodeBlock(CB1, setup)
@@ -26,7 +27,8 @@ def test_construction():
 
 def test_transition():
     def CB1():
-        print('successful construction')
+        print('successful transition')
+        return True, {}
 
     setup = ['open', [['once per bar'], {}], 1]
     cb1 = CodeBlock(CB1, setup)
@@ -84,11 +86,11 @@ def test_initialization():
     setup = {CB1: ['open', [['once per bar'], {}], 1],
              CB2: ['close', [['once per trade'], {}], 2],
              CB3: ['close', [[], {'once per period': [2]}], 3],
-             CB4: ['open', [[], {'once per signal': ['damn']}], 4],
+             CB4: ['open', [[], {'once per signal': [CB3, 'damn']}], 4],
              CB5: ['open', [[], {'n per bar': [3]}], 5],
              CB6: ['open', [[], {'n per period':[3, 2]}], 6],
              CB7: ['open', [[], {'n per trade':[3, 1]}], 7],
-             CB8: ['open', [[], {'n per signal': [['damnson', 10000], ]}], 8],
+             CB8: ['open', [[], {'n per signal': [[CB6, 'damnson', 10000], ]}], 8],
              }
 
     registry = Registry(setup)
@@ -109,23 +111,22 @@ def test_initialization():
 def test_is_executable():
     pass
 
-#@pytest.mark.skip(reason='still implementing')
 def test_checking():
     def CB1():
         #print('successful enforce rudimentary checking CB1')
-        return True
+        return True, {}
 
     def CB2():
         #print('successful enforce rudimentary checking CB2', registry.current_time)
-        return True
+        return True, {}
 
     def CB3():
         #print('successful enforce rudimentary checking CB3')
-        return True
+        return True, {}
 
     def CB4():
         print('successful enforce rudimentary checking CB4', registry.current_time)
-        return True
+        return True, {}
 
     setup = {
              CB1: ['open', [['once per bar'], {}], 1],
@@ -150,3 +151,49 @@ def test_checking():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
 
+# Seems like it is working
+def test_signals():
+    def doneInit():
+        #print('successful enforce rudimentary checking CB1')
+        flags = {"doneInitflag": True}
+        return True, flags
+
+    def twokprice():
+        flags = {"twokflag": True, 'twokflagfuckyou': True}
+        if registry.current_price is not None:
+            if registry.current_price > 1000:
+                flags['twokflag'] = True
+            else:
+                flags['twokflag'] = False
+
+        return True, flags
+
+    def CB2():
+        #print('successful enforce rudimentary checking CB2', registry.current_time)
+        flags = {"c": False, "d":False}
+        print('successfully check according to flag', registry.current_time, registry.current_price)
+        return True, flags
+
+    setup = {
+             doneInit: ['open', [['once per bar'], {}], 1],
+             twokprice: ['open', [['once per bar'], {}], 2],
+             CB2: [[], [[], {'n per bar': [3], 'n per signal': \
+                 [[doneInit, 'doneInitflag', 10000], [twokprice, 'twokflag', 100], [twokprice,
+                 'twokflagfuckyou', 10], ]}], 3],
+             }
+
+
+    registry = Registry(setup)
+    @source('tick')
+    def emitTick(tick):
+        return tick
+    aggregator = Aggregator(3600)
+
+    bus = Bus()
+    bus.bind(emitTick)
+    bus.bind(aggregator)
+    bus.bind(registry)
+
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
