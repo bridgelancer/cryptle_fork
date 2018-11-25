@@ -6,9 +6,9 @@ import sys
 import traceback
 
 from cryptle.logging import *
-from metric.base import *
-from metric.candle import *
-from metric.generic import *
+from cryptle.metric.base import *
+from cryptle.metric.candle import *
+from cryptle.metric.generic import *
 
 
 # Initialise sample series

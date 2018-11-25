@@ -13,14 +13,14 @@ jobs:
       # download and cache pip dependencies
       - restore_cache:
           keys:
-            - python-{{ .Branch }}-{{ checksum setup.py }}
+            - python-{{ .Branch }}-{{ checksum "setup.py" }}
             - python-{{ .Branch }}
             - python-
       - run:
           name: Install python dependencies
           command: sudo pip install .[dev]
       - save_cache:
-          key: python-{{ .Branch }}-{{ checksum setup.py }}
+          key: python-{{ .Branch }}-{{ checksum "setup.py" }}
           paths:
             - "/usr/local/bin"
             - "/usr/local/lib/python3.5/site-packages"
