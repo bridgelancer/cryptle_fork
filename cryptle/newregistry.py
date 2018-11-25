@@ -64,24 +64,20 @@ class Registry:
     def refreshTick(self, tick):
         self.new_open = False
         self.new_close = False
-        self.lookup_check   = {'open': self.new_open,
-                               'close': self.new_close,}
         self.current_price = tick[0]
         self.current_time  = tick[2]
+        print('refreshTick', self.new_open)
 
     @on('aggregator:new_open') # 'open', 'close' events should be emitted by aggregator
     def refreshOpen(self, price):
         self.new_open = True
-        self.lookup_check   = {'open': self.new_open,
-                               'close': self.new_close,}
         self.open_price = price
+        print('refreshOpen', self.new_open, "\n")
 
     @on('aggregator:new_close') # 'open', 'close' events should be emitted by aggregator
     def refreshClose(self, price):
         self.close_price = price
         self.new_close = True
-        self.lookup_check   = {'open': self.new_open,
-                               'close': self.new_close,}
 
     # these flags are still largely imaginary and are not tested
     @on('buy') # 'buy', 'sell' events are not integrated for the moment
@@ -209,14 +205,14 @@ class Registry:
             self.logic_status[key] = {cat:[-1] + [x for i, x in enumerate(val) if i != 0] for cat, val in test.items() if cat == timeEvent}
 
     @on('tick')
-    def handleCheck(self):
+    def handleCheck(self, tick):
         for code in self.codeblocks:
-            setup = code.setup
+            setup = code.logic_status.setup
             self.check(code, setup[0], setup[1][0], code.logic_status)
 
-    def check(self, codeblock, whenexec, triggerSetup, logicConstraints):
-        if (all(self.lookup_check[constraint] for contraint in whenexec) and
-            all(logicConstraints[logicStatus][0] > 1 for logicStatus in logicConstraints) or
-                (logicConstraints == {})):
-            codeblock.checked()
+    def check(self, codeblock, whenexec, triggerSetup, LogicStatus):
+        print(LogicStatus.logic_status)
+        if (#self.lookup_check[whenexec] and \
+            all(lst[0] > 0 for key, lst in LogicStatus.logic_status.items())):
+            codeblock.checking()
 

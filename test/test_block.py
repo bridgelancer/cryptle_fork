@@ -1,6 +1,10 @@
+from cryptle.event import Bus, on, source
 from cryptle.codeblock import CodeBlock
+from cryptle.aggregator import Aggregator
 from cryptle.newregistry import Registry
+
 import transitions
+import pytest
 import pandas as pd
 
 try:
@@ -101,36 +105,43 @@ def test_initialization():
     assert registry.codeblocks[6].logic_status.logic_status == {'trade': [3, 1]}
     assert registry.codeblocks[7].logic_status.logic_status == {'damnson': [10000, 1]}
 
-    assert registry.codeblocks[0].state == 'rest'
+    for i in range(0, 8, 1):
+        assert registry.codeblocks[i].state == 'rest'
 
-def is_executable():
+
+@pytest.mark.skip(reason='not implemented')
+def test_is_executable():
     pass
 
+@pytest.mark.skip(reason='still implementing')
+def test_checking():
+    def CB1():
+        print('successful enforce rudimentary checking CB1')
 
-#def test_checking():
-#    def CB1():
-#        print('successful regisration and execution CB1')
-#
-#    def CB2():
-#        print('successful registration and execution CB2')
-#
-#    def CB3():
-#        print('successful registration and execution CB3')
-#
-#    setup = {CB1: ['open', [['once per bar'], {}], 1],
-#             CB2: ['close', [['once per bar'], {}], 2],
-#             CB3: ['open', [['once per bar'], {}], 3],
-#             }
-#
-#    bus = Bus()
-#    registry = Registry(setup, bus=bus)
-#    @source('tick')
-#    def emitTick(tick):
-#        return tick
-#
-#    bus.bind(emitTick)
-#
-#    for index, tick in tickset.iterrows():
-#        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
-#        emitTick(data)
+    def CB2():
+        print('successful enforce rudimentary checking CB2')
+
+    def CB3():
+        print('successful enforce rudimentary checking CB3')
+
+    setup = {CB1: ['open', [['once per bar'], {}], 1],
+             CB2: ['close', [['once per bar'], {}], 2],
+             CB3: ['open', [['once per bar'], {}], 3],
+             }
+
+    @source('tick')
+    def emitTick(tick):
+        return tick
+
+    registry = Registry(setup)
+    aggregator = Aggregator(3600)
+
+    bus = Bus()
+    bus.bind(emitTick)
+    bus.bind(aggregator)
+    bus.bind(registry)
+
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
 
