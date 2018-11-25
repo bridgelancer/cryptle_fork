@@ -13,15 +13,18 @@ jobs:
       # download and cache pip dependencies
       - restore_cache:
           keys:
+            - python-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "Pipfile.lock" }}
             - python-{{ .Branch }}-{{ checksum "setup.py" }}
-            - python-{{ .Branch }}
             - python-
       - run:
           name: Install python dependencies
-          command: sudo pip install .[dev]
+          command: |
+            sudo pip install pipenv
+            make install
       - save_cache:
-          key: python-{{ .Branch }}-{{ checksum "setup.py" }}
+          key: python-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "Pipfile.lock" }}
           paths:
+            - ".venv"
             - "/usr/local/bin"
             - "/usr/local/lib/python3.5/site-packages"
       # run linter
