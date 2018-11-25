@@ -5,12 +5,12 @@ from cryptle.registry   import Registry
 from cryptle.event      import source, on
 from cryptle.strategy   import SingleAssetStrat
 
-from metric.timeseries.bollinger  import BollingerBand
-from metric.timeseries.candle     import CandleStick
-from metric.timeseries.difference import Difference
-from metric.timeseries.macd       import MACD
-from metric.timeseries.rsi        import RSI
-from metric.timeseries.wma        import WMA
+from cryptle.metric.timeseries.bollinger  import BollingerBand
+from cryptle.metric.timeseries.candle     import CandleStick
+from cryptle.metric.timeseries.difference import Difference
+from cryptle.metric.timeseries.macd       import MACD
+from cryptle.metric.timeseries.rsi        import RSI
+from cryptle.metric.timeseries.wma        import WMA
 
 import logging
 logger = logging.getLogger('Strategy')

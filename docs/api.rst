@@ -170,8 +170,9 @@ Orderbook
    :members:
 
 
-Timeseries
-----------
+Metric
+------
 
-.. automodule:: metric.base
+.. automodule:: cryptle.metric.base
    :members:
+   :undoc-members:
