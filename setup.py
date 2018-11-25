@@ -17,6 +17,7 @@ setup(
         'scipy>=1.1.0',
         'requests>=2.18.4',
         'websocket-client>=0.45',
+        'transitions>=0.6.9',
     ],
     extras_require={
         'dev': [
