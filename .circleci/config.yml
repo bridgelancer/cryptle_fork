@@ -5,6 +5,9 @@ jobs:
     docker:
       # specify the python version
       - image: circleci/python:3.5.6
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
+          PYTEST_FLAGS: --junitxml=test-results/results.xml
     steps:
       - checkout
       # give circlci permission to python install directories
@@ -36,6 +39,8 @@ jobs:
           name: Start tester
           command: make test
           when: always
+      - store_test_results:
+          path: test-results
 
 workflows:
   version: 2

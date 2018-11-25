@@ -24,17 +24,19 @@ SLOW_TESTS += test/test_clock.py
 UNIT_TESTS = $(CORE_TESTS)
 ALL_TESTS  = $(CORE_TESTS) $(SLOW_TESTS)
 
+
+# Flags can be specified by setting the PYTEST_FLAGS environment variable
 test:
-	@pytest $(UNIT_TESTS)
+	@pytest $(PYTEST_FLAGS) $(UNIT_TESTS)
 
 testslow:
-	@pytest $(SLOW_TESTS)
+	@pytest $(PYTEST_FLAGS) $(SLOW_TESTS)
 
 testall:
-	@pytest $(ALL_TESTS)
+	@pytest $(PYTEST_FLAGS) $(ALL_TESTS)
 
 test_%:
-	@pytest test/$@.py --rootdir=./
+	@pytest $(PYTEST_FLAGS) test/$@.py --rootdir=./
 
 
 # Linting configuration
