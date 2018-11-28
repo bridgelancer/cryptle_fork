@@ -126,6 +126,7 @@ class CodeBlock:
         self.triggered = False
         self.last_triggered = None
         self.flags = {}
+        self.localdata = {}
 
         self.machine = Machine(model=self, states=CodeBlock.states, initial='initialized')
 
@@ -151,7 +152,7 @@ class CodeBlock:
         self.logic_status.resetAll(0)
 
     def check(self, num_bars):
-        self.triggered, self.flags = self.func()
+        self.triggered, self.flags, self.localdata = self.func(**self.localdata)
 
         if self.triggered:
             self.last_triggered = num_bars
