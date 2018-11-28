@@ -261,16 +261,16 @@ def test_signals():
 
     # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
     # workup in aggregator in data format to achieve it @REVIEW
-    def CB2(b=None):
-        if registry.current_price < 990 and b:
-            b= False
+    def CB2(testdata=None):
+        if registry.current_price < 990 and testdata:
+            testdata = False
         else:
-            b= True
+            testdata= True
         print('successfully check according to flag',
                 datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'), registry.close_price)
 
         flags = {}
-        localdata = {'b': b}
+        localdata = {'testdata': testdata}
         return True, flags, localdata
 
     setup = {
@@ -317,8 +317,8 @@ def test_localdata():
             if rsi < rsi_thresh:
                 rsi_sell_flag = False
                 rsi_signal = False
-            print(rsi, datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'))
-            print(rsi_signal, rsi_sell_flag, "\n")
+            #print(rsi, datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'))
+            #print(rsi_signal, rsi_sell_flag, "\n")
         except Exception as e:
             print(e)
 
