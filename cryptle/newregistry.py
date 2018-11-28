@@ -24,8 +24,8 @@ class Registry:
 
         # bar-related states that should be sourced from aggregator
         self.bars = []
-        self.open_price = None
-        self.close_price = None
+        self.open_price = None # if last bar open price is required, reference to this
+        self.close_price = None # if last bar close price is required, reference to this
         self.num_bars = 0
         self.new_open = False
         self.new_close = False
@@ -36,7 +36,8 @@ class Registry:
         self.buy_count = 0
         self.sell_count = 0
         self.lookup_check   = {'open': self.new_open,
-                               'close': self.new_close,}
+                               'close': self.new_close,
+                               '': True}
 
         for code in self.codeblocks:
             code.initializing()
@@ -49,16 +50,24 @@ class Registry:
         self.new_close = False
         self.current_price = tick[0]
         self.current_time  = tick[2]
+        self.updateLookUp()
 
     @on('aggregator:new_open') # 'open', 'close' events should be emitted by aggregator
     def refreshOpen(self, price):
         self.new_open = True
         self.open_price = price
+        self.updateLookUp()
 
     @on('aggregator:new_close') # 'open', 'close' events should be emitted by aggregator
     def refreshClose(self, price):
         self.close_price = price
         self.new_close = True
+        self.updateLookUp()
+
+    def updateLookUp(self):
+        self.lookup_check   = {'open': self.new_open,
+                               'close': self.new_close,
+                               '': True}
 
     # these flags are still largely imaginary and are not tested
     @on('buy') # 'buy', 'sell' events are not integrated for the moment
@@ -100,9 +109,11 @@ class Registry:
                 self.handleLogicStatus(codeblock, 'period')
 
     def handleLogicStatus(self, codeblock, timeEvent):
-        # For any given trigger constraint, the format needs to follow the following
-        # specification: a dictionary with a string as key to specify constraint category and a
-        # list as value.
+        """
+            handleLogicStatus handles all changes in logic status of a codeblock
+            due to the triggering ofrefresh functions.
+
+        """
 
         logic_status = codeblock.logic_status.logic_status
 
@@ -118,9 +129,9 @@ class Registry:
 
     @on('tick')
     def handleCheck(self, tick):
+        """Wrapper function for calling check for each codeblock"""
         for code in self.codeblocks:
             self.check(code)
-
 
     def check(self, codeblock):
         # need to work on this -> whenexec not working as intended
@@ -136,9 +147,14 @@ class Registry:
             Flags += dictionary['n per signal']
         pters = [item.func for item in self.codeblocks]
 
-        # still require fix of whenexec (registry integration issues)
-        if (#self.lookup_check[whenexec] and \
+        # Currently, all lookup_check is void. No matter 'open'/'close, we only check when new
+        # Candle is pushed (i.e. at open). However we guarantee that the
+        # registry.last_open/registry.last_close is correct
+        if (self.lookup_check[whenexec] and \
             all(lst[0] > 0 for key, lst in logic_status.items()) and \
             all(all(self.codeblocks[pters.index(item[0])].flags.values()) for item in Flags)):
+            # (pseudo-checing) whenexec
+            # the current logic status of CodeBlock permits
+            # all following flags of the signals return True
 
             codeblock.checking(self.num_bars)

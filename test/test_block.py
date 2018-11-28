@@ -6,6 +6,7 @@ from cryptle.newregistry import Registry
 import transitions
 import pytest
 import pandas as pd
+from datetime import datetime
 
 try:
     dataset = pd.read_csv(open('bitstamp.csv'))
@@ -80,7 +81,7 @@ def test_on_open():
 def test_transition():
     def CB1():
         print('successful transition')
-        return True, {}
+        return True, {}, {}
 
     setup = ['open', [['once per bar'], {}], 1]
     cb1 = CodeBlock(CB1, setup)
@@ -95,8 +96,7 @@ def test_registration_to_reigstry():
     def CB1():
         print('successful regisration and execution CB1')
 
-    def CB2():
-        print('successful registration and execution CB2')
+    def CB2(): print('successful registration and execution CB2')
 
     def CB3():
         print('successful registration and execution CB3')
@@ -203,19 +203,19 @@ def test_is_executable():
 def test_checking():
     def CB1():
         #print('successful enforce rudimentary checking CB1')
-        return True, {}
+        return True, {}, {}
 
     def CB2():
         #print('successful enforce rudimentary checking CB2', registry.current_time)
-        return True, {}
+        return True, {}, {}
 
     def CB3():
         #print('successful enforce rudimentary checking CB3')
-        return True, {}
+        return True, {}, {}
 
     def CB4():
         print('successful enforce rudimentary checking CB4', registry.current_time)
-        return True, {}
+        return True, {}, {}
 
     setup = {
              CB1: ['open', [['once per bar'], {}], 1],
@@ -244,31 +244,39 @@ def test_checking():
 def test_signals():
     def doneInit():
         flags = {"doneInitflag": True}
-        return True, flags
+        return True, flags, {}
 
     def twokprice():
         flags = {"twokflag": True, 'twokflagfuckyou': True}
         if registry.current_price is not None:
-            if registry.current_price > 1000:
+            if registry.current_price > 980:
                 flags['twokflag'] = True
             else:
                 flags['twokflag'] = False
 
-        return True, flags
+        return True, flags, {}
 
-    def CB2():
-        print('successfully check according to flag', registry.current_time, registry.current_price)
-        flags = {"c": False, "d":False}
-        return True, flags
+    # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
+    # workup in aggregator in data format to achieve it @REVIEW
+    def CB2(b=None):
+        if registry.current_price < 990 and b:
+            b= False
+        else:
+            b= True
+        print('successfully check according to flag',
+                datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'), registry.close_price)
+
+        flags = {}
+        localdata = {'b': b}
+        return True, flags, localdata
 
     setup = {
              doneInit: ['open', [['once per bar'], {}], 1],
              twokprice: ['open', [['once per bar'], {}], 2],
-             CB2: [[], [[], {'n per bar': [3], 'n per signal': \
-                 [[doneInit, 'doneInitflag', 10000], [twokprice, 'twokflag', 100], [twokprice,
-                 'twokflagfuckyou', 10], ]}], 3],
+             CB2: ['open', [['once per bar'], {'n per signal': \
+                 [[doneInit, 'doneInitflag', 100000], [twokprice, 'twokflag', 100], [twokprice,
+                 'twokflagfuckyou', 10],]}], 3],
              }
-
 
     registry = Registry(setup)
     @source('tick')
@@ -278,8 +286,8 @@ def test_signals():
 
     bus = Bus()
     bus.bind(emitTick)
-    bus.bind(aggregator)
     bus.bind(registry)
+    bus.bind(aggregator)
 
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
