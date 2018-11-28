@@ -3,6 +3,9 @@ from cryptle.codeblock import CodeBlock
 from cryptle.aggregator import Aggregator
 from cryptle.newregistry import Registry
 
+from metric.timeseries.candle import CandleStick
+from metric.timeseries.rsi    import RSI
+
 import transitions
 import pytest
 import pandas as pd
@@ -288,6 +291,54 @@ def test_signals():
     bus.bind(emitTick)
     bus.bind(registry)
     bus.bind(aggregator)
+
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
+
+def test_localdata():
+    rsi_period = 14
+    rsi_upperthresh =70
+    rsi_thresh = 40
+
+    stick = CandleStick(180)
+    rsi = RSI(stick.c, rsi_period)
+
+    def signifyRSI(rsi_sell_flag=None, rsi_signal=None):
+        try:
+            if rsi > rsi_upperthresh:
+                rsi_sell_flag = True
+                rsi_signal = True
+            elif rsi > 50:
+                rsi_signal = True
+
+            if rsi_sell_flag and rsi < 50:
+                rsi_signal = False
+            if rsi < rsi_thresh:
+                rsi_sell_flag = False
+                rsi_signal = False
+            print(rsi, datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'))
+            print(rsi_signal, rsi_sell_flag, "\n")
+        except Exception as e:
+            print(e)
+
+        flags = {}
+        localdata = {'rsi_sell_flag': rsi_sell_flag, 'rsi_signal': rsi_signal}
+        return True, flags, localdata
+
+    setup = {signifyRSI: ['open', [['once per bar'], {}], 1],}
+
+    registry = Registry(setup)
+    @source('tick')
+    def emitTick(tick):
+        return tick
+    aggregator = Aggregator(180)
+
+    bus = Bus()
+    bus.bind(emitTick)
+    bus.bind(registry)
+    bus.bind(aggregator)
+    bus.bind(stick)
 
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
