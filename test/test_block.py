@@ -20,7 +20,7 @@ except FileNotFoundError:
 
 def test_construction():
     def CB1():
-        print('successful construction')
+        #print('successful construction')
         return True, {}
 
     setup = ['open', [['once per bar'], {}], 1]
@@ -83,7 +83,7 @@ def test_on_open():
 
 def test_transition():
     def CB1():
-        print('successful transition')
+        #print('successful transition')
         return True, {}, {}
 
     setup = ['open', [['once per bar'], {}], 1]
@@ -97,12 +97,16 @@ def test_transition():
 
 def test_registration_to_reigstry():
     def CB1():
-        print('successful regisration and execution CB1')
+        #print('successful regisration and execution CB1')
+        pass
 
-    def CB2(): print('successful registration and execution CB2')
+    def CB2():
+        #print('successful registration and execution CB2')
+        pass
 
     def CB3():
-        print('successful registration and execution CB3')
+        #print('successful registration and execution CB3')
+        pass
 
     setup = {CB1: ['open', [['once per bar'], {}], 1],
              CB2: ['close', [['once per bar'], {}], 2],
@@ -115,37 +119,45 @@ def test_registration_to_reigstry():
 
 def test_initialization():
     def CB1():
-        print('successful regisration and execution CB1')
+        #print('successful regisration and execution CB1')
+        pass
 
     def CB2():
-        print('successful registration and execution CB2')
+        #print('successful registration and execution CB2')
+        pass
 
     def CB3():
-        print('successful registration and execution CB3')
+        #print('successful registration and execution CB3')
+        pass
 
     def CB4():
-        print('successful registration and execution CB4')
+        #print('successful registration and execution CB4')
+        pass
 
     def CB5():
-        print('successful registration and execution CB5')
+        #print('successful registration and execution CB5')
+        pass
 
     def CB6():
-        print('successful registration and execution CB6')
+        #print('successful registration and execution CB6')
+        pass
 
     def CB7():
-        print('successful registration and execution CB7')
+        #print('successful registration and execution CB7')
+        pass
 
     def CB8():
-        print('successful registration and execution CB8')
+        #print('successful registration and execution CB8')
+        pass
 
     setup = {CB1: ['open', [['once per bar'], {}], 1],
              CB2: ['close', [['once per trade'], {}], 2],
              CB3: ['close', [[], {'once per period': [2]}], 3],
-             CB4: ['open', [[], {'once per signal': [CB3, 'damn']}], 4],
+             CB4: ['open', [[], {'once per flag': [CB3, 'damn']}], 4], # this formats is wrong
              CB5: ['open', [[], {'n per bar': [3]}], 5],
              CB6: ['open', [[], {'n per period':[3, 2]}], 6],
              CB7: ['open', [[], {'n per trade':[3, 1]}], 7],
-             CB8: ['open', [[], {'n per signal': [[CB6, 'damnson', 10000], ]}], 8],
+             CB8: ['open', [[], {'n per flag': [[CB6, 'damnson', 10000], ]}], 8],
              }
 
     registry = Registry(setup)
@@ -165,37 +177,45 @@ def test_initialization():
 #@pytest.mark.skip(reason='not implemented')
 def test_is_executable():
     def CB1():
-        print('successful regisration and execution CB1')
+        #print('successful regisration and execution CB1')
+        pass
 
     def CB2():
-        print('successful registration and execution CB2')
+        #print('successful registration and execution CB2')
+        pass
 
     def CB3():
-        print('successful registration and execution CB3')
+        #print('successful registration and execution CB3')
+        pass
 
     def CB4():
-        print('successful registration and execution CB4')
+        #print('successful registration and execution CB4')
+        pass
 
     def CB5():
-        print('successful registration and execution CB5')
+        #print('successful registration and execution CB5')
+        pass
 
     def CB6():
-        print('successful registration and execution CB6')
+        #print('successful registration and execution CB6')
+        pass
 
     def CB7():
-        print('successful registration and execution CB7')
+        #print('successful registration and execution CB7')
+        pass
 
     def CB8():
-        print('successful registration and execution CB8')
+        #print('successful registration and execution CB8')
+        pass
 
     setup = {CB1: ['open', [['once per bar'], {}], 1],
              CB2: ['close', [['once per trade'], {}], 2],
              CB3: ['close', [[], {'once per period': [2]}], 3],
-             CB4: ['open', [[], {'once per signal': [CB3, 'damn']}], 4],
+             CB4: ['open', [[], {'once per flag': [CB3, 'damn']}], 4],
              CB5: ['open', [[], {'n per bar': [3]}], 5],
              CB6: ['open', [[], {'n per period':[3, 2]}], 6],
              CB7: ['open', [[], {'n per trade':[3, 1]}], 7],
-             CB8: ['open', [[], {'n per signal': [[CB6, 'damnson', 10000], ]}], 8],
+             CB8: ['open', [[], {'n per flag': [[CB6, 'damnson', 10000], ]}], 8],
              }
 
     registry = Registry(setup)
@@ -276,7 +296,7 @@ def test_signals():
     setup = {
              doneInit: ['open', [['once per bar'], {}], 1],
              twokprice: ['open', [['once per bar'], {}], 2],
-             CB2: ['open', [['once per bar'], {'n per signal': \
+             CB2: ['open', [['once per bar'], {'n per flag': \
                  [[doneInit, 'doneInitflag', 100000], [twokprice, 'twokflag', 100], [twokprice,
                  'twokflagfuckyou', 10],]}], 3],
              }
@@ -304,6 +324,11 @@ def test_localdata():
     stick = CandleStick(180)
     rsi = RSI(stick.c, rsi_period)
 
+    def doneInit():
+        flags = {"doneInitflag": True}
+        localdata = {}
+        return True, flags, localdata
+
     def signifyRSI(rsi_sell_flag=None, rsi_signal=None):
         try:
             if rsi > rsi_upperthresh:
@@ -317,8 +342,8 @@ def test_localdata():
             if rsi < rsi_thresh:
                 rsi_sell_flag = False
                 rsi_signal = False
-            #print(rsi, datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'))
-            #print(rsi_signal, rsi_sell_flag, "\n")
+            print(rsi, datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'))
+            print(rsi_signal, rsi_sell_flag, "\n")
         except Exception as e:
             print(e)
 
@@ -326,7 +351,10 @@ def test_localdata():
         localdata = {'rsi_sell_flag': rsi_sell_flag, 'rsi_signal': rsi_signal}
         return True, flags, localdata
 
-    setup = {signifyRSI: ['open', [['once per bar'], {}], 1],}
+    setup = {doneInit: ['', [['once per bar'], {}], 1],
+            signifyRSI: ['open', [['once per bar'], {'n per flag':
+        [[doneInit, 'doneInitflag', 1000000],]}], 1],
+            }
 
     registry = Registry(setup)
     @source('tick')

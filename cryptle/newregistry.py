@@ -46,6 +46,9 @@ class Registry:
     # Refresh methods to maintain correct states
     @on('tick') # tick should be agnostic to source of origin, but should take predefined format
     def refreshTick(self, tick):
+        # ***this sequence matters a lot***
+        if self.current_price is not None:
+            self.handleCheck(tick)
         self.new_open = False
         self.new_close = False
         self.current_price = tick[0]
@@ -127,7 +130,6 @@ class Registry:
                     codeblock.refreshing(cat, self.num_bars)
 
 
-    @on('tick')
     def handleCheck(self, tick):
         """Wrapper function for calling check for each codeblock"""
         for code in self.codeblocks:
@@ -141,10 +143,10 @@ class Registry:
         dictionary = codeblock.logic_status.setup[1][1]
 
         Flags = []
-        if 'once per signal' in dictionary:
-            Flags = dictionary['once per signal']
-        if 'n per signal' in dictionary:
-            Flags += dictionary['n per signal']
+        if 'once per flag' in dictionary:
+            Flags = dictionary['once per flag']
+        if 'n per flag' in dictionary:
+            Flags += dictionary['n per flag']
         pters = [item.func for item in self.codeblocks]
 
         # Currently, all lookup_check is void. No matter 'open'/'close, we only check when new
@@ -156,5 +158,4 @@ class Registry:
             # (pseudo-checing) whenexec
             # the current logic status of CodeBlock permits
             # all following flags of the signals return True
-
             codeblock.checking(self.num_bars)

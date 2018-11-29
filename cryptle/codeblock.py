@@ -14,16 +14,16 @@ class LogicStatus:
                                'once per bar': self.once_per_bar,
                                'once per trade': self.once_per_trade,
                                'once per period': self.once_per_period,
-                               'once per signal': self.once_per_signal,
+                               'once per flag': self.once_per_flag,
                                'n per bar': self.n_per_bar,
                                'n per period': self.n_per_period,
                                'n per trade': self.n_per_trade,
-                               'n per signal': self.n_per_signal}
+                               'n per flag': self.n_per_flag}
         self.lookup_logic = {
                              'bar': ['once per bar', 'n per bar'],
                              'period': ['once per period', 'n per period'],
                              'trade': ['once per trade', 'n per trade'],
-                             'signal': ['once per signal', 'n per signal']
+                             'flag': ['once per flag', 'n per flag']
                              }
 
     def is_executable(self):
@@ -97,12 +97,12 @@ class LogicStatus:
             self.logic_status['trade'][0] -= 1
 
     # might as well change to once_per_flag instead
-    def once_per_signal(self, codeblock, flag, *args, num_bars):
+    def once_per_flag(self, codeblock, flag, *args, num_bars):
         if flag not in self.logic_status.keys():
             self.logic_status[flag] = [1, 1, num_bars]
 
     # might as well change to n_per_flag instead
-    def n_per_signal(self, lst, *args, num_bars):
+    def n_per_flag(self, lst, *args, num_bars):
         if lst[1] in self.logic_status:
             self.logic_status[lst[1]][0] -= 1
         else:
