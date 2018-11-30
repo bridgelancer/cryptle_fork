@@ -1,4 +1,4 @@
-from metric.base import Timeseries
+from cryptle.metric.base import Timeseries
 
 # not functional, fix only if necessary
 class IchimokuCloud(Timeseries):

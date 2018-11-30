@@ -1,8 +1,8 @@
-from metric.base import Candle
+from cryptle.metric.base import Candle
 from cryptle.event import source, on, Bus
 
 class Aggregator:
-    '''An implementation of the generic candle aggregator.
+    """An implementation of the generic candle aggregator.
 
     Aggregator is a class that converts tick values of either prices or Timeseries values to candle
     bar representation. It contains a subset of the functions of the CandleBar class in candle.py as
@@ -10,7 +10,7 @@ class Aggregator:
     of the original CandleBar as it is designed to handle any tick-based value upon suitable wiring
     of interfaces. This class could also accept bar representation of data.
 
-    '''
+    """
 
     def __init__(self, period, auto_prune=False, maxsize=500):
         self.period         = period
@@ -21,8 +21,8 @@ class Aggregator:
 
     @on('tick')
     def pushTick(self, data):
-        '''Provides public interface for accepting ticks. Tick (in list) should have value, volume, timestamp
-        and action as the format'''
+        """Provides public interface for accepting ticks. Tick (in list) should have value, volume, timestamp
+        and action as the format"""
         if len(data) == 4:
             value, volume, timestamp, action = data[0], data[1], data[2], data[3]
         else:
@@ -62,7 +62,7 @@ class Aggregator:
 
     @on('candle')
     def pushCandle(self, bar):
-        '''Provides public interface for accepting aggregated candles. '''
+        """Provides public interface for accepting aggregated candles. """
         self._pushFullCandle(*bar)
         # methods that output corresponding events to message bus
         self._pushAllMetrics(*bar)

@@ -1,4 +1,4 @@
-from metric.base import Timeseries
+from cryptle.metric.base import Timeseries
 import numpy as np
 
 class Volatility(Timeseries):

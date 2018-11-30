@@ -1,4 +1,4 @@
-from metric.base import Timeseries, GenericTS
+from cryptle.metric.base import Timeseries, GenericTS
 from cryptle.event import on, Bus
 
 '''Candle-related Timeseries object.

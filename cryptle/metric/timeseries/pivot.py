@@ -1,4 +1,4 @@
-from metric.base import Timeseries
+from cryptle.metric.base import Timeseries
 
 class PivotPoints(Timeseries):
     def __init__(self, timestamp, interval, high, low, close, days=1, n=8, list=False):

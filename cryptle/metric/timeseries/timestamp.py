@@ -1,4 +1,4 @@
-from metric.base import Timeseries
+from cryptle.metric.base import Timeseries
 from cryptle.event import on, Bus
 
 ''' Temporary solution for passing timestamp to various Timeseries object '''

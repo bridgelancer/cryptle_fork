@@ -1,4 +1,4 @@
-from metric.base import Timeseries
+from cryptle.metric.base import Timeseries
 import scipy.stats as sp
 
 class Kurtosis(Timeseries):

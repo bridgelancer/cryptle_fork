@@ -1,5 +1,5 @@
-from metric.base import Timeseries, GenericTS
-from metric.timeseries.wma import WMA
+from cryptle.metric.base import Timeseries, GenericTS
+from cryptle.metric.timeseries.wma import WMA
 
 import numpy as np
 

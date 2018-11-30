@@ -1,4 +1,4 @@
-from metric.base import Timeseries, Candle
+from cryptle.metric.base import Timeseries, Candle
 import numpy as np
 
 class SMA(Timeseries):
