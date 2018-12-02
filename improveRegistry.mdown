@@ -1,0 +1,40 @@
+This progress notes is the documentation of my findings in redesigning the
+Registry class.
+
+In accordance with Pine's suggestion months ago, I decided to research and look
+up on the StateMachine pattern. I discovered that it might be a very good fit to
+my current use case (sorry Pine please don't flame me on my late response). I
+searched several MatLAB introduction videos and the introduction to the pattern
+usage.
+
+At the end, I resort to the python3 library [transitions]
+(https://www.github.com/transtions/transitions). This library has thousands of
+stars and hundreds of commits. It seems to be a reliable and light-weight
+implementation of the Finite State Machine (FSM) that is suitable for our use
+case.
+
+My idea is to abstract away the control flow of the execution of client code
+functions (or known as code blocks) from the Registry class using the
+functionality of this library. Under this provisional design, the Registry
+should initialize a Transition::Machine. This Machine would augment all the
+CodeBlocks with Transition::State and Transition::Transition functionalities.
+
+The basic states of all the CodeBlocks held are "initialized", "rest",
+"checked", "executed", "triggered". These correspond to the states that are
+originally communicated between Registry and Strategy instances.
+
+All CodeBlock should be "initialized" directly after the construction of the Strategy
+instance within the __init__ method. After "initialized", they should be in the
+"rest" state where they hold their current logical states, the different types
+of constraints that limit their triggering and the preconditions for it to be
+checked. Upon broadcast of Events, these codeblocks would be put to checking by
+the Registry. This marks the first material transition from "rest" to "checked",
+with callbacks attached to check all the preconditions of the CodeBlock. If all
+the preconditions are met, another callback would take place to execute the
+lines within the CodeBlock. The State for the CodeBlock is "executing". If all
+conditions are met, the CodeBlock is said to be "triggered". This notifies the
+Registry and callbacks that leads to the updating of the resting State of this
+CodeBlock so as to maintain the proper execution timing and constraints of these
+CodeBlocks.
+
+
