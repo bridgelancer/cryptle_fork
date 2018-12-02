@@ -10,6 +10,7 @@ import transitions
 import pytest
 import pandas as pd
 from datetime import datetime
+from collections import ChainMap
 
 try:
     dataset = pd.read_csv(open('bitstamp.csv'))
@@ -91,7 +92,7 @@ def test_transition():
     assert cb1.state == 'initialized'
     cb1.initializing()
     assert cb1.state == 'rest'
-    cb1.checking(2)
+    cb1.checking(2, [])
     assert cb1.state == 'rest'
 
 
@@ -237,7 +238,7 @@ def test_checking():
         return True, {}, {}
 
     def CB4():
-        print('successful enforce rudimentary checking CB4', registry.current_time)
+        #print('successful enforce rudimentary checking CB4', registry.current_time)
         return True, {}, {}
 
     setup = {
@@ -281,13 +282,16 @@ def test_signals():
 
     # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
     # workup in aggregator in data format to achieve it @REVIEW
-    def CB2(testdata=None):
+    def CB2(*flagvaluedicts, testdata=None):
+        flagValues = dict(ChainMap(*flagvaluedicts))
+        print(flagValues)
         if registry.current_price < 990 and testdata:
             testdata = False
         else:
             testdata= True
-        print('successfully check according to flag',
-                datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'), registry.close_price)
+        if flagValues['twokflag']:
+            print('successfully check according to flag',
+                    datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'), registry.close_price)
 
         flags = {}
         localdata = {'testdata': testdata}
@@ -329,7 +333,7 @@ def test_localdata():
         localdata = {}
         return True, flags, localdata
 
-    def signifyRSI(rsi_sell_flag=None, rsi_signal=None):
+    def signifyRSI(doneInit, rsi_sell_flag=None, rsi_signal=None):
         try:
             if rsi > rsi_upperthresh:
                 rsi_sell_flag = True

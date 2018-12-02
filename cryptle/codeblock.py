@@ -152,8 +152,8 @@ class CodeBlock:
         # codes that are really used for initialize the logical status based on the setup info
         self.logic_status.resetAll(0)
 
-    def check(self, num_bars):
-        self.triggered, self.flags, self.localdata = self.func(**self.localdata)
+    def check(self, num_bars, flagvalues):
+        self.triggered, self.flags, self.localdata = self.func(*flagvalues, **self.localdata)
 
         if self.triggered:
             self.last_triggered = num_bars

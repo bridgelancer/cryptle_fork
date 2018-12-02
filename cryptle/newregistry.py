@@ -147,15 +147,16 @@ class Registry:
             Flags = dictionary['once per flag']
         if 'n per flag' in dictionary:
             Flags += dictionary['n per flag']
+        # pters is reurning the list of self.func for all ocdblocks for checking
         pters = [item.func for item in self.codeblocks]
 
         # Currently, all lookup_check is void. No matter 'open'/'close, we only check when new
         # Candle is pushed (i.e. at open). However we guarantee that the
         # registry.last_open/registry.last_close is correct
         if (self.lookup_check[whenexec] and \
-            all(lst[0] > 0 for key, lst in logic_status.items()) and \
-            all(all(self.codeblocks[pters.index(item[0])].flags.values()) for item in Flags)):
+                all(lst[0] > 0 for key, lst in logic_status.items())):
             # (pseudo-checing) whenexec
             # the current logic status of CodeBlock permits
             # all following flags of the signals return True
-            codeblock.checking(self.num_bars)
+            duplicate = [self.codeblocks[pters.index(item[0])].flags for item in Flags]
+            codeblock.checking(self.num_bars, [dict(t) for t in {tuple(d.items()) for d in duplicate}])
