@@ -167,3 +167,10 @@ class CodeBlock:
     def refresh(self, resetConstraint, num_bars):
         self.logic_status.reset(resetConstraint, num_bars)
 
+    # set existing entry of self.localdata to certain value
+    def setLocalData(self, dictionary):
+        for k, v in dictionary.items():
+            if k in self.localdata.keys():
+                self.localdata[k] = v
+            else:
+                raise ValueError('Only for resetting existing values of localdata of a CodeBlock.')

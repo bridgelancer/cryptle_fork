@@ -31,7 +31,7 @@ def test_construction():
 
 def test_on_close():
     def twokprice():
-        flags = {"twokflag": True, 'twokflagfuckyou': True}
+        flags = {"twokflag": True, 'twokflagyou': True}
         if registry.current_price is not None:
             if registry.current_price > 1000:
                 flags['twokflag'] = True
@@ -59,7 +59,7 @@ def test_on_close():
 def test_on_open():
 
     def twokprice():
-        flags = {"twokflag": True, 'twokflagfuckyou': True}
+        flags = {"twokflag": True, 'twokflagyou': True}
         if registry.current_price is not None:
             if registry.current_price > 1000:
                 flags['twokflag'] = True
@@ -265,13 +265,13 @@ def test_checking():
         emitTick(data)
 
 # Seems like it is working
-def test_signals():
+def test_signals_and_augmented_dict_in_checking():
     def doneInit():
         flags = {"doneInitflag": True}
         return True, flags, {}
 
     def twokprice():
-        flags = {"twokflag": True, 'twokflagfuckyou': True}
+        flags = {"twokflag": True, 'twokflagyou': True}
         if registry.current_price is not None:
             if registry.current_price > 980:
                 flags['twokflag'] = True
@@ -283,8 +283,10 @@ def test_signals():
     # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
     # workup in aggregator in data format to achieve it @REVIEW
     def CB2(*flagvaluedicts, testdata=None):
-        flagValues = dict(ChainMap(*flagvaluedicts))
-        print(flagValues)
+        flagTuple = dict(ChainMap(*flagvaluedicts))
+        flagValues = dict([(key, value[0]) for key, value in flagTuple.items()])
+        flagCB = dict([(key, value[1]) for key, value in flagTuple.items()])
+
         if registry.current_price < 990 and testdata:
             testdata = False
         else:
@@ -302,7 +304,7 @@ def test_signals():
              twokprice: ['open', [['once per bar'], {}], 2],
              CB2: ['open', [['once per bar'], {'n per flag': \
                  [[doneInit, 'doneInitflag', 100000], [twokprice, 'twokflag', 100], [twokprice,
-                 'twokflagfuckyou', 10],]}], 3],
+                 'twokflagyou', 10],]}], 3],
              }
 
     registry = Registry(setup)
@@ -371,6 +373,70 @@ def test_localdata():
     bus.bind(registry)
     bus.bind(aggregator)
     bus.bind(stick)
+
+    for index, tick in tickset.iterrows():
+        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+        emitTick(data)
+
+def test_set_local_data():
+    def doneInit():
+        flags = {"doneInitflag": True}
+        return True, flags, {}
+
+    def twokprice(twokflag=None, twokflagyou=True):
+        if registry.current_price is not None:
+            if registry.current_price > 980 and not twokflagyou:
+                twokflag = True
+            else:
+                twokflag = False
+                twokflagyou = True
+
+        flags = {"twokflag": twokflag, 'twokflagyou': twokflagyou}
+        localdata = {"twokflag": twokflag, "twokflagyou": twokflagyou}
+        return True, flags, localdata
+
+    # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
+    # workup in aggregator in data format to achieve it @REVIEW
+    def CB2(*flagvaluedicts, testdata=None):
+        flagTuple = dict(ChainMap(*flagvaluedicts))
+        flagValues = dict([(key, value[0]) for key, value in flagTuple.items()])
+        flagCB = dict([(key, value[1]) for key, value in flagTuple.items()])
+
+        if registry.current_price > 990 and testdata:
+            testdata = False
+            codeblock_to_change = flagCB['twokflagyou']
+            codeblock_to_change.setLocalData({'twokflagyou': False})
+        else:
+            testdata= True
+            codeblock_to_change = flagCB['twokflagyou']
+            codeblock_to_change.setLocalData({'twokflagyou': True})
+
+        if flagValues['twokflag']:
+            print('successfully check according to flag',
+                    datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'), registry.close_price)
+
+        flags = {}
+        localdata = {'testdata': testdata}
+        return True, flags, localdata
+
+    setup = {
+             doneInit: ['open', [['once per bar'], {}], 1],
+             twokprice: ['open', [['once per bar'], {}], 2],
+             CB2: ['open', [['once per bar'], {'n per flag': \
+                 [[doneInit, 'doneInitflag', 100000], [twokprice, 'twokflag', 100], [twokprice,
+                 'twokflagyou', 10],]}], 3],
+             }
+
+    registry = Registry(setup)
+    @source('tick')
+    def emitTick(tick):
+        return tick
+    aggregator = Aggregator(3600)
+
+    bus = Bus()
+    bus.bind(emitTick)
+    bus.bind(registry)
+    bus.bind(aggregator)
 
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
