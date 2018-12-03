@@ -1,7 +1,7 @@
 from cryptle.event import Bus, on, source
 from cryptle.codeblock import CodeBlock
 from cryptle.aggregator import Aggregator
-from cryptle.newregistry import Registry
+from cryptle.registry import Registry
 
 from metric.timeseries.candle import CandleStick
 from metric.timeseries.rsi    import RSI
