@@ -346,8 +346,8 @@ def test_localdata():
             if rsi < rsi_thresh:
                 rsi_sell_flag = False
                 rsi_signal = False
-            print(rsi, datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'))
-            print(rsi_signal, rsi_sell_flag, "\n")
+            #print(rsi, datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'))
+            #print(rsi_signal, rsi_sell_flag, "\n")
         except Exception as e:
             print(e)
 

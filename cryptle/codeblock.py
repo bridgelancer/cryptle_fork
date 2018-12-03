@@ -127,7 +127,6 @@ class CodeBlock:
         self.last_triggered = None
         self.flags = {}
         self.localdata = {}
-        self.globaldata = {}
 
         self.machine = Machine(model=self, states=CodeBlock.states, initial='initialized')
 

@@ -159,4 +159,5 @@ class Registry:
             # the current logic status of CodeBlock permits
             # all following flags of the signals return True
             duplicate = [self.codeblocks[pters.index(item[0])].flags for item in Flags]
+            # list comprehension to remove duplicates
             codeblock.checking(self.num_bars, [dict(t) for t in {tuple(d.items()) for d in duplicate}])
