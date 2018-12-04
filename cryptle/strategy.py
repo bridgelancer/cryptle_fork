@@ -109,7 +109,7 @@ class Portfolio:
         equity = 0.0
         equity += self.balance[self.base_currency]
         for asset, amount in filter(lambda x: x[0] != self.base_currency, self.balance.items()):
-            equity += amount * asset_prices[asset]
+            equity += amount * (asset_prices[asset] or 0)
         return equity
 
     @property
