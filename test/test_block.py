@@ -395,21 +395,23 @@ def test_set_local_data():
         localdata = {"twokflag": twokflag, "twokflagyou": twokflagyou}
         return True, flags, localdata
 
+    def augmented(aug1=None, aug2=None, aug3=None):
+        aug1 = aug2 = aug3 = True
+        flags = {"aug1": aug1, "aug2": aug2, "aug3": aug3}
+        localdata = {"aug1": aug1, "aug2": aug2, "aug3": aug3}
+        return True, flags, localdata
+
     # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
     # workup in aggregator in data format to achieve it @REVIEW
-    def CB2(*flagvaluedicts, testdata=None):
-        flagTuple = dict(ChainMap(*flagvaluedicts))
-        flagValues = dict([(key, value[0]) for key, value in flagTuple.items()])
-        flagCB = dict([(key, value[1]) for key, value in flagTuple.items()])
+    def CB2(*flagdicts, testdata=None):
+        flagValues, flagCB = unpackDict(*flagdicts)
 
         if registry.current_price > 990 and testdata:
             testdata = False
-            codeblock_to_change = flagCB['twokflagyou']
-            codeblock_to_change.setLocalData({'twokflagyou': False})
+            flagCB['twokflagyou'].setLocalData({'twokflagyou': False})
         else:
             testdata= True
-            codeblock_to_change = flagCB['twokflagyou']
-            codeblock_to_change.setLocalData({'twokflagyou': True})
+            flagCB['twokflagyou'].setLocalData({'twokflagyou': True})
 
         if flagValues['twokflag']:
             print('successfully check according to flag',
@@ -422,9 +424,10 @@ def test_set_local_data():
     setup = {
              doneInit: ['open', [['once per bar'], {}], 1],
              twokprice: ['open', [['once per bar'], {}], 2],
+             augmented: ['open', [['once per bar'], {}], 3],
              CB2: ['open', [['once per bar'], {'n per flag': \
                  [[doneInit, 'doneInitflag', 100000], [twokprice, 'twokflag', 100], [twokprice,
-                 'twokflagyou', 10],]}], 3],
+                 'twokflagyou', 10], [augmented, 'aug1', 1],[augmented, 'aug2', 1],[augmented, 'aug3', 1],]}], 4],
              }
 
     registry = Registry(setup)
@@ -441,3 +444,10 @@ def test_set_local_data():
     for index, tick in tickset.iterrows():
         data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
         emitTick(data)
+
+
+def unpackDict(*flagdicts):
+    flagTuple = dict(ChainMap(*flagdicts))
+    flagValues = dict([(key, value[0]) for key, value in flagTuple.items()])
+    flagCB = dict([(key, value[1]) for key, value in flagTuple.items()])
+    return flagValues, flagCB

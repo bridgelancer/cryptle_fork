@@ -61,9 +61,9 @@ class LogicStatus:
         for item in self.setup[1][0]:
             constraint = self.lookup_trigger[item]
             constraint(num_bars)
-        for key, item in self.setup[1][1].items():
+        for key, flags in self.setup[1][1].items():
             constraint = self.lookup_trigger[key]
-            constraint(*item, num_bars=num_bars)
+            constraint(*flags, num_bars=num_bars)
 
     ##################################CONSTRAINT FUNCTIONS##################################
     def once_per_bar(self, num_bars):
