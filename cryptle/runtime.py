@@ -4,6 +4,16 @@ import time
 import threading
 
 
+def listen_for_interrupt_forever():
+    print('Press ctrl-c to stop...')
+    while True:
+        try:
+            time.sleep(1)
+        except KeyboardInterrupt:
+            print('\rCaught keyboard interrupt')
+            break
+
+
 class Runtime:
     """Live execution environment for strategies.
 
