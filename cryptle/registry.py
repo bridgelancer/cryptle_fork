@@ -7,8 +7,20 @@ class Registry:
     """
     Registry class keeps record of the Strategy class's state information.
 
+    A setup dictionary would be passed during the construction of the Registry. This would inialize
+    all the CodeBlocks that would be subsequently maintained by the Registry and also via the
+    interactions between CodeBlocks where necessary.
+
+    Args
+    ---
+    setup: dictionary
+        The dictionary held by the Strategy containing method references as keys and list containing
+        metainfo as values
+
     It is also responsible for controlling the execution of logical tests
-    at desired time and frequency as time elapsed.
+    at desired time and frequency as time elapsed. This is achieved by various onEvent functions.
+    These functions are responsible for listening to system-generated events via the evnet Bus and
+    refreshes the logic_status at suitable time point.
 
     """
 
@@ -45,7 +57,7 @@ class Registry:
 
     # Refresh methods to maintain correct states
     @on('tick') # tick should be agnostic to source of origin, but should take predefined format
-    def refreshTick(self, tick):
+    def onTick(self, tick):
         # ***this sequence matters a lot***
         if self.current_price is not None:
             self.handleCheck(tick)
@@ -56,13 +68,13 @@ class Registry:
         self.updateLookUp()
 
     @on('aggregator:new_open') # 'open', 'close' events should be emitted by aggregator
-    def refreshOpen(self, price):
+    def onOpen(self, price):
         self.new_open = True
         self.open_price = price
         self.updateLookUp()
 
     @on('aggregator:new_close') # 'open', 'close' events should be emitted by aggregator
-    def refreshClose(self, price):
+    def onClose(self, price):
         self.close_price = price
         self.new_close = True
         self.updateLookUp()
@@ -74,28 +86,27 @@ class Registry:
 
     # these flags are still largely imaginary and are not tested
     @on('buy') # 'buy', 'sell' events are not integrated for the moment
-    def refreshBuy(self):
+    def onBuy(self):
         self.buy_count += 1
 
     # these flags are still largely imaginary and are not tested
     @on('sell') # 'buy', 'sell' events are not integrated for the moment
-    def refreshSell(self):
+    def onSell(self):
         self.sell_count += 1
 
-    # refreshCandle should maintain logical states of all candle-related constraints
+    # onCandle should maintain logical states of all candle-related constraints
     @on('aggregator:new_candle')
-    def refreshCandle(self, bar):
+    def onCandle(self, bar):
         self.num_bars += 1
         self.bars.append(bar)
-        # this calls handleLogicStatus, which would remove all the 'once per bar' and 'n per bar' constraint for every candle
         for codeblock in self.codeblocks:
-            self.handleLogicStatus(codeblock, 'candle')
+            self.refreshLogicStatus(codeblock, 'candle')
         if len(self.bars) > 1000:
             self.bars = self.bars[-1000:]
 
-    # refreshPeriod should maintain logical states of all period-related constraints
+    # onPeriod should maintain logical states of all period-related constraints
     @on('aggregator:new_candle')
-    def refreshPeriod(self, bar):
+    def onPeriod(self, bar):
         timeToRefresh = False
         for codeblock in self.codeblocks:
             logic_status = codeblock.logic_status.logic_status
@@ -109,12 +120,12 @@ class Registry:
                     timeToRefresh = True
 
             if timeToRefresh:
-                self.handleLogicStatus(codeblock, 'period')
+                self.refreshLogicStatus(codeblock, 'period')
 
-    def handleLogicStatus(self, codeblock, timeEvent):
+    def refreshLogicStatus(self, codeblock, timeEvent):
         """
-            handleLogicStatus handles all changes in logic status of a codeblock
-            due to the triggering ofrefresh functions.
+        refreshLogicStatus handles all changes in logic status of a codeblock
+        due to the invocation of refresh functions.
 
         """
 
@@ -136,7 +147,7 @@ class Registry:
             self.check(code)
 
     def check(self, codeblock):
-        # need to work on this -> whenexec not working as intended
+        """Actual checking to deliver the required control flow"""
         logic_status = codeblock.logic_status.logic_status
         whenexec = codeblock.logic_status.setup[0]
         triggerSetup = codeblock.logic_status.setup[1][0]
@@ -153,13 +164,9 @@ class Registry:
         # Currently, all lookup_check is void. No matter 'open'/'close, we only check when new
         # Candle is pushed (i.e. at open). However we guarantee that the
         # registry.last_open/registry.last_close is correct
-        if (self.lookup_check[whenexec] and \
-                all(lst[0] > 0 for key, lst in logic_status.items())):
-            # (pseudo-checing) whenexec
-            # the current logic status of CodeBlock permits
-            # all following flags of the signals return True
-            duplicate = [self.codeblocks[pters.index(flag[0])] for flag in Flags]
+        if (self.lookup_check[whenexec] and all(lst[0] > 0 for key, lst in logic_status.items())):
             # list comprehension to remove duplicates
-            augmented = [dict(t) for t in {tuple((k, (v, d)) for k, v in d.flags.items()) for d in
-                duplicate}]
+            duplicate = [self.codeblocks[pters.index(flag[0])] for flag in Flags]
+            # augment duplicate with codeblocks to pass into inidividual CodeBlock
+            augmented = [dict(t) for t in {tuple((k, (v, d)) for k, v in d.flags.items()) for d in duplicate}]
             codeblock.checking(self.num_bars, augmented)

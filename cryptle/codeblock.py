@@ -1,16 +1,27 @@
 from transitions import Machine
 
-# Now each CodeBlock maintains its own logic status. Registry would directly maintain
-# the LogicStatus of a CodeBlock as the states of the CodeBlock transition to one another.
-
 class LogicStatus:
-    """ A wrapper snippet of the logic_status dictionary to provide utility for determining
-    the executability of a CodeBlock"""
+    """
+    A wrapper snippet of the logic_status dictionary to provide utility for maintaining and
+    determining the executability of a CodeBlock
+
+    Args
+    ---
+    setup        : list
+        The list corresponds to the the CodeBlock currently holds
+    logic_status :  dictionary
+        Local logical status of the codeblock to determine excutability by Registry
+
+    The inner workings are relevant to developer for new types of constraints. Specifically, the
+    individual constraint functions are defined within the LogicStatus class. They provide interface
+    for CodeBlocks/Registry to update the values of the local logic_status at appropriate time. The
+    control flow of these behaviour.
+    """
 
     def __init__(self, setup, logic_status):
         self.setup        = setup
         self.logic_status = logic_status
-        self.lookup_trigger = {#'once': self.once,
+        self.lookup_trigger = {
                                'once per bar': self.once_per_bar,
                                'once per trade': self.once_per_trade,
                                'once per period': self.once_per_period,
@@ -18,7 +29,8 @@ class LogicStatus:
                                'n per bar': self.n_per_bar,
                                'n per period': self.n_per_period,
                                'n per trade': self.n_per_trade,
-                               'n per flag': self.n_per_flag}
+                               'n per flag': self.n_per_flag
+                               }
         self.lookup_logic = {
                              'bar': ['once per bar', 'n per bar'],
                              'period': ['once per period', 'n per period'],
@@ -35,13 +47,9 @@ class LogicStatus:
         else:
             return False
 
-    # provide interface for updating the logic_status
-    def trigger(self, triggeredConstraint, num_bars):
-        constraint = self.lookup_trigger[resetConstraint]
-        constraint(num_bars)
-
     # provide interface for resetting the logic_status back to default setup status
     def reset(self, resetConstraint, num_bars):
+        """Reset specific constriant at certain num_bars to setup status"""
         if resetConstraint in self.logic_status.keys():
             del self.logic_status[resetConstraint]
 
@@ -56,8 +64,8 @@ class LogicStatus:
                 constraint = self.lookup_trigger[key]
                 constraint(*self.setup[1][1][key], num_bars=num_bars)
 
-    # provide interface for flashing the whole logic_status to empty and reassigning
-    def resetAll(self, num_bars):
+    def callAll(self, num_bars):
+        """Call all constraint functions at the num_bars. Called during initialization and refreshing"""
         for item in self.setup[1][0]:
             constraint = self.lookup_trigger[item]
             constraint(num_bars)
@@ -70,15 +78,18 @@ class LogicStatus:
         if 'bar' not in self.logic_status.keys():
             self.logic_status['bar'] = [1, 1, num_bars]
 
+
     def n_per_bar(self, *args, num_bars):
         if 'bar' not in self.logic_status.keys():
             self.logic_status['bar'] = [*args, 1, num_bars]
         else:
             self.logic_status['bar'][0] -= 1
 
+
     def once_per_period(self, *args, num_bars):
         if 'bar' not in self.logic_status.keys():
             self.logic_status['period'] = [1, *args, num_bars]
+
 
     def n_per_period(self, *args, num_bars):
         if 'period' not in self.logic_status.keys():
@@ -86,9 +97,11 @@ class LogicStatus:
         else:
             self.logic_status['period'][0] -= 1
 
+
     def once_per_trade(self, num_bars):
         if 'trade' not in self.logic_status.keys():
             self.logic_status['trade'] = [1, 1, num_bars]
+
 
     def n_per_trade(self, *args, num_bars):
         if 'trade' not in self.logic_status.keys():
@@ -96,12 +109,12 @@ class LogicStatus:
         else:
             self.logic_status['trade'][0] -= 1
 
-    # might as well change to once_per_flag instead
+
     def once_per_flag(self, codeblock, flag, *args, num_bars):
         if flag not in self.logic_status.keys():
             self.logic_status[flag] = [1, 1, num_bars]
 
-    # might as well change to n_per_flag instead
+
     def n_per_flag(self, lst, *args, num_bars):
         if lst[1] in self.logic_status:
             self.logic_status[lst[1]][0] -= 1
@@ -110,11 +123,26 @@ class LogicStatus:
 
 
 class CodeBlock:
-    """ CodeBlocks are classes to be maintained by a Registry when the function pointers of a
-    Strategy are passed into Registry.
+    """
+    CodeBlocks are objects to be maintained by a Registry. They are created from the combination of
+    a function pointer of client Strategy method and additional setup metainfo as dictated by the
+    client. The format of passing the setup metainfo to Registry is documented in PivotStrat.
 
-    Augments the client functions to maintain its own logic status and maintian its state transitions via
-    transitions.Machine.
+    Augments the client functions to maintain its own logic status and maintian its state
+    transitions. Currently this is achieved via transitions.Machine but this introduces significant
+    overhead to the computational speed of the programme. Future revamp would be underatken to
+    address this issue and major revision is expected.
+
+    Args
+    ---
+    functpt: reference to strategy method.
+        The key of the setup dictionary entry that maps to the setup info of this CodeBlock
+    setup: list
+        The value of the setup dictionary entry that corresponds to the funcpt key of this CodeBlock
+
+
+    Also provides a public interface for setting the localdata of one CodeBlock via the setLocalData
+    method.
 
     """
 
@@ -130,8 +158,6 @@ class CodeBlock:
 
         self.machine = Machine(model=self, states=CodeBlock.states, initial='initialized')
 
-        # transition that a CodeBlock possesses; add suitable callbacks and
-        # before/after/conditions/unless to transitions for controlling behaviour of codeblocks
         self.machine.add_transition(trigger='initializing', source='initialized', dest='rest',
                 before='initialize')
         self.machine.add_transition(trigger='checking', source='rest', dest='executed',
@@ -140,35 +166,40 @@ class CodeBlock:
         self.machine.add_transition(trigger='passingTrigger', source='executed', dest='triggered')
         self.machine.add_transition(trigger='failingTrigger', source='executed', dest='rest')
 
-        self.machine.add_transition(trigger='cleaningUp', source='triggered', dest='rest',
-                after='update')
+        self.machine.add_transition(trigger='cleaningUp', source='triggered', dest='rest', after='update')
 
-        self.machine.add_transition(trigger='refreshing', source='rest', dest='rest',
-                before='refresh')
+        self.machine.add_transition(trigger='refreshing', source='rest', dest='rest', before='refresh')
 
     # run initialization for each item in Registry.codeblocks
     def initialize(self):
         # codes that are really used for initialize the logical status based on the setup info
-        self.logic_status.resetAll(0)
+        """Initialize the logic_status of the local CodeBlock at num_bars as 0."""
+        self.logic_status.callAll(0)
 
     def check(self, num_bars, flagvalues):
+        """Update CodeBlock metainfo after client method returns. Cascading state changes."""
         self.triggered, self.flags, self.localdata = self.func(*flagvalues, **self.localdata)
 
         if self.triggered:
             self.last_triggered = num_bars
             self.passingTrigger()
-            self.cleaningUp(num_bars) # need to pass updateConstraint to update
+            self.cleaningUp(num_bars)
         else:
             self.failingTrigger()
 
     def update(self, num_bars):
-        self.logic_status.resetAll(num_bars) # all to be updated once -> correct implementation
+        """Maintain the local logic_status while it is triggered at current num_bars"""
+        self.logic_status.callAll(num_bars)
 
     def refresh(self, resetConstraint, num_bars):
+        """
+        Maintain the local logic_status while it is refreshed, reset against the passed
+        constraintconstraint
+        """
         self.logic_status.reset(resetConstraint, num_bars)
 
-    # set existing entry of self.localdata to certain value
     def setLocalData(self, dictionary):
+        """Public interface for client function to access other CodeBlocks localdata"""
         for k, v in dictionary.items():
             if k in self.localdata.keys():
                 self.localdata[k] = v
