@@ -27,7 +27,6 @@ def test_construction():
     setup = ['open', [['once per bar'], {}], 1]
     cb1 = CodeBlock(CB1, setup)
     assert cb1.name == 'CB1'
-    assert cb1.states == ['initialized', 'rest', 'checked', 'executed', 'triggered']
 
 def test_on_close():
     def twokprice():
@@ -81,19 +80,6 @@ def test_on_open():
     for value in dataset['open']:
         parseOpen(value)
     assert registry.open_price == 6375.11
-
-def test_transition():
-    def CB1():
-        #print('successful transition')
-        return True, {}, {}
-
-    setup = ['open', [['once per bar'], {}], 1]
-    cb1 = CodeBlock(CB1, setup)
-    assert cb1.state == 'initialized'
-    cb1.initializing()
-    assert cb1.state == 'rest'
-    cb1.checking(2, [])
-    assert cb1.state == 'rest'
 
 
 def test_registration_to_reigstry():
@@ -170,10 +156,6 @@ def test_initialization():
     assert registry.codeblocks[5].logic_status.logic_status == {'period': [3, 2, 0]}
     assert registry.codeblocks[6].logic_status.logic_status == {'trade': [3, 1, 0]}
     assert registry.codeblocks[7].logic_status.logic_status == {'damnson': [10000, 1, 0]}
-
-    for i in range(0, 8, 1):
-        assert registry.codeblocks[i].state == 'rest'
-
 
 #@pytest.mark.skip(reason='not implemented')
 def test_is_executable():

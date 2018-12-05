@@ -52,7 +52,7 @@ class Registry:
                                '': True}
 
         for code in self.codeblocks:
-            code.initializing()
+            code.initialize()
 
 
     # Refresh methods to maintain correct states
@@ -134,11 +134,11 @@ class Registry:
         if timeEvent == 'candle':
             for cat, val in logic_status.items():
                 if cat == 'bar':
-                    codeblock.refreshing(cat, self.num_bars)
+                    codeblock.refresh(cat, self.num_bars)
         elif timeEvent == 'period':
             for cat, val in logic_status.items():
                 if cat == 'period':
-                    codeblock.refreshing(cat, self.num_bars)
+                    codeblock.refresh(cat, self.num_bars)
 
 
     def handleCheck(self, tick):
@@ -169,4 +169,4 @@ class Registry:
             duplicate = [self.codeblocks[pters.index(flag[0])] for flag in Flags]
             # augment duplicate with codeblocks to pass into inidividual CodeBlock
             augmented = [dict(t) for t in {tuple((k, (v, d)) for k, v in d.flags.items()) for d in duplicate}]
-            codeblock.checking(self.num_bars, augmented)
+            codeblock.check(self.num_bars, augmented)

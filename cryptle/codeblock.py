@@ -1,5 +1,3 @@
-from transitions import Machine
-
 class LogicStatus:
     """
     A wrapper snippet of the logic_status dictionary to provide utility for maintaining and
@@ -16,6 +14,7 @@ class LogicStatus:
     individual constraint functions are defined within the LogicStatus class. They provide interface
     for CodeBlocks/Registry to update the values of the local logic_status at appropriate time. The
     control flow of these behaviour.
+
     """
 
     def __init__(self, setup, logic_status):
@@ -146,7 +145,6 @@ class CodeBlock:
 
     """
 
-    states =  ['initialized', 'rest', 'checked', 'executed', 'triggered']
     def __init__(self, funcpt, setup):
         self.name = funcpt.__name__
         self.func = funcpt
@@ -155,20 +153,6 @@ class CodeBlock:
         self.last_triggered = None
         self.flags = {}
         self.localdata = {}
-
-        self.machine = Machine(model=self, states=CodeBlock.states, initial='initialized')
-
-        self.machine.add_transition(trigger='initializing', source='initialized', dest='rest',
-                before='initialize')
-        self.machine.add_transition(trigger='checking', source='rest', dest='executed',
-                after='check')
-
-        self.machine.add_transition(trigger='passingTrigger', source='executed', dest='triggered')
-        self.machine.add_transition(trigger='failingTrigger', source='executed', dest='rest')
-
-        self.machine.add_transition(trigger='cleaningUp', source='triggered', dest='rest', after='update')
-
-        self.machine.add_transition(trigger='refreshing', source='rest', dest='rest', before='refresh')
 
     # run initialization for each item in Registry.codeblocks
     def initialize(self):
@@ -182,10 +166,7 @@ class CodeBlock:
 
         if self.triggered:
             self.last_triggered = num_bars
-            self.passingTrigger()
-            self.cleaningUp(num_bars)
-        else:
-            self.failingTrigger()
+            self.update(num_bars)
 
     def update(self, num_bars):
         """Maintain the local logic_status while it is triggered at current num_bars"""
