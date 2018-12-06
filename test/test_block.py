@@ -6,7 +6,7 @@ from cryptle.registry import Registry
 from metric.timeseries.candle import CandleStick
 from metric.timeseries.rsi    import RSI
 
-from test.utils import get_sample_trades
+from test.utils import get_sample_trades, get_sample_candles
 
 import transitions
 import pytest
@@ -14,8 +14,8 @@ import pandas as pd
 from datetime import datetime
 from collections import ChainMap
 
-dataset = get_sample_trades(name='sample_candles.csv')
-tickset = get_sample_trades(name='sample_trades.csv')
+dataset = get_sample_candles()
+tickset = get_sample_trades()
 
 def test_construction():
     def CB1():
