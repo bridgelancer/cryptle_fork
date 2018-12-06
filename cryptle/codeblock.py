@@ -7,7 +7,7 @@ class LogicStatus:
     ---
     setup        : list
         The list corresponds to the the CodeBlock currently holds
-    logic_status :  dictionary
+    logic_status : dictionary
         Local logical status of the codeblock to determine excutability by Registry
 
     The inner workings are relevant to developer for new types of constraints. Specifically, the
@@ -38,6 +38,7 @@ class LogicStatus:
                              }
 
     def is_executable(self):
+        """Basic checking for whether the logic_status is compatible with design and excutable"""
         assert all(len(item) == 3 for item in self.logic_status.values()) and \
             all(all(isinstance(val, int) for val in item) for k, item in self.logic_status.items())
 
@@ -46,7 +47,6 @@ class LogicStatus:
         else:
             return False
 
-    # provide interface for resetting the logic_status back to default setup status
     def reset(self, resetConstraint, num_bars):
         """Reset specific constriant at certain num_bars to setup status"""
         if resetConstraint in self.logic_status.keys():
@@ -128,8 +128,8 @@ class CodeBlock:
     client. The format of passing the setup metainfo to Registry is documented in PivotStrat.
 
     Augments the client functions to maintain its own logic status and maintian its state
-    transitions. Also provides a public interface for setting the localdata of one CodeBlock
-    via the :meth:`setLocalData` method.
+    transitions. Also provides a public interface for setting the localdata of another CodeBlock
+    via the :meth:`setLocalData` method by a Strategy method.
 
     Args
     ---
@@ -156,7 +156,7 @@ class CodeBlock:
         self.logic_status.callAll(0)
 
     def check(self, num_bars, flagvalues):
-        """Update CodeBlock metainfo after client method returns. Cascading state changes."""
+        """Update CodeBlock metainfo after client method returns"""
         self.triggered, self.flags, self.localdata = self.func(*flagvalues, **self.localdata)
 
         if self.triggered:
@@ -169,8 +169,8 @@ class CodeBlock:
 
     def refresh(self, resetConstraint, num_bars):
         """
-        Maintain the local logic_status while it is refreshed, reset against the passed
-        constraintconstraint
+        Maintain the local logic_status while it is refreshed by Registrh, reset against
+        the passed constraint.
         """
         self.logic_status.reset(resetConstraint, num_bars)
 

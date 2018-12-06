@@ -427,8 +427,50 @@ It provides necessary interface for both :class:`~cryptle.registry.Registry` and
 Strategy methods to systematically access and update the values of ``logic_status``
 and maintain the values of ``flags`` and ``localdata``.
 
+``logic_status`` of the :class:`~cryptle.codeblock.Codeblock` is a separate object
+that has its own segregated mechanism of maintaining the its representation of
+``logic_status`` as a ``Dictionary``. ``flags`` are data maintained by one
+particular :class:`~cryptle.codeblock.Codeblock` that are intended to be
+accessed by the other :class:`~cryptle.codeblock.Codeblock`. ``localdata`` are
+data local to that particular :class:`~cryptle.codeblock.Codeblock` and not
+intented to be accessed by other :class:`~cryptle.codeblock.Codeblock`.
+
+Several class methods are available for :class:`~cryptle.registry.Registry` to
+call during various situations. The ``logic_status`` of inidivdual :class:`cryptle.codeblock.CodeBlock`
+are initialized by :meth:`~cryptle.codeblock.CodeBlock.initialize` when the
+setup diciontary was first passed into the constructor of the Registry.
+
+:class:`~cryptle.registry.Registry` then checks conditions based on the
+individual :class:`~cryptle.codeblock.LogicStatus` of a
+:class:`~cryptle.codeblock.CodeBlock`. During execution of the Strategy method,
+any updates of the own ``localdata``, ``flags`` would be returned by the
+Strategy method itself. Any update of **other** CB's ``localdata`` should
+pass an ``Dictionary`` of format {'flagname': value}  within the method to
+:meth:`~cryptle.codeblock.CodeBlock.setLocalData`.
+
+The following is an example:
+
 .. code:: python
-   # use case for strategy method to alter other flags
+
+   class FooStrat(Strategy):
+      .. appropriate initialization
+
+      def foo():
+         pass
+
+      def bar():
+         pass
+- use case for delineating :meth:`~cryptle.codeblock.CodeBlock.check`
+
+If the codes in the Strategy method determines that this prompts a successful
+triggering to update the ``logic_status``, the client function should return
+True for ``triggered`` and the ``logic_status`` would be correspondingly updated
+by :meth:`~cryptle.codeblock.CodeBlock.update`.
+
+The :meth:`~cryptle.codeblock.Codeblock.refresh` method would be called by the
+:meth:`~cryptle.registry.Registry.refreshLogicStatus` method of the
+:class:`cryptcryptle.registry.Registry`. For details, please refer to the
+documentation of the Registry.
 
 .. _timeseries_ref:
 
