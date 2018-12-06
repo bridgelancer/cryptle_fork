@@ -4,9 +4,11 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+pylint = "*"
+pytest = "*"
 
 [packages]
-cryptle = {editable = true,path = "."}
+cryptle = {path = ".",editable = true}
 
 [requires]
 python_version = "3.5"
