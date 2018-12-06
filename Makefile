@@ -6,9 +6,9 @@ doc:
 	@$(MAKE) -C docs html
 
 servedoc: doc
-	@cd docs/_build/html && python3 -m http.server 5000
-	@python3 -m webbrowser http://localhost:5000
-
+	@cd docs/_build/html && \
+	    python3 -m webbrowser http://localhost:5000 && \
+	    python3 -m http.server 5000
 
 # Unit test configuration
 # defeats the purpose of using pytest for test discovery, consider refactoring test layout
