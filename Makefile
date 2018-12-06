@@ -5,8 +5,9 @@ initenv:
 doc:
 	@$(MAKE) -C docs html
 
-serve-doc:
+servedoc: doc
 	@cd docs/_build/html && python3 -m http.server 5000
+	@python3 -m webbrowser http://localhost:5000
 
 
 # Unit test configuration
