@@ -4,8 +4,7 @@ from collections import OrderedDict
 
 
 class Registry:
-    """
-    Registry class keeps record of the Strategy class's state information.
+    """ Registry class keeps record of the Strategy class's state information.
 
     A setup dictionary would be passed during the construction of the Registry. This would inialize
     all the CodeBlocks that would be subsequently maintained by the Registry and also via the

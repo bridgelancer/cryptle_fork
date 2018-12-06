@@ -149,8 +149,6 @@ reference documentation.
    of mixins.
 
 
-.. _events:
-
 Event Bus
 ---------
 Event buses allow events to be generated and observed. An event always come with
@@ -337,7 +335,7 @@ binding a function to listen for multiple events.
     assert test.data = 3  // True
 
 
-.. _std_events:
+.. _events:
 
 Standard Events
 ---------------
@@ -350,34 +348,65 @@ Standard Events
 
 Registry
 --------
-Registry handles :class:`Strategy` class's state information and controls the order
-and timing of logical tests' execution. The logical tests to be ran should be
-submitted in a Dictionary to the **setup** argument with an 'actionname' as a key
-followed by timing,constraints and order contained in a list. The following is
-an example:
+It is often a nightmare to manage flags and restraining the execution of
+Strategy methods while implementing a trading strategy.
+:class:`~cryptle.registry.Registry`, together with :class:`~cryptle.codeblock.CodeBlock`
+and :class:`~cryptle.codeblock.LogicStatus`, is a set of integral solution of mitigating
+the inadverent uses of class flags and promoting source code maintainability of Strategy class.
+
+:class:`~cryptle.registry.Registry` handles :class:`~cryptle.strategy.Strategy` class's
+state information and controls the order and restraints of function blocks execution.
+
+.. warning::
+
+   Registry might change to another name  to better reflect its
+   true functionality within the Strategy/CodeBlocks framework.
+
+The methods of a Strategy class requiring control should be passed in a ``Dictionary``
+to the ``setup`` argument of the constructor of the Registry.
+
+The dictionary should be formatted with a reference to the Strategy method as key,
+followed by timing, constraints contained in a list as value. The following is an example:
 
 .. code:: python
 
-   setup = {'doneInit': [['open'], [['once per bar'], {}], 1],
-            'wma':      [['open'], [['once per bar'], {'n per signal': ['doneInit', 10]}], 2]}
+   setup = {doneInit: [['open'], [['once per bar'], {}], 1],
+            wma:      [['open'], [['once per bar'], {'n per signal': [[doneInit, 'doneInit', 10]]}], 2]
+            }
 
-In the above scenario, the :class:`Registry` class will be dynamically listening
-for tick. Once the timing of execution is met and the constraints fulfiled, a
-``registry:execute`` signal will be emitted. The planned action :meth:`doneInit`
-will be triggered upon receiving the signal. :class:`Registry` will then
-look at the timing of execution and contraints chosen for the next action.
-We see that the second item
-:meth:`wma`  in ``setup`` differs to the former in one extra constraint which
-translates to only performing the action 10 times in maxima per signal upon
-the completion of ``doneInit``.
+During construction of the Registry, :class:`~cryptle.registry.Registry` would
+create an attribute ``codeblocks``. This holds a list of :class:`~cryptle.codeblock.CodeBlock`
+objects. :class:`~cryptle.codeblock.CodeBlock` would be documented separately in
+this guide but the essence is that it provides interface for
+:class:`~cryptle.registry.Registry` to properly maintain the actual ``logic_status`` of
+the Strategy methods.
+
+The control of the execution of the methods of the Strategy was achieved by the
+combined use of various **onEvent** functions such as :meth:`~cryptle.registry.Registry.onTick`,
+:meth:`~cryptle.registry.Registry.refreshLogicStatus` and the :meth:`~cryptle.registry.Registry.check` method.
+**onEvent** functions should listen to an external source via the Event bus architecture in
+order to update its internal state for the Strategy.
+
+In the above scenario, the :class:`Registry` class will dynamically listens
+for tick via :meth:`~cryptle.registry.Registry.onTick`. Upon each arrival of tick, the
+:meth:`~cryptle.registry.Registry.check` function would be called. If all the
+conditions to execute a particular Strategy method are fulfilled, the indiviudal
+:class:`~cryptle.codeblock.CodeBlock` of the function would be called and
+updated to execute the function and update the local :class:`~cryptle.codeblock.CodeBlock`
+``logic_status``, ``flags`` and ``localdata``.
+
+These ``logic_status`` are also dependent on :class:`~class.registry.Registry` for
+its proper maintenance under relevant changes of the external state. In this case, the
+:meth:`~cryptle.registry.Registry.refreshLogicStatus` is responsible for
+refreshing the LogicStatus appropriately.
 
 Currently the following actions and constraints are supported.
 
-Actions:
+whenExec:
    - ``open``
    - ``close``
 
-Constraints:
+constraints:
    - ``once per bar``
    - ``once per trade``
    - ``once per period``
@@ -387,6 +416,19 @@ Constraints:
    - ``n per trade``
    - ``n per signal``
 
+.. _codeblocks_ref:
+
+CodeBlock
+---------
+CodeBlock is both a data structure containing meta-information and also an abstraction
+layer for maintaing these meta-information of a Strategy method.
+
+It provides necessary interface for both :class:`~cryptle.registry.Registry` and
+Strategy methods to systematically access and update the values of ``logic_status``
+and maintain the values of ``flags`` and ``localdata``.
+
+.. code:: python
+   # use case for strategy method to alter other flags
 
 .. _timeseries_ref:
 
@@ -399,11 +441,8 @@ when the data is being streamed in real-time.
 
 .. warning::
 
-   This section only documents :class:`~metric.base.Timeseries`, the class
-   responsible for computation and dependencies of a time series. The new
-   components in the time series hierarchy: :class:`~metric.base.TimeseriesWrapper`,
-   and :class:`~metric.base.HistoricalTS` were left out. Full documentation is
-   under way.
+   There might be significant changes to the class names of the
+   Timeseries-related sub-system in the future.
 
 To allow time series data to be collected and computed in real-time, the
 `observer pattern <https://en.wikipedia.org/wiki/Observer_pattern>`_ is
@@ -412,7 +451,7 @@ integrated into the class's interface.
 The timeseries base class is designed to be both an observable and an observer.
 This means that each instance of a Timeseries class has corresponding
 `publish-subscribe <https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern>`_
-methods that lets it broadcast changes to other objects that are listening to
+methods that let it broadcast changes to other objects that are listening to
 its updates, while also listening for updates from other timeseries.
 
 To make all this work, subclasses of :class:`Timeseries` must do the following:
@@ -455,8 +494,8 @@ An example of Timeseries might look like:
 If a Timeseries is designed to listen to multiple Timeseries objects
 for updates, the only supported behaviour of updating is to wait till all the
 listened timeseries to update at least once before its :meth:`evaluate` function
-to run. In this case, the ``self._ts`` attribute should be set to a list of the
-Timeseries objects to be listened to:
+to run. More sophisticated control would be implemented if necessary. In this case,
+the ``self._ts`` attribute should be set to a list of the Timeseries objects to be listened to:
 
 .. code:: python
 
@@ -467,7 +506,7 @@ Timeseries objects to be listened to:
            super().__init__(ts=self._ts)
 
 For any subseries held within a wrapper class intended to be accessed by the
-client, a :class:`~metric.base.GenericTS` could be declared within the
+client, a :class:`~metric.base.GenericTS` could be declared during the
 construction of the wrapper class. The format of the
 :meth:`~metric.base.GenericTS.__init__` follows:
 ``someGenericTS(timeseries_to_be_listened, lookback, eval_func, args)``. The
@@ -491,3 +530,8 @@ the arguments that are passed into the :meth:`eval_func`:
        # foo1 is the subseries that is held by foo_with_GenereicTS
        self.foo1 = GenericTS(ts, lookback=lookback, eval_func=eval_foo1, args=[self])
        self.foo2 = GenericTS(ts, lookback=lookback, eval_func=eval_foo2, args=[self])
+
+This is analagous of having a :class:`~metric.base.Timeseries` with a :meth:`eval_func`
+as its :meth:`evaluate` and passed with with ``args``, constrained by ``lookback`` and
+listens to updates specified by the ``ts`` instead of the ``self.ts`` in
+:class:`~metric.base.Timeseries`.

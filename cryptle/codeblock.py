@@ -128,7 +128,8 @@ class CodeBlock:
     client. The format of passing the setup metainfo to Registry is documented in PivotStrat.
 
     Augments the client functions to maintain its own logic status and maintian its state
-    transitions.
+    transitions. Also provides a public interface for setting the localdata of one CodeBlock
+    via the :meth:`setLocalData` method.
 
     Args
     ---
@@ -136,10 +137,6 @@ class CodeBlock:
         The key of the setup dictionary entry that maps to the setup info of this CodeBlock
     setup: list
         The value of the setup dictionary entry that corresponds to the funcpt key of this CodeBlock
-
-
-    Also provides a public interface for setting the localdata of one CodeBlock via the setLocalData
-    method.
 
     """
 
