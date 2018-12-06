@@ -15,6 +15,7 @@ class PivotPoints(Timeseries):
         self.n = n
         self.value = self.pp
         self.timestamp = timestamp
+        self.cabins = self.s[::-1] + self.r[1:]
 
         if list:
             self.onList()

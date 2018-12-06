@@ -15,6 +15,7 @@ CORE_TESTS += test/test_cryptle.py
 CORE_TESTS += test/test_event.py
 CORE_TESTS += test/test_metric.py
 CORE_TESTS += test/test_paper.py
+CORE_TESTS += test/test_block.py
 
 # tests that takes a long time e.g. IO intensive
 SLOW_TESTS += test/test_feed.py
