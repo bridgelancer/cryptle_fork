@@ -128,9 +128,7 @@ class CodeBlock:
     client. The format of passing the setup metainfo to Registry is documented in PivotStrat.
 
     Augments the client functions to maintain its own logic status and maintian its state
-    transitions. Currently this is achieved via transitions.Machine but this introduces significant
-    overhead to the computational speed of the programme. Future revamp would be underatken to
-    address this issue and major revision is expected.
+    transitions.
 
     Args
     ---
