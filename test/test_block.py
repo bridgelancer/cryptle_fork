@@ -206,19 +206,19 @@ def test_is_executable():
 
 
 def test_checking():
-    def CB1():
+    def CB1(flagValues, flagCB):
         #print('successful enforce rudimentary checking CB1')
         return True, {}, {}
 
-    def CB2():
+    def CB2(flagValues, flagCB):
         #print('successful enforce rudimentary checking CB2', registry.current_time)
         return True, {}, {}
 
-    def CB3():
+    def CB3(flagValues, flagCB):
         #print('successful enforce rudimentary checking CB3')
         return True, {}, {}
 
-    def CB4():
+    def CB4(flagValues, flagCB):
         #print('successful enforce rudimentary checking CB4', registry.current_time)
         return True, {}, {}
 
@@ -248,11 +248,11 @@ def test_checking():
 
 # Seems like it is working
 def test_signals_and_augmented_dict_in_checking():
-    def doneInit():
+    def doneInit(flagValues, flagCB):
         flags = {"doneInitflag": True}
         return True, flags, {}
 
-    def twokprice():
+    def twokprice(flagValues, flagCB):
         flags = {"twokflag": True, 'twokflagyou': True}
         if registry.current_price is not None:
             if registry.current_price > 980:
@@ -264,11 +264,7 @@ def test_signals_and_augmented_dict_in_checking():
 
     # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
     # workup in aggregator in data format to achieve it @REVIEW
-    def CB2(*flagvaluedicts, testdata=None):
-        flagTuple = dict(ChainMap(*flagvaluedicts))
-        flagValues = dict([(key, value[0]) for key, value in flagTuple.items()])
-        flagCB = dict([(key, value[1]) for key, value in flagTuple.items()])
-
+    def CB2(flagValues, flagCB, testdata=None):
         if registry.current_price < 990 and testdata:
             testdata = False
         else:
@@ -313,12 +309,12 @@ def test_localdata():
     stick = CandleStick(180)
     rsi = RSI(stick.c, rsi_period)
 
-    def doneInit():
+    def doneInit(flagValues, flagCB):
         flags = {"doneInitflag": True}
         localdata = {}
         return True, flags, localdata
 
-    def signifyRSI(doneInit, rsi_sell_flag=None, rsi_signal=None):
+    def signifyRSI(flagValues, flagCB, rsi_sell_flag=None, rsi_signal=None):
         try:
             if rsi > rsi_upperthresh:
                 rsi_sell_flag = True
@@ -363,11 +359,11 @@ def test_localdata():
         emitTick(data)
 
 def test_set_local_data():
-    def doneInit():
+    def doneInit(flagValues, flagCB):
         flags = {"doneInitflag": True}
         return True, flags, {}
 
-    def twokprice(twokflag=None, twokflagyou=True):
+    def twokprice(flagValues, flagCB, twokflag=None, twokflagyou=True):
         if registry.current_price is not None:
             if registry.current_price > 980 and not twokflagyou:
                 twokflag = True
@@ -379,7 +375,7 @@ def test_set_local_data():
         localdata = {"twokflag": twokflag, "twokflagyou": twokflagyou}
         return True, flags, localdata
 
-    def augmented(aug1=None, aug2=None, aug3=None):
+    def augmented(flagValues, flagCB, aug1=None, aug2=None, aug3=None):
         aug1 = aug2 = aug3 = True
         flags = {"aug1": aug1, "aug2": aug2, "aug3": aug3}
         localdata = {"aug1": aug1, "aug2": aug2, "aug3": aug3}
@@ -387,9 +383,7 @@ def test_set_local_data():
 
     # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
     # workup in aggregator in data format to achieve it @REVIEW
-    def CB2(*flagdicts, testdata=None):
-        flagValues, flagCB = unpackDict(*flagdicts)
-
+    def CB2(flagValues, flagCB, testdata=None):
         if registry.current_price > 990 and testdata:
             testdata = False
             flagCB['twokflagyou'].setLocalData({'twokflagyou': False})
@@ -429,10 +423,3 @@ def test_set_local_data():
         data = [tick[0], tick[2], tick[1], tick[3]]
         data = [float(x) for x in data]
         emitTick(data)
-
-
-def unpackDict(*flagdicts):
-    flagTuple = dict(ChainMap(*flagdicts))
-    flagValues = dict([(key, value[0]) for key, value in flagTuple.items()])
-    flagCB = dict([(key, value[1]) for key, value in flagTuple.items()])
-    return flagValues, flagCB

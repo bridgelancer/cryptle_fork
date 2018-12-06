@@ -1,3 +1,5 @@
+from collections import ChainMap
+
 class LogicStatus:
     """
     A wrapper snippet of the logic_status dictionary to provide utility for maintaining and
@@ -149,6 +151,12 @@ class CodeBlock:
         self.flags = {}
         self.localdata = {}
 
+    def unpackDict(self, *flagvalues):
+        flagTuple = dict(ChainMap(*flagvalues))
+        flagValues = dict([(k, v[0]) for k, v in flagTuple.items()])
+        flagCB = dict([(k, v[1]) for k, v in flagTuple.items()])
+        return flagValues, flagCB
+
     # run initialization for each item in Registry.codeblocks
     def initialize(self):
         # codes that are really used for initialize the logical status based on the setup info
@@ -157,7 +165,8 @@ class CodeBlock:
 
     def check(self, num_bars, flagvalues):
         """Update CodeBlock metainfo after client method returns"""
-        self.triggered, self.flags, self.localdata = self.func(*flagvalues, **self.localdata)
+        flagValues, flagCB = self.unpackDict(*flagvalues)
+        self.triggered, self.flags, self.localdata = self.func(flagValues, flagCB, **self.localdata)
 
         if self.triggered:
             self.last_triggered = num_bars
