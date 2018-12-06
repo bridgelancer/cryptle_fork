@@ -6,18 +6,16 @@ from cryptle.registry import Registry
 from metric.timeseries.candle import CandleStick
 from metric.timeseries.rsi    import RSI
 
+from test.utils import get_sample_trades
+
 import transitions
 import pytest
 import pandas as pd
 from datetime import datetime
 from collections import ChainMap
 
-try:
-    dataset = pd.read_csv(open('bitstamp.csv'))
-    tickset = pd.read_json(open('bch1.log'), convert_dates=False, lines=True)
-except FileNotFoundError:
-    dataset = pd.DataFrame()
-    tickset = pd.DataFrame()
+dataset = get_sample_trades(name='sample_candles.csv')
+tickset = get_sample_trades(name='sample_trades.csv')
 
 def test_construction():
     def CB1():
@@ -50,9 +48,10 @@ def test_on_close():
     bus.bind(parseClose)
     bus.bind(registry)
 
-    for value in dataset['close']:
-        parseClose(value)
-    assert registry.close_price == 6453.99
+    for value in dataset:
+        print(value[1])
+        parseClose(float(value[1]))
+    assert registry.close_price == 2727.97
 
 ## only activate when it is bar open
 def test_on_open():
@@ -77,9 +76,10 @@ def test_on_open():
     bus = Bus()
     bus.bind(parseOpen)
     bus.bind(registry)
-    for value in dataset['open']:
-        parseOpen(value)
-    assert registry.open_price == 6375.11
+    for value in dataset:
+        print(value[0])
+        parseOpen(float(value[0]))
+    assert registry.open_price == 2670.2
 
 
 def test_registration_to_reigstry():
@@ -242,8 +242,9 @@ def test_checking():
     bus.bind(aggregator)
     bus.bind(registry)
 
-    for index, tick in tickset.iterrows():
-        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+    for tick in tickset:
+        data = [tick[0], tick[2], tick[1], tick[3]]
+        data = [float(x) for x in data]
         emitTick(data)
 
 # Seems like it is working
@@ -300,8 +301,9 @@ def test_signals_and_augmented_dict_in_checking():
     bus.bind(registry)
     bus.bind(aggregator)
 
-    for index, tick in tickset.iterrows():
-        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+    for tick in tickset:
+        data = [tick[0], tick[2], tick[1], tick[3]]
+        data = [float(x) for x in data]
         emitTick(data)
 
 def test_localdata():
@@ -356,8 +358,9 @@ def test_localdata():
     bus.bind(aggregator)
     bus.bind(stick)
 
-    for index, tick in tickset.iterrows():
-        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+    for tick in tickset:
+        data = [tick[0], tick[2], tick[1], tick[3]]
+        data = [float(x) for x in data]
         emitTick(data)
 
 def test_set_local_data():
@@ -423,8 +426,9 @@ def test_set_local_data():
     bus.bind(registry)
     bus.bind(aggregator)
 
-    for index, tick in tickset.iterrows():
-        data = [tick['price'], tick['amount'], tick['timestamp'], tick['type']]
+    for tick in tickset:
+        data = [tick[0], tick[2], tick[1], tick[3]]
+        data = [float(x) for x in data]
         emitTick(data)
 
 
