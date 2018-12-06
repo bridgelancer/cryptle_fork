@@ -3,12 +3,11 @@ from cryptle.codeblock import CodeBlock
 from cryptle.aggregator import Aggregator
 from cryptle.registry import Registry
 
-from metric.timeseries.candle import CandleStick
-from metric.timeseries.rsi    import RSI
+from cryptle.metric.timeseries.candle import CandleStick
+from cryptle.metric.timeseries.rsi    import RSI
 
 from test.utils import get_sample_trades, get_sample_candles
 
-import transitions
 import pytest
 import pandas as pd
 from datetime import datetime

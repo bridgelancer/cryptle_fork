@@ -20,7 +20,6 @@ setup(
         'requests>=2.18.4',
         'websocket-client>=0.45',
         'scikit-learn>=0.19.1',
-        'transitions>=0.6.9',
     ],
     extras_require={
         'dev': [
