@@ -423,3 +423,109 @@ def test_set_local_data():
         data = [tick[0], tick[2], tick[1], tick[3]]
         data = [float(x) for x in data]
         emitTick(data)
+
+def test_new_registry_format():
+    def doneInit(flagValues, flagCB):
+        flags = {"doneInitflag": True}
+        return True, flags, {}
+
+    def twokprice(flagValues, flagCB, twokflag=None, twokflagyou=True):
+        if registry.current_price is not None:
+            if registry.current_price > 980 and not twokflagyou:
+                twokflag = True
+            else:
+                twokflag = False
+                twokflagyou = True
+
+        flags = {"twokflag": twokflag, 'twokflagyou': twokflagyou}
+        localdata = {"twokflag": twokflag, "twokflagyou": twokflagyou}
+        return True, flags, localdata
+
+    def augmented(flagValues, flagCB, aug1=None, aug2=None, aug3=None):
+        aug1 = aug2 = aug3 = True
+        flags = {"aug1": aug1, "aug2": aug2, "aug3": aug3}
+        localdata = {"aug1": aug1, "aug2": aug2, "aug3": aug3}
+        return True, flags, localdata
+
+    # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
+    # workup in aggregator in data format to achieve it @REVIEW
+    def CB2(flagValues, flagCB, testdata=None):
+        if registry.current_price > 990 and testdata:
+            testdata = False
+            flagCB['twokflagyou'].setLocalData({'twokflagyou': False})
+        else:
+            testdata= True
+            flagCB['twokflagyou'].setLocalData({'twokflagyou': True})
+
+        if flagValues['twokflag']:
+            print('successfully check according to flag',
+                    datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'), registry.close_price)
+
+        flags = {}
+        localdata = {'testdata': testdata}
+        return True, flags, localdata
+
+    setup = {
+             doneInit: ['open', [['once per bar'], {}], 1],
+             twokprice: ['open', [['once per bar'], {}], 2],
+             augmented: ['open', [['once per bar'], {}], 3],
+             CB2: ['open', [['once per bar'], {'n per flag': \
+                 [[doneInit, 'doneInitflag', 100000], [twokprice, 'twokflag', 100], [twokprice,
+                 'twokflagyou', 10], [augmented, 'aug1', 1],[augmented, 'aug2', 1],[augmented, 'aug3', 1],]}], 4],
+             }
+
+    setup = [
+             (('codeblock', doneInit),
+                        ('whenExec', 'open'),
+                        ('once per bar', {'type': 'once per bar', 'event': 'bar',
+                                         'max_trigger': 1, 'refresh_period': 1})
+                        ),
+             (('codeblock', twokprice),
+                         ('whenExec', 'open'),
+                         ('once per bar', {'type': 'once per bar', 'event': 'bar',
+                                         'max_trigger': 1, 'refresh_period': 1})
+                         ),
+             (('codeblock', augmented),
+                         ('whenExec', 'open'),
+                         ('once per bar', {'type': 'once per bar', 'event': 'bar',
+                                         'max_trigger': 1, 'refresh_period': 1})
+                         ),
+             (('codeblock', CB2),
+                         ('whenExec', 'open'),
+                         ('doneInitflag': {'type': 'n per flag', 'event': 'flag',
+                                         'max_trigger': 100000, 'refresh_period': 1,
+                                         'funcpt': doneInit}),
+                         ('twokflag':     {'type': 'n per flag', 'event': 'flag',
+                                         'max_trigger': 100, 'refresh_period': 1,
+                                         'funcpt': twokprice}),
+                         ('twokflagyou':  {'type': 'n per flag', 'event': 'flag',
+                                         'max_trigger': 10, 'refresh_period': 1,
+                                         'funcpt': twokprice}),
+                         ('aug1':         {'type': 'n per flag', 'event': 'flag',
+                                         'max_trigger': 1, 'refresh_period': 1,
+                                         'funcpt': aug1}),
+                         ('aug2':         {'type': 'n per flag', 'event': 'flag',
+                                         'max_trigger': 1, 'refresh_period': 1,
+                                         'funcpt': aug2}),
+                         ('aug3':         {'type': 'n per flag', 'event': 'flag',
+                                         'max_trigger': 1, 'refresh_period': 1,
+                                         'funcpt': aug3}),
+                         ),
+            ]
+
+
+    registry = Registry(setup)
+    @source('tick')
+    def emitTick(tick):
+        return tick
+    aggregator = Aggregator(3600)
+
+    bus = Bus()
+    bus.bind(emitTick)
+    bus.bind(registry)
+    bus.bind(aggregator)
+
+    for tick in tickset:
+        data = [tick[0], tick[2], tick[1], tick[3]]
+        data = [float(x) for x in data]
+        emitTick(data)
