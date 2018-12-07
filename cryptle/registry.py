@@ -24,13 +24,11 @@ class Registry:
     """
 
     def __init__(self, setup):
-        # setup in conventional form - see test_registry.py for reference
         if all(len(item)>2 for x, item in setup.items()):
             self.setup = OrderedDict(sorted(setup.items(), key=lambda x: x[1][2]))
             self.codeblocks = list(map(CodeBlock, self.setup.keys(), self.setup.values()))
         else:
             self.setup = setup
-        # in plain dictionary form, holds all logical states for limiting further triggering of
         self.check_order = [x for x in self.setup.keys()]
 
         # bar-related states that should be sourced from aggregator
@@ -54,7 +52,6 @@ class Registry:
             code.initialize()
 
 
-    # Refresh methods to maintain correct states
     @on('tick') # tick should be agnostic to source of origin, but should take predefined format
     def onTick(self, tick):
         # ***this sequence matters a lot***
@@ -66,12 +63,14 @@ class Registry:
         self.current_time  = tick[2]
         self.updateLookUp()
 
+    # separate interface from implementation details
     @on('aggregator:new_open') # 'open', 'close' events should be emitted by aggregator
     def onOpen(self, price):
         self.new_open = True
         self.open_price = price
         self.updateLookUp()
 
+    # separate interface from implementation details
     @on('aggregator:new_close') # 'open', 'close' events should be emitted by aggregator
     def onClose(self, price):
         self.close_price = price
@@ -83,16 +82,15 @@ class Registry:
                                'close': self.new_close,
                                '': True}
 
-    # these flags are still largely imaginary and are not tested
     @on('buy') # 'buy', 'sell' events are not integrated for the moment
     def onBuy(self):
         self.buy_count += 1
 
-    # these flags are still largely imaginary and are not tested
     @on('sell') # 'buy', 'sell' events are not integrated for the moment
     def onSell(self):
         self.sell_count += 1
 
+    # separate interface from implementation details
     # onCandle should maintain logical states of all candle-related constraints
     @on('aggregator:new_candle')
     def onCandle(self, bar):
@@ -103,6 +101,7 @@ class Registry:
         if len(self.bars) > 1000:
             self.bars = self.bars[-1000:]
 
+    # separate interface from implementation details
     # onPeriod should maintain logical states of all period-related constraints
     @on('aggregator:new_candle')
     def onPeriod(self, bar):
@@ -157,7 +156,7 @@ class Registry:
             Flags = dictionary['once per flag']
         if 'n per flag' in dictionary:
             Flags += dictionary['n per flag']
-        # pters is reurning the list of self.func for all ocdblocks for checking
+        # pters is returning the list of self.func for all ocdblocks for checking
         pters = [item.func for item in self.codeblocks]
 
         # Currently, all lookup_check is void. No matter 'open'/'close, we only check when new
