@@ -23,13 +23,8 @@ class Registry:
 
     """
 
-    def __init__(self, setup):
-        if all(len(item)>2 for x, item in setup.items()):
-            self.setup = OrderedDict(sorted(setup.items(), key=lambda x: x[1][2]))
-            self.codeblocks = list(map(CodeBlock, self.setup.keys(), self.setup.values()))
-        else:
-            self.setup = setup
-        self.check_order = [x for x in self.setup.keys()]
+    def __init__(self, *setup):
+        self.codeblocks = list(map(CodeBlock, *setup))
 
         # bar-related states that should be sourced from aggregator
         self.bars = []
@@ -147,15 +142,11 @@ class Registry:
     def check(self, codeblock):
         """Actual checking to deliver the required control flow"""
         logic_status = codeblock.logic_status.logic_status
-        whenexec = codeblock.logic_status.setup[0]
-        triggerSetup = codeblock.logic_status.setup[1][0]
-        dictionary = codeblock.logic_status.setup[1][1]
+        whenexec = codeblock.logic_status.whenexec
+        dictionary = [constraint[1] for constraint in codeblock.logic_status.constraints]
 
-        Flags = []
-        if 'once per flag' in dictionary:
-            Flags = dictionary['once per flag']
-        if 'n per flag' in dictionary:
-            Flags += dictionary['n per flag']
+        Flags = list(filter(lambda x: x['type'] == 'once per flag' or x['type'] == 'n per flag',
+                        dictionary))
         # pters is returning the list of self.func for all ocdblocks for checking
         pters = [item.func for item in self.codeblocks]
 
@@ -164,7 +155,7 @@ class Registry:
         # registry.last_open/registry.last_close is correct
         if (self.lookup_check[whenexec] and all(lst[0] > 0 for key, lst in logic_status.items())):
             # list comprehension to remove duplicates
-            duplicate = [self.codeblocks[pters.index(flag[0])] for flag in Flags]
+            duplicate = [self.codeblocks[pters.index(flag['funcpt'])] for flag in Flags]
             # augment duplicate with codeblocks to pass into inidividual CodeBlock
             augmented = [dict(t) for t in {tuple((k, (v, d)) for k, v in d.flags.items()) for d in duplicate}]
             codeblock.check(self.num_bars, augmented)

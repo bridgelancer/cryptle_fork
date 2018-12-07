@@ -19,9 +19,10 @@ class LogicStatus:
 
     """
 
-    def __init__(self, setup, logic_status):
-        self.setup        = setup
-        self.logic_status = logic_status
+    def __init__(self, whenexec, constraints):
+        self.whenexec           = whenexec[1]
+        self.constraints        = tuple(constraints)
+        self.logic_status       = {}
         self.lookup_trigger = {
                                'once per bar': self.once_per_bar,
                                'once per trade': self.once_per_trade,
@@ -39,88 +40,98 @@ class LogicStatus:
                              'flag': ['once per flag', 'n per flag']
                              }
 
-    def is_executable(self):
-        """Basic checking for whether the logic_status is compatible with design and excutable"""
-        assert all(len(item) == 3 for item in self.logic_status.values()) and \
-            all(all(isinstance(val, int) for val in item) for k, item in self.logic_status.items())
+    #def is_executable(self):
+    #    """Basic checking for whether the logic_status is compatible with design and excutable"""
+    #    assert all(len(item) == 3 for item in self.logic_status.values()) and \
+    #        all(all(isinstance(val, int) for val in item) for k, item in self.logic_status.items())
 
-        if all(item[0] > 0 for k, item in self.logic_status.items()):
-            return True
-        else:
-            return False
+    #    if all(item[0] > 0 for k, item in self.logic_status.items()):
+    #        return True
+    #    else:
+    #        return False
 
     def reset(self, resetConstraint, num_bars):
-        """Reset specific constriant at certain num_bars to setup status"""
+        """Reset specific constriant at certain num_bars to initial status"""
         if resetConstraint in self.logic_status.keys():
             del self.logic_status[resetConstraint]
 
-            key = set(self.lookup_logic[resetConstraint]).intersection(
-                set(self.setup[1][0] + list(self.setup[1][1].keys())))
+            cat = set(self.lookup_logic[resetConstraint]).intersection(
+                set([constraint[1]['type'] for constraint in self.constraints]))
 
-            key = key.pop()
-            if key in self.setup[1][0]:
-                constraint = self.lookup_trigger[key]
-                constraint(num_bars)
-            if key in self.setup[1][1].keys():
-                constraint = self.lookup_trigger[key]
-                constraint(*self.setup[1][1][key], num_bars=num_bars)
+            assert len(cat) == 1
+            cat = cat.pop() # only 1 key would present by default
+
+            if cat in [constraint[1]['type'] for constraint in self.constraints]:
+                constraint_ft = self.lookup_trigger[cat]
+                constraint_ft(cat, num_bars)
 
     def callAll(self, num_bars):
-        """Call all constraint functions at the num_bars. Called during initialization and refreshing"""
-        for item in self.setup[1][0]:
-            constraint = self.lookup_trigger[item]
-            constraint(num_bars)
-        for key, flags in self.setup[1][1].items():
-            constraint = self.lookup_trigger[key]
-            constraint(*flags, num_bars=num_bars)
+        """Call all constraint functions and pass num_bars as arg.
+
+        Called during initialization and refreshing of Registry
+
+        """
+
+        for constraint in self.constraints:
+            const_name = constraint[0]
+            kws        = constraint[1]
+            constraint_ft = self.lookup_trigger[kws['type']]
+            constraint_ft(const_name, num_bars=num_bars, **kws) # determine how to pass the arguments into the constraints
+
 
     ##################################CONSTRAINT FUNCTIONS##################################
-    def once_per_bar(self, num_bars):
+    def once_per_bar(self, const_name, num_bars, **kws):
         if 'bar' not in self.logic_status.keys():
             self.logic_status['bar'] = [1, 1, num_bars]
 
 
-    def n_per_bar(self, *args, num_bars):
+    def n_per_bar(self, const_name, num_bars, **kws):
+        max_trigger = kws['max_trigger']
         if 'bar' not in self.logic_status.keys():
-            self.logic_status['bar'] = [*args, 1, num_bars]
+            self.logic_status['bar'] = [max_trigger, 1, num_bars]
         else:
             self.logic_status['bar'][0] -= 1
 
 
-    def once_per_period(self, *args, num_bars):
+    def once_per_period(self, const_name, num_bars, **kws):
+        kws['refresh_period'] = refresh_period
         if 'bar' not in self.logic_status.keys():
-            self.logic_status['period'] = [1, *args, num_bars]
+            self.logic_status['period'] = [1, refresh_period, num_bars]
 
 
-    def n_per_period(self, *args, num_bars):
+    def n_per_period(self, const_name, num_bars, **kws):
+        max_trigger = kws['max_trigger']
+        refresh_period = kws['refresh_period']
         if 'period' not in self.logic_status.keys():
-            self.logic_status['period'] = [*args, num_bars]
+            self.logic_status['period'] = [max_trigger, refresh_period, num_bars]
         else:
             self.logic_status['period'][0] -= 1
 
 
-    def once_per_trade(self, num_bars):
+    def once_per_trade(self, const_name, num_bars, **kws):
         if 'trade' not in self.logic_status.keys():
             self.logic_status['trade'] = [1, 1, num_bars]
 
 
-    def n_per_trade(self, *args, num_bars):
+    def n_per_trade(self, const_name, num_bars, **kws):
+        max_trigger = kws['max_trigger']
         if 'trade' not in self.logic_status.keys():
-            self.logic_status['trade'] = [*args, num_bars]
+            self.logic_status['trade'] = [max_trigger, 1, num_bars]
         else:
             self.logic_status['trade'][0] -= 1
 
 
-    def once_per_flag(self, codeblock, flag, *args, num_bars):
-        if flag not in self.logic_status.keys():
-            self.logic_status[flag] = [1, 1, num_bars]
+    def once_per_flag(self, const_name, num_bars, **kws):
+        if const_name not in self.logic_status.keys():
+            self.logic_status[const_name] = [1, 1, num_bars]
 
 
-    def n_per_flag(self, lst, *args, num_bars):
-        if lst[1] in self.logic_status:
-            self.logic_status[lst[1]][0] -= 1
+    def n_per_flag(self, const_name, num_bars, **kws):
+        max_trigger = kws['max_trigger']
+        if const_name in self.logic_status:
+            self.logic_status[const_name][0] -= 1
         else:
-            self.logic_status[lst[1]] = [lst[2], 1, num_bars]
+            self.logic_status[const_name] = [max_trigger, 1, num_bars]
 
 
 class CodeBlock:
@@ -142,10 +153,13 @@ class CodeBlock:
 
     """
 
-    def __init__(self, funcpt, setup):
-        self.name = funcpt.__name__
-        self.func = funcpt
-        self.logic_status = LogicStatus(setup, {})
+    def __init__(self, *entry):
+        func, *constraints = entry[0]
+
+        self.name = func[1].__name__
+        self.func = func[1]
+
+        self.logic_status = LogicStatus(constraints[0], constraints[1:])
         self.triggered = False
         self.last_triggered = None
         self.flags = {}
