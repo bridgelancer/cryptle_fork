@@ -6,42 +6,36 @@ jobs:
       # specify the python version
       - image: circleci/python:3.5.6
         environment:
-          PIPENV_VENV_IN_PROJECT: true
           PYTEST_FLAGS: --junitxml=test-results/results.xml
     steps:
       - checkout
-      # give circlci permission to python install directories
-      - run: sudo chown -R circleci:circleci /usr/local/bin
-      - run: sudo chown -R circleci:circleci /usr/local/lib/python3.5/site-packages
-      # download and cache python dependencies with pipenv
+      # download and cache the virtualenv
       - restore_cache:
           keys:
-            - python-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "Pipfile.lock" }}
-            - python-{{ .Branch }}-{{ checksum "setup.py" }}-
-            - python-{{ .Branch }}-
-            - python-
+            - venv-{{ .Branch }}-{{ checksum "setup.py" }}
+            - venv-{{ .Branch }}-
+            - venv-
       - run:
-          name: Install python dependencies
+          name: Install virtualenv
           command: |
-            sudo pip install pipenv
-            make install
+            pip install -q --user virtualenv
+      - run:
+          name: Actvate virtualenv and install dependencies
+          command: |
+            virtualenv .venv
+            source .venv/bin/activate
+            pip install -q .[dev]
       - save_cache:
-          key: python-{{ .Branch }}-{{ checksum "setup.py" }}-{{ checksum "Pipfile.lock" }}
+          key: venv-{{ .Branch }}-{{ checksum "setup.py" }}
           paths:
             - ".venv"
-            - "/usr/local/bin"
-            - "/usr/local/lib/python3.5/site-packages"
-      # actiavte the pipenv
-      - run: source .venv/bin/activate
-      # run linter
-      - run:
-          name: Start linter
-          command: make lint
+            - "~/.local/lib/python3.5"
       # run tester, "when: always" makes sure tester is always run whether linting fail or succeed
       - run:
           name: Start tester
-          command: make test
-          when: always
+          command: |
+            source .venv/bin/activate
+            make test
       - store_test_results:
           path: test-results
 
