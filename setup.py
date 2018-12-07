@@ -1,15 +1,15 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 import cryptle
 
 
 setup(
-    name='Cryptle',
-    version='.'.join(str(i) for i in cryptle.get_version()),
+    name='cryptle',
+    version=cryptle.get_version(),
     author='Glasphere',
     author_email='',
     description='Cryptle: Algorithmic trading framework',
-    packages=['cryptle'],
+    packages=find_packages(exclude=['test']),
     include_package_data=True,
     zip_safe=False,
     python_requires='>=3.5',
