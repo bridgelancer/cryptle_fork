@@ -1,23 +1,26 @@
 """
-This module defines custom log levels, and provide logging related helpers.
+This module defines custom log levels for trading events, monkey patch the
+standard logging module, and provide logging related helpers. The custom level
+sare all defined with severity below logging.WARNING as listed:
 
-The custom log levels are trading related events. They are all defined with
-severity below WARNING, described as follows:
 - REPORT  25
 - SIGNAL  15
 - METRIC  13
 - TICK    5
 
-When imported to other modules, loggers created from logging.getLogger will have
-a log method for each corresponding new log level.
+When cryptle.logging is imported in any one of the modules in a python
+application, loggers created from logging.getLogger will be monkey patched to
+have a log method for each corresponding log level described above. Cryptle
+internally uses `str.format()
+<https://docs.python.org/3/library/string.html#formatstrings>`_ format string
+syntax for log messages. Hence the method `getMessage
+<https://docs.python.org/3/library/logging.html#logging.LogRecord.getMessage>`_
+of LogRecord is monkey patched as well.
 
-Default formatters subclassed from logging.Formatter provide a unified log
-format for Cryptle. Indivial modules are recommended to use the formatters
-defined in this module, instead of defining their own.
-
-Root logger configs are initialised upon import.
-
-Helper functions create handled loggers or loggers and handlers in pairs.
+Default formatters subclassed from `logging.Formatter
+<https://docs.python.org/3/library/logging.html#logging.Formatter>`_ provide a
+unified log format for cryptle. A number of helper functions setup the root
+logger with sensible defaults, tailored for paper-trading and live-trading.
 """
 import logging
 import sys
