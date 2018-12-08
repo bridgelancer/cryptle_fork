@@ -106,7 +106,6 @@ class ColorFormatter(logging.Formatter):
 
     def format(self, record):
         self._format_levelname(record)
-        self._format_name(record)
         s = super().format(record)
         return s
 
@@ -114,11 +113,6 @@ class ColorFormatter(logging.Formatter):
         color = self._get_color(record)
         record.levelname = color + record.levelname + self.RESET
         record.levelname = '[' + record.levelname + ']'
-        return record
-
-    @staticmethod
-    def _format_name(record):
-        record.name = record.name.capitalize()
         return record
 
     def _get_color(self, record):
