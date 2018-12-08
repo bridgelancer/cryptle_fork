@@ -153,3 +153,33 @@ def get_streamhandler(stream=sys.stdout, level=logging.INFO, formatter=ColorForm
     sh.setLevel(level)
     sh.setFormatter(formatter)
     return sh
+
+
+def configure_root_logger(file, flvl=logging.DEBUG, slvl=logging.REPORT) -> None:
+    """Helper routine to setup root logger with file and stream handlers.
+
+    Adds a file handler and stream handler to the root logger. These handlers
+    are configured to use standard formatters in cryptle.
+
+    Args
+    ----
+    file : str
+        Log file's name
+    flvl:
+        Log level of the file handler
+    slvl:
+        Log level of the stream handler
+
+    """
+    fh = logging.FileHandler('papertrade.log', mode='w')
+    fh.setLevel(flvl)
+    fh.setFormatter(cryptle.logging.DebugFormatter())
+
+    sh = logging.StreamHandler()
+    sh.setLevel(slvl)
+    sh.setFormatter(cryptle.logging.ColorFormatter())
+
+    root = logging.getLogger()
+    root.addHandler(sh)
+    root.addHandler(fh)
+    root.setLevel(flvl)
