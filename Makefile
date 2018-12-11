@@ -1,13 +1,3 @@
-# Generate documentation
-doc:
-	@$(MAKE) -C docs html
-
-servedoc: doc
-	@cd docs/_build/html && \
-	    python3 -m webbrowser http://localhost:5000 && \
-	    python3 -m http.server 5000
-
-
 # Unit test configuration
 test:
 	@pytest test/unit
@@ -23,6 +13,16 @@ testall:
 # run specific unit test
 test_%:
 	@pytest test/unit/$@.py --rootdir=./
+
+
+# Generate documentation
+doc:
+	@$(MAKE) -C docs html
+
+servedoc: doc
+	@cd docs/_build/html && \
+	    python3 -m webbrowser http://localhost:5000 && \
+	    python3 -m http.server 5000
 
 
 # Linting configuration
