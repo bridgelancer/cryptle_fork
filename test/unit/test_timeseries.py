@@ -1,24 +1,24 @@
 from cryptle.logging import *
-from metric.base import Candle, Timeseries, TimeseriesWrapper, HistoricalTS
-from metric.candle import CandleBar
+from cryptle.metric.base import Candle, Timeseries, TimeseriesWrapper, HistoricalTS
+from cryptle.metric.candle import CandleBar
 from cryptle.aggregator import Aggregator
 from cryptle.event import source, on, Bus
-from metric.timeseries.atr import ATR
-from metric.timeseries.bollinger import BollingerBand
-from metric.timeseries.candle  import CandleStick
-from metric.timeseries.difference import Difference
-from metric.timeseries.ema import EMA
-from metric.timeseries.ichimoku import IchimokuCloud
-from metric.timeseries.kurtosis import Kurtosis
-from metric.timeseries.macd import MACD
-from metric.timeseries.pivot import PivotPoints
-from metric.timeseries.rsi import RSI
-from metric.timeseries.sd import SD
-from metric.timeseries.skewness import Skewness
-from metric.timeseries.sma import SMA
-from metric.timeseries.timestamp import Timestamp
-from metric.timeseries.volatility import Volatility
-from metric.timeseries.wma import WMA
+from cryptle.metric.timeseries.atr import ATR
+from cryptle.metric.timeseries.bollinger import BollingerBand
+from cryptle.metric.timeseries.candle  import CandleStick
+from cryptle.metric.timeseries.difference import Difference
+from cryptle.metric.timeseries.ema import EMA
+from cryptle.metric.timeseries.ichimoku import IchimokuCloud
+from cryptle.metric.timeseries.kurtosis import Kurtosis
+from cryptle.metric.timeseries.macd import MACD
+from cryptle.metric.timeseries.pivot import PivotPoints
+from cryptle.metric.timeseries.rsi import RSI
+from cryptle.metric.timeseries.sd import SD
+from cryptle.metric.timeseries.skewness import Skewness
+from cryptle.metric.timeseries.sma import SMA
+from cryptle.metric.timeseries.timestamp import Timestamp
+from cryptle.metric.timeseries.volatility import Volatility
+from cryptle.metric.timeseries.wma import WMA
 
 from functools import wraps
 import logging
