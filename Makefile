@@ -1,4 +1,4 @@
-# Unit test configuration
+# Unit test configuration (pytest)
 test:
 	@pytest test/unit
 
@@ -25,7 +25,7 @@ servedoc: doc
 	    python3 -m http.server 5000
 
 
-# Linting configuration
+# Linting configuration (pylint)
 PYLINT_DISABLES := C      # Ignore convention linting
 PYLINT_DISABLES += W0221  # Ignore warnings of function signature overloading
 PYLINT_DISABLES += E1205  # Ignore errors of logging args since we're using custom log formatting
@@ -48,6 +48,7 @@ PACK_DIAG  := packages_$(PROJECT)
 
 
 # Utililies
+# (pyreverse comes with pylint, dot needs to separately installed)
 uml:
 	@pyreverse -k cryptle -p $(PROJECT)
 	@dot -Tpng $(CLASS_DIAG).dot > $(CLASS_DIAG).png
