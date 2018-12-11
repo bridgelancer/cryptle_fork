@@ -7,35 +7,22 @@ servedoc: doc
 	    python3 -m webbrowser http://localhost:5000 && \
 	    python3 -m http.server 5000
 
+
 # Unit test configuration
-# defeats the purpose of using pytest for test discovery, consider refactoring test layout
-CORE_TESTS += test/test_cryptle.py
-CORE_TESTS += test/test_event.py
-CORE_TESTS += test/test_metric.py
-CORE_TESTS += test/test_paper.py
-CORE_TESTS += test/test_block.py
-
-# tests that takes a long time e.g. IO intensive
-SLOW_TESTS += test/test_feed.py
-SLOW_TESTS += test/test_timeseries.py
-SLOW_TESTS += test/test_clock.py
-
-UNIT_TESTS = $(CORE_TESTS)
-ALL_TESTS  = $(CORE_TESTS) $(SLOW_TESTS)
-
-
-# Flags can be specified by setting the PYTEST_FLAGS environment variable
 test:
-	@pytest $(PYTEST_FLAGS) $(UNIT_TESTS)
+	@pytest test/unit
 
-testslow:
-	@pytest $(PYTEST_FLAGS) $(SLOW_TESTS)
+# runs only integration tests
+testint:
+	@pytest test/integration
 
+# finds all tests with test discovery
 testall:
-	@pytest $(PYTEST_FLAGS) $(ALL_TESTS)
+	@pytest test
 
+# run specific unit test
 test_%:
-	@pytest $(PYTEST_FLAGS) test/$@.py --rootdir=./
+	@pytest test/unit/$@.py --rootdir=./
 
 
 # Linting configuration
