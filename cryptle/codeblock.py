@@ -7,15 +7,14 @@ class LogicStatus:
 
     Args
     ---
-    setup        : list
-        The list corresponds to the the CodeBlock currently holds
-    logic_status : dictionary
-        Local logical status of the codeblock to determine excutability by Registry
+    whenexec     : tuple
+        First tuple of the list of tuples in setup
+    constraints  : tuple
+        The second and thereafter tuples of the list of tuples in setup
 
-    The inner workings are relevant to developer for new types of constraints. Specifically, the
+    The inner workings are relevant to developer for developing new types of constraints. Specifically, the
     individual constraint functions are defined within the LogicStatus class. They provide interface
-    for CodeBlocks/Registry to update the values of the local logic_status at appropriate time. The
-    control flow of these behaviour.
+    for CodeBlocks/Registry to update the values of the local logic_status at appropriate time.
 
     """
 
@@ -136,9 +135,9 @@ class LogicStatus:
 
 class CodeBlock:
     """
-    CodeBlocks are objects to be maintained by a Registry. They are created from the combination of
-    a function pointer of client Strategy method and additional setup metainfo as dictated by the
-    client. The format of passing the setup metainfo to Registry is documented in PivotStrat.
+    CodeBlocks are objects to be maintained by a Registry. They are created from a tuple
+    corresponds to the the entry of the setup for that particular Stratey method.
+    The format of passing the setup metainfo to Registry is documented in PivotStrat and guides.
 
     Augments the client functions to maintain its own logic status and maintian its state
     transitions. Also provides a public interface for setting the localdata of another CodeBlock
@@ -192,7 +191,7 @@ class CodeBlock:
 
     def refresh(self, resetConstraint, num_bars):
         """
-        Maintain the local logic_status while it is refreshed by Registrh, reset against
+        Maintain the local logic_status while it is refreshed by Registry, reset against
         the passed constraint.
         """
         self.logic_status.reset(resetConstraint, num_bars)

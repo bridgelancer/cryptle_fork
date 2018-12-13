@@ -359,20 +359,31 @@ state information and controls the order and restraints of function blocks execu
 
 .. warning::
 
-   Registry might change to another name  to better reflect its
+   Registry might change to another name to better reflect its
    true functionality within the Strategy/CodeBlocks framework.
 
-The methods of a Strategy class requiring control should be passed in a ``Dictionary``
-to the ``setup`` argument of the constructor of the Registry.
+The methods of a Strategy class requiring control should be passed in a ``list`` of ``tuple``
+to the ``setup`` argument of the constructor of the Registry. The order of execution of the Strategy
+methods to be controlled by the Registry would check and execute as in its tuple entry in the order of the list.
 
-The dictionary should be formatted with a reference to the Strategy method as key,
-followed by timing, constraints contained in a list as value. The following is an example:
+There is a predefined structure for the tuple to wrap a Strategy method. Within
+the tuple there are sub-tuples that specify the timing of exection (whenExec)
+and constraints that limit the execution of these Strategy methods. The first
+sub-tuple would be be ('codeblock', function_pointer) and the second tuple would
+be ('whenExec', time_of_execution). The third tuples onwards are the constraints
+and flags. They take the format of ('constraint_name', {keys: args})
 
-.. code:: python
+The dictionary specified within the tuple of constraints and flags consists of
+predefined string keys to convey information of that particular constraint to
+the Registry. The available keys and their use are:
 
-   setup = {doneInit: [['open'], [['once per bar'], {}], 1],
-            wma:      [['open'], [['once per bar'], {'n per signal': [[doneInit, 'doneInit', 10]]}], 2]
-            }
+key:
+   -  ``type``: the type of constraint category this constrinat belongs to
+   -  ``event``: the type of Event that refresh this constraint
+   -  ``refresh_period``: the number of events needed to refresh this constraint
+   -  ``max_trigger``: the number of allowable triggers for the Strategy function before refreshing
+   -  ``funcpt`` (optional): the reference of Strategy function that refers to the CodeBlock containing the required flag, only for once per flag/n per flag type.
+
 
 During construction of the Registry, :class:`~cryptle.registry.Registry` would
 create an attribute ``codeblocks``. This holds a list of :class:`~cryptle.codeblock.CodeBlock`
@@ -381,40 +392,30 @@ this guide but the essence is that it provides interface for
 :class:`~cryptle.registry.Registry` to properly maintain the actual ``logic_status`` of
 the Strategy methods.
 
+.. note::
+   This is not complying to the design intent of the rest of the framework. In
+   the future the Registry should not directly handle data source. Instead the
+   data handling part should be delegated to the Strategy instance with the use
+   of the :class:`~cryptle.strategy.Strategy` interfaces provided.
+
 The control of the execution of the methods of the Strategy was achieved by the
 combined use of various **onEvent** functions such as :meth:`~cryptle.registry.Registry.onTick`,
 :meth:`~cryptle.registry.Registry.refreshLogicStatus` and the :meth:`~cryptle.registry.Registry.check` method.
 **onEvent** functions should listen to an external source via the Event bus architecture in
 order to update its internal state for the Strategy.
 
-In the above scenario, the :class:`Registry` class will dynamically listens
+In the above scenario, the :class:`Registry` class will dynamically listen
 for tick via :meth:`~cryptle.registry.Registry.onTick`. Upon each arrival of tick, the
 :meth:`~cryptle.registry.Registry.check` function would be called. If all the
 conditions to execute a particular Strategy method are fulfilled, the indiviudal
-:class:`~cryptle.codeblock.CodeBlock` of the function would be called and
+:class:`~cryptle.codeblock.CodeBlock` of the :class:`~cryptle.registry.Registry` would be called and
 updated to execute the function and update the local :class:`~cryptle.codeblock.CodeBlock`
-``logic_status``, ``flags`` and ``localdata``.
+``logic_status``, ``flags`` and ``localdata``  for the Strategy method.
 
 These ``logic_status`` are also dependent on :class:`~class.registry.Registry` for
 its proper maintenance under relevant changes of the external state. In this case, the
 :meth:`~cryptle.registry.Registry.refreshLogicStatus` is responsible for
 refreshing the LogicStatus appropriately.
-
-Currently the following actions and constraints are supported.
-
-whenExec:
-   - ``open``
-   - ``close``
-
-constraints:
-   - ``once per bar``
-   - ``once per trade``
-   - ``once per period``
-   - ``once per signal``
-   - ``n per bar``
-   - ``n per period``
-   - ``n per trade``
-   - ``n per signal``
 
 .. _codeblocks_ref:
 
@@ -436,31 +437,76 @@ data local to that particular :class:`~cryptle.codeblock.Codeblock` and not
 intented to be accessed by other :class:`~cryptle.codeblock.Codeblock`.
 
 Several class methods are available for :class:`~cryptle.registry.Registry` to
-call during various situations. The ``logic_status`` of inidivdual :class:`cryptle.codeblock.CodeBlock`
+call during various situations. The ``logic_status`` of inidivdual :class:`~cryptle.codeblock.CodeBlock`
 are initialized by :meth:`~cryptle.codeblock.CodeBlock.initialize` when the
-setup diciontary was first passed into the constructor of the Registry.
+setup ``sub-tuples`` was first passed into the constructor of the Registry.
 
 :class:`~cryptle.registry.Registry` then checks conditions based on the
 individual :class:`~cryptle.codeblock.LogicStatus` of a
-:class:`~cryptle.codeblock.CodeBlock`. During execution of the Strategy method,
+:class:`~cryptle.codeblock.CodeBlock`. During execution of a Strategy method,
 any updates of the own ``localdata``, ``flags`` would be returned by the
 Strategy method itself. Any update of **other** CB's ``localdata`` should
-pass an ``Dictionary`` of format {'flagname': value}  within the method to
-:meth:`~cryptle.codeblock.CodeBlock.setLocalData`.
+pass an ``Dictionary`` of format {'flagname': value}  within the method to call
+the other CB's :meth:`~cryptle.codeblock.CodeBlock.setLocalData` method.
 
 The following is an example:
 
 .. code:: python
 
    class FooStrat(Strategy):
-      .. appropriate initialization
+      .. appropriate initialization including setup
+      self.setup = [
+                    (('codeblock', foo),
+                     ('whenExec', 'open'),
+                     ('once per bar', {'type': 'once per bar', 'event': 'bar',
+                     'refresh_period': 1}),
+                     ),
 
-      def foo():
-         pass
+                    (('codeblock', bar),
+                     ('whenExec', 'close'),
+                     ('once per bar', {'type': 'once per bar', 'event': 'bar',
+                     'refresh_period': 1}),
+                     ('fooflag', {'type': 'n per flag', 'event': 'flag',
+                     'refresh_period': 1, 'max_trigger': 10000000, 'funcpt':
+                     foo}),
+                     ),
+                   ]
 
-      def bar():
-         pass
-- use case for delineating :meth:`~cryptle.codeblock.CodeBlock.check`
+      def foo(flagValues, flagCB, fooflag=None, dummy=True):
+         dummy = True
+
+         if fooflag is None:
+            fooflag = True
+
+         if not fooflag:
+            fooflag = True
+         if fooflag:
+            fooflag = False
+
+         if dummy:
+            print('dummy is True')
+         else:
+            print('dummy is False')
+
+         triggered = True
+         localdata = {'fooflag': fooflag, 'dummy': dummy}
+         flags = {'fooflag': fooflag, 'dummy': dummy}
+         return triggered, flags, localdata
+
+      def bar(flagValues, flagCB, localdata=None):
+         fooflag = flagValues['fooflag']
+         if fooflag:
+            print('foo flag is true')
+            flagCB['dummy'].setLocalData({'dummy': True})
+         else:
+            print('foo flag is false')
+            flagCB['dummy'].setLocalData({'dummy': False})
+
+         triggered = True
+         localdata = {}
+         flags = {]
+         return triggered, flags, localdata
+
 
 If the codes in the Strategy method determines that this prompts a successful
 triggering to update the ``logic_status``, the client function should return
@@ -469,7 +515,7 @@ by :meth:`~cryptle.codeblock.CodeBlock.update`.
 
 The :meth:`~cryptle.codeblock.Codeblock.refresh` method would be called by the
 :meth:`~cryptle.registry.Registry.refreshLogicStatus` method of the
-:class:`cryptcryptle.registry.Registry`. For details, please refer to the
+:class:`~cryptle.registry.Registry`. For details, please refer to the
 documentation of the Registry.
 
 .. _timeseries_ref:

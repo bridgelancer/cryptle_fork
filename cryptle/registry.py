@@ -6,15 +6,14 @@ from collections import OrderedDict
 class Registry:
     """ Registry class keeps record of the Strategy class's state information.
 
-    A setup dictionary would be passed during the construction of the Registry. This would inialize
+    A setup tuple would be passed during the construction of the Registry. This would inialize
     all the CodeBlocks that would be subsequently maintained by the Registry and also via the
     interactions between CodeBlocks where necessary.
 
     Args
     ---
-    setup: dictionary
-        The dictionary held by the Strategy containing method references as keys and list containing
-        metainfo as values
+    setup: tuple
+        The tuple of tuples held by the Strategy
 
     It is also responsible for controlling the execution of logical tests
     at desired time and frequency as time elapsed. This is achieved by various onEvent functions.
@@ -43,8 +42,8 @@ class Registry:
                                'close': self.new_close,
                                '': True}
 
-        for code in self.codeblocks:
-            code.initialize()
+        for codeblock in self.codeblocks:
+            codeblock.initialize()
 
 
     @on('tick') # tick should be agnostic to source of origin, but should take predefined format
