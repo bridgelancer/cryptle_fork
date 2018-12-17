@@ -393,11 +393,13 @@ this guide but the essence is that it provides interface for
 the Strategy methods.
 
 .. code:: python
+
    class Registry:
       def __init__(self, *setup):
          self.codeblocks = list(map(CodeBlock, *setup))
 
 .. note::
+
    This is not complying to the design intent of the rest of the framework. In
    the future the Registry should not directly handle data source. Instead the
    data handling part should be delegated to the Strategy instance with the use
@@ -410,6 +412,7 @@ combined use of various **onEvent** functions such as :meth:`~cryptle.registry.R
 order to update its internal state for the Strategy.
 
 .. code:: python
+
    class Registry:
       def __init__(self, *setup):
          # other appropriate initialization
@@ -438,6 +441,7 @@ The Strategy :meth:`~cryptle.Strategy.onTrade` method calls Registry to cascade
 the new information and triggers the necessary updating and checking.
 
 .. code:: python
+
    class Registry:
       # ...
 
@@ -469,6 +473,7 @@ updated to execute the function and update the local :class:`~cryptle.codeblock.
 ``logic_status``, ``flags`` and ``localdata``  for the Strategy method.
 
 .. code:: python
+
    class Registry:
       # ...
 
