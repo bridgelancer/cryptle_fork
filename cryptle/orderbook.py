@@ -12,6 +12,7 @@ class Orderbook:
         asks: Same as bids
         time: Time of snapshot
     """
+
     def __init__(self, bids=None, asks=None, time=-1):
         self._bids = {}
         self._asks = {}
@@ -40,7 +41,7 @@ class Orderbook:
             self._bid_prices.sort(reverse=True)
 
         if asks:
-            for price, volume, in asks:
+            for price, volume in asks:
                 self._ask_prices.append(price)
                 self._asks[price] = volume
             self._ask_prices.sort()
@@ -90,15 +91,15 @@ class Orderbook:
         Args:
             depth: number of orders at top of orderbook to keep track of
         """
-        self._diffs      = 0
-        self._depth      = depth
-        self._recording  = True
+        self._diffs = 0
+        self._depth = depth
+        self._recording = True
         self._start_time = self._time
 
-        self._bp_grad = [0 for i in range(depth)]   # bid price gradient
-        self._ap_grad = [0 for i in range(depth)]   # ask price gradient
-        self._bv_grad = [0 for i in range(depth)]   # bid volume gradient
-        self._av_grad = [0 for i in range(depth)]   # ask volume gradient
+        self._bp_grad = [0 for i in range(depth)]  # bid price gradient
+        self._ap_grad = [0 for i in range(depth)]  # ask price gradient
+        self._bv_grad = [0 for i in range(depth)]  # bid volume gradient
+        self._av_grad = [0 for i in range(depth)]  # ask volume gradient
 
         self._event_count = {
             'create_ask': 0,
@@ -106,7 +107,7 @@ class Orderbook:
             'delete_ask': 0,
             'delete_bid': 0,
             'take_ask': 0,
-            'take_bid': 0
+            'take_bid': 0,
         }
 
     def stop_recording(self):
@@ -124,12 +125,12 @@ class Orderbook:
 
     def _save(self):
         """Cache current top orders at depth from the :py:meth`record_diffs`."""
-        self._collision_count = 0   # unused
+        self._collision_count = 0  # unused
         self._prev_time = self._time
-        self._prev_bp   = self.bids(self._depth)          # bid price
-        self._prev_ap   = self.asks(self._depth)          # ask price
-        self._prev_bv   = self.bid_volume(self._depth)    # bid volume
-        self._prev_av   = self.ask_volume(self._depth)    # ask volume
+        self._prev_bp = self.bids(self._depth)  # bid price
+        self._prev_ap = self.asks(self._depth)  # ask price
+        self._prev_bv = self.bid_volume(self._depth)  # bid volume
+        self._prev_av = self.ask_volume(self._depth)  # ask volume
 
     def _update_record(self, diff_type, order_type):
         """Update recorded metrics."""
@@ -146,10 +147,10 @@ class Orderbook:
             # unused
             self._collision_count += 1
         else:
-            end_bp  = self.bids(self._depth)
-            end_ap  = self.asks(self._depth)
-            end_bv  = self.bid_volume(self._depth)
-            end_av  = self.ask_volume(self._depth)
+            end_bp = self.bids(self._depth)
+            end_ap = self.asks(self._depth)
+            end_bv = self.bid_volume(self._depth)
+            end_av = self.ask_volume(self._depth)
 
             for i in range(self._depth):
                 self._bp_grad[i] += (end_bp[i] - self._prev_bp[i]) / res
@@ -172,8 +173,8 @@ class Orderbook:
             volume gradient, ask volume gradient.
         """
         t = diffs.time
-        bid_price_grad  = [0 for i in range(depth)]
-        ask_price_grad  = [0 for i in range(depth)]
+        bid_price_grad = [0 for i in range(depth)]
+        ask_price_grad = [0 for i in range(depth)]
         bid_volume_grad = [0 for i in range(depth)]
         ask_volume_grad = [0 for i in range(depth)]
 
@@ -182,23 +183,27 @@ class Orderbook:
             tdiff = 1 / sum(t == time)
 
             for i, diff in diffs[t == time].iterrows():
-                start_bid_price  = self.bids(depth)
-                start_ask_price  = self.asks(depth)
+                start_bid_price = self.bids(depth)
+                start_ask_price = self.asks(depth)
                 start_bid_volume = self.bid_volume(depth)
                 start_ask_volume = self.ask_volume(depth)
 
-                self.apply_diff(**{**diff, 'time': time+tdiff*i})
+                self.apply_diff(**{**diff, 'time': time + tdiff * i})
 
-                end_bid_price    = self.bids(depth)
-                end_ask_price    = self.asks(depth)
-                end_bid_volume   = self.bid_volume(depth)
-                end_ask_volume   = self.ask_volume(depth)
+                end_bid_price = self.bids(depth)
+                end_ask_price = self.asks(depth)
+                end_bid_volume = self.bid_volume(depth)
+                end_ask_volume = self.ask_volume(depth)
 
                 for i in range(depth):
-                    bid_price_grad[i]  += (end_bid_price[i] - start_bid_price[i]) / tdiff
-                    ask_price_grad[i]  += (end_ask_price[i] - start_ask_price[i]) / tdiff
-                    bid_volume_grad[i] += (end_bid_volume[i] - start_bid_volume[i]) / tdiff
-                    ask_volume_grad[i] += (end_ask_volume[i] - start_ask_volume[i]) / tdiff
+                    bid_price_grad[i] += (end_bid_price[i] - start_bid_price[i]) / tdiff
+                    ask_price_grad[i] += (end_ask_price[i] - start_ask_price[i]) / tdiff
+                    bid_volume_grad[i] += (
+                        end_bid_volume[i] - start_bid_volume[i]
+                    ) / tdiff
+                    ask_volume_grad[i] += (
+                        end_ask_volume[i] - start_ask_volume[i]
+                    ) / tdiff
 
         return bid_price_grad, ask_price_grad, bid_volume_grad, ask_volume_grad
 
@@ -345,7 +350,7 @@ class Orderbook:
             self._bids[float(price)] = float(volume)
         self._bid_prices.sort(reverse=True)
 
-        for price, volume, in asks:
+        for price, volume in asks:
             self._ask_prices.append(float(price))
             self._asks[float(price)] = float(volume)
         self._ask_prices.sort()

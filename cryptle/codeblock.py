@@ -18,28 +18,30 @@ class LogicStatus:
     """
 
     def __init__(self, setup, logic_status):
-        self.setup        = setup
+        self.setup = setup
         self.logic_status = logic_status
         self.lookup_trigger = {
-                               'once per bar': self.once_per_bar,
-                               'once per trade': self.once_per_trade,
-                               'once per period': self.once_per_period,
-                               'once per flag': self.once_per_flag,
-                               'n per bar': self.n_per_bar,
-                               'n per period': self.n_per_period,
-                               'n per trade': self.n_per_trade,
-                               'n per flag': self.n_per_flag
-                               }
+            'once per bar': self.once_per_bar,
+            'once per trade': self.once_per_trade,
+            'once per period': self.once_per_period,
+            'once per flag': self.once_per_flag,
+            'n per bar': self.n_per_bar,
+            'n per period': self.n_per_period,
+            'n per trade': self.n_per_trade,
+            'n per flag': self.n_per_flag,
+        }
         self.lookup_logic = {
-                             'bar': ['once per bar', 'n per bar'],
-                             'period': ['once per period', 'n per period'],
-                             'trade': ['once per trade', 'n per trade'],
-                             'flag': ['once per flag', 'n per flag']
-                             }
+            'bar': ['once per bar', 'n per bar'],
+            'period': ['once per period', 'n per period'],
+            'trade': ['once per trade', 'n per trade'],
+            'flag': ['once per flag', 'n per flag'],
+        }
 
     def is_executable(self):
-        assert all(len(item) == 3 for item in self.logic_status.values()) and \
-            all(all(isinstance(val, int) for val in item) for k, item in self.logic_status.items())
+        assert all(len(item) == 3 for item in self.logic_status.values()) and all(
+            all(isinstance(val, int) for val in item)
+            for k, item in self.logic_status.items()
+        )
 
         if all(item[0] > 0 for k, item in self.logic_status.items()):
             return True
@@ -53,7 +55,8 @@ class LogicStatus:
             del self.logic_status[resetConstraint]
 
             key = set(self.lookup_logic[resetConstraint]).intersection(
-                set(self.setup[1][0] + list(self.setup[1][1].keys())))
+                set(self.setup[1][0] + list(self.setup[1][1].keys()))
+            )
 
             key = key.pop()
             if key in self.setup[1][0]:
@@ -77,18 +80,15 @@ class LogicStatus:
         if 'bar' not in self.logic_status.keys():
             self.logic_status['bar'] = [1, 1, num_bars]
 
-
     def n_per_bar(self, *args, num_bars):
         if 'bar' not in self.logic_status.keys():
             self.logic_status['bar'] = [*args, 1, num_bars]
         else:
             self.logic_status['bar'][0] -= 1
 
-
     def once_per_period(self, *args, num_bars):
         if 'bar' not in self.logic_status.keys():
             self.logic_status['period'] = [1, *args, num_bars]
-
 
     def n_per_period(self, *args, num_bars):
         if 'period' not in self.logic_status.keys():
@@ -96,11 +96,9 @@ class LogicStatus:
         else:
             self.logic_status['period'][0] -= 1
 
-
     def once_per_trade(self, num_bars):
         if 'trade' not in self.logic_status.keys():
             self.logic_status['trade'] = [1, 1, num_bars]
-
 
     def n_per_trade(self, *args, num_bars):
         if 'trade' not in self.logic_status.keys():
@@ -108,11 +106,9 @@ class LogicStatus:
         else:
             self.logic_status['trade'][0] -= 1
 
-
     def once_per_flag(self, codeblock, flag, *args, num_bars):
         if flag not in self.logic_status.keys():
             self.logic_status[flag] = [1, 1, num_bars]
-
 
     def n_per_flag(self, lst, *args, num_bars):
         if lst[1] in self.logic_status:
@@ -160,7 +156,9 @@ class CodeBlock:
 
     def check(self, num_bars, flagvalues):
         """Update CodeBlock metainfo after client method returns. Cascading state changes."""
-        self.triggered, self.flags, self.localdata = self.func(*flagvalues, **self.localdata)
+        self.triggered, self.flags, self.localdata = self.func(
+            *flagvalues, **self.localdata
+        )
 
         if self.triggered:
             self.last_triggered = num_bars
@@ -183,4 +181,6 @@ class CodeBlock:
             if k in self.localdata.keys():
                 self.localdata[k] = v
             else:
-                raise ValueError('Only for resetting existing values of localdata of a CodeBlock.')
+                raise ValueError(
+                    'Only for resetting existing values of localdata of a CodeBlock.'
+                )

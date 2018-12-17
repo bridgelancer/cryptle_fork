@@ -5,7 +5,8 @@ from .candle import *
 from .base import TimeSeries
 from .generic import *
 
-def Wrapper:
+
+class Wrapper:
     '''Base class of all the wrapper objects for the new TimeSeries object.
 
     Wrapper would provide interface to retrieve the updated value of the TimeSeries object. In the
@@ -17,6 +18,7 @@ def Wrapper:
     of a valid Metric is encapsulated in such a Wrapper construct.
 
     '''
+
     def getValue(self):
         return self.value
 
@@ -90,7 +92,7 @@ def Wrapper:
         return other * self.value
 
     def __rtruediv__(self, other):
-        return other /self.value
+        return other / self.value
 
     def __rfloordiv__(self, other):
         return other // self.value
@@ -109,7 +111,8 @@ def Candle(Wrapper):
         self.h = h
         self.l = l
         self.v = v
-        self.value = 0 # by default, the value will take the open price value
+        self.value = 0  # by default, the value will take the open price value
+
 
 def SMA(Wrapper):
 
@@ -118,6 +121,7 @@ def SMA(Wrapper):
     def __init__(self, sma):
         self.value = sma
 
+
 def WMA(Wrapper):
 
     '''Manifestation of original WMA object with WMA TimeSeries'''
@@ -125,12 +129,14 @@ def WMA(Wrapper):
     def __init__(self, wma):
         self.value = sma
 
+
 def EMA(Wrapper):
 
     '''Manifestatino of original EMA object with EMA TimeSeries'''
 
     def __init__(self, ema):
         self.value = ema
+
 
 def ATR(Wrapper):
 
@@ -143,6 +149,7 @@ def ATR(Wrapper):
         self.tr = tr
         self.value = 0
 
+
 def MACD(Wrapper):
 
     '''Manifestation of original MACD object with fast, slow, diff, diff_ma TimeSeries'''
@@ -152,6 +159,7 @@ def MACD(Wrapper):
         self.diff_ma = diff_ma
         self.value = self.diff - self.diff_ma
 
+
 def Difference(Wrapper):
 
     '''Manifestation of original Difference object with a dictionary of lists of historic n-th
@@ -160,6 +168,7 @@ def Difference(Wrapper):
     def __init__(self, difference):
         self.difference = difference
         self.value = self.difference
+
 
 def BollingerBand(Wrapper):
 
@@ -173,6 +182,7 @@ def BollingerBand(Wrapper):
         self.band = band
         self.value = self.band
 
+
 def RSI(Wrapper):
 
     '''Manifestation of original RSI object with rsi TimeSeries'''
@@ -180,6 +190,7 @@ def RSI(Wrapper):
     def __init__(self, rsi):
         self.rsi = rsi
         self.value = self.rsi
+
 
 def Volatility(Wrapper):
 
@@ -189,6 +200,7 @@ def Volatility(Wrapper):
         self.volatility = volatility
         self.value = self.volatility
 
+
 def Kurtosis(Wrapper):
 
     '''Manifestation of original Kurtosis object with kurtosis TimeSeries'''
@@ -196,6 +208,7 @@ def Kurtosis(Wrapper):
     def __init__(self, kurtosis):
         self.kurtosis = kurtosis
         self.value = self.kurtosis
+
 
 def Skewness(Wrapper):
 
@@ -205,6 +218,7 @@ def Skewness(Wrapper):
         self.skewness = skewness
         self.value = self.skewness
 
+
 def WilliamPercentR(Wrapper):
 
     '''Manifestation of original WilliamPercentR object with william TimeSeries'''
@@ -213,8 +227,9 @@ def WilliamPercentR(Wrapper):
         self.william = william
         self.value = self.william
 
+
 def IchimokuCloud(Wrapper):
 
     '''Manifestation of original IchimokuCloud object with ic TimeSeries'''
 
-    pass # currently not implemented for the moment, not sure about the real form
+    pass  # currently not implemented for the moment, not sure about the real form

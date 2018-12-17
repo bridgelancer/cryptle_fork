@@ -26,10 +26,10 @@ import logging
 import sys
 
 
-logging.REPORT  = 25
-logging.SIGNAL  = 15
-logging.METRIC  = 13
-logging.TICK    = 5
+logging.REPORT = 25
+logging.SIGNAL = 15
+logging.METRIC = 13
+logging.TICK = 5
 logging.addLevelName(logging.REPORT, 'REPORT')
 logging.addLevelName(logging.SIGNAL, 'SIGNAL')
 logging.addLevelName(logging.METRIC, 'METRIC')
@@ -40,13 +40,16 @@ def _report(self, message, *args, **kargs):
     if self.isEnabledFor(logging.REPORT):
         self._log(logging.REPORT, message, args, **kargs)
 
+
 def _signal(self, message, *args, **kargs):
     if self.isEnabledFor(logging.SIGNAL):
         self._log(logging.SIGNAL, message, args, **kargs)
 
+
 def _metric(self, message, *args, **kargs):
     if self.isEnabledFor(logging.METRIC):
         self._log(logging.METRIC, message, args, **kargs)
+
 
 def _tick(self, message, *args, **kargs):
     if self.isEnabledFor(logging.TICK):
@@ -56,7 +59,7 @@ def _tick(self, message, *args, **kargs):
 logging.Logger.report = _report
 logging.Logger.signal = _signal
 logging.Logger.metric = _metric
-logging.Logger.tick   = _tick
+logging.Logger.tick = _tick
 
 
 # Monkey patch LogRecord.getMessage() method in logging module
@@ -66,11 +69,13 @@ def _logrecord_getmessage_fix(self):
         msg = msg.format(*self.args)
     return msg
 
+
 logging.LogRecord.getMessage = _logrecord_getmessage_fix
 
 
 class DebugFormatter(logging.Formatter):
     """Create detailed and machine parsable log messages."""
+
     fmt = '{asctime}:{levelname}:{filename}:{lineno}:{message}'
     datefmt = '%Y%m%dT%H%M%S'
 
@@ -80,6 +85,7 @@ class DebugFormatter(logging.Formatter):
 
 class SimpleFormatter(logging.Formatter):
     """Create readable basic log messages."""
+
     fmt = '{name:<12} {levelname:<8} {message}'
     datefmt = '%Y%m%dT%H%M%S'
 
@@ -94,15 +100,16 @@ class SimpleFormatter(logging.Formatter):
 
 class ColorFormatter(logging.Formatter):
     """Create colorize log messages with terminal control characters."""
+
     fmt = '{name:<10} {asctime} {levelname:<8} {message}'
     datefmt = '%Y-%m-%d %H:%M:%S'
 
-    RESET   = '\033[0m'
-    COLOR   = '\033[%dm'
-    RED     = COLOR % 31
-    YELLOW  = COLOR % 33
-    GREEN   = COLOR % 32
-    BLUE    = COLOR % 34
+    RESET = '\033[0m'
+    COLOR = '\033[%dm'
+    RED = COLOR % 31
+    YELLOW = COLOR % 33
+    GREEN = COLOR % 32
+    BLUE = COLOR % 34
 
     def __init__(self, **kwargs):
         super().__init__(fmt=self.fmt, datefmt=self.datefmt, style='{', **kwargs)
@@ -145,7 +152,9 @@ def get_filehandler(fname, level=logging.DEBUG, formatter=DebugFormatter()):
     return fh
 
 
-def get_streamhandler(stream=sys.stdout, level=logging.INFO, formatter=ColorFormatter()):
+def get_streamhandler(
+    stream=sys.stdout, level=logging.INFO, formatter=ColorFormatter()
+):
     sh = logging.StreamHandler(stream=sys.stdout)
     sh.setLevel(level)
     sh.setFormatter(formatter)

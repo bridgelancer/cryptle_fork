@@ -28,8 +28,8 @@ servedoc: doc
 # Linting configuration (pylint)
 PYLINT_DISABLES := C      # Ignore convention linting
 PYLINT_DISABLES += W0221  # Ignore warnings of function signature overloading
-PYLINT_DISABLES += E1205  # Ignore errors of logging args since we're using custom log formatting
 # support for str.format() log message format will be in the next release of pylint
+PYLINT_DISABLES += E1205  # Ignore errors of logging args since we're using custom log formatting
 
 comma := ,
 empty :=
@@ -42,13 +42,21 @@ lint:
 	    --disable=$(PYLINT_DISABLES_FINAL) \
 	    || true
 
-PROJECT := cryptle
-CLASS_DIAG := classes_$(PROJECT)
-PACK_DIAG  := packages_$(PROJECT)
+
+# Use black to auto-format python code
+format:
+	@black -S cryptle
+
+checkformat:
+	@black --diff -S cryptle
 
 
 # Utililies
 # (pyreverse comes with pylint, dot needs to separately installed)
+PROJECT := cryptle
+CLASS_DIAG := classes_$(PROJECT)
+PACK_DIAG  := packages_$(PROJECT)
+
 uml:
 	@pyreverse -k cryptle -p $(PROJECT)
 	@dot -Tpng $(CLASS_DIAG).dot > $(CLASS_DIAG).png
@@ -61,4 +69,4 @@ clean:
 	$(MAKE) -C docs clean
 
 
-.PHONY: install doc test testall testslow testpluging clean lint uml
+.PHONY: install doc test testall testslow testpluging clean lint uml format

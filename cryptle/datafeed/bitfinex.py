@@ -43,14 +43,14 @@ def decode_event(event):
 
 def encode_event(msg: dict):
     """Parse subscribed messages from bitfinex into cryptle representation."""
-    name  = msg['channel']
-    cid   = msg['chanId']
+    name = msg['channel']
+    cid = msg['chanId']
     event = ''
 
     # @Todo: Implement all events
     if name == 'trades':
         symbol = msg['symbol'][1:].lower()
-        event  = 'trades:{}'.format(symbol)
+        event = 'trades:{}'.format(symbol)
 
     elif name == 'ticker':
         raise NotImplementedError
@@ -73,25 +73,25 @@ def _parse_wsmsg(msg):
 
 
 class Code(Enum):
-    ERR_UNK          = 10000
-    ERR_GENERIC      = 10001
-    ERR_CONCURRENCY  = 10008
-    ERR_PARAMS       = 10020
-    ERR_CONF_FAIL    = 10050
-    ERR_AUTH_FAIL    = 10100
+    ERR_UNK = 10000
+    ERR_GENERIC = 10001
+    ERR_CONCURRENCY = 10008
+    ERR_PARAMS = 10020
+    ERR_CONF_FAIL = 10050
+    ERR_AUTH_FAIL = 10100
     ERR_AUTH_PAYLOAD = 10111
-    ERR_AUTH_SIG     = 10112
-    ERR_AUTH_HMAC    = 10113
-    ERR_AUTH_NONCE   = 10114
-    ERR_UNAUTH_FAIL  = 10200
-    ERR_SUB_FAIL     = 10300
-    ERR_SUB_MULTI    = 10301
-    ERR_UNSUB_FAIL   = 10400
-    ERR_READY        = 11000
-    EVT_STOP         = 20051
+    ERR_AUTH_SIG = 10112
+    ERR_AUTH_HMAC = 10113
+    ERR_AUTH_NONCE = 10114
+    ERR_UNAUTH_FAIL = 10200
+    ERR_SUB_FAIL = 10300
+    ERR_SUB_MULTI = 10301
+    ERR_UNSUB_FAIL = 10400
+    ERR_READY = 11000
+    EVT_STOP = 20051
     EVT_RESYNC_START = 20060
-    EVT_RESYNC_STOP  = 20061
-    EVT_INFO         = 5000
+    EVT_RESYNC_STOP = 20061
+    EVT_INFO = 5000
 
 
 class BitfinexFeed:
@@ -100,6 +100,7 @@ class BitfinexFeed:
     Attributes:
         connected: Connection status.
     """
+
     def __init__(self, *args, **kwargs):
         # { Channel_ID: event, ... }
         self._id_event = {}
@@ -226,7 +227,7 @@ class BitfinexFeed:
                 logger.info('Server stopped. Reconnecting')
 
         elif bfx_event == 'error':
-            code      = msg['code']
+            code = msg['code']
             event_msg = msg['msg']
 
             if code not in Code or code == Code.ERR_UNK:
@@ -254,7 +255,7 @@ class BitfinexFeed:
             logger.info('Heartbeat {}', msg[0])
             return
         cid = msg.pop(0)
-        event= self._id_event[cid]
+        event = self._id_event[cid]
         for cb in self._callbacks[event]:
             # e.g. msg == ['tu', [<trade id>, <unixtime>, <volume>, <price>]]
             if isinstance(msg[0], str):

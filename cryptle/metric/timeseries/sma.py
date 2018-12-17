@@ -1,16 +1,16 @@
 from cryptle.metric.base import Timeseries, Candle
 import numpy as np
 
-class SMA(Timeseries):
 
+class SMA(Timeseries):
     def __init__(self, ts, lookback, name=None, bar=False, list=False):
         super().__init__(ts=ts)
         self._lookback = lookback
         self.name = name
-        self._ts    = ts
+        self._ts = ts
         self._cache = []
-        self._bar   = bar
-        self.value  = None
+        self._bar = bar
+        self.value = None
         if list:
             self.onList()
 
@@ -22,7 +22,7 @@ class SMA(Timeseries):
 
         @Timeseries.bar_cache
         def toBar(self, candle):
-        # price candle wrapper was passed into this function for constructing candles
+            # price candle wrapper was passed into this function for constructing candles
             if len(self.o) == self._lookback:
                 o = np.mean(self.o)
                 c = np.mean(self.c)

@@ -12,7 +12,7 @@ setup(
     packages=find_packages(exclude=['test']),
     include_package_data=True,
     zip_safe=False,
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     install_requires=[
         'numpy>=1.13',
         'pandas>=0.21.0',
@@ -23,11 +23,12 @@ setup(
     ],
     extras_require={
         'dev': [
+            'black',
             'pylint>=2',
             'pytest>=3',
             'Sphinx>=1.7.2',
             'sphinx-autodoc-typehints>=1.5.1',
             'sphinx-rtd-theme>=0.4.0',
         ]
-    }
+    },
 )

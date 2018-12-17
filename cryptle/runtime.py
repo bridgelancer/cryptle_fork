@@ -27,6 +27,7 @@ class Runtime:
     - read_command_forever()
     - handle_input()
     """
+
     help_str = (
         '\n'
         'h | help           Print this help\n'
@@ -36,11 +37,7 @@ class Runtime:
         '<attribute>        Print the value of <attribute>\n'
     )
 
-    def __init__(self,
-            strat,
-            exchange,
-            reporting_time=60,
-            interval=1):
+    def __init__(self, strat, exchange, reporting_time=60, interval=1):
 
         self.strat = strat
         self.port = strat.portfolio
@@ -78,7 +75,6 @@ class Runtime:
             print('Terminating main loop...')
             self._terminated = True
 
-
     def _report_loop(self):
         s = 0
         while not self._terminated:
@@ -96,11 +92,9 @@ class Runtime:
                 # @Incomplete: Handle connection issues
                 pass
 
-
     def handle_input(self, line):
         s = self.process_command(line)
         print(s)
-
 
     def process_command(self, line):
         """Return a string result after processing the commaned"""
@@ -122,20 +116,13 @@ class Runtime:
             except KeyError:
                 return 'Attribute does not exist'
 
-
     def report(self):
         print(self._get_report_str())
 
-
     def _get_report_str(self):
-        s = (
-            'Equity:  {}\n'
-            'Cash:    {}\n'
-            'Balance: {}\n'
-        )
+        s = 'Equity:  {}\n' 'Cash:    {}\n' 'Balance: {}\n'
         p = self.port
         return s.format(p.equity, p.cash, p.balance)
-
 
     def _get_help_str(self):
         return self.help_str

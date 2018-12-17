@@ -4,7 +4,7 @@ jobs:
     working_directory: ~/repo
     docker:
       # specify the python version
-      - image: circleci/python:3.5.6
+      - image: circleci/python:3.6.7
         environment:
           PYTEST_FLAGS: --junitxml=test-results/results.xml
     steps:
@@ -29,13 +29,22 @@ jobs:
           key: venv-{{ .Branch }}-{{ checksum "setup.py" }}
           paths:
             - ".venv"
-            - "~/.local/lib/python3.5"
-      # run tester, "when: always" makes sure tester is always run whether linting fail or succeed
+            - "~/.local/lib/python3.6"
       - run:
-          name: Start tester
+          name: Run tester
           command: |
             source .venv/bin/activate
             make test
+      - run:
+          name: Run linter
+          command: |
+            source .venv/bin/activate
+            make lint
+      - run:
+          name: Run formatter
+          command: |
+            source .venv/bin/activate
+            make checkformat
       - store_test_results:
           path: test-results
 
