@@ -392,6 +392,11 @@ this guide but the essence is that it provides interface for
 :class:`~cryptle.registry.Registry` to properly maintain the actual ``logic_status`` of
 the Strategy methods.
 
+.. code:: python
+   class Registry:
+      def __init__(self, *setup):
+         self.codeblocks = list(map(CodeBlock, *setup))
+
 .. note::
    This is not complying to the design intent of the rest of the framework. In
    the future the Registry should not directly handle data source. Instead the
@@ -404,6 +409,57 @@ combined use of various **onEvent** functions such as :meth:`~cryptle.registry.R
 **onEvent** functions should listen to an external source via the Event bus architecture in
 order to update its internal state for the Strategy.
 
+.. code:: python
+   class Registry:
+      def __init__(self, *setup):
+         # other appropriate initialization
+         self.codeblocks = list(map(CodeBlock, *setup))
+
+      @on('tick')
+      def onTick(self, tick):
+         # Implmentation to update local state
+         self.handleCheck(tick)
+
+      @on('new_candle')
+      def onCandle(self, bar):
+         self.refreshLogicStatus(codeblock, 'candle')
+
+
+   class FooStrat(Strategy):
+      def __init__(self):
+         # appropriate initialization of setup and other components
+         self.registry = Registry(setup)
+
+      def onTrade(self, price, timestamp, amount, action):
+         # receive data and kickstart all relevant Bus-related Events
+         self.registry.onTick(tick)
+
+The Strategy :meth:`~cryptle.Strategy.onTrade` method calls Registry to cascade
+the new information and triggers the necessary updating and checking.
+
+.. code:: python
+   class Registry:
+      # ...
+
+      @on('tick')
+      def onTick(self, tick):
+         # Implmentation to update local state
+         self.handleCheck(tick)
+
+      def refreshLogicStatus(self):
+         # Implmentation to update CodeBlock LogicStatus
+
+      def handleCheck(self, tick)
+         self.check(codeblock)
+
+      def check(self, codeblock):
+         # Implementation to check executability of individual CodeBlocks
+         if someCondition:
+            codeblock.check() # execute this codeblock if fullfilled someCondition
+
+Schematic representation of how Registry cascade the information to check
+executability of individual CodeBlock held in ``self.codeblocks``.
+
 In the above scenario, the :class:`Registry` class will dynamically listen
 for tick via :meth:`~cryptle.registry.Registry.onTick`. Upon each arrival of tick, the
 :meth:`~cryptle.registry.Registry.check` function would be called. If all the
@@ -411,6 +467,28 @@ conditions to execute a particular Strategy method are fulfilled, the indiviudal
 :class:`~cryptle.codeblock.CodeBlock` of the :class:`~cryptle.registry.Registry` would be called and
 updated to execute the function and update the local :class:`~cryptle.codeblock.CodeBlock`
 ``logic_status``, ``flags`` and ``localdata``  for the Strategy method.
+
+.. code:: python
+   class Registry:
+      # ...
+
+      def check(self, codeblock):
+         # Implementation to check executability of individual codeblock
+         if someCondition:
+            codeblock.check(num_bars, info) # execute this codeblock if fullfilled someCondition
+
+   class CodeBlock:
+      def __init__(self):
+         self.triggered = False
+         self.flags = {}
+         self.localdata = {}
+
+      def check(self, num_bars, flagvalues):
+         # Implementation to execute the Strategy function and update the # localdata/flags
+         flagValues, flagCB = unpackDict(*flagvalues)
+         self.triggered, self.flags, self.localdata = self.func(flagValues, flagCB, **self.localdata)
+
+         # Also updates LogicStatus subsequently
 
 These ``logic_status`` are also dependent on :class:`~class.registry.Registry` for
 its proper maintenance under relevant changes of the external state. In this case, the
@@ -430,10 +508,12 @@ and maintain the values of ``flags`` and ``localdata``.
 
 ``logic_status`` of the :class:`~cryptle.codeblock.Codeblock` is a separate object
 that has its own segregated mechanism of maintaining the its representation of
-``logic_status`` as a ``Dictionary``. ``flags`` are data maintained by one
-particular :class:`~cryptle.codeblock.Codeblock` that are intended to be
-accessed by the other :class:`~cryptle.codeblock.Codeblock`. ``localdata`` are
-data local to that particular :class:`~cryptle.codeblock.Codeblock` and not
+``logic_status`` as a ``Dictionary``.
+
+``flags`` are data maintained by one particular :class:`~cryptle.codeblock.Codeblock`
+that are intended to be accessed by the other :class:`~cryptle.codeblock.Codeblock`.
+
+``localdata`` are data local to that particular :class:`~cryptle.codeblock.Codeblock` and not
 intented to be accessed by other :class:`~cryptle.codeblock.Codeblock`.
 
 Several class methods are available for :class:`~cryptle.registry.Registry` to
@@ -449,34 +529,41 @@ Strategy method itself. Any update of **other** CB's ``localdata`` should
 pass an ``Dictionary`` of format {'flagname': value}  within the method to call
 the other CB's :meth:`~cryptle.codeblock.CodeBlock.setLocalData` method.
 
-The following is an example:
+The following is a complete example:
 
 .. code:: python
 
    class FooStrat(Strategy):
-      .. appropriate initialization including setup
+      # appropriate initialization including setup ..
       self.setup = [
-                    (('codeblock', foo),
-                     ('whenExec', 'open'),
-                     ('once per bar', {'type': 'once per bar', 'event': 'bar',
-                     'refresh_period': 1}),
-                     ),
+               (
+                  ('codeblock', foo),
+                  ('whenExec', 'open'),
+                  ('once per bar', {'type': 'once per bar', 'event': 'bar', 'refresh_period': 1}),
+               ),
 
-                    (('codeblock', bar),
-                     ('whenExec', 'close'),
-                     ('once per bar', {'type': 'once per bar', 'event': 'bar',
-                     'refresh_period': 1}),
-                     ('fooflag', {'type': 'n per flag', 'event': 'flag',
-                     'refresh_period': 1, 'max_trigger': 10000000, 'funcpt':
-                     foo}),
-                     ),
-                   ]
+               (
+                  ('codeblock', bar),
+                  ('whenExec', 'close'),
+                  ('once per bar', {'type': 'once per bar', 'event': 'bar', 'refresh_period': 1}),
+                  (
+                     'fooflag',
+                     {
+                        'type': 'n per flag',
+                        'event': 'flag',
+                        'refresh_period': 1,
+                        'max_trigger': 10000000,
+                        'funcpt': foo
+                     }
+                  ),
+               ),
+            ]
 
       def foo(flagValues, flagCB, fooflag=None, dummy=True):
-         dummy = True
+         dummy = True # to be stored both as a localdatum and flag
 
          if fooflag is None:
-            fooflag = True
+            fooflag = True # to be stored both as a localdatum and flag
 
          if not fooflag:
             fooflag = True
@@ -491,13 +578,13 @@ The following is an example:
          triggered = True
          localdata = {'fooflag': fooflag, 'dummy': dummy}
          flags = {'fooflag': fooflag, 'dummy': dummy}
-         return triggered, flags, localdata
+         return triggered, flags, localdata  # must return these three for updating CodeBlock`
 
       def bar(flagValues, flagCB, localdata=None):
-         fooflag = flagValues['fooflag']
+         fooflag = flagValues['fooflag'] # syntax for accessing other CB's flag
          if fooflag:
             print('foo flag is true')
-            flagCB['dummy'].setLocalData({'dummy': True})
+            flagCB['dummy'].setLocalData({'dummy': True}) # syntax for modifying other CB's flag
          else:
             print('foo flag is false')
             flagCB['dummy'].setLocalData({'dummy': False})
@@ -505,8 +592,7 @@ The following is an example:
          triggered = True
          localdata = {}
          flags = {]
-         return triggered, flags, localdata
-
+         return triggered, flags, localdata # must return these three for updating CodeBlock`
 
 If the codes in the Strategy method determines that this prompts a successful
 triggering to update the ``logic_status``, the client function should return
