@@ -36,10 +36,15 @@ jobs:
             source .venv/bin/activate
             make test
       - run:
+          name: Run linter
+          command: |
+            source .venv/bin/activate
+            make lint
+      - run:
           name: Run formatter
           command: |
             source .venv/bin/activate
-            black --diff -S
+            make checkformat
       - store_test_results:
           path: test-results
 
