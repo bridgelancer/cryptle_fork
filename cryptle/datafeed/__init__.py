@@ -43,17 +43,21 @@ def connect(feed_name, *args, **kwargs):
 
 class Bitstamp(BitstampFeed, DeferedSource):
     """Simple wrapper around BitstampFeed to emit data into a bus."""
+
     def broadcast(self, event):
         @self.source(event)
         def _emit(data):
             return data
+
         self.on(event, _emit)
 
 
 class Bitfinex(BitfinexFeed, DeferedSource):
     """Simple wrapper around BitstampFeed to emit data into a bus."""
+
     def broadcast(self, event):
         @self.source(event)
         def _emit(data):
             return data
+
         self.on(event, _emit)

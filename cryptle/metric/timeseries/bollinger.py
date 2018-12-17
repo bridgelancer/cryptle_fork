@@ -21,22 +21,30 @@ class BollingerBand(Timeseries):
 
         # eval_func for computing subseries
         def upperband(bb):
-            return sum(bb.upperband._cache)/bb._lookback + bb._uppersd * float(bb.width)
+            return sum(bb.upperband._cache) / bb._lookback + bb._uppersd * float(
+                bb.width
+            )
 
         # eval_func for computing subseries
         def lowerband(bb):
-            return sum(bb.lowerband._cache)/bb._lookback - bb._lowersd * float(bb.width)
+            return sum(bb.lowerband._cache) / bb._lookback - bb._lowersd * float(
+                bb.width
+            )
 
         # A BollingerBand object holds these subseries
-        self.width     = GenericTS(ts, lookback=lookback, eval_func=width, args=[self])
-        self.upperband = GenericTS(ts, lookback=lookback, eval_func=upperband, args=[self])
-        self.lowerband = GenericTS(ts, lookback=lookback, eval_func=lowerband, args=[self])
+        self.width = GenericTS(ts, lookback=lookback, eval_func=width, args=[self])
+        self.upperband = GenericTS(
+            ts, lookback=lookback, eval_func=upperband, args=[self]
+        )
+        self.lowerband = GenericTS(
+            ts, lookback=lookback, eval_func=lowerband, args=[self]
+        )
 
-        self._sd        = sd
-        self._ts        = ts
-        self._cache     = []
-        self._lookback  = lookback
-        self.value     = None
+        self._sd = sd
+        self._ts = ts
+        self._cache = []
+        self._lookback = lookback
+        self.value = None
 
     def evaluate(self):
         try:

@@ -40,13 +40,13 @@ IG = mutual_info_classif(df[df.columns[1:136]], df[137])
 # argmax = list(IG.argsort()[-50:][::-1])
 argmin = list(IG.argsort()[1:84][::1])
 
-argmin.extend([136,137,138,139,140])
+argmin.extend([136, 137, 138, 139, 140])
 
-X = df.drop(df.columns[argmin], axis = 1) # keep top
-X = df.drop(df.columns[[136,137,138,139,140]], axis =1)
+X = df.drop(df.columns[argmin], axis=1)  # keep top
+X = df.drop(df.columns[[136, 137, 138, 139, 140]], axis=1)
 
 # y = df[136] # predicting the drift of mid price
-y = df[137] # predict drift
+y = df[137]  # predict drift
 
 y_2 = [0 for i in range(len(y))]  # upward
 y_1 = [0 for i in range(len(y))]  # stationary
@@ -54,7 +54,7 @@ y_0 = [0 for i in range(len(y))]  # downward
 
 # do back to back ensemble
 for i in range(len(y)):
-    if y[i] == 2 or y[i] =='2':
+    if y[i] == 2 or y[i] == '2':
         y_0[i] = -1
         y_1[i] = -1
         y_2[i] = 1
@@ -78,11 +78,11 @@ y_0 = np.array(y_0)
 y_1 = np.array(y_1)
 y_2 = np.array(y_2)
 
-X_train, X_test = X[:int(len(X)*0.8)], X[int(len(X)*0.8):]
-y_train, y_test = y[:int(len(X)*0.8)], y[int(len(X)*0.8):]
-y_train_0, y_test_0 = y_0[:int(len(X)*0.8)], y_0[int(len(X)*0.8):]
-y_train_1, y_test_1 = y_1[:int(len(X)*0.8)], y_1[int(len(X)*0.8):]
-y_train_2, y_test_2 = y_2[:int(len(X)*0.8)], y_2[int(len(X)*0.8):]
+X_train, X_test = X[: int(len(X) * 0.8)], X[int(len(X) * 0.8) :]
+y_train, y_test = y[: int(len(X) * 0.8)], y[int(len(X) * 0.8) :]
+y_train_0, y_test_0 = y_0[: int(len(X) * 0.8)], y_0[int(len(X) * 0.8) :]
+y_train_1, y_test_1 = y_1[: int(len(X) * 0.8)], y_1[int(len(X) * 0.8) :]
+y_train_2, y_test_2 = y_2[: int(len(X) * 0.8)], y_2[int(len(X) * 0.8) :]
 
 # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, shuffle= False)
 
@@ -101,17 +101,16 @@ X_test = scale_obj.transform(X_test)
 # note that X_train_* has no difference
 
 # one against all
-svclassifier_0 = SVC(kernel = 'rbf', gamma='auto').fit(X_train_0, y_train_0)
-svclassifier_1 = SVC(kernel = 'rbf', gamma='auto').fit(X_train_1, y_train_1)
+svclassifier_0 = SVC(kernel='rbf', gamma='auto').fit(X_train_0, y_train_0)
+svclassifier_1 = SVC(kernel='rbf', gamma='auto').fit(X_train_1, y_train_1)
 # svclassifier_2 = SVC(kernel = 'rbf', gamma='auto').fit(X_train_2, y_train_2)
 
 # %%timeit
 
 # prediction step
-set_0  = svclassifier_0.decision_function(X_test_0)
-set_1  = svclassifier_1.decision_function(X_test_1)
+set_0 = svclassifier_0.decision_function(X_test_0)
+set_1 = svclassifier_1.decision_function(X_test_1)
 # set_2  = svclassifier_2.decision_function(X_test_2)
-
 
 
 z = [0 for i in range(len(X_test_1))]
@@ -149,7 +148,11 @@ obj2 = pickle.loads(s2)
 obj1 = pickle.loads(s1)
 obj0 = pickle.loads(s0)
 
-pred = max(obj2.decision_funcion(test)[0], obj1.decision_funcion(test)[0], obj0.decision_funcion(test)[0])
+pred = max(
+    obj2.decision_funcion(test)[0],
+    obj1.decision_funcion(test)[0],
+    obj0.decision_funcion(test)[0],
+)
 
 from joblib import dump, load
 

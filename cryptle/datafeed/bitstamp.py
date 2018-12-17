@@ -12,11 +12,11 @@ from .exception import *
 
 
 logger = logging.getLogger(__name__)
-KEY       = 'de504dc5763aeef9ff52'
+KEY = 'de504dc5763aeef9ff52'
 CLIENT_ID = 'PythonPusherClient'
-VERSION   = '0.2.0'
-PORT      = 80
-PROTOCOL  = 6
+VERSION = '0.2.0'
+PORT = 80
+PROTOCOL = 6
 
 
 def _build_urlparams(**kwargs):
@@ -24,12 +24,10 @@ def _build_urlparams(**kwargs):
 
 
 def _build_bitstamp_url():
-    query_params = _build_urlparams(client=CLIENT_ID, version=VERSION, protocol=PROTOCOL)
-    url = 'ws://ws.pusherapp.com:{}/app/{}?{}'.format(
-            PORT,
-            KEY,
-            query_params
-        )
+    query_params = _build_urlparams(
+        client=CLIENT_ID, version=VERSION, protocol=PROTOCOL
+    )
+    url = 'ws://ws.pusherapp.com:{}/app/{}?{}'.format(PORT, KEY, query_params)
     return url
 
 
@@ -37,23 +35,23 @@ def decode_event(event):
     """Parse event string in cryptle representation into bitstamp representation."""
     channel, *params = event.split(':')
     if channel == 'trades':
-        bs_chan  = 'live_trades'
+        bs_chan = 'live_trades'
         bs_event = 'trade'
 
     elif channel == 'bookchange':
-        bs_chan  = 'live_orders'
+        bs_chan = 'live_orders'
         bs_event = 'order_changed'
 
     elif channel == 'bookcreate':
-        bs_chan  = 'live_orders'
+        bs_chan = 'live_orders'
         bs_event = 'order_created'
 
     elif channel == 'bookdelete':
-        bs_chan  = 'live_orders'
+        bs_chan = 'live_orders'
         bs_event = 'order_deleted'
 
     elif channel == 'bookdiff':
-        bs_chan  = 'diff_order_book'
+        bs_chan = 'diff_order_book'
         bs_event = 'data'
 
     else:
@@ -70,7 +68,7 @@ def decode_event(event):
 def encode_event(msg: dict):
     """Parse incoming websocket messages into cryptle representation."""
     channel = msg['channel']
-    event   = msg['event']
+    event = msg['event']
 
     # Hacky ways to decode. Very susceptible to change in bitstamp APIs
     if event == 'trade':
@@ -124,7 +122,7 @@ class BitstampFeed:
 
     def __init__(self, *args, **kwargs):
         self._callbacks = defaultdict(list)
-        self._channels  = set()
+        self._channels = set()
         self._recv_thread = None
 
         self._ws = ws.WebSocket(*args, **kwargs)
@@ -185,11 +183,11 @@ class BitstampFeed:
     # ----------
     def _subscribe(self, channel):
         logger.info('Subscribing to channel: {}', channel)
-        self._send({'event': 'pusher:subscribe',  'data': {'channel': channel}})
+        self._send({'event': 'pusher:subscribe', 'data': {'channel': channel}})
 
     def _unsubscribe(self, channel):
         logger.info('Unsubscribing from channel: {}', channel)
-        self._send({'event': 'pusher:unsubscribe',  'data': {'channel': channel}})
+        self._send({'event': 'pusher:unsubscribe', 'data': {'channel': channel}})
 
     def _pong(self):
         logger.info('Ping-pong')
@@ -230,8 +228,8 @@ class BitstampFeed:
 
                 # Process messsage according to pusher API
                 msg = _parse_wsmsg(raw_msg)
-                event   = msg['event']
-                data    = msg['data']
+                event = msg['event']
+                data = msg['data']
 
                 if event == 'pusher:connection_established':
                     # Todo: handle protocol version 7 timeout parameter

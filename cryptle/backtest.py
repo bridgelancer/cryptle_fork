@@ -7,6 +7,7 @@ from .event import source, Bus
 import json
 import csv
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,8 +43,17 @@ def backtest_with_bus(strat, dataset, dtype, *bindables, bus=None):
     data_iterator.emitAll(dataset)
 
 
-def backtest_tick(strat, dataset, bus=None, pair=None, portfolio=None, exchange=None,
-        commission=0.0012, slippage=0, callback=None):
+def backtest_tick(
+    strat,
+    dataset,
+    bus=None,
+    pair=None,
+    portfolio=None,
+    exchange=None,
+    commission=0.0012,
+    slippage=0,
+    callback=None,
+):
     """Wrapper function for running backtest on tick-based strategy.
 
     Args:
@@ -76,8 +86,16 @@ def backtest_tick(strat, dataset, bus=None, pair=None, portfolio=None, exchange=
     test.run(strat, callback)
 
 
-def backtest_bar(strat, dataset, pair=None, portfolio=None, exchange=None,
-        commission=0.0012, slippage=0, callback=None):
+def backtest_bar(
+    strat,
+    dataset,
+    pair=None,
+    portfolio=None,
+    exchange=None,
+    commission=0.0012,
+    slippage=0,
+    callback=None,
+):
     """Wrapper function for running backtest on bar based strategy.
 
     Args:
@@ -115,6 +133,7 @@ class DataEmitter:
     dtype : str
         The expected financial data type of. Must be set before :meth:`emitAll()` is called.
     """
+
     def __init__(self, dtype):
         self.dtype = dtype
 
@@ -164,17 +183,21 @@ class Backtest:
         for tick in self.ticks:
             if not tick:
                 raise ValueError('Expected dataset to be loaded, none found.')
-            price, timestamp, volume, action= _unpack(tick)
+            price, timestamp, volume, action = _unpack(tick)
             self.exchange.price = price
             self.exchange.volume = volume
             self.exchange.timestamp = timestamp
             if strat.__class__.__bases__[-1].__name__ == 'Strategy':
-                strat.pushTick(price, timestamp, volume, action) # push the tick to strat
+                strat.pushTick(
+                    price, timestamp, volume, action
+                )  # push the tick to strat
             # remember to change the name of strategy
             elif strat.__class__.__bases__[-1].__name__ == 'SingleAssetStrategy':
                 # emit a tick Event to kickstart the SingleAssetStrat strategy
                 # WARNING: check tick format to see whether it still fits dataset
-                self.emitTick([float(price), float(volume), float(timestamp), float(action)])
+                self.emitTick(
+                    [float(price), float(volume), float(timestamp), float(action)]
+                )
 
             if callback:
                 callback(strat)
@@ -186,7 +209,7 @@ class Backtest:
             self.exchange.volume = v
             self.exchange.timestamp = t
             if strat.__name__ == 'Strategy':
-                strat.pushCandle(o, c, h, l, t, v) # push the candle stick to strat
+                strat.pushCandle(o, c, h, l, t, v)  # push the candle stick to strat
             elif strat.__name__ == 'NewStrategy':
                 # emit a 'candle' Event to kickstart the new strategy
                 pass
@@ -202,11 +225,10 @@ class Backtest:
             self.readJSON(fname)
         elif fileformat == 'CSV':
             self.readCSV(fname)
-        elif fileformat == 'XML': # Not supported
+        elif fileformat == 'XML':  # Not supported
             self.readString(fname)
         else:
             self.readString(fname)
-
 
     # @Rename
     # Give the attritubes a better name
@@ -238,7 +260,6 @@ class Backtest:
             return 'CSV'
         else:
             return None
-
 
     @staticmethod
     def _read(fname):
@@ -276,39 +297,59 @@ class PaperExchange:
 
     def sendMarketBuy(self, pair, amount):
         _price = self.price
-        price *= (1 + self.commission)
-        price *= (1 + self.slippage)
+        price *= 1 + self.commission
+        price *= 1 + self.slippage
 
         logger.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
         logger.info('Paid {:.5g} commission'.format(_price * self.commission))
-        return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
+        return {
+            'price': price,
+            'amount': amount,
+            'status': 'success',
+            'timestamp': self.timestamp,
+        }
 
     def sendMarketSell(self, pair, amount):
         _price = self.price
-        price *= (1 - self.commission)
-        price *= (1 - self.slippage)
+        price *= 1 - self.commission
+        price *= 1 - self.slippage
 
         logger.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), self.price))
         logger.info('Paid {:.5g} commission'.format(_price * self.commission))
-        return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
+        return {
+            'price': price,
+            'amount': amount,
+            'status': 'success',
+            'timestamp': self.timestamp,
+        }
 
     def sendLimitBuy(self, pair, amount, price):
         _price = price
-        price *= (1 + self.commission)
-        price *= (1 + self.slippage)
+        price *= 1 + self.commission
+        price *= 1 + self.slippage
 
         logger.info('Buy  {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
         logger.info('Paid {:.5g} commission'.format(_price * self.commission))
-        return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
+        return {
+            'price': price,
+            'amount': amount,
+            'status': 'success',
+            'timestamp': self.timestamp,
+        }
 
     def sendLimitSell(self, pair, amount, price):
         _price = price
-        price *= (1 - self.commission)
-        price *= (1 - self.slippage)
+        price *= 1 - self.commission
+        price *= 1 - self.slippage
 
         logger.info('Sell {:7.5g} {} @${:.5g}'.format(amount, pair.upper(), price))
         logger.info('Paid {:.5g} commission'.format(_price * self.commission))
-        return {'price': price, 'amount': amount, 'status': 'success', 'timestamp': self.timestamp}
+        return {
+            'price': price,
+            'amount': amount,
+            'status': 'success',
+            'timestamp': self.timestamp,
+        }
 
     def getCash(self, *args, **kws):
         raise NotImplementedError

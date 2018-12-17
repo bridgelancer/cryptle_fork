@@ -1,6 +1,7 @@
 from cryptle.metric.base import Candle
 from cryptle.event import source, on, Bus
 
+
 class Aggregator:
     """An implementation of the generic candle aggregator.
 
@@ -13,10 +14,10 @@ class Aggregator:
     """
 
     def __init__(self, period, auto_prune=False, maxsize=500):
-        self.period         = period
-        self._bars          = [] # this construct might be unnecessary
-        self._auto_prune    = auto_prune
-        self._maxsize       = maxsize
+        self.period = period
+        self._bars = []  # this construct might be unnecessary
+        self._auto_prune = auto_prune
+        self._maxsize = maxsize
         self.last_timestamp = None
 
     @on('tick')
@@ -37,15 +38,17 @@ class Aggregator:
 
         # if tick arrived before next bar, update current candle
         if self._is_updated(timestamp):
-            self.last_low   = min(self.last_low, value)
-            self.last_high  = max(self.last_high, value)
+            self.last_low = min(self.last_low, value)
+            self.last_high = max(self.last_high, value)
             self.last_close = value
             self.last_volume += volume
             self.last_netvol += volume * action
 
         else:
             while not self._is_updated(timestamp - self.period):
-                self._pushEmptyCandle(self.last_close, self.last_bar_timestamp + self.period)
+                self._pushEmptyCandle(
+                    self.last_close, self.last_bar_timestamp + self.period
+                )
             self._pushInitCandle(value, timestamp, volume, action)
 
     def _is_updated(self, timestamp):
@@ -75,7 +78,6 @@ class Aggregator:
         self._pushTime(t)
         self._pushVolume(v)
         self._pushNetVolume(nv)
-
 
     @source('aggregator:new_open')
     def _pushOpen(self, o):
@@ -108,20 +110,30 @@ class Aggregator:
     @source('aggregator:new_candle')
     def _pushInitCandle(self, value, timestamp, volume, action):
         round_ts = timestamp - timestamp % self.period
-        new_candle = Candle(value, value, value, value, round_ts, volume, volume * action)
+        new_candle = Candle(
+            value, value, value, value, round_ts, volume, volume * action
+        )
         self._bars.append(new_candle)
         if len(self._bars) > 1:
             finished_candle = self._bars[-2]
-            self._pushAllMetrics(finished_candle.open, finished_candle.close, finished_candle.high,
-                    finished_candle.low, finished_candle.timestamp, finished_candle.volume,
-                    finished_candle.netvol)
+            self._pushAllMetrics(
+                finished_candle.open,
+                finished_candle.close,
+                finished_candle.high,
+                finished_candle.low,
+                finished_candle.timestamp,
+                finished_candle.volume,
+                finished_candle.netvol,
+            )
             return finished_candle._bar
         elif len(self._bars) == 1:
-            self._pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)
+            self._pushAllMetrics(
+                value, value, value, value, round_ts, volume, volume * action
+            )
             return new_candle._bar
 
-        #self._pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)
-        #return new_candle._bar
+        # self._pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)
+        # return new_candle._bar
 
     @source('aggregator:new_candle')
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
@@ -138,7 +150,6 @@ class Aggregator:
         self._bars.append(new_candle)
         self._pushAllMetrics(value, value, value, value, round_ts, 0, 0)
         return new_candle
-
 
     @property
     def last_bar(self):

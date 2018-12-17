@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 class BusException(Exception):
     """Base exception for this module."""
+
     pass
 
 
@@ -22,6 +23,7 @@ class UnboundEmitter(BusException):
 
 class _Emitter:
     """Functor descriptor for wrapper functions and instance methods into bindable emitters."""
+
     def __init__(self, event, func):
         if isinstance(func, self.__class__):
             raise ExtraEmit('An emitter may only emit one type of event.')
@@ -68,9 +70,10 @@ class Bus:
     Allow removal of callback/emitter bindings.
 
     """
+
     def __init__(self):
         self._callbacks = defaultdict(list)
-        self._emitters  = defaultdict(list)
+        self._emitters = defaultdict(list)
 
         # Default to object id
         self.name = id(self)
@@ -154,9 +157,11 @@ class Bus:
         instead.
 
         """
+
         def decorator(func):
             self.addListener(event, func)
             return func
+
         return decorator
 
     def source(self, event):
@@ -180,9 +185,11 @@ class Bus:
         :func:`source`.
 
         """
+
         def decorator(func):
             emitter = self.makeEmitter(event, func)
             return emitter
+
         return decorator
 
     def addListener(self, event, func):
@@ -222,6 +229,7 @@ def on(event):
         else:
             method._events = [event]
         return method
+
     return decorator
 
 
@@ -237,15 +245,18 @@ def source(event):
     def decorator(method):
         emitter = _Emitter(event, method)
         return emitter
+
     return decorator
 
 
 class DeferedSource:
     """Mixin class that enables binded objects to emit custom events at runtime."""
+
     def source(self, event):
         def wrapper(method):
             try:
                 return self._bus.makeEmitter(event, method)
             except AttributeError:
                 raise UnboundEmitter('Defered sources must be bound to an event bus.')
+
         return wrapper

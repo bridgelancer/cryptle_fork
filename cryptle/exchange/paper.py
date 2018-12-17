@@ -42,6 +42,7 @@ class Orderbook:
         This is a single trading instrument orderbook. For a full treatment for
         papertrading, see :class:`Paper`.
     """
+
     def __init__(self, time=0):
         self.bid_prices = []
         self.ask_prices = []
@@ -56,9 +57,7 @@ class Orderbook:
 
     def __repr__(self):
         return '<{}({} bid, {} ask)>'.format(
-            self.__class__.__qualname__,
-            len(self._bids),
-            len(self._asks),
+            self.__class__.__qualname__, len(self._bids), len(self._asks)
         )
 
     @property
@@ -245,8 +244,7 @@ class Orderbook:
 
     @staticmethod
     def _fillable_orders(
-        orders: Dict[int, Tuple[float, float]],
-        amount: float
+        orders: Dict[int, Tuple[float, float]], amount: float
     ) -> Tuple[Set[int], Union[Tuple[int, float], None], float]:
         """Find orders to be filled given available amount."""
         filled_orders = set()
@@ -290,24 +288,16 @@ class Paper:
     def __init__(self, capital: float, commission=0, slippage=0):
         self.capital = capital
         self.commission = 0
-        self.slippage   = 0
+        self.slippage = 0
 
         # Each traded pair will have it's own orderbook
         self._orderbooks = defaultdict(Orderbook)  # type: Dict[str, Orderbook]
         self._last_price = defaultdict(float)  # type: Dict[str, float]
 
     def __repr__(self):
-        return "<{}(capital={})>".format(
-            self.__class__.__qualname__,
-            self.capital,
-        )
+        return "<{}(capital={})>".format(self.__class__.__qualname__, self.capital)
 
-    def update(
-            self,
-            pair: str,
-            amount: float,
-            price: float,
-            time=None) -> FilledOrders:
+    def update(self, pair: str, amount: float, price: float, time=None) -> FilledOrders:
         """Update the orderbook based on the provided new trade.
 
         Args

@@ -1,19 +1,21 @@
 from cryptle.metric.base import Timeseries
 import numpy as np
 
+
 def default(lookback):
     return 1 / lookback
+
 
 class RSI(Timeseries):
     def __init__(self, ts, lookback, name=None, weight=default):
         super().__init__(ts=ts)
         self._lookback = lookback
-        self._ts       = ts
-        self._cache    = []
-        self._weight   = weight(lookback)
-        self._up       = []
-        self._down     = []
-        self._ema_up   = None
+        self._ts = ts
+        self._cache = []
+        self._weight = weight(lookback)
+        self._up = []
+        self._down = []
+        self._ema_up = None
         self._ema_down = None
 
     def evaluate(self):
@@ -34,24 +36,23 @@ class RSI(Timeseries):
             return
 
         # keep the length of list of gain and loss to be the same as lookback
-        if (len(self._up) > self._lookback):
-            self._up = self._up[-self._lookback:]
-        if (len(self._down) > self._lookback):
-            self._down = self._down[-self._lookback:]
+        if len(self._up) > self._lookback:
+            self._up = self._up[-self._lookback :]
+        if len(self._down) > self._lookback:
+            self._down = self._down[-self._lookback :]
 
         if len(self._cache) > 2:
             self._cache = self._cache[-2:]
 
-
-        price_up   = self._up[-1]
+        price_up = self._up[-1]
         price_down = self._down[-1]
 
-        #calculation of 'average gain' and 'average loss'
+        # calculation of 'average gain' and 'average loss'
         if self._ema_up is None and self._ema_down is None:
-            self._ema_up    = sum([x for x in self._up]) / len(self._up)
-            self._ema_down  = sum([x for x in self._down]) / len(self._down)
+            self._ema_up = sum([x for x in self._up]) / len(self._up)
+            self._ema_down = sum([x for x in self._down]) / len(self._down)
             try:
-                self.value = 100 - 100 / (1 + self._ema_up/self._ema_down)
+                self.value = 100 - 100 / (1 + self._ema_up / self._ema_down)
             except ZeroDivisionError:
                 if self._ema_down == 0 and self._ema_up != 0:
                     self.value = 100
@@ -61,12 +62,12 @@ class RSI(Timeseries):
                     self.value = 50
             return
 
-        self._ema_up   = self._weight * price_up + (1 - self._weight) * self._ema_up
+        self._ema_up = self._weight * price_up + (1 - self._weight) * self._ema_up
         self._ema_down = self._weight * price_down + (1 - self._weight) * self._ema_down
 
-        #calculation of RSI
+        # calculation of RSI
         try:
-            self.value = 100 - 100 / (1 + self._ema_up/self._ema_down)
+            self.value = 100 - 100 / (1 + self._ema_up / self._ema_down)
         except ZeroDivisionError:
             if self._ema_down == 0 and self._ema_up != 0:
                 self.value = 100
@@ -79,4 +80,3 @@ class RSI(Timeseries):
 
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError
-

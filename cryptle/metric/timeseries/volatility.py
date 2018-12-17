@@ -1,11 +1,12 @@
 from cryptle.metric.base import Timeseries
 import numpy as np
 
+
 class Volatility(Timeseries):
     def __init__(self, ts, lookback):
         self._lookback = lookback
-        self._ts       = ts
-        self._cache    = []
+        self._ts = ts
+        self._cache = []
 
     @Timeseries.cache
     def evaluate(self, bar, candle):
@@ -16,4 +17,3 @@ class Volatility(Timeseries):
 
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError
-

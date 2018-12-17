@@ -7,15 +7,17 @@ def plotCandles(*args, **kws):
     plot(*args, **kws)
 
 
-def plot(candle=None,
-        title=None,
-        trades=[],
-        signals=[],
-        indicators=[],
-        plot_volume=False,
-        volume_title=None,
-        trade_color_mid_pt=0.025,
-        fig=None):
+def plot(
+    candle=None,
+    title=None,
+    trades=[],
+    signals=[],
+    indicators=[],
+    plot_volume=False,
+    volume_title=None,
+    trade_color_mid_pt=0.025,
+    fig=None,
+):
     """Wrapper function for OO interface of CandleStickChart
 
     Args:
@@ -44,9 +46,8 @@ def plot(candle=None,
 
 
 class CandleStickChart:
-
     def __init__(self, numplots=1, title=None):
-        self._fig , self._axes = plt.subplots(numplots, 1, sharex=True, figsize=(16,12))
+        self._fig, self._axes = plt.subplots(numplots, 1, sharex=True, figsize=(16, 12))
         if numplots == 1:
             self._axes = [self._axes]
 
@@ -54,7 +55,6 @@ class CandleStickChart:
         self._axes[0].autoscale(enable=False, axis='both')
         self._axes[0].use_stick_edges = False
         self._axcounter = 0
-
 
     def plotCandle(self, candle, plot_volume=False, numxlabels=10):
         """Plot green/red ochl candlesticks onto the chart
@@ -74,10 +74,18 @@ class CandleStickChart:
         ts = [bar[4] for bar in candle._bars]
 
         color = ['g' if bar[0] < bar[1] else 'r' for bar in candle._bars]
-        fill  = [c == 'r' for c in color]
+        fill = [c == 'r' for c in color]
 
-        self._axes[0].bar(ts, height=barlen, bottom=bottom, width=20, color=color,
-                edgecolor=color, fill=fill, linewidth=1)
+        self._axes[0].bar(
+            ts,
+            height=barlen,
+            bottom=bottom,
+            width=20,
+            color=color,
+            edgecolor=color,
+            fill=fill,
+            linewidth=1,
+        )
         self._axes[0].vlines(x=ts, ymin=lo, ymax=hi, color=color, linewidth=1)
 
         # Plots volume
@@ -97,18 +105,17 @@ class CandleStickChart:
         self._axes[0].set_xticks(ticks)
         self._axes[0].set_xticklabels(dates, rotation=30)
 
-
     def plotTrade(self, trades, trade_color_mid_pt=0.025):
         for trade in trades:
             try:
-                entry_time = int(trade[0]) # entry time (buy)
-                exit_time  = int(trade[2]) # exit time (sell)
-                p_and_l = (trade[3] - trade[1])/trade[1]
+                entry_time = int(trade[0])  # entry time (buy)
+                exit_time = int(trade[2])  # exit time (sell)
+                p_and_l = (trade[3] - trade[1]) / trade[1]
 
             except IndexError:
                 # when the strategy terminated without selling (still holding a position)
                 entry_time = int(trade[0])
-                exit_time  = self._axes[0].get_xbound()[1]
+                exit_time = self._axes[0].get_xbound()[1]
                 p_and_l = 0
 
             color = '#ffff96'
@@ -132,7 +139,6 @@ class CandleStickChart:
 
             self._axes[0].axvspan(entry_time, exit_time, facecolor=color, alpha=0.4)
 
-
     def plotSignal(self, signal):
         """Plot metrics over the candlestick chart
 
@@ -140,7 +146,6 @@ class CandleStickChart:
             signal: A (2 x N) series; (1, :) are unix timestamps; and (2, :) are signal values
         """
         self._axes[0].plot(signal[0], signal[1])
-
 
     # @Bad interface @Fix
     def plotIndicator(self, indicator):
