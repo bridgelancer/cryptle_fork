@@ -324,9 +324,11 @@ class Timeseries(Metric):
         for calculating its output value.
 
         The class method to be decorated should initialize self._cache as empty
-        list. The class should also contain an attribute self._lookback for
+        list. The class should also contain an attribute ``._lookback`` for
         caching purpose.
+
         """
+
         def prune(lst, lookback):
             if len(lst) < lookback:
                 return lst
@@ -376,7 +378,7 @@ class Timeseries(Metric):
     # lenght of bar_cache and cache? (To be fair that a super rare use case example)
     @staticmethod
     def bar_cache(func):
-        """Decorator for instance methods to keep a cache for open, close, high, and low values.
+        """ Decorator for instance methods to keep a cache for open, close, high, and low values.
 
         The class that owns the method to be decorated needs to initialize self.o, self.c, self.h,
         self.l as empty lists. It should also contain an attribute self._lookback for caching
@@ -401,11 +403,11 @@ class Timeseries(Metric):
         return wrapper
 
     def importBars(self):
-        """ import functionality to import well defined excel columns as Timeseries objects """
+        """ Import functionality to import well defined excel columns as Timeseries objects """
         raise NotImplementedError
 
     def __hash__(self):
-        """Let :class:`Timeseries` be usable as dict keys, ignoring the object state."""
+        """ Let :class:`Timeseries` be usable as dict keys, ignoring the object state."""
         return id(self)
 
 
@@ -413,10 +415,11 @@ class GenericTS(Timeseries):
     """Generic Timeseries object for sub-timeseries held by wrapper Metric class
 
     Args:
-        ts = timeseries to be listened to, evalute meethod is called whevener ts broadcasts
-        lookback = same as Timeseries
+        ts = :class:`Timeseries` to be listened to, evalute meethod is called whevener ts broadcasts
+        lookback  = same as :class:`Timeseries`
         eval_func = a function implemeneted in Wrapper class, equivalent to the evaluate method in Timeseries
-        args      = arguments required to pass into eval_func for proper evaluation of GenericTS value
+        args      = arguments required to pass into eval_func for proper evaluation of the :class:`GenericTS` value
+
     """
     def __init__(self, ts, name=None, lookback=None, eval_func=None, args=None):
         super().__init__(ts=ts)
@@ -430,14 +433,17 @@ class GenericTS(Timeseries):
 
     @Timeseries.cache
     def evaluate(self):
-        # pass a function "eval_func" reference to GenericTS.evaluate to update its value
-        #eval_func should be defined in wrapper class
         self.value = self.eval_func(*self.args)
         self.broadcast()
 
 
 class HistoricalTS(Timeseries):
-    """Base class for management, storage, and retrieval of historical :class:`Timeseries` data."""
+    """Base class for management, storage, and retrieval of historical :class:`Timeseries` data.
+
+    Args:
+        ts = :class:`Timeseries` to store.
+
+    """
 
     def __init__(self, ts, store_num = 10000):
         super().__init__(ts=ts)

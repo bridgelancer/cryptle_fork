@@ -8,9 +8,9 @@ class LogicStatus:
     Args
     ---
     whenexec     : tuple
-        First tuple of the list of tuples in setup
+        The intended time of execution
     constraints  : tuple
-        The second and thereafter tuples of the list of tuples in setup
+        The logical constraints imposed on and flags that the CodeBLock could access to
 
     The inner workings are relevant to developer for developing new types of constraints. Specifically, the
     individual constraint functions are defined within the LogicStatus class. They provide interface
@@ -19,7 +19,7 @@ class LogicStatus:
     """
 
     def __init__(self, whenexec, constraints):
-        self.whenexec           = whenexec[1]
+        self.whenexec           = whenexec
         self.constraints        = tuple(constraints)
         self.logic_status       = {}
         self.lookup_trigger = {
@@ -158,17 +158,12 @@ class CodeBlock:
         self.name = func[1].__name__
         self.func = func[1]
 
-        self.logic_status = LogicStatus(constraints[0], constraints[1:])
+        self.logic_status = LogicStatus(constraints[0][1], constraints[1:])
         self.triggered = False
         self.last_triggered = None
         self.flags = {}
         self.localdata = {}
 
-    def unpackDict(self, *flagvalues):
-        flagTuple = dict(ChainMap(*flagvalues))
-        flagValues = dict([(k, v[0]) for k, v in flagTuple.items()])
-        flagCB = dict([(k, v[1]) for k, v in flagTuple.items()])
-        return flagValues, flagCB
 
     # run initialization for each item in Registry.codeblocks
     def initialize(self):
@@ -178,7 +173,7 @@ class CodeBlock:
 
     def check(self, num_bars, flagvalues):
         """Update CodeBlock metainfo after client method returns"""
-        flagValues, flagCB = self.unpackDict(*flagvalues)
+        flagValues, flagCB = unpackDict(*flagvalues)
         self.triggered, self.flags, self.localdata = self.func(flagValues, flagCB, **self.localdata)
 
         if self.triggered:
@@ -203,3 +198,10 @@ class CodeBlock:
                 self.localdata[k] = v
             else:
                 raise ValueError('Only for resetting existing values of localdata of a CodeBlock.')
+
+def unpackDict(*flagvalues):
+    """Module function that handles the unpacking of flagvalues that Registry passed into CodeBlock"""
+    flagTuple = dict(ChainMap(*flagvalues))
+    flagValues = dict([(k, v[0]) for k, v in flagTuple.items()])
+    flagCB = dict([(k, v[1]) for k, v in flagTuple.items()])
+    return flagValues, flagCB
