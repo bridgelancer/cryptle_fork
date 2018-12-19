@@ -516,7 +516,7 @@ class HistoricalTS(Timeseries):
         List of requested values.
 
         """
-        # only support this shit currently
+        # only support this currently
         #if index.end > 0 or index.start > 0:
         #    return ValueError('The slice object input for referencing historical value should be by
         #    negative integers (i.e. ts[-1000:-800] for the 200 values starting from 800 bars from
