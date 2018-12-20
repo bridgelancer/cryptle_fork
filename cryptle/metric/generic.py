@@ -41,13 +41,16 @@ def weighted_moving_average(series, lookback):
     '''Weighted Moving Average'''
     output_len = len(series) - lookback + 1
     weight = [(x + 1) / (lookback * (lookback + 1) / 2) for x in range(lookback)]
-    return [sum(s * w for s, w in zip(series[i : i+lookback], weight)) for i in range(output_len)]
+    return [
+        sum(s * w for s, w in zip(series[i : i + lookback], weight))
+        for i in range(output_len)
+    ]
 
 
 def exponential_moving_average(series, lookback):
     '''Exponentail Moving Average'''
     output_len = len(series) - lookback + 1
-    weight =  2 / (lookback + 1)
+    weight = 2 / (lookback + 1)
     output = [series[0]]
     for i, val in enumerate(series[1:]):
         output.append(weight * val + (1 - weight) * output[-1])
@@ -60,7 +63,7 @@ def bollinger_width(series, lookback, roll_method=simple_moving_average):
     mean = roll_method(series, lookback)
     output = []
     for i in range(output_len):
-        diff_square = [(x - mean[i]) ** 2 for x in series[i : i+lookback]]
+        diff_square = [(x - mean[i]) ** 2 for x in series[i : i + lookback]]
         output.append((sum(diff_square) / lookback) ** 0.5)
     return output
 
@@ -69,10 +72,10 @@ def macd(series, fast, slow, signal, roll_method=weighted_moving_average):
     '''Moving Average Convergence Divergence'''
     fast_ma = roll_method(series, fast)
     slow_ma = roll_method(series, slow)
-    fast_ma = fast_ma[slow - fast:]
+    fast_ma = fast_ma[slow - fast :]
     diff = [f - s for f, s in zip(fast_ma, slow_ma)]
     diff_ma = roll_method(diff, signal)
-    diff = diff[signal-1:]
+    diff = diff[signal - 1 :]
     return diff, diff_ma
 
 
@@ -92,7 +95,6 @@ def pelt(series, cost_template, penality=None, K=0):
         cps: Unpruned changepoints at time t
     '''
 
-
     # Prepend series with a dummy entry for easier indexing
     penality = penality or np.log(len(series))
     series = [0] + series
@@ -106,15 +108,15 @@ def pelt(series, cost_template, penality=None, K=0):
         # Step 1, 2
         # Try introducing changpoint at tau: 0 < tau < t, determine the new
         # minimum cost and the tau changepoint that gave this new cost
-        F_buffer = {tau : F[tau] + cost(tau+1, t) + penality for tau in R}
-        t_min, F_min =  min(F_buffer.items(), key=lambda k: k[1])
+        F_buffer = {tau: F[tau] + cost(tau + 1, t) + penality for tau in R}
+        t_min, F_min = min(F_buffer.items(), key=lambda k: k[1])
         F.append(F_min)
 
         # Step 3, 4
         # Record the optimal set of changepoints at point of view of time t
         # Prune the remaining possible changepoints for future T > t
         cps.append(cps[t_min] + [t_min])
-        R = [tau for tau in R if (F[tau] + cost(tau+1, t) + K) <= F_min] + [t]
+        R = [tau for tau in R if (F[tau] + cost(tau + 1, t) + K) <= F_min] + [t]
 
     return cps[-1]
 
@@ -125,12 +127,12 @@ def cost_normal_var(series, mean=0):
 
     def cost(start, end):
         dist = float(end - start + 1)
-        diff = cumm[end] - cumm[start-1]
-        return dist * (np.log(2 * np.pi) + np.log(diff/dist) + 1)
+        diff = cumm[end] - cumm[start - 1]
+        return dist * (np.log(2 * np.pi) + np.log(diff / dist) + 1)
 
     return cost
+
 
 # wrapper function for numpy difference method
 def difference(series, n=1):
     return np.diff(series, n)
-

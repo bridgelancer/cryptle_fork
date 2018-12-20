@@ -176,3 +176,9 @@ Metric
 .. automodule:: cryptle.metric.base
    :members:
    :undoc-members:
+
+
+Logging
+-------
+.. automodule:: cryptle.logging
+   :members:

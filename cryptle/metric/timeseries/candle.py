@@ -16,33 +16,52 @@ implemented for the new Timeseries paradigm.
 def Open(lst):
     return lst[-1][0]
 
+
 def Close(lst):
     return lst[-1][1]
+
 
 def High(lst):
     return lst[-1][2]
 
+
 def Low(lst):
     return lst[-1][3]
+
 
 def Volume(lst):
     return lst[-1][4]
 
+
 class CandleStick(Timeseries):
     """ Extracted wrapper function of the original CandleBar class """
-    def __init__(self, lookback, bar=False, Open=Open, Close=Close, High=High, Low=Low, Volume=Volume):
+
+    def __init__(
+        self,
+        lookback,
+        bar=False,
+        Open=Open,
+        Close=Close,
+        High=High,
+        Low=Low,
+        Volume=Volume,
+    ):
         super().__init__()
         self._lookback = lookback
         # self._ts needs pruning in this case - @TODO
-        self._ts       = []
+        self._ts = []
         # eval_func for GenericTS objects
-        self.o         = GenericTS(self._ts, lookback=lookback, eval_func=Open,  args=[self._ts])
-        self.c         = GenericTS(self._ts, lookback=lookback, eval_func=Close, args=[self._ts])
-        self.h         = GenericTS(self._ts, lookback=lookback, eval_func=High,  args=[self._ts])
-        self.l         = GenericTS(self._ts, lookback=lookback, eval_func=Low,   args=[self._ts])
-        self.v         = GenericTS(self._ts, lookback=lookback, eval_func=Volume,args=[self._ts])
-        self.value     = None
-        self.bar       = bar
+        self.o = GenericTS(self._ts, lookback=lookback, eval_func=Open, args=[self._ts])
+        self.c = GenericTS(
+            self._ts, lookback=lookback, eval_func=Close, args=[self._ts]
+        )
+        self.h = GenericTS(self._ts, lookback=lookback, eval_func=High, args=[self._ts])
+        self.l = GenericTS(self._ts, lookback=lookback, eval_func=Low, args=[self._ts])
+        self.v = GenericTS(
+            self._ts, lookback=lookback, eval_func=Volume, args=[self._ts]
+        )
+        self.value = None
+        self.bar = bar
 
     # CandleStick has a unique functino appendTS that makes itself a ts generating source
     @on('aggregator:new_candle')
@@ -62,14 +81,14 @@ class CandleStick(Timeseries):
 
         # the evaluate function should automatically push a bar to self._cache
         try:
-            self.value = float(self.o) # use self.o is the default value
+            self.value = float(self.o)  # use self.o is the default value
         except:
             self.value = None
 
     # @TODO temporariliy disabled pruning - buggy behaviour causing downstream TS objects fail to update
     # after 365 bars while self._ts remains pruned
     def prune(self):
-        #if len(self._ts) >= 365:
+        # if len(self._ts) >= 365:
         #   self._ts = self._ts[-365:]
         pass
 

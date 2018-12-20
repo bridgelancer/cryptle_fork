@@ -6,8 +6,8 @@ from .event import source
 
 SECOND = 1
 MINUTE = 60
-HOUR   = 3600
-DAY    = 86400
+HOUR = 3600
+DAY = 86400
 
 RESOLUTION = 0.1
 

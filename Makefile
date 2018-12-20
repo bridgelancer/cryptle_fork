@@ -1,5 +1,19 @@
-initenv:
-	@PIPENV_VENV_IN_PROJECT=true pipenv install -e .
+# Unit test configuration (pytest)
+test:
+	@pytest test/unit
+
+# runs only integration tests
+testint:
+	@pytest test/integration
+
+# finds all tests with test discovery
+testall:
+	@pytest test
+
+# run specific unit test
+test_%:
+	@pytest test/unit/$@.py --rootdir=./
+
 
 # Generate documentation
 doc:
@@ -10,42 +24,12 @@ servedoc: doc
 	    python3 -m webbrowser http://localhost:5000 && \
 	    python3 -m http.server 5000
 
-# Unit test configuration
-# defeats the purpose of using pytest for test discovery, consider refactoring test layout
-CORE_TESTS += test/test_cryptle.py
-CORE_TESTS += test/test_event.py
-CORE_TESTS += test/test_metric.py
-CORE_TESTS += test/test_paper.py
-CORE_TESTS += test/test_block.py
 
-# tests that takes a long time e.g. IO intensive
-SLOW_TESTS += test/test_feed.py
-SLOW_TESTS += test/test_timeseries.py
-SLOW_TESTS += test/test_clock.py
-
-UNIT_TESTS = $(CORE_TESTS)
-ALL_TESTS  = $(CORE_TESTS) $(SLOW_TESTS)
-
-
-# Flags can be specified by setting the PYTEST_FLAGS environment variable
-test:
-	@pytest $(PYTEST_FLAGS) $(UNIT_TESTS)
-
-testslow:
-	@pytest $(PYTEST_FLAGS) $(SLOW_TESTS)
-
-testall:
-	@pytest $(PYTEST_FLAGS) $(ALL_TESTS)
-
-test_%:
-	@pytest $(PYTEST_FLAGS) test/$@.py --rootdir=./
-
-
-# Linting configuration
+# Linting configuration (pylint)
 PYLINT_DISABLES := C      # Ignore convention linting
 PYLINT_DISABLES += W0221  # Ignore warnings of function signature overloading
-PYLINT_DISABLES += E1205  # Ignore errors of logging args since we're using custom log formatting
 # support for str.format() log message format will be in the next release of pylint
+PYLINT_DISABLES += E1205  # Ignore errors of logging args since we're using custom log formatting
 
 comma := ,
 empty :=
@@ -56,14 +40,23 @@ lint:
 	@pylint cryptle \
 	    --output-format=colorized \
 	    --disable=$(PYLINT_DISABLES_FINAL) \
-	    || true
+	    --exit-zero
 
+
+# Use black to auto-format python code
+format:
+	@black -S cryptle
+
+checkformat:
+	@black --diff -S cryptle
+
+
+# Utililies
+# (pyreverse comes with pylint, dot needs to separately installed)
 PROJECT := cryptle
 CLASS_DIAG := classes_$(PROJECT)
 PACK_DIAG  := packages_$(PROJECT)
 
-
-# Utililies
 uml:
 	@pyreverse -k cryptle -p $(PROJECT)
 	@dot -Tpng $(CLASS_DIAG).dot > $(CLASS_DIAG).png
@@ -76,4 +69,4 @@ clean:
 	$(MAKE) -C docs clean
 
 
-.PHONY: install doc test testall testslow testpluging clean lint uml
+.PHONY: install doc test testall testslow testpluging clean lint uml format

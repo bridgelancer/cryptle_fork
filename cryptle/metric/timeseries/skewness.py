@@ -1,12 +1,13 @@
 from cryptle.metric.base import Timeseries
 import scipy.stats as sp
 
+
 class Skewness(Timeseries):
     def __init__(self, ts, lookback, name=None):
         super().__init__(ts=ts)
         self._lookback = lookback
-        self._ts       = ts
-        self._cache    = []
+        self._ts = ts
+        self._cache = []
 
     @Timeseries.cache
     def evaluate(self):
@@ -15,5 +16,3 @@ class Skewness(Timeseries):
 
     def onTick(self, price, timestamp, volume, action):
         raise NotImplementedError
-
-

@@ -42,7 +42,9 @@ def decode_balance(balance):
     """Format balance entries in the json loaded python dict"""
     # @Hardcode: For optimization
     return {
-        k[:3]: float(v) for k, v in balance.items() if k.endswith('available') and float(v) > 1e-8
+        k[:3]: float(v)
+        for k, v in balance.items()
+        if k.endswith('available') and float(v) > 1e-8
     }
 
 
@@ -58,6 +60,7 @@ class Bitstamp:
         Methods for placing orders with names starting with send*() are
         deprecated, but maintained for backwards-compatibility reasons.
     """
+
     url = 'https://www.bitstamp.net/api/v2'
 
     def __init__(self, key=None, secret=None, customer_id=None):
@@ -153,9 +156,7 @@ class Bitstamp:
             ConnectionError: For non 200 HTTP status code, raised by _private()
             OrderError: If bitsatmp respone contains {'status': error}
         """
-        params = {
-            'amount': _truncate(amount, 8)
-        }
+        params = {'amount': _truncate(amount, 8)}
 
         endpoint = '/buy/market/'
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
@@ -179,9 +180,7 @@ class Bitstamp:
             ConnectionError: For non 200 HTTP status code, raised by _private()
             OrderError: If bitsatmp respone contains {'status': error}
         """
-        params = {
-            'amount': _truncate(amount, 8)
-        }
+        params = {'amount': _truncate(amount, 8)}
 
         endpoint = '/sell/market/'
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
@@ -210,10 +209,7 @@ class Bitstamp:
             This method is not fully implemented yet. A proper version should either be
             async, or returns the ordreId.
         """
-        params = {
-            'amount': _truncate(amount, 8),
-            'price': _truncate(price, 8)
-        }
+        params = {'amount': _truncate(amount, 8), 'price': _truncate(price, 8)}
 
         endpoint = '/buy/'
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
@@ -243,10 +239,7 @@ class Bitstamp:
             This method is not fully implemented yet. A proper version should either be
             async, or returns the ordreId.
         """
-        params = {
-            'amount': _truncate(amount, 8),
-            'price': _truncate(price, 8)
-        }
+        params = {'amount': _truncate(amount, 8), 'price': _truncate(price, 8)}
 
         endpoint = '/sell/'
         res = self._private(endpoint + encode_pair(asset, currency), params=params)
@@ -330,11 +323,15 @@ class Bitstamp:
 
     def _sign(self, nonce):
         message = nonce + self.id + self.key
-        signature = hmac.new(
+        signature = (
+            hmac.new(
                 self.secret.encode('utf-8'),
                 msg=message.encode('utf-8'),
-                digestmod=hashlib.sha256
-        ).hexdigest().upper()
+                digestmod=hashlib.sha256,
+            )
+            .hexdigest()
+            .upper()
+        )
         return signature
 
     # ----------

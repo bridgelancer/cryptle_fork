@@ -1,16 +1,18 @@
 from cryptle.metric.base import Timeseries
 import numpy as np
 
-class WMA(Timeseries):
 
+class WMA(Timeseries):
     def __init__(self, ts, lookback, name=None, weights=None, bar=False):
         super().__init__(ts=ts)
         self._lookback = lookback
-        self._weights  = weights or [2 * (i+1) / (lookback * (lookback + 1)) for i in range(lookback)]
-        self._ts    = ts
+        self._weights = weights or [
+            2 * (i + 1) / (lookback * (lookback + 1)) for i in range(lookback)
+        ]
+        self._ts = ts
         self._cache = []
-        self.value  = None
-        self._bar    = bar
+        self.value = None
+        self._bar = bar
 
     @Timeseries.cache
     def evaluate(self):
@@ -19,7 +21,7 @@ class WMA(Timeseries):
 
         @Timeseries.bar_cache
         def toBar(self, candle):
-        #price candle wrapper was passed into this function for constructing candles
+            # price candle wrapper was passed into this function for constructing candles
             if len(self.o) == self._lookback:
                 o = np.average(self.o, axis=0, weights=self._weights)
                 c = np.average(self.c, axis=0, weights=self._weights)

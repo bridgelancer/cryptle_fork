@@ -108,7 +108,9 @@ class Portfolio:
         """
         equity = 0.0
         equity += self.balance[self.base_currency]
-        for asset, amount in filter(lambda x: x[0] != self.base_currency, self.balance.items()):
+        for asset, amount in filter(
+            lambda x: x[0] != self.base_currency, self.balance.items()
+        ):
             equity += amount * (asset_prices[asset] or 0)
         return equity
 
@@ -264,7 +266,7 @@ class TradingStrategy(Strategy):
         """Send limit buy request to associated exchange"""
         if amount < 0:
             raise ValueError("Expect positive value for amount.")
-        if price  < 0:
+        if price < 0:
             raise ValueError("Expect positive value for price.")
 
         logger.debug('Placing limit buy for {:.6g} {} @${:.6g}', amount, asset, price)
@@ -279,7 +281,7 @@ class TradingStrategy(Strategy):
         """Send market buy request to associated exchange"""
         if amount < 0:
             raise ValueError("Expect positive value for amount.")
-        if price  < 0:
+        if price < 0:
             raise ValueError("Expect positive value for price.")
 
         logger.debug('Placing limit sell for {:.6g} {} @${:.6g}', amount, asset, price)
@@ -294,23 +296,13 @@ class TradingStrategy(Strategy):
         self.portfolio.bought(asset, amount, price)
         # self.trades.append([timestamp, price])
 
-        logger.info(
-            'Bought {:7.6g} {} @${:<7.6g}',
-            amount,
-            asset,
-            price,
-        )
+        logger.info('Bought {:7.6g} {} @${:<7.6g}', amount, asset, price)
 
     def _cleanupSell(self, asset, amount, price):
         self.portfolio.sold(asset, amount, price)
         # self.trades[-1] += [timestamp, price]
 
-        logger.info(
-            'Sold   {:7.6g} {} @${:<7.6g}',
-            amount,
-            asset,
-            price,
-        )
+        logger.info('Sold   {:7.6g} {} @${:<7.6g}', amount, asset, price)
 
 
 class SingleAssetStrategy(TradingStrategy):
@@ -350,22 +342,24 @@ class SingleAssetStrategy(TradingStrategy):
         except AttributeError:
             raise AttributeError('Expected implementation of onTrade()')
 
-    def pushCandle(self, op: float, cl:float, hi:float, lo:float, ts:int, vol:float):
+    def pushCandle(
+        self, op: float, cl: float, hi: float, lo: float, ts: int, vol: float
+    ):
         # todo: input validation
         try:
             self.onCandle(op, cl, hi, lo, ts, vol)
         except AttributeError:
             raise AttributeError('Expected implementation of onCandle()')
 
-    def marketBuy(self, amount:float):
+    def marketBuy(self, amount: float):
         """Wrapper over the base Strategy.marketBuy() for single asset."""
         super().marketBuy(self.asset, amount)
 
-    def marketSell(self, amount:float):
+    def marketSell(self, amount: float):
         """Wrapper over the base Strategy.marketSell() for single asset."""
         super().marketSell(self.asset, amount)
 
-    def limitBuy(self, amount:float, price:float):
+    def limitBuy(self, amount: float, price: float):
         """Wrapper over the base Strategy.limitBuy() for single asset."""
         super().limitBuy(self.asset, amount, price)
 

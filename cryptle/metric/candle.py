@@ -38,7 +38,6 @@ class CandleBar:
         self._maxsize = maxsize
         self.last_timestamp = None
 
-
     def pushTick(self, price, timestamp, volume=0, action=0):
         '''Provides public interface for accepting ticks.'''
 
@@ -51,7 +50,7 @@ class CandleBar:
 
         # if tick arrived before next bar, update current candle
         if self._is_updated(timestamp):
-            self.last_low = min(self.last_low , price)
+            self.last_low = min(self.last_low, price)
             self.last_high = max(self.last_high, price)
             self.last_close = price
             self.last_volume += volume
@@ -60,30 +59,31 @@ class CandleBar:
         # if no tick arrived in between, append previous empty candles
         else:
             while not self._is_updated(timestamp - self.period):
-                self._pushEmptyCandle(self.last_close, self.last_bar_timestamp + self.period)
+                self._pushEmptyCandle(
+                    self.last_close, self.last_bar_timestamp + self.period
+                )
             self._pushInitCandle(price, timestamp, volume, action)
 
         # No one uses it yet so removed for reducing overhead
-        #self._broadcastTick(price, timestamp, volume, action)
-        #if self._auto_prune:
+        # self._broadcastTick(price, timestamp, volume, action)
+        # if self._auto_prune:
         #    self.prune(self._maxsize)
 
     def pushCandle(self, o, c, h, l, t, v, nv):
         '''Provides public interface for accepting aggregated candles.'''
         self._pushFullCandle(o, c, h, l, t, v, nv)
 
-
     def ping(self, timestamp):
         if self.last_bar is None:
             return
         while not self._is_updated(timestamp - self.period):
-            self._pushEmptyCandle(self.last_close, self.last_bar_timestamp + self.period)
-
+            self._pushEmptyCandle(
+                self.last_close, self.last_bar_timestamp + self.period
+            )
 
     def attach(self, metric):
         '''Allow a candlemetric to subscribe for updates of candles.'''
         self._metrics.append(metric)
-
 
     def prune(self, size):
         try:
@@ -91,36 +91,31 @@ class CandleBar:
         except IndexError:
             raise ("Empty CandleBar cannot be pruned")
 
-
     def open_prices(self, num_candles):
         return [x.open for x in self[-num_candles:]]
-
 
     def close_prices(self, num_candles):
         return [x.close for x in self[-num_candles:]]
 
-
     def _is_updated(self, timestamp):
         return timestamp < self.last_bar_timestamp + self.period
-
 
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
         t = t - t % self.period
         self._bars.append(Candle(o, c, h, l, t, v, nv))
         self._broadcastCandle()
 
-
     def _pushInitCandle(self, price, timestamp, volume, action):
         round_ts = timestamp - timestamp % self.period
-        self._bars.append(Candle(price, price, price, price, round_ts, volume, volume*action))
+        self._bars.append(
+            Candle(price, price, price, price, round_ts, volume, volume * action)
+        )
         self._broadcastCandle()
-
 
     def _pushEmptyCandle(self, price, timestamp):
         round_ts = timestamp - timestamp % self.period
         self._bars.append(Candle(price, price, price, price, round_ts, 0, 0))
         self._broadcastCandle()
-
 
     def _broadcastCandle(self):
         for metric in self._metrics:
@@ -128,7 +123,6 @@ class CandleBar:
                 metric.onCandle()
             except NotImplementedError:
                 pass
-
 
     def _broadcastTick(self, price, ts, volume, action):
         for metric in self._metrics:
@@ -138,7 +132,7 @@ class CandleBar:
                 pass
 
     # Sequence overloads
-    def __len__(self, ):
+    def __len__(self,):
         return len(self._bars)
 
     def __getitem__(self, item):
@@ -205,6 +199,7 @@ class CandleBar:
     def last_netvol(self, value):
         self._bars[-1].netvol = value
 
+
 class CandleMetric(Metric):
     '''Base class for candle dependent metrics.
 
@@ -224,13 +219,14 @@ class CandleMetric(Metric):
         def onTick(self, price, ts, volume, action):
             pass
     '''
+
     def __init__(self, candle):
         self.candle = candle
         self.value = 0
         candle.attach(self)
 
-class SMA(CandleMetric):
 
+class SMA(CandleMetric):
     def __init__(self, candle, lookback, use_open=True):
         super().__init__(candle)
         self._use_open = use_open
@@ -246,17 +242,17 @@ class SMA(CandleMetric):
         self.value = np.mean(prices)
 
     def onTick(self, price, ts, volume, action):
-        raise NotImplementedError # Not yet implemented
-
+        raise NotImplementedError  # Not yet implemented
 
 
 class WMA(CandleMetric):
-
     def __init__(self, candle, lookback, use_open=True, weights=None):
         super().__init__(candle)
         self._use_open = use_open
         self._lookback = lookback
-        self._weights = weights or [2 * (i + 1)/(lookback * (lookback + 1)) for i in range(lookback)]
+        self._weights = weights or [
+            2 * (i + 1) / (lookback * (lookback + 1)) for i in range(lookback)
+        ]
 
     def onCandle(self):
         if len(self.candle) < self._lookback:
@@ -268,12 +264,10 @@ class WMA(CandleMetric):
         self.value = np.average(prices, axis=0, weights=self._weights)
 
     def onTick(self, price, ts, volume, action):
-        raise NotImplementedError # Not yet implemented
-
+        raise NotImplementedError  # Not yet implemented
 
 
 class EMA(CandleMetric):
-
     def __init__(self, candle, lookback, use_open=True):
         super().__init__(candle)
         self._use_open = use_open
@@ -288,12 +282,10 @@ class EMA(CandleMetric):
             self.value = price * self._weight + (1 - self._weight) * self.value
 
     def onTick(self, price, ts, volume, action):
-        raise NotImplementedError # Not yet implemented
-
+        raise NotImplementedError  # Not yet implemented
 
 
 class ATR(CandleMetric):
-
     def __init__(self, candle, lookback, use_open=True):
         super().__init__(candle)
         self._use_open = use_open
@@ -313,8 +305,7 @@ class ATR(CandleMetric):
             self.value = (self.value * (self._lookback - 1) + tr) / self._lookback
 
     def onTick(self, price, ts, volume, action):
-        raise NotImplementedError # Not yet implemented
-
+        raise NotImplementedError  # Not yet implemented
 
 
 class MACD(CandleMetric):
@@ -337,24 +328,21 @@ class MACD(CandleMetric):
         diff (float):
     '''
 
-    def __init__(
-            self,
-            fast,
-            slow,
-            lookback,
-            weights=None):
-        assert fast.candle == slow.candle # @Use proper error
+    def __init__(self, fast, slow, lookback, weights=None):
+        assert fast.candle == slow.candle  # @Use proper error
         super().__init__(fast.candle)
         self._fast = fast
         self._slow = slow
         self._lookback = lookback
-        self._weights = weights or [2 * (i + 1) / (lookback * (lookback + 1)) for i in range(lookback)]
+        self._weights = weights or [
+            2 * (i + 1) / (lookback * (lookback + 1)) for i in range(lookback)
+        ]
         self._past = []
 
     def onCandle(self):
         self.diff = self._fast - self._slow
         self._past.append(self.diff)
-        self._past = self._past[-self._lookback:]
+        self._past = self._past[-self._lookback :]
         self.diff_ma = 0
 
         if len(self._past) == self._lookback:
@@ -362,7 +350,8 @@ class MACD(CandleMetric):
             self.value = self.diff - self.diff_ma
 
     def onTick(self, price, ts, volume, action):
-        raise NotImplementedError # Not yet implemented
+        raise NotImplementedError  # Not yet implemented
+
 
 # Review its role and duplication in metric/generic.py
 class Difference(CandleMetric):
@@ -392,20 +381,20 @@ class Difference(CandleMetric):
     '''
 
     def __init__(
-            self,
-            metric,
-            *args,
-            n=1,
-            lookback=4 # not yet implemented, 4 as default for future DIDO scaling
-            ):
+        self,
+        metric,
+        *args,
+        n=1,
+        lookback=4  # not yet implemented, 4 as default for future DIDO scaling
+    ):
 
         super().__init__(metric.candle)
         self._metric = metric
         self._lookback = lookback
         self._n = n
-        self._attrs = list(args) # addtional string arguments to diff attributes
-        self._record = {'value': []} # dictionary of lists storing raw attr values
-        self.output = {} # dictonary of lists storing differenced attributes
+        self._attrs = list(args)  # addtional string arguments to diff attributes
+        self._record = {'value': []}  # dictionary of lists storing raw attr values
+        self.output = {}  # dictonary of lists storing differenced attributes
         self.value = 0
 
         if len(self._attrs) > 0:
@@ -423,7 +412,7 @@ class Difference(CandleMetric):
             self._record[attr].append(self._metric.__dict__[attr])
         # differencing all record in self._records using np.diff method
         for attr, record in self._record.items():
-            self.output[attr] =  np.diff(record, self._n)
+            self.output[attr] = np.diff(record, self._n)
         # assigning proper return values for access
         if len(self.output['value']) > 0:
             self.value = self.output['value'][-1]
@@ -431,7 +420,8 @@ class Difference(CandleMetric):
                 self.__dict__[attr] = self.output[attr][-1]
 
     def onTick(self):
-        raise NotImplementedError # not yet implemented
+        raise NotImplementedError  # not yet implemented
+
 
 class BollingerBand(CandleMetric):
     '''Bollinger band.
@@ -454,13 +444,8 @@ class BollingerBand(CandleMetric):
     '''
 
     def __init__(
-            self,
-            candle,
-            lookback,
-            use_open=True,
-            sd=2,
-            upper_sd=None,
-            lower_sd=None):
+        self, candle, lookback, use_open=True, sd=2, upper_sd=None, lower_sd=None
+    ):
 
         super().__init__(candle)
         self._use_open = use_open
@@ -484,8 +469,7 @@ class BollingerBand(CandleMetric):
         self.value = self.band
 
     def onTick(self, price, ts, volume, action):
-        raise NotImplementedError # Not yet implemented
-
+        raise NotImplementedError  # Not yet implemented
 
 
 class MABollinger(CandleMetric):
@@ -497,11 +481,7 @@ class MABollinger(CandleMetric):
         weights (list): Weighting for averaging. Defaults to None (simple average).
     '''
 
-    def __init__(self,
-            bband,
-            lookback,
-            use_open=True,
-            weights=None):
+    def __init__(self, bband, lookback, use_open=True, weights=None):
 
         super().__init__(bband.candle)
         self._use_open = use_open
@@ -517,12 +497,13 @@ class MABollinger(CandleMetric):
         self._bands.append(self._bband.value)
 
         if self._weights is None:
-            self.value = np.mean(self._bands[-self._lookback:])
+            self.value = np.mean(self._bands[-self._lookback :])
         else:
             self.value = np.average(self._weights, axis=0, weights=self._weights)
 
     def onTick(self, price, ts, volume, action):
-        raise NotImplementedError # Not yet implemented
+        raise NotImplementedError  # Not yet implemented
+
 
 class RSI(CandleMetric):
     '''Calculate and store the latest RSI value for the attached candle'''
@@ -531,7 +512,7 @@ class RSI(CandleMetric):
         super().__init__(candle)
         self._use_open = use_open
         self._lookback = lookback
-        self._weight = 1 / lookback # MODIFIED to suit our purpose
+        self._weight = 1 / lookback  # MODIFIED to suit our purpose
         self.up = []
         self.down = []
         self.ema_up = None
@@ -542,14 +523,14 @@ class RSI(CandleMetric):
             return
 
         if self._use_open:
-            if (self.candle.last_open > self.candle[-2].open):
+            if self.candle.last_open > self.candle[-2].open:
                 self.up.append(abs(self.candle.last_open - self.candle[-2].open))
                 self.down.append(0)
             else:
                 self.down.append(abs(self.candle[-2].open - self.candle.last_open))
                 self.up.append(0)
         else:
-            if (self.candle.last_close > self.candle[-2].close):
+            if self.candle.last_close > self.candle[-2].close:
                 self.up.append(abs(self.candle.last_close - self.candle[-2].close))
                 self.down.append(0)
             else:
@@ -568,7 +549,7 @@ class RSI(CandleMetric):
             self.ema_down = sum([x for x in self.down]) / len(self.down)
 
             try:
-                self.value = 100 - 100 / (1 +  self.ema_up/self.ema_down)
+                self.value = 100 - 100 / (1 + self.ema_up / self.ema_down)
             except ZeroDivisionError:
                 if self.ema_down == 0 and self.ema_up != 0:
                     self.value = 100
@@ -584,7 +565,7 @@ class RSI(CandleMetric):
 
         # Handling edge cases and return the RSI index according to formula
         try:
-            self.value = 100 - 100 / (1 +  self.ema_up/self.ema_down)
+            self.value = 100 - 100 / (1 + self.ema_up / self.ema_down)
         except ZeroDivisionError:
             if self.ema_down == 0 and self.ema_up != 0:
                 self.value = 100
@@ -594,4 +575,4 @@ class RSI(CandleMetric):
                 self.value = 50
 
     def onTick(self, price, ts, volume, action):
-        raise NotImplementedError # Not yet implemented
+        raise NotImplementedError  # Not yet implemented
