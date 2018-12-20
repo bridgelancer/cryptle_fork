@@ -1,8 +1,8 @@
 # @Incomplete data format is hardwired for bitstamp (or are we?)
 # @Incomplete candle formatted data is not properly implemented
 
-from .strategy import Portfolio, Strategy
-from .event import source, Bus
+from cryptle.strategy import Portfolio, Strategy
+from cryptle.event import source, Bus
 
 import json
 import csv

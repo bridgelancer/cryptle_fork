@@ -40,7 +40,7 @@ lint:
 	@pylint cryptle \
 	    --output-format=colorized \
 	    --disable=$(PYLINT_DISABLES_FINAL) \
-	    || true
+	    --exit-zero
 
 
 # Use black to auto-format python code
