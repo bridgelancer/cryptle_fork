@@ -11,6 +11,15 @@ class Aggregator:
     of the original CandleBar as it is designed to handle any tick-based value upon suitable wiring
     of interfaces. This class could also accept bar representation of data.
 
+    Args
+    ---
+    period      : int
+        The number of seconds for a candle bar to span
+    auto_prune  : boolean
+        Option to prune the caching by this class
+    maxsize     : int
+        Number of bars to be stored if choosing auto_prune
+
     """
 
     def __init__(self, period, auto_prune=False, maxsize=500):
@@ -22,8 +31,13 @@ class Aggregator:
 
     @on('tick')
     def pushTick(self, data):
-        """Provides public interface for accepting ticks. Tick (in list) should have value, volume, timestamp
-        and action as the format"""
+        """Provides public interface for accepting ticks.
+
+        Args
+        ---
+        data    : list
+            list-based representation of a tick data in [value, volume, timestamp, action]
+        """
         if len(data) == 4:
             value, volume, timestamp, action = data[0], data[1], data[2], data[3]
         else:
@@ -57,7 +71,7 @@ class Aggregator:
     def _is_due(self, timestamp):
         return timestamp > self.last_bar_timestamp + self.period
 
-    def prune(self, size):
+    def _prune(self, size):
         try:
             self._bars = self._bars[-size:]
         except IndexError:
@@ -65,7 +79,14 @@ class Aggregator:
 
     @on('candle')
     def pushCandle(self, bar):
-        """Provides public interface for accepting aggregated candles. """
+        """Provides public interface for accepting aggregated candles.
+
+        Args
+        ---
+        bar     : Candle
+            A Candle object
+
+        """
         self._pushFullCandle(*bar)
         # methods that output corresponding events to message bus
         self._pushAllMetrics(*bar)

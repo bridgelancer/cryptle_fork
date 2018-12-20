@@ -4,18 +4,16 @@ from collections import OrderedDict
 
 
 class Registry:
-    """
-    Registry class keeps record of the Strategy class's state information.
+    """ Registry class keeps record of the Strategy class's state information.
 
-    A setup dictionary would be passed during the construction of the Registry. This would inialize
+    A setup tuple would be passed during the construction of the Registry. This would inialize
     all the CodeBlocks that would be subsequently maintained by the Registry and also via the
     interactions between CodeBlocks where necessary.
 
     Args
     ---
-    setup: dictionary
-        The dictionary held by the Strategy containing method references as keys and list containing
-        metainfo as values
+    setup: tuple
+        The tuple of tuples held by the Strategy
 
     It is also responsible for controlling the execution of logical tests
     at desired time and frequency as time elapsed. This is achieved by various onEvent functions.
@@ -24,17 +22,8 @@ class Registry:
 
     """
 
-    def __init__(self, setup):
-        # setup in conventional form - see test_registry.py for reference
-        if all(len(item) > 2 for x, item in setup.items()):
-            self.setup = OrderedDict(sorted(setup.items(), key=lambda x: x[1][2]))
-            self.codeblocks = list(
-                map(CodeBlock, self.setup.keys(), self.setup.values())
-            )
-        else:
-            self.setup = setup
-        # in plain dictionary form, holds all logical states for limiting further triggering of
-        self.check_order = [x for x in self.setup.keys()]
+    def __init__(self, *setup):
+        self.codeblocks = list(map(CodeBlock, *setup))
 
         # bar-related states that should be sourced from aggregator
         self.bars = []
@@ -53,10 +42,9 @@ class Registry:
         self.sell_count = 0
         self.lookup_check = {'open': self.new_open, 'close': self.new_close, '': True}
 
-        for code in self.codeblocks:
-            code.initialize()
+        for codeblock in self.codeblocks:
+            codeblock.initialize()
 
-    # Refresh methods to maintain correct states
     @on(
         'tick'
     )  # tick should be agnostic to source of origin, but should take predefined format
@@ -70,12 +58,14 @@ class Registry:
         self.current_time = tick[2]
         self.updateLookUp()
 
+    # separate interface from implementation details
     @on('aggregator:new_open')  # 'open', 'close' events should be emitted by aggregator
     def onOpen(self, price):
         self.new_open = True
         self.open_price = price
         self.updateLookUp()
 
+    # separate interface from implementation details
     @on(
         'aggregator:new_close'
     )  # 'open', 'close' events should be emitted by aggregator
@@ -87,16 +77,15 @@ class Registry:
     def updateLookUp(self):
         self.lookup_check = {'open': self.new_open, 'close': self.new_close, '': True}
 
-    # these flags are still largely imaginary and are not tested
     @on('buy')  # 'buy', 'sell' events are not integrated for the moment
     def onBuy(self):
         self.buy_count += 1
 
-    # these flags are still largely imaginary and are not tested
     @on('sell')  # 'buy', 'sell' events are not integrated for the moment
     def onSell(self):
         self.sell_count += 1
 
+    # separate interface from implementation details
     # onCandle should maintain logical states of all candle-related constraints
     @on('aggregator:new_candle')
     def onCandle(self, bar):
@@ -107,6 +96,7 @@ class Registry:
         if len(self.bars) > 1000:
             self.bars = self.bars[-1000:]
 
+    # separate interface from implementation details
     # onPeriod should maintain logical states of all period-related constraints
     @on('aggregator:new_candle')
     def onPeriod(self, bar):
@@ -151,16 +141,18 @@ class Registry:
     def check(self, codeblock):
         """Actual checking to deliver the required control flow"""
         logic_status = codeblock.logic_status.logic_status
-        whenexec = codeblock.logic_status.setup[0]
-        triggerSetup = codeblock.logic_status.setup[1][0]
-        dictionary = codeblock.logic_status.setup[1][1]
+        whenexec = codeblock.logic_status.whenexec
+        dictionary = [
+            constraint[1] for constraint in codeblock.logic_status.constraints
+        ]
 
-        Flags = []
-        if 'once per flag' in dictionary:
-            Flags = dictionary['once per flag']
-        if 'n per flag' in dictionary:
-            Flags += dictionary['n per flag']
-        # pters is reurning the list of self.func for all ocdblocks for checking
+        Flags = list(
+            filter(
+                lambda x: x['type'] == 'once per flag' or x['type'] == 'n per flag',
+                dictionary,
+            )
+        )
+        # pters is returning the list of self.func for all ocdblocks for checking
         pters = [item.func for item in self.codeblocks]
 
         # Currently, all lookup_check is void. No matter 'open'/'close, we only check when new
@@ -170,7 +162,7 @@ class Registry:
             lst[0] > 0 for key, lst in logic_status.items()
         ):
             # list comprehension to remove duplicates
-            duplicate = [self.codeblocks[pters.index(flag[0])] for flag in Flags]
+            duplicate = [self.codeblocks[pters.index(flag['funcpt'])] for flag in Flags]
             # augment duplicate with codeblocks to pass into inidividual CodeBlock
             augmented = [
                 dict(t)
