@@ -27,8 +27,10 @@ class Registry:
 
         # bar-related states that should be sourced from aggregator
         self.bars = []
-        self.open_price = None # if last bar open price is required, reference to this
-        self.close_price = None # if last bar close price is required, reference to this
+        self.open_price = None  # if last bar open price is required, reference to this
+        self.close_price = (
+            None
+        )  # if last bar close price is required, reference to this
         self.num_bars = 0
         self.new_open = False
         self.new_close = False
@@ -38,15 +40,14 @@ class Registry:
         # trade-related states that should be sourced from OrderBook (or equivalent)
         self.buy_count = 0
         self.sell_count = 0
-        self.lookup_check   = {'open': self.new_open,
-                               'close': self.new_close,
-                               '': True}
+        self.lookup_check = {'open': self.new_open, 'close': self.new_close, '': True}
 
         for codeblock in self.codeblocks:
             codeblock.initialize()
 
-
-    @on('tick') # tick should be agnostic to source of origin, but should take predefined format
+    @on(
+        'tick'
+    )  # tick should be agnostic to source of origin, but should take predefined format
     def onTick(self, tick):
         # ***this sequence matters a lot***
         if self.current_price is not None:
@@ -54,33 +55,33 @@ class Registry:
         self.new_open = False
         self.new_close = False
         self.current_price = tick[0]
-        self.current_time  = tick[2]
+        self.current_time = tick[2]
         self.updateLookUp()
 
     # separate interface from implementation details
-    @on('aggregator:new_open') # 'open', 'close' events should be emitted by aggregator
+    @on('aggregator:new_open')  # 'open', 'close' events should be emitted by aggregator
     def onOpen(self, price):
         self.new_open = True
         self.open_price = price
         self.updateLookUp()
 
     # separate interface from implementation details
-    @on('aggregator:new_close') # 'open', 'close' events should be emitted by aggregator
+    @on(
+        'aggregator:new_close'
+    )  # 'open', 'close' events should be emitted by aggregator
     def onClose(self, price):
         self.close_price = price
         self.new_close = True
         self.updateLookUp()
 
     def updateLookUp(self):
-        self.lookup_check   = {'open': self.new_open,
-                               'close': self.new_close,
-                               '': True}
+        self.lookup_check = {'open': self.new_open, 'close': self.new_close, '': True}
 
-    @on('buy') # 'buy', 'sell' events are not integrated for the moment
+    @on('buy')  # 'buy', 'sell' events are not integrated for the moment
     def onBuy(self):
         self.buy_count += 1
 
-    @on('sell') # 'buy', 'sell' events are not integrated for the moment
+    @on('sell')  # 'buy', 'sell' events are not integrated for the moment
     def onSell(self):
         self.sell_count += 1
 
@@ -106,7 +107,7 @@ class Registry:
             if 'period' not in logic_status.keys():
                 continue
             else:
-                period         = logic_status['period'][1]
+                period = logic_status['period'][1]
                 activated_time = logic_status['period'][2]
                 if self.num_bars - activated_time >= period:
                     timeToRefresh = True
@@ -132,7 +133,6 @@ class Registry:
                 if cat == 'period':
                     codeblock.refresh(cat, self.num_bars)
 
-
     def handleCheck(self, tick):
         """Wrapper function for calling check for each codeblock"""
         for code in self.codeblocks:
@@ -142,19 +142,32 @@ class Registry:
         """Actual checking to deliver the required control flow"""
         logic_status = codeblock.logic_status.logic_status
         whenexec = codeblock.logic_status.whenexec
-        dictionary = [constraint[1] for constraint in codeblock.logic_status.constraints]
+        dictionary = [
+            constraint[1] for constraint in codeblock.logic_status.constraints
+        ]
 
-        Flags = list(filter(lambda x: x['type'] == 'once per flag' or x['type'] == 'n per flag',
-                        dictionary))
+        Flags = list(
+            filter(
+                lambda x: x['type'] == 'once per flag' or x['type'] == 'n per flag',
+                dictionary,
+            )
+        )
         # pters is returning the list of self.func for all ocdblocks for checking
         pters = [item.func for item in self.codeblocks]
 
         # Currently, all lookup_check is void. No matter 'open'/'close, we only check when new
         # Candle is pushed (i.e. at open). However we guarantee that the
         # registry.last_open/registry.last_close is correct
-        if (self.lookup_check[whenexec] and all(lst[0] > 0 for key, lst in logic_status.items())):
+        if self.lookup_check[whenexec] and all(
+            lst[0] > 0 for key, lst in logic_status.items()
+        ):
             # list comprehension to remove duplicates
             duplicate = [self.codeblocks[pters.index(flag['funcpt'])] for flag in Flags]
             # augment duplicate with codeblocks to pass into inidividual CodeBlock
-            augmented = [dict(t) for t in {tuple((k, (v, d)) for k, v in d.flags.items()) for d in duplicate}]
+            augmented = [
+                dict(t)
+                for t in {
+                    tuple((k, (v, d)) for k, v in d.flags.items()) for d in duplicate
+                }
+            ]
             codeblock.check(self.num_bars, augmented)

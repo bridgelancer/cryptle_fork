@@ -199,7 +199,8 @@ class TimeseriesWrapper(Metric):
     moment).
 
     """
-    def __init__(self, ts, store_num =10000, **kwargs):
+
+    def __init__(self, ts, store_num=10000, **kwargs):
         self.timeseries = ts
         self.hxtimeseries = HistoricalTS(self.timeseries, store_num)
 
@@ -302,20 +303,22 @@ class Timeseries(Metric):
         # 1. find the index corresponds to the root instance in each listener.subscribers
         # 2. pass the index to listener
         for listener in self.listeners:
-            pos = [id(x) for x in listener.subscribers].index(id(self)) # @TODO this breaks when there are identical values
+            pos = [id(x) for x in listener.subscribers].index(
+                id(self)
+            )  # @TODO this breaks when there are identical values
             listener.processBroadcast(pos)
 
     # currently not in use
     def register(self, new_ts):
         """Registers another :class:`Timeseries` object as a listener."""
         self.listeners[new_ts.name] = new_ts
-        #self.listners.append(new_ts)
+        # self.listners.append(new_ts)
 
     # currently not in use
     def unregister(self, ts):
         """Unregister the provided listener."""
         del self.listeners[ts.name]
-        #self.listeners.pop(ts)
+        # self.listeners.pop(ts)
 
     # Todo(pine): Take lookback as a decorator argument
     @staticmethod
@@ -372,6 +375,7 @@ class Timeseries(Metric):
                     pass
             self._cache = prune(self._cache, self._lookback)
             func(*args, **kwargs)
+
         return wrapper
 
     # Todo(pine): Take lookback as a decorator argument, what if a timeseries wants a different
@@ -384,6 +388,7 @@ class Timeseries(Metric):
         self.l as empty lists. It should also contain an attribute self._lookback for caching
         purpose.
         """
+
         def wrapper(self, **kwargs):
             self.o.append(float(candle.o))
             self.c.append(float(candle.c))
@@ -394,12 +399,13 @@ class Timeseries(Metric):
             if len(self.o) < self._lookback:
                 return
             elif len(self.o) >= self._lookback:
-                self.o = self.o[-self._lookback:]
-                self.c = self.c[-self._lookback:]
-                self.h = self.h[-self._lookback:]
-                self.l = self.l[-self._lookback:]
+                self.o = self.o[-self._lookback :]
+                self.c = self.c[-self._lookback :]
+                self.h = self.h[-self._lookback :]
+                self.l = self.l[-self._lookback :]
 
             func(*args, **kwargs)
+
         return wrapper
 
     def importBars(self):
@@ -421,15 +427,16 @@ class GenericTS(Timeseries):
         args      = arguments required to pass into eval_func for proper evaluation of the :class:`GenericTS` value
 
     """
+
     def __init__(self, ts, name=None, lookback=None, eval_func=None, args=None):
         super().__init__(ts=ts)
-        self._lookback  = lookback
-        self._ts        = ts
-        self._cache     = []
-        self.eval_func  = eval_func
-        self.args       = args
-        self.name       = name
-        self.value      = None
+        self._lookback = lookback
+        self._ts = ts
+        self._cache = []
+        self.eval_func = eval_func
+        self.args = args
+        self.name = name
+        self.value = None
 
     @Timeseries.cache
     def evaluate(self):
@@ -445,7 +452,7 @@ class HistoricalTS(Timeseries):
 
     """
 
-    def __init__(self, ts, store_num = 10000):
+    def __init__(self, ts, store_num=10000):
         super().__init__(ts=ts)
         self._ts = ts
         self._lookback = store_num
@@ -460,13 +467,15 @@ class HistoricalTS(Timeseries):
         filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
         if not self.flashed:
             with open(filename, 'w', newline='') as file:
-                file.write("Beginning of new file: should record the running instance metainfo \n")
+                file.write(
+                    "Beginning of new file: should record the running instance metainfo \n"
+                )
             self.flashed = True
 
         with open(filename, "a", newline='') as file:
             wr = csv.writer(file)
-            wr.writerow(self._cache[:self._lookback])
-        del self._cache[:self._lookback]
+            wr.writerow(self._cache[: self._lookback])
+        del self._cache[: self._lookback]
 
     # Todo(pine): Implement the memory cleanup
     # update historical cache based on updated value
@@ -476,7 +485,7 @@ class HistoricalTS(Timeseries):
             return lst
         else:
             self.write()
-            return lst[-self._lookback-1:]
+            return lst[-self._lookback - 1 :]
 
     def evaluate(self):
         # this function should update whenever a change in the ts is present
@@ -517,23 +526,26 @@ class HistoricalTS(Timeseries):
 
         """
         # only support this currently
-        #if index.end > 0 or index.start > 0:
+        # if index.end > 0 or index.start > 0:
         #    return ValueError('The slice object input for referencing historical value should be by
         #    negative integers (i.e. ts[-1000:-800] for the 200 values starting from 800 bars from
         #    now)')
 
         ## row counts from bottom to top (end to beginning)
-        #rowstart = abs(index.start % self._lookback)
-        #rowend   = abs(index.stop % self._lookback)
+        # rowstart = abs(index.start % self._lookback)
+        # rowend   = abs(index.stop % self._lookback)
         ## col counts from right to left (end to beginning)
-        #colstart = abs(index.start) - rowstart * self._lookback
-        #colend   = abs(index.end) - rowed * self._lookback
+        # colstart = abs(index.start) - rowstart * self._lookback
+        # colend   = abs(index.end) - rowed * self._lookback
         filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
         lst = []
         if isinstance(index, slice):
             try:
                 # for handling index cases with integer bounded intervals and steps i.e. [-4:-2]
-                if abs(index.stop) < self._lookback and abs(index.start) < self._lookback:
+                if (
+                    abs(index.stop) < self._lookback
+                    and abs(index.start) < self._lookback
+                ):
                     # if still within caching limit, retrieve from cache
                     return self._cache[index]
             except TypeError as e:
@@ -546,7 +558,8 @@ class HistoricalTS(Timeseries):
                     with open(filename, "r") as f:
                         reader = csv.reader(f, delimiter=',')
                         for i, row in enumerate(f):
-                            if i == 0: pass
+                            if i == 0:
+                                pass
                             else:
                                 row = [float(x) for x in row.rstrip('\n').split(',')]
                                 lst += row
@@ -556,7 +569,8 @@ class HistoricalTS(Timeseries):
                 with open(filename, "r") as f:
                     reader = csv.reader(f, delimiter=',')
                     for i, row in enumerate(f):
-                        if i == 0: pass
+                        if i == 0:
+                            pass
                         else:
                             row = [float(x) for x in row.rstrip('\n').split(',')]
                             lst += row
@@ -570,7 +584,8 @@ class HistoricalTS(Timeseries):
                 with open(filename, "r") as f:
                     reader = csv.reader(f, delimiter=',')
                     for i, row in enumerate(f):
-                        if i == 0: pass
+                        if i == 0:
+                            pass
                         else:
                             row = [float(x) for x in row.rstrip('\n').split(',')]
                             lst += row
