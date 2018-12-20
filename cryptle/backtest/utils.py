@@ -1,8 +1,10 @@
+import os
 import csv
 
+this_dir, _ = os.path.split(__file__)
 
-TRADE_FILE = 'test/sample_trades.csv'
-CANDLE_FILE = 'test/sample_candles.csv'
+TRADE_FILE = os.path.join(this_dir, 'sample_trades.csv')
+CANDLE_FILE = os.path.join(this_dir, 'sample_candles.csv')
 
 
 def get_sample_trades(name=TRADE_FILE):

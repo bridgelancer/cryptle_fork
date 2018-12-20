@@ -3,7 +3,7 @@ import logging
 
 import pytest
 
-import test.utils as utils
+import cryptle.backtest.utils as utils
 from cryptle.backtest import DataEmitter, backtest_tick, backtest_with_bus
 from cryptle.strategy import Strategy, EventOrderMixin
 
