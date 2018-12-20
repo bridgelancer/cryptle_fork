@@ -399,7 +399,6 @@ the Strategy methods.
          self.codeblocks = list(map(CodeBlock, *setup))
 
 .. note::
-
    This is not complying to the design intent of the rest of the framework. In
    the future the Registry should not directly handle data source. Instead the
    data handling part should be delegated to the Strategy instance with the use
@@ -408,8 +407,9 @@ the Strategy methods.
 The control of the execution of the methods of the Strategy was achieved by the
 combined use of various **onEvent** functions such as :meth:`~cryptle.registry.Registry.onTick`,
 :meth:`~cryptle.registry.Registry.refreshLogicStatus` and the :meth:`~cryptle.registry.Registry.check` method.
-**onEvent** functions should listen to an external source via the Event bus architecture in
-order to update its internal state for the Strategy.
+**onEvent** functions could listen to an external source via the Event bus architecture in
+order to update its internal state for the Strategy, or being directly called by
+the Strategy.
 
 .. code:: python
 
@@ -418,12 +418,12 @@ order to update its internal state for the Strategy.
          # other appropriate initialization
          self.codeblocks = list(map(CodeBlock, *setup))
 
-      @on('tick')
+      @on('tick') # decorated to allow invocation by Event bus
       def onTick(self, tick):
          # Implmentation to update local state
          self.handleCheck(tick)
 
-      @on('new_candle')
+      @on('new_candle') # decorated to allow invocation by Event bus
       def onCandle(self, bar):
          self.refreshLogicStatus(codeblock, 'candle')
 
@@ -462,9 +462,9 @@ the new information and triggers the necessary updating and checking.
             codeblock.check() # execute this codeblock if fullfilled someCondition
 
 Schematic representation of how Registry cascade the information to check
-executability of individual CodeBlock held in ``self.codeblocks``.
+executability of individual CodeBlock held in ``codeblocks``.
 
-In the above scenario, the :class:`Registry` class will dynamically listen
+In the above scenario, the :class:`Registry` class will listen
 for tick via :meth:`~cryptle.registry.Registry.onTick`. Upon each arrival of tick, the
 :meth:`~cryptle.registry.Registry.check` function would be called. If all the
 conditions to execute a particular Strategy method are fulfilled, the indiviudal
@@ -483,7 +483,8 @@ updated to execute the function and update the local :class:`~cryptle.codeblock.
             codeblock.check(num_bars, info) # execute this codeblock if fullfilled someCondition
 
    class CodeBlock:
-      def __init__(self):
+      def __init__(self, *entry):
+         self.logic_status = LogicStatus(whenExec, constraints_and_flags)
          self.triggered = False
          self.flags = {}
          self.localdata = {}
