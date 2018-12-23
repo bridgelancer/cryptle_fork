@@ -429,7 +429,7 @@ class SingleAssetStrategy(TradingStrategy):
             Current price of the asset to be bought.
 
         """
-        equity = self.portfolio.equity({self.asset[price]})
+        equity = self.portfolio.equity({self.asset: price})
         max_equi = self.equity_at_risk * equity / price
         max_cash = self.portfolio.cash / price
         return min(max_equi, max_cash)
