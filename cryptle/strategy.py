@@ -37,7 +37,7 @@ class Portfolio:
         # Set the amount of base currency in the balance, defaults to 0.0
         self.balance[base_currency] = cash or self.balance[base_currency]
 
-        self.base_currency = base_currency
+        self.base_currency = base_currency  # type:float
 
     def __repr__(self):
         return '<{}({})>'.format(self.__class__.__name__, dict(self.balance))
@@ -54,12 +54,12 @@ class Portfolio:
             raise ValueError('No entry with base_currency in balance.')
         return cls(balance=balance, base_currency=base_currency)
 
-    def deposit(self, asset, amount):
+    def deposit(self, asset: str, amount: float):
         """Increase the amount held of an asset from the balance."""
         self.balance[asset] += amount
         logger.debug('Deposited {} {}', amount, asset)
 
-    def withdraw(self, asset, amount):
+    def withdraw(self, asset: str, amount: float):
         """Decrease the amount held of an asset from the balance."""
         if asset not in self.balance:
             raise ValueError('Asset not found in the portfolio')
@@ -74,7 +74,7 @@ class Portfolio:
         if self.balance[asset] == 0:
             self.clear(asset)
 
-    def clear(self, asset=None):
+    def clear(self, asset=None) -> None:
         """Clear the portfolio of an asset. When no asset is provided, clear the whole portfolio
         leaving only the base currency."""
         if not asset:
@@ -84,24 +84,44 @@ class Portfolio:
         else:
             del self.balance[asset]
 
-    def bought(self, asset, amount, price):
-        """Helper method to update a portfolio after buying."""
+    def bought(self, asset: str, amount: float, price: float) -> None:
+        """Helper method to update a portfolio after buying an asset.
+
+        Args
+        ----
+        asset:
+            Asset that was bought.
+        amount:
+            Amount of asset that was bought.
+        price:
+            Final execution price of the trade.
+
+        """
         self.deposit(asset, amount)
         self.cash -= price * amount
-        print('bought:', self.balance)
 
-    def sold(self, asset, amount, price):
-        """Helper method to update a portfolio after selling."""
+    def sold(self, asset: str, amount: float, price: float) -> None:
+        """Helper method to update a portfolio after selling an asset.
+
+        Args
+        ----
+        asset:
+            Asset that was sold.
+        amount:
+            Amount of asset that was sold.
+        price:
+            Final execution price of the trade.
+
+        """
         self.withdraw(asset, amount)
         self.cash += price * amount
-        print('sold:', self.balance)
 
-    def equity(self, asset_prices):
+    def equity(self, asset_prices: dict) -> float:
         """Calculate the current market value of this portfolio.
 
         Args
         ----
-        asset_prices : dict
+        asset_prices:
             Reference prices of each asset for calculating the total portfolio value. The
             asset_prices is assumed to be be denominated in the portfolio base currency.
 
@@ -116,11 +136,10 @@ class Portfolio:
 
     @property
     def cash(self):
-        """float: """
         return self.balance[self.base_currency]
 
     @cash.setter
-    def cash(self, value):
+    def cash(self, value: float):
         self.balance[self.base_currency] = value
 
 
@@ -236,7 +255,7 @@ class TradingStrategy(Strategy):
         self.equity_at_risk = 0.1
 
     # [ Helpers to access exchange ]
-    def marketBuy(self, asset, amount):
+    def marketBuy(self, asset: str, amount: float) -> float:
         """Send market buy request to associated exchange"""
         if amount <= 0:
             raise ValueError("Expect positive value for amount.")
@@ -246,10 +265,11 @@ class TradingStrategy(Strategy):
 
         if success:
             self._cleanupBuy(asset, price, amount)
+            return price
         else:
             raise ExchangeError('Order placement failed')
 
-    def marketSell(self, asset, amount):
+    def marketSell(self, asset: str, amount: float) -> float:
         """Send market sell request to associated exchange"""
         if amount < 0:
             raise ValueError("Expect positive value for amount.")
@@ -259,10 +279,11 @@ class TradingStrategy(Strategy):
 
         if success:
             self._cleanupSell(asset, amount, price)
+            return price
         else:
             raise ExchangeError('Order placement failed')
 
-    def limitBuy(self, asset, amount, price):
+    def limitBuy(self, asset: str, amount: float, price: float) -> int:
         """Send limit buy request to associated exchange"""
         if amount < 0:
             raise ValueError("Expect positive value for amount.")
@@ -277,7 +298,7 @@ class TradingStrategy(Strategy):
         else:
             raise ExchangeError('Order placement failed')
 
-    def limitSell(self, asset, amount, price):
+    def limitSell(self, asset: str, amount: float, price: float) -> int:
         """Send market buy request to associated exchange"""
         if amount < 0:
             raise ValueError("Expect positive value for amount.")
@@ -292,16 +313,12 @@ class TradingStrategy(Strategy):
         else:
             raise ExchangeError('Order placement failed')
 
-    def _cleanupBuy(self, asset, price, amount):
+    def _cleanupBuy(self, asset: str, price: float, amount: float) -> None:
         self.portfolio.bought(asset, amount, price)
-        # self.trades.append([timestamp, price])
-
         logger.info('Bought {:7.6g} {} @${:<7.6g}', amount, asset, price)
 
-    def _cleanupSell(self, asset, amount, price):
+    def _cleanupSell(self, asset: str, amount: float, price: float) -> None:
         self.portfolio.sold(asset, amount, price)
-        # self.trades[-1] += [timestamp, price]
-
         logger.info('Sold   {:7.6g} {} @${:<7.6g}', amount, asset, price)
 
 
@@ -336,7 +353,11 @@ class SingleAssetStrategy(TradingStrategy):
         TradingStrategy.__init__(self, exchange)
         self.asset = asset
 
-    def pushTrade(self, price, timestamp, volume, action):
+    def pushTrade(
+        self, price: float, timestamp: float, volume: float, action: bool
+    ) -> None:
+
+        # todo: input validation
         try:
             self.onTrade(price, timestamp, volume, action)
         except AttributeError:
@@ -344,37 +365,64 @@ class SingleAssetStrategy(TradingStrategy):
 
     def pushCandle(
         self, op: float, cl: float, hi: float, lo: float, ts: int, vol: float
-    ):
+    ) -> None:
+
         # todo: input validation
         try:
             self.onCandle(op, cl, hi, lo, ts, vol)
         except AttributeError:
             raise AttributeError('Expected implementation of onCandle()')
 
-    def marketBuy(self, amount: float):
-        """Wrapper over the base Strategy.marketBuy() for single asset."""
-        super().marketBuy(self.asset, amount)
+    def marketBuy(self, amount: float) -> float:
+        """Wrapper over the parent's `marketBuy()` for single asset.
 
-    def marketSell(self, amount: float):
-        """Wrapper over the base Strategy.marketSell() for single asset."""
-        super().marketSell(self.asset, amount)
+        Args
+        ----
+        amount: Amount to sell.
+
+        """
+        return super().marketBuy(self.asset, amount)
+
+    def marketSell(self, amount: float) -> float:
+        """Wrapper over the base parent's `marketSell()` for single asset.
+
+        Args
+        ----
+        amount: Amount to sell.
+
+        """
+        return super().marketSell(self.asset, amount)
 
     def limitBuy(self, amount: float, price: float):
-        """Wrapper over the base Strategy.limitBuy() for single asset."""
+        """Wrapper over the base parent's `limitBuy()` for single asset.
+
+        Args
+        ----
+        amount: Amount to buy.
+        price: Buy price.
+
+        """
         super().limitBuy(self.asset, amount, price)
 
-    def limitSell(self, amount, price):
-        """Wrapper over the base Strategy.limitSell() for single asset."""
+    def limitSell(self, amount: float, price: float):
+        """Wrapper over the base parent's `limitSell()` for single asset.
+
+        Args
+        ----
+        amount: Amount to sell.
+        price: Sell price.
+
+        """
         super().limitSell(self.asset, amount, price)
 
-    def maxBuyAmount(self, price):
+    def maxBuyAmount(self, price: float) -> float:
         """Return the maximum amount of asset that the portfolio can afford
         given the current price.
 
         Args
         ----
-        price : float
-            Current price of the asset to buy.
+        price:
+            Current price of the asset to be bought.
 
         """
         equity = self.portfolio.equity({self.asset[price]})
@@ -383,13 +431,21 @@ class SingleAssetStrategy(TradingStrategy):
         return min(max_equi, max_cash)
 
     def maxSellAmount(self):
-        """Return the maximum amount of asset that the portfolio can sell."""
+        """Return the maximum amount of asset that the portfolio can sell.
+
+        Args
+        ----
+        price:
+            Current price of the asset to be sold.
+
+        """
         return self.portfolio.balance[self.asset]
 
     @property
-    def hasBalance(self):
+    def hasBalance(self) -> bool:
+        """Returns a boolean on whether the strategy is holding any asset."""
         try:
-            return self.portfolio.balance[self.asset] > 0
+            return self.portfolio.balance[self.asset] == 0
         except:
             return False
 
@@ -400,28 +456,58 @@ from cryptle.event import on, source
 class EventMarketDataMixin:
     @on('candle')
     def pushCandle(self, data):
+        """Override strategy input interfaces for plugging into an event bus."""
         pair, op, cl, hi, lo, ts, vol = data
         super().pushCandle(pair, op, cl, hi, lo, ts, vol)
 
     @on('trade')
     def pushTrade(self, data):
+        """Override strategy input interfaces for plugging into an event bus."""
         pair, price, timestamp, volume, action = data
         super().pushTrade(pair, price, timestamp, volume, action)
 
 
 class EventOrderMixin:
     @source('order:marketbuy')
-    def marketBuy(self, asset, amount):
+    def marketBuy(self, asset: str, amount: float):
+        """
+        Override base class's :any:`marketBuy` to raise event
+        ``order:marketbuy`` instead of placing order with exchange directly.
+
+        :rtype: (str, float)
+
+        """
         return asset, amount
 
     @source('order:marketsell')
-    def marketSell(self, asset, amount):
+    def marketSell(self, asset: str, amount: float):
+        """
+        Override base class's :any:`marketSell` to raise event
+        ``order:marketsell`` instead of placing order with exchange directly.
+
+        :rtype: (str, float)
+
+        """
         return asset, amount
 
     @source('order:limitbuy')
-    def limitBuy(self, asset, amount, price):
-        return asset, amount
+    def limitBuy(self, asset: str, amount: float, price: float):
+        """
+        Override base class's :any:`limitBuy` to raise event
+        ``order:limitbuy`` instead of placing order with exchange directly.
+
+        :rtype: (str, float, float)
+
+        """
+        return asset, amount, price
 
     @source('order:limitsell')
-    def limitSell(self, asset, amount, price):
-        return asset, amount
+    def limitSell(self, asset: str, amount: float, price: float):
+        """
+        Override base class's :any:`limitSell` to raise event
+        ``order:limitsell`` instead of placing order with exchange directly.
+
+        :rtype: (str, float, float)
+
+        """
+        return asset, amount, price

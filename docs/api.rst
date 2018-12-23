@@ -35,47 +35,52 @@ Strategy
       :undoc-members:
 
 
-Datafeed
---------
+Datafeed Standard
+-----------------
 
 .. autofunction:: cryptle.datafeed.connect
 
 .. py:class:: cryptle.datafeed.Datafeed
 
-   .. py:method:: connect() -> None
+   .. py:method:: connect()
 
-      Starts a thread for a long-polled socket that sends and receives messages.
+      Start a thread for a data stream that sends and receives messages.
+      Returns nothing.
 
-   .. py:method:: disconnect() -> None
+   .. py:method:: disconnect()
 
-      Stops the socket and thread.
+      Stop the data stream and thread. Returns nothing.
 
-   .. py:method:: on(event, callback) -> None
+   .. py:method:: on(event, callback)
 
-      Registers callback for provided events. Generally the most used function.
+      Register callback for provided events. Generally the most used function.
+      Returns nothing.
 
-   .. py:attribute:: connected -> bool
+   .. py:attribute:: connected
 
-      Returns a boolean for whether the socket is connected to the data source
-      server.
+      Represents the connection status of the datafeed object.
 
 
-Exchange
---------
+Exchange Standard
+-----------------
 
 .. py:class:: Exchange
 
-   .. py:method:: marketBuy(asset, base, amount) -> Tuple[bool, price]
+   .. py:method:: marketBuy(asset, base, amount)
 
       Place market buy order. Returns two values, first being the whether the
       order were successfully placed, second being the average execution price.
 
-   .. py:method:: marketSell(asset, base, amount) -> Tuple[bool, price]
+      :rtype: (bool, float)
+
+   .. py:method:: marketSell(asset, base, amount)
 
       Place market sell order. Returns two values, first being the whether the
       order were successfully placed, second being the average execution price.
 
-   .. py:method:: limitBuy(asset, base, amount, price) -> Tuple[bool, int]
+      :rtype: (bool, float)
+
+   .. py:method:: limitBuy(asset, base, amount, price)
 
       Place limit buy order.
 
@@ -83,10 +88,11 @@ Exchange
       :param str base: Currency used for the buy.
       :param float amount: Amount of the asset to buy.
       :param float price: Bid price of the limit buy.
+      :rtype: (bool, int)
       :return: Returns two values, first being the whether the order were
          successfully placed, second being the order id.
 
-   .. py:method:: limitSell(asset, base, amount, price) -> Tuple[bool, int]
+   .. py:method:: limitSell(asset, base, amount, price)
 
       Place limit sell order.
 
@@ -94,9 +100,13 @@ Exchange
       :param str base: Currency used for the sell.
       :param float amount: Amount of the asset to sell.
       :param float price: Ask price of the limit sell.
+      :rtype: (bool, int)
       :return: Returns two values, first being the whether the order were
          successfully placed, second being the order id.
 
+
+Paper Exchange
+--------------
 .. autoclass:: cryptle.exchange.Paper
    :members:
    :undoc-members:

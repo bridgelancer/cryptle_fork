@@ -25,22 +25,19 @@ and external data sources. A connection can be established using
 The example above used the :meth:`~cryptle.datafeed.Datafeed.on` method to setup
 callback for events from the datafeed object.
 
-Each datafeed driver has their own set of available events, more often than not
-named differently by it's respecitve sources, even when they're the same type of
-data. When this is the case, the driver module will provide helpers
-``decode_event`` and ``encode_event`` for conversion between the Cryptle
-standardised event names and the third party names. For datafeed users this
-should not be a concern as it should be hidden under the abstraction layer.
+Each datafeed driver has their own set of available events. More often than not
+similar types of data would be named differently by their respecitve sources.
+
+.. note::
+
+   When this is the case, the driver module will provide helpers ``decode_event``
+   and ``encode_event`` for conversion between the Cryptle standardised event
+   names and the third party names. For datafeed users this should not be a
+   concern as it should be hidden under the abstraction layer.
+
+   \**deprecated since 0.14*\*
 
 The full list of standard datafeed events can be found at ``todo``.
-
-Datafeed object can also be used as context managers that disconnects gracefully
-upon error:
-
-.. code:: python
-
-   with connect(datafeed.BITSTAMP) as feed:
-       # feed.on(...)
 
 These are the datafeeds that come with the default Cryptle distribution:
 
@@ -51,8 +48,7 @@ These are the datafeeds that come with the default Cryptle distribution:
 Exchange
 --------
 Exchanges are interfaces for placing orders to buy and sell assets. Some
-exchange interfaces includes account functionality. All supported exchanges at
-present use REST APIs, so no persistent connection is required. Nonetheless,
+exchange interfaces includes account functionality. ,
 the exchange creation function is named
 :meth:`~cryptle.exchange.connect`, in case for forward compatibility.
 
@@ -86,9 +82,10 @@ provides basic features that manages ownership of a
 
 Events from the market are handle by callbacks for each corresponding data type.
 For instance, to recieve live market trade data, implement the ``onTrade()``
-method. The input data can be provided through by the corresponding
-``pushTrade()``. The full list of supported data input interface can be found
-in the :class:`~cryptle.strategy.Strategy` reference.
+method. During runtime, the strategy can be manually triggered by calling the
+method ``pushTrade()`` with the approperiate market data as input arguments. The
+full list of supported data input interface can be found in the
+:class:`~cryptle.strategy.Strategy` reference.
 
 Here's a very basic strategy where we will buy whenever the price of the
 particular asset:
@@ -113,11 +110,12 @@ particular asset:
    # or pushCandle() methods.
 
 
-The event bus mechanicism is very useful for placing and keeping tracking of
-limit orders. The mixin class :class:`~cryptle.strategy.OrderEventMixin`
-overrides the normal buy/sell methods into marked instance methods that emit
-events into a :class:`~cryptle.event.Bus`. The mixin must come before the base
-strategy class. Detailed reference of the mixin events are at
+The :ref:`event_bus` mechanicism is very useful for placing and keeping
+tracking of limit orders. The mixin class
+:class:`~cryptle.strategy.OrderEventMixin` overrides the normal buy/sell methods
+into marked instance methods that emit events into a
+:class:`~cryptle.event.Bus`. The mixin must come before the base strategy class.
+Detailed reference of the mixin events are at
 :class:`~cryptle.strategy.EventOrderMixin`.
 
 The code looks mostly the same:
@@ -148,6 +146,8 @@ reference documentation.
    <https://docs.djangoproject.com/en/2.0/topics/class-based-views/mixins/>`_
    of mixins.
 
+
+.. _event_bus:
 
 Event Bus
 ---------
@@ -337,7 +337,7 @@ binding a function to listen for multiple events.
 
 .. _events:
 
-Standard Events
+Built-in Events
 ---------------
 - ``trades(price, timestamp, volume, type)`` new trade market event
 - ``candles(open, high, low, close, volume, timestamp)`` new candlesticks

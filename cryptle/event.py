@@ -1,7 +1,7 @@
 import inspect
 import logging
 import threading
-from functools import wraps
+from functools import update_wrapper
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,7 @@ class _Emitter:
         self.buses = []
         self.event = event
         self.instance = None
+        update_wrapper(self, func)
 
         # Fix comparions for bound methods to unbound methods
         self.__func__ = self

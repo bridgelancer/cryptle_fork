@@ -16,7 +16,7 @@ BITFINEX_FEED = 'bitfinex_feed'
 
 @contextlib.contextmanager
 def connect(feed_name, *args, **kwargs):
-    """Datafeed as context manager."""
+    """(deprecated) Datafeed as context manager."""
     try:
         if feed_name == BITSTAMP:
             feed = Bitstamp()

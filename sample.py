@@ -16,17 +16,17 @@ from cryptle.strategy import SingleAssetStrategy
 from cryptle.exchange import Paper
 
 
-class MillionDollarStrat(SingleAssetStrategy):
+class BTCStrat(SingleAssetStrategy):
     def setTrade(self):
         self.buy = 0
         self.sell = 0
 
     def onTrade(self, price, timestamp, volume, action):
-        if price < 2580 and not self.hasBalance():
+        if price < 200 and not self.hasBalance():
             self.buy += 1
             self.marketBuy(1)
 
-        if price > 2630 and self.hasBalance():
+        if price > 400 and self.hasBalance():
             self.sell += 1
             self.marketSell(1)
 
