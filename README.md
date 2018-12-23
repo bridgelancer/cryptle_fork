@@ -67,6 +67,12 @@ go.
 
 ## FAQ
 
+##### ImportError: No module named '\_tkinter'
+If you're getting the warning _failing to import module 'plotting' from module
+'cryptle'_, your will need to install system libraries for python tkinter, which
+is the default backend of matplotlib.
+[Solution](https://stackoverflow.com/questions/50327906/importerror-no-module-named-tkinter-please-install-the-python3-tk-package)
+
 ##### Why not [pipenv](https://pipenv.readthedocs.io/en/latest/)?
 
 Pipenv's is VERY slow in generating the lockfile. Besides, cryptle has grown
