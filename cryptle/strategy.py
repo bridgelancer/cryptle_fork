@@ -23,10 +23,12 @@ class Portfolio:
         A dictionary with the portfolio balance amount of each asset.
     base_currency : str, optional
         The currency that denominates the portfolio balance. Defaults to 'usd'.
+    shortable : bool, optional
+        If short selling is enabled. Defaults to True.
 
     """
 
-    def __init__(self, cash=None, balance=None, base_currency='usd'):
+    def __init__(self, cash=None, balance=None, base_currency='usd', shortable=True):
 
         # Init the internal representation of portfolio balance
         self.balance = defaultdict(float)
@@ -38,6 +40,8 @@ class Portfolio:
         self.balance[base_currency] = cash or self.balance[base_currency]
 
         self.base_currency = base_currency  # type:float
+
+        self.shortable = shortable  # type:bool
 
     def __repr__(self):
         return '<{}({})>'.format(self.__class__.__name__, dict(self.balance))
@@ -61,10 +65,10 @@ class Portfolio:
 
     def withdraw(self, asset: str, amount: float):
         """Decrease the amount held of an asset from the balance."""
-        if asset not in self.balance:
+        if asset not in self.balance and not self.shortable:
             raise ValueError('Asset not found in the portfolio')
 
-        if self.balance[asset] < amount:
+        if self.balance[asset] < amount and not self.shortable:
             raise ValueError('Insufficient balance of %s' % asset)
 
         self.balance[asset] -= amount
