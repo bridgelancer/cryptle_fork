@@ -68,7 +68,7 @@ def backtest_tick(
     Returns:
         Strategy object from input.
 
-    Raise:
+    Raises:
         Exceptions that may be raised by the strategy
     """
     portfolio = portfolio or Portfolio(10000)
@@ -110,7 +110,7 @@ def backtest_bar(
     Returns:
         Strategy object from input.
 
-    Raise:
+    Raises:
         Exceptions that may be raised by the strategy
     """
     portfolio = portfolio or Portfolio(10000)

@@ -48,9 +48,7 @@ These are the datafeeds that come with the default Cryptle distribution:
 Exchange
 --------
 Exchanges are interfaces for placing orders to buy and sell assets. Some
-exchange interfaces includes account functionality. ,
-the exchange creation function is named
-:meth:`~cryptle.exchange.connect`, in case for forward compatibility.
+exchange interfaces includes account functionality.
 
 Creation of exchange objects follow a similar interface as the datafeed package.
 
@@ -63,9 +61,12 @@ Example code:
     exchange = connect(BITSTAMP)
     exchange.marketBuy('bchusd', 100.0)
 
-Functino call for limit orders return an order ID for tracking the order. The
+Function call for limit orders return an order ID for tracking the order. The
 recommended method for using limit orders is with the event bus. This way the
 order tracking boilerplate code can be delegated to the framework.
+
+The standard exchange API is documented in the reference document at
+:class:`cryptle.exchange.Exchange`.
 
 
 .. _strategy:

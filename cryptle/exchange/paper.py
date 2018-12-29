@@ -351,22 +351,6 @@ class Paper:
             self.marketSell(asset, base, amount)
 
     def marketBuy(self, asset, base, amount) -> Tuple[bool, float]:
-        """Place a market buy order.
-
-        Args
-        ----
-        asset : str
-            The asset to buy
-        base : str
-            Currency to denominate the asset
-        amount : float
-
-        Returns
-        -------
-        A two valued tuple. First value is a boolean indicating success of the
-        order placement. Second value is the average bought price.
-
-        """
         pair = encode_pair(asset, base)
         last_price = self._last_price[pair]
         exec_price = last_price * (1 + self.commission) * (1 + self.slippage)
@@ -379,22 +363,6 @@ class Paper:
         return True, last_price
 
     def marketSell(self, asset, base, amount) -> Tuple[bool, float]:
-        """Place a market sell order.
-
-        Args
-        ----
-        asset : str
-            The asset to buy
-        base : str
-            Currency to denominate the asset
-        amount : float
-
-        Returns
-        -------
-        A two valued tuple. First value is a boolean indicating success of the
-        order placement. Second value is the average sold price.
-
-        """
         pair = encode_pair(asset, base)
         last_price = self._last_price[pair]
 
@@ -408,23 +376,6 @@ class Paper:
         return True, last_price
 
     def limitBuy(self, asset, base, amount, price) -> Tuple[bool, int]:
-        """Place a limit buy order.
-
-        Args
-        ----
-        asset : str
-            The asset to buy
-        base : str
-            Currency to denominate the asset
-        amount : float
-        price : float
-
-        Returns
-        -------
-        A two valued tuple. First value is a boolean indicating success of the
-        order placement. Second value is the order ID.
-
-        """
         pair = encode_pair(asset, base)
         last_price = self._last_price[pair]
 
@@ -438,23 +389,6 @@ class Paper:
         return True, self._orderbooks[pair].create_bid(amount, price)
 
     def limitSell(self, asset, base, amount, price) -> Tuple[bool, int]:
-        """Place a limit sell order.
-
-        Args
-        ----
-        asset : str
-            The asset to buy
-        base : str
-            Currency to denominate the asset
-        amount : float
-        price : float
-
-        Returns
-        -------
-        A two valued tuple. First value is a boolean indicating success of the
-        order placement. Second value is the order ID.
-
-        """
         pair = encode_pair(asset, base)
         last_price = self._last_price[pair]
 

@@ -38,7 +38,7 @@ def encode_pair(asset, base_currency):
     return asset + base_currency
 
 
-def decode_balance(balance):
+def decode_balance(balance) -> dict:
     """Format balance entries in the json loaded python dict"""
     # @Hardcode: For optimization
     return {
@@ -89,19 +89,24 @@ class Bitstamp:
     # ----------
     # Private Functions
     # ----------
-    def getBalance(self, asset='', base_currency=''):
+    def getBalance(self, asset='', base_currency='') -> dict:
         """Get account balance from bitstamp.
 
-        Args:
-            asset (str): Optional argument to request only part of the balance
-                related to the specified pair.
-            base_currency (str):
+        Args
+        ----
+        asset :
+            Optional argument to request only part of the balance related to the specified pair.
+        base_currency :
+            Base currency for traded pairs of queried assets.
 
-        Returns:
-            The full balance, keyed by asset names
+        Returns
+        -------
+        dict
+            Full account balance, keyed by asset names
 
-        Raises:
-            ConnectionError: For non 200 HTTP status code, raised by _private()
+        Raises
+        ------
+        ConnectionError: For non 200 HTTP status code, raised by _private()
         """
         res = self._private('/balance/' + encode_pair(asset, base_currency))
 
@@ -111,7 +116,23 @@ class Bitstamp:
 
         return decode_balance(res)
 
-    def getOrderStatus(self, order_id):
+    def getOrderStatus(self, order_id: int) -> dict:
+        """Get status of order with the provided order ID.
+
+        Args
+        ----
+        order_id :
+            The order ID to be queried.
+
+        Returns
+        -------
+        dict
+            (unstable) Bitstamp's response
+
+        Raises
+        ------
+        ConnectionError: For non 200 HTTP status code, raised by _private()
+        """
         res = self._private('/order_status/', params={'id': order_id})
 
         if self.hasBitstampError(res):
@@ -120,8 +141,26 @@ class Bitstamp:
 
         return res
 
-    def getOpenOrders(self, asset='all/', base_currency='usd'):
-        res = self._private('/open_orders/' + encode_pair(asset, base_currency))
+    def getOpenOrders(self, asset: str='all/', base: str='usd') -> dict:
+        """Get open orders on bitstamp.
+
+        Args
+        ----
+        asset:
+            The order ID to be queried.
+        base:
+            Base currency for traded pairs of queried assets.
+
+        Returns
+        -------
+        dict
+            (unstable) Bitstamp's response
+
+        Raises
+        ------
+        ConnectionError: For non 200 HTTP status code, raised by _private()
+        """
+        res = self._private('/open_orders/' + encode_pair(asset, base))
 
         if self.hasBitstampError(res):
             logger.error('Open orders request failed')
@@ -144,17 +183,18 @@ class Bitstamp:
     def sendOrderCancel(self, *args, **kwargs):
         self.cancelOrder(*args, **kwargs)
 
-    def marketBuy(self, asset, currency, amount):
-        """Place marketbuy on bitstamp. Returns python dict when order terminates.
+    def marketBuy(self, asset: str, currency: str, amount: float):
+        """(unstable, non-standard) Place marketbuy on bitstamp.
 
-        Args:
-            asset: Name of asset to buy
-            currency: Base currency to be used for the transaction
-            amount: Number of assets to buy
+        Returns
+        -------
+        dict
+            Bitstamp's REST response.
 
-        Raises:
-            ConnectionError: For non 200 HTTP status code, raised by _private()
-            OrderError: If bitsatmp respone contains {'status': error}
+        Raises
+        ------
+        ConnectionError: For non 200 HTTP status code, raised by _private()
+        OrderError: If bitsatmp respone contains {'status': error}
         """
         params = {'amount': _truncate(amount, 8)}
 
@@ -168,17 +208,18 @@ class Bitstamp:
         res['timestamp'] = now()
         return res
 
-    def marketSell(self, asset, currency, amount):
-        """Place marketsell on bitstamp. Returns python dict when order terminates
+    def marketSell(self, asset: str, currency: str, amount: float):
+        """(unstable, non-standard) Place marketsell on bitstamp.
 
-        Args:
-            asset: Name of asset to sell
-            currency: Base currency to be gained from this transaction
-            amount: Number of assets to sell
+        Returns
+        -------
+        dict
+            Bitstamp's REST response.
 
-        Raises:
-            ConnectionError: For non 200 HTTP status code, raised by _private()
-            OrderError: If bitsatmp respone contains {'status': error}
+        Raises
+        ------
+        ConnectionError: For non 200 HTTP status code, raised by _private()
+        OrderError: If bitsatmp respone contains {'status': error}
         """
         params = {'amount': _truncate(amount, 8)}
 
@@ -192,22 +233,23 @@ class Bitstamp:
         res['timestamp'] = now()
         return res
 
-    def limitBuy(self, asset, currency, amount, price):
-        """Place limitbuy on bitstamp. Returns python dict when order terminates
+    def limitBuy(self, asset: str, currency: str, amount: float, price: float):
+        """(unstable, non-standard) Place limitbuy on bitstamp.
 
-        Args:
-            asset: Name of asset to buy
-            currency: Base currency to be used for the transaction
-            amount: Number of assets to buy
-            price: Price (in base currency) for the order to be placed
+        Returns
+        -------
+        dict
+            Bitstamp's REST response.
 
-        Raises:
-            ConnectionError: For non 200 HTTP status code, raised by _private()
-            OrderError: If bitsatmp respone contains {'status': error}
+        Raises
+        ------
+        ConnectionError: For non 200 HTTP status code, raised by _private()
+        OrderError: If bitsatmp respone contains {'status': error}
 
-        Note:
-            This method is not fully implemented yet. A proper version should either be
-            async, or returns the ordreId.
+        Note
+        ----
+        This method is not fully implemented yet. A proper version should either
+        be async, or returns the ordreId.
         """
         params = {'amount': _truncate(amount, 8), 'price': _truncate(price, 8)}
 
@@ -222,22 +264,23 @@ class Bitstamp:
         self._open_orders.add(res['id'])
         return res
 
-    def limitSell(self, asset, currency, amount, price):
+    def limitSell(self, asset: str, currency: str, amount: float, price: float):
         """Place limitsell on bitstamp. Returns python dict when order terminates
 
-        Args:
-            asset: Name of asset to buy
-            currency: Base currency to be used for the transaction
-            amount: Number of assets to buy
-            price: Price (in base currency) for the order to be placed
+        Returns
+        -------
+        dict
+            Bitstamp's REST response.
 
-        Raises:
-            ConnectionError: For HTTP non 200 status code
-            OrderError: If bitsatmp respone contains {'status': error}
+        Raises
+        ------
+        ConnectionError: For non 200 HTTP status code, raised by _private()
+        OrderError: If bitsatmp respone contains {'status': error}
 
-        Note:
-            This method is not fully implemented yet. A proper version should either be
-            async, or returns the ordreId.
+        Note
+        ----
+        This method is not fully implemented yet. A proper version should either
+        be async, or returns the ordreId.
         """
         params = {'amount': _truncate(amount, 8), 'price': _truncate(price, 8)}
 
@@ -346,7 +389,7 @@ class Bitstamp:
                     self._open_orders.remove(order)
             sleep(self.poll_rate)
 
-    @source('orderfilled')
+    @source('order:filled')
     @staticmethod
     def _announce_orderfilled(oid):
         return oid
