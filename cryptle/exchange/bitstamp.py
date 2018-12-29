@@ -141,7 +141,7 @@ class Bitstamp:
 
         return res
 
-    def getOpenOrders(self, asset: str='all/', base: str='usd') -> dict:
+    def getOpenOrders(self, asset: str = 'all/', base: str = 'usd') -> dict:
         """Get open orders on bitstamp.
 
         Args

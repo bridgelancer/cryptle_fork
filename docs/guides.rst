@@ -35,7 +35,7 @@ similar types of data would be named differently by their respecitve sources.
    names and the third party names. For datafeed users this should not be a
    concern as it should be hidden under the abstraction layer.
 
-   \**deprecated since 0.14*\*
+   \*\*deprecated since 0.14\*\*
 
 The full list of standard datafeed events can be found at ``todo``.
 

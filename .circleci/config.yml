@@ -5,8 +5,6 @@ jobs:
     docker:
       # specify the python version
       - image: circleci/python:3.6.7
-        environment:
-          PYTEST_FLAGS: --junitxml=test-results/results.xml
     steps:
       - checkout
       # download and cache the virtualenv
@@ -31,20 +29,20 @@ jobs:
             - ".venv"
             - "~/.local/lib/python3.6"
       - run:
-          name: Run tester
+          name: Run unit tests
           command: |
             source .venv/bin/activate
-            make test
+            pytest --junitxml=test-results/results.xml test/unit
       - run:
           name: Run linter
           command: |
             source .venv/bin/activate
-            make lint
+            pylint --exit-zero cryptle
       - run:
-          name: Run formatter
+          name: Check formatting
           command: |
             source .venv/bin/activate
-            make checkformat
+            black --check cryptle
       - store_test_results:
           path: test-results
 

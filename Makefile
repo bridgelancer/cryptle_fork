@@ -25,30 +25,14 @@ servedoc: doc
 	    python3 -m http.server 5000
 
 
-# Linting configuration (pylint)
-PYLINT_DISABLES := C      # Ignore convention linting
-PYLINT_DISABLES += W0221  # Ignore warnings of function signature overloading
-# support for str.format() log message format will be in the next release of pylint
-PYLINT_DISABLES += E1205  # Ignore errors of logging args since we're using custom log formatting
-
-comma := ,
-empty :=
-space := $(empty) $(empty)
-PYLINT_DISABLES_FINAL = $(subst $(space),$(comma),$(strip $(PYLINT_DISABLES)))
-
+# Pylint used for linting
 lint:
-	@pylint cryptle \
-	    --output-format=colorized \
-	    --disable=$(PYLINT_DISABLES_FINAL) \
-	    --exit-zero
+	@pylint cryptle
 
 
-# Use black to auto-format python code
+# Black keeps consistent style with enforced formatting
 format:
-	@black -S cryptle
-
-checkformat:
-	@black --diff -S cryptle
+	@black cryptle
 
 
 # Utililies
