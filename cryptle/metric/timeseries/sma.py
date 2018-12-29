@@ -3,10 +3,16 @@ import numpy as np
 
 
 class SMA(Timeseries):
-    def __init__(self, ts, lookback, name=None, bar=False, list=False):
-        super().__init__(ts=ts)
+    def __init__(self, ts, lookback, name="sma", bar=False, list=False):
+        """Timeseries for calculating the simple moving average of the upstream.
+
+        Args
+        ----
+        lookback : The lookback period for calculating the SMA.
+
+        """
+        super().__init__(ts)
         self._lookback = lookback
-        self.name = name
         self._ts = ts
         self._cache = []
         self._bar = bar
@@ -16,31 +22,10 @@ class SMA(Timeseries):
 
     # Any ts would call evaluate as new_candle emits. This updates its ts value for calculating the
     # correct value for output and further sourcing.
-    @Timeseries.cache
+    @Timeseries.cache('normal')
     def evaluate(self, candle=None):
         self.value = np.mean(self._cache)
-
-        @Timeseries.bar_cache
-        def toBar(self, candle):
-            # price candle wrapper was passed into this function for constructing candles
-            if len(self.o) == self._lookback:
-                o = np.mean(self.o)
-                c = np.mean(self.c)
-                h = np.mean(self.h)
-                l = np.mean(self.l)
-
-                self.bar = Candle(o, c, h, l, t, 0, 0)
-
-        if self._bar:
-            self.o = []
-            self.c = []
-            self.h = []
-            self.l = []
-            toBar(candle)
         self.broadcast()
-
-    def onTick(self):
-        raise NotImplementedError
 
     def onList(self):
         self.history = list(pd.DataFrame(self._ts).rolling(self._lookback).mean())

@@ -1,6 +1,5 @@
 from cryptle.logging import *
 from cryptle.metric.base import Candle, Timeseries, TimeseriesWrapper, HistoricalTS
-from cryptle.metric.candle import CandleBar
 from cryptle.aggregator import Aggregator
 from cryptle.event import source, on, Bus
 from cryptle.metric.timeseries.atr import ATR
@@ -8,7 +7,6 @@ from cryptle.metric.timeseries.bollinger import BollingerBand
 from cryptle.metric.timeseries.candle  import CandleStick
 from cryptle.metric.timeseries.difference import Difference
 from cryptle.metric.timeseries.ema import EMA
-from cryptle.metric.timeseries.ichimoku import IchimokuCloud
 from cryptle.metric.timeseries.kurtosis import Kurtosis
 from cryptle.metric.timeseries.macd import MACD
 from cryptle.metric.timeseries.pivot import PivotPoints
@@ -68,7 +66,7 @@ def test_sma():
     bus.bind(pushTick)
     aggregator = Aggregator(3) # set to be a 1 second aggregator
     stick = CandleStick(1)
-    ma = SMA(stick, 5)
+    ma = SMA(stick.o, 5)
 
     bus.bind(aggregator)
     bus.bind(stick)
@@ -81,9 +79,9 @@ def test_sma():
 def test_wma():
     bus = Bus()
     bus.bind(pushTick)
-    aggregator = Aggregator(3) # set to be a 1 second aggregator
+    aggregator = Aggregator(3)
     stick = CandleStick(1)
-    ma = WMA(stick, 5)
+    ma = WMA(stick.o, 5)
 
     bus.bind(aggregator)
     bus.bind(stick)
@@ -95,7 +93,7 @@ def test_wma():
 def test_recursive():
     bus = Bus()
     bus.bind(pushTick)
-    aggregator = Aggregator(3) # set to be a 1 second aggregator
+    aggregator = Aggregator(3)
     stick = CandleStick(1)
 
     bus.bind(aggregator)
@@ -106,15 +104,19 @@ def test_recursive():
         pushTick([price, 0, i, 0])
     assert ma- 139.2208333333 < 1e-7
 
-#def test_ema():
-#    bus = Bus()
-#    bus.bind(pushTick)
-#    aggregator = Aggregator(1) # set to be a 1 second aggregator
-#    stick = CandleStick(1)
-#    ma = EMA(stick, 5)
-#    for i, price in enumerate(alt_quad):
-#        pushTick([price, 0, i, 0])
-#    assert ma- -23.5015 < 1e-7
+def test_ema():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1) # set to be a 1 second aggregator
+    stick = CandleStick(1)
+
+    bus.bind(aggregator)
+    bus.bind(stick)
+
+    ma = EMA(stick.o, 5)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i+1, 0])
+    assert ma- 221.029 < 1e-7
 
 def test_bollinger():
     bus = Bus()
@@ -125,7 +127,7 @@ def test_bollinger():
     bus.bind(aggregator)
     bus.bind(stick)
 
-    bollinger = BollingerBand(stick, 5)
+    bollinger = BollingerBand(stick.o, 5)
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
 
@@ -142,11 +144,11 @@ def test_rsi():
     bus.bind(aggregator)
     bus.bind(stick)
 
-    rsi = RSI(stick, 5)
+    rsi = RSI(stick.o, 5)
     for i, price in enumerate(alt_quad_1k):
         pushTick([price, 0, i, 0])
 
-    assert rsi - 61.46620215747055 < 1e-7
+    assert rsi - 61.8272076519321  < 1e-7
 
 
 def test_macd():
@@ -168,17 +170,17 @@ def test_macd():
     assert macd.diff_ma -17.7111111111 < 1e-7
     assert macd.signal - 34.696296296296 < 1e-7
 
-#def test_atr():
-#    @source('candle')
-#    def pushCandle(bar):
-#        return bar
-#    bus = Bus()
-#    bus.bind(pushCandle)
-#    aggregator = Aggregator(5)
-#    stick = CandleStick(5)
-#    atr = ATR(stick, 5)
-#    for i, bar in enumerate(bars):
-#        pushCandle([*bar, 0])
+def test_atr():
+    @source('candle')
+    def pushCandle(bar):
+        return bar
+    bus = Bus()
+    bus.bind(pushCandle)
+    aggregator = Aggregator(5)
+    stick = CandleStick(5)
+    atr = ATR(stick, 5)
+    for i, bar in enumerate(bars):
+        pushCandle([*bar, 0])
 
 def test_kurtosis():
     bus = Bus()
@@ -189,7 +191,7 @@ def test_kurtosis():
     bus.bind(aggregator)
     bus.bind(stick)
 
-    kurt = Kurtosis(stick, 5)
+    kurt = Kurtosis(stick.o, 5)
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
     assert kurt- -3.231740264178196 < 1e-5
@@ -203,7 +205,7 @@ def test_skewness():
     bus.bind(aggregator)
     bus.bind(stick)
 
-    skew = Skewness(stick, 5)
+    skew = Skewness(stick.o, 5)
     for i, price in enumerate(alt_quad):
         pushTick([price, 0, i, 0])
     assert skew- -0.582459640454958 < 1e-5
@@ -211,7 +213,7 @@ def test_skewness():
 def test_volatility():
     bus = Bus()
     bus.bind(pushTick)
-    aggregator = Aggregator(3) # set to be a 1 second aggregator #    stick = CandleStick(1) #    sd = SD(stick, 5)
+    aggregator = Aggregator(3) # set to be a 1 second aggregator #    stick = CandleStick(1) #    sd = SD(stick.o, 5)
     stick = CandleStick(1)
 
     bus.bind(aggregator)
@@ -239,23 +241,24 @@ def test_diff():
     assert diff- -3.2466947194 * 1e-5 < 1e-7
 
 
-#def test_TimeseriesWrapperRetrieval():
-#    bus = Bus()
-#    bus.bind(pushTick)
-#    aggregator = Aggregator(1) # set to be a 1 second aggregator
-#    stick = CandleStick(1)
-#
-#    bus.bind(aggregator)
-#    bus.bind(stick)
-#
-#    sd = Difference(stick.o, 1)
-#    sd_w = TimeseriesWrapper(sd, store_num=10)
-#    for i, price in enumerate(alt_quad):
-#        pushTick([price, 0, i, 0])
-#
-#    assert sd_w[-21:-19] == [750.8125, -770.3125]
-#    assert sd_w[-9] == 1001.3125
-#
+def test_TimeseriesWrapperRetrieval():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(1) # set to be a 1 second aggregator
+    stick = CandleStick(1)
+
+    bus.bind(aggregator)
+    bus.bind(stick)
+
+    sd = Difference(stick.o, 1)
+    sd_w = TimeseriesWrapper(sd, store_num=10)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
+
+    assert sd_w[-21:-19] == [750.8125, -770.3125]
+    assert sd_w[-9] == 1001.3125
+
+# @Deprecated - use Time event instead of a Timeseries where possible
 #def testTimestamp():
 #    print('***TESTING TIMESERIES***')
 #    bus = Bus()
@@ -268,15 +271,19 @@ def test_diff():
 #    for i, price in enumerate(alt_quad):
 #        pushTick([price, 0, i, 0])
 #    assert timestamp - 80 < 1e-7
-#
-#
-## seems like working - but it is running suspsiciously long, cache is also kinda weird
+
+# skipped because of this running suscipiously long
 #def testPivotPoints():
 #    bus = Bus()
 #    bus.bind(pushTick)
 #    aggregator = Aggregator(3600)
 #    stick = CandleStick(3600)
 #    timestamp = Timestamp(5)
+
+#    bus.bind(aggregator)
+#    bus.bind(stick)
+#    bus.bind(timestamp)
+
 #    pivot = PivotPoints(timestamp, 3600, stick.h, stick.l, stick.c)
 #
 #    for i, price in enumerate(alt_quad_1k):

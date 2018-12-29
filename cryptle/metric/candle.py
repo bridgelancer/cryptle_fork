@@ -5,7 +5,7 @@ import numpy as np
 
 
 class CandleBar:
-    '''Container for candlesticks of a given length.
+    """Container for candlesticks of a given length.
 
     Candle dependent metrics can be attached to a CandleBuffer instance. These
     metrics will then be pinged everytime a new candle is added to the buffer.
@@ -28,7 +28,7 @@ class CandleBar:
     Note:
         New changes for automatic adding of empty candles might decrease
         stability of some candlemetrics
-    '''
+    """
 
     def __init__(self, period, auto_prune=False, maxsize=500):
         self.period = period
@@ -39,7 +39,7 @@ class CandleBar:
         self.last_timestamp = None
 
     def pushTick(self, price, timestamp, volume=0, action=0):
-        '''Provides public interface for accepting ticks.'''
+        """Provides public interface for accepting ticks."""
 
         self.last_timestamp = timestamp
 
@@ -70,7 +70,7 @@ class CandleBar:
         #    self.prune(self._maxsize)
 
     def pushCandle(self, o, c, h, l, t, v, nv):
-        '''Provides public interface for accepting aggregated candles.'''
+        """Provides public interface for accepting aggregated candles."""
         self._pushFullCandle(o, c, h, l, t, v, nv)
 
     def ping(self, timestamp):
@@ -82,7 +82,7 @@ class CandleBar:
             )
 
     def attach(self, metric):
-        '''Allow a candlemetric to subscribe for updates of candles.'''
+        """Allow a candlemetric to subscribe for updates of candles."""
         self._metrics.append(metric)
 
     def prune(self, size):
@@ -201,7 +201,7 @@ class CandleBar:
 
 
 class CandleMetric(Metric):
-    '''Base class for candle dependent metrics.
+    """Base class for candle dependent metrics.
 
     Metrics which are derived from an underlying candlestick chart should
     inherit from this class. Implementation of CandleMetric must call the parent
@@ -218,7 +218,7 @@ class CandleMetric(Metric):
 
         def onTick(self, price, ts, volume, action):
             pass
-    '''
+    """
 
     def __init__(self, candle):
         self.candle = candle
@@ -309,7 +309,7 @@ class ATR(CandleMetric):
 
 
 class MACD(CandleMetric):
-    '''Calculate and store the latest MACD value for the attached candle.
+    """Calculate and store the latest MACD value for the attached candle.
 
     The value of self.value (inherited from Metric) is set to be the difference
     between the difference of two moving averages and the moving average of this
@@ -326,7 +326,7 @@ class MACD(CandleMetric):
 
     Attributes:
         diff (float):
-    '''
+    """
 
     def __init__(self, fast, slow, lookback, weights=None):
         assert fast.candle == slow.candle  # @Use proper error
@@ -355,7 +355,7 @@ class MACD(CandleMetric):
 
 # Review its role and duplication in metric/generic.py
 class Difference(CandleMetric):
-    '''Difference.
+    """Difference.
 
     This class computes a dictionary of lists of historic n-th differences.
 
@@ -378,7 +378,7 @@ class Difference(CandleMetric):
     Attributes:
         output   (list): The n-th times difference of the required attributes (value + **kwargs)
         value   (float): The latest value of output['value'][-1]
-    '''
+    """
 
     def __init__(
         self,
@@ -393,7 +393,7 @@ class Difference(CandleMetric):
         self._lookback = lookback
         self._n = n
         self._attrs = list(args)  # addtional string arguments to diff attributes
-        self._record = {'value': []}  # dictionary of lists storing raw attr values
+        self._record = {"value": []}  # dictionary of lists storing raw attr values
         self.output = {}  # dictonary of lists storing differenced attributes
         self.value = 0
 
@@ -407,15 +407,15 @@ class Difference(CandleMetric):
         if len(self.candle) < self._n:
             return
         # append the updated attriute value to record
-        self._record['value'].append(float(self._metric))
+        self._record["value"].append(float(self._metric))
         for attr in self._attrs:
             self._record[attr].append(self._metric.__dict__[attr])
         # differencing all record in self._records using np.diff method
         for attr, record in self._record.items():
             self.output[attr] = np.diff(record, self._n)
         # assigning proper return values for access
-        if len(self.output['value']) > 0:
-            self.value = self.output['value'][-1]
+        if len(self.output["value"]) > 0:
+            self.value = self.output["value"][-1]
             for attr in self._attrs:
                 self.__dict__[attr] = self.output[attr][-1]
 
@@ -424,7 +424,7 @@ class Difference(CandleMetric):
 
 
 class BollingerBand(CandleMetric):
-    '''Bollinger band.
+    """Bollinger band.
 
     Value:
         Band percentage difference.
@@ -441,7 +441,7 @@ class BollingerBand(CandleMetric):
         upperband: Price at top of the bollinger band.
         lowerband: Price at bottom of the bollinger band.
         band: Percent difference between top and bottom band.
-    '''
+    """
 
     def __init__(
         self, candle, lookback, use_open=True, sd=2, upper_sd=None, lower_sd=None
@@ -473,13 +473,13 @@ class BollingerBand(CandleMetric):
 
 
 class MABollinger(CandleMetric):
-    '''Moving average impose on bollinger band.
+    """Moving average impose on bollinger band.
 
     Args:
         bband (BollingerBand): Underlying bollinger band
         lookback (int): Lookback of the moving average
         weights (list): Weighting for averaging. Defaults to None (simple average).
-    '''
+    """
 
     def __init__(self, bband, lookback, use_open=True, weights=None):
 
@@ -506,7 +506,7 @@ class MABollinger(CandleMetric):
 
 
 class RSI(CandleMetric):
-    '''Calculate and store the latest RSI value for the attached candle'''
+    """Calculate and store the latest RSI value for the attached candle"""
 
     def __init__(self, candle, lookback, use_open=True):
         super().__init__(candle)

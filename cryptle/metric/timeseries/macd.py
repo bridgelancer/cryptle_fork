@@ -9,12 +9,27 @@ def default(lookback):
 
 
 class MACD(Timeseries):
-    # MACD takes two timeseries. The two timeseries should update concurrently in order for a valid
-    # value produed
-    def __init__(self, fast, slow, lookback, name=None, weights=default):
+    """The implementation of moving-average convergence divergence.
+
+    This should take two moving-average Timeseries to initialize. The two upstreatm MAs should
+    update concurrently. The updating behaviour of this class is ensured by the
+    :class:`~cryptle.metric.base.Timeseries` implementaion.
+
+    Args
+    ---
+    fast : :class:`~cryptle.metric.base.Timeseries`
+        A moving-average Timeseries object with shorter lookback period.
+    slow : :class:`~cryptle.metric.base.Timeseries`
+        A moving-average Timeseries object with longer lookback period.
+    lookback: int
+        Lookback of the MACD object (or the signal period)
+
+    """
+
+    def __init__(self, fast, slow, lookback, name="macd", weights=default):
+        self.name = name
         self._lookback = lookback
-        self._ts = [fast, slow]
-        super().__init__(ts=self._ts)
+        super().__init__()
 
         self._weights = weights(lookback)
         self.value = None
@@ -34,20 +49,30 @@ class MACD(Timeseries):
                 return macd.diff - macd.diff_ma
 
         self.diff = GenericTS(
-            [fast, slow], lookback=lookback, eval_func=diff, args=[fast, slow]
+            fast,
+            slow,
+            name="diff",
+            lookback=lookback,
+            eval_func=diff,
+            args=[fast, slow],
+            tocache=False,
         )
         self.diff_ma = GenericTS(
             self.diff,
+            name="diff_ma",
             lookback=lookback,
             eval_func=diff_ma,
             args=[self, self._weights, lookback],
         )
+
         self.signal = GenericTS(
-            [self.diff, self.diff_ma], lookback=lookback, eval_func=signal, args=[self]
+            self.diff,
+            self.diff_ma,
+            name="signal",
+            lookback=lookback,
+            eval_func=signal,
+            args=[self],
         )
 
     def evaluate(self):
         pass
-
-    def onTick(self, price, timestamp, volume, action):
-        raise NotImplementedError

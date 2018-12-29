@@ -617,7 +617,7 @@ Timeseries
 ----------
 Finanical data can often be organised into time series. This goes for both raw
 data (e.g. price ticker) and processed data (e.g. moving average).
-:class:`~metric.base.Timeseries` class is a data container for handling such data, especailly
+:class:`~cryptle.metric.base.Timeseries` class is a data container for handling such data, especailly
 when the data is being streamed in real-time.
 
 .. warning::
@@ -639,8 +639,8 @@ To make all this work, subclasses of :class:`Timeseries` must do the following:
 
 1. Call the base :meth:`Timeseries.__init__`, passing the upstream Timeseries
    object as argument.
-2. Implement :meth:`~metric.base.Timeseries.evaluate` which gets called on
-   updates of what they.
+2. Implement :meth:`~cryptle.metric.base.Timeseries.evaluate` which gets called on
+   updates of what they listen to.
 3. Declare an attribute ``_ts`` (ts shortform for timeseries) in the
    constructor. The instance will listen for any update in ``self._ts``.
 
@@ -651,8 +651,8 @@ To make all this work, subclasses of :class:`Timeseries` must do the following:
    listen to. Hence, for CandleStick (or other source Timeseries), their data
    source should be constructed by an Event via the Event bus architecture.
 
-Another feature Timeseries is the decorator :meth:`~metric.base.Timeseries.cache`.
-This decorator can be used on :meth:`~metric.base.Timeseries.evaluate` to
+Another feature Timeseries is the decorator :meth:`~cryptle.metric.base.Timeseries.cache`.
+This decorator can be used on :meth:`~cryptle.metric.base.Timeseries.evaluate` to
 provide a local copy of historical values of the upstream Timeseries, stored in
 ``self._cache``. The number of items stored is restricted by
 ``self._lookback``.
@@ -663,12 +663,12 @@ An example of Timeseries might look like:
 
    class Foo(Timeseries):
        def __init__(self, ts, lookback):
-           super().__init__(ts=ts)
+           super().__init__(ts)
            self._lookback = lookback
            self._ts = ts
 
        # generate self._cache for accessing historical self._ts value
-       @Timeseries.cache
+       @Timeseries.cache('normal')
        def evaluate(self):
            # some code that would be updated when ts updates
 
@@ -682,14 +682,14 @@ the ``self._ts`` attribute should be set to a list of the Timeseries objects to 
 
    class FooMultiListen(Timeseries):
        def __init__(self, ts1, ts2, lookback):
-           self._ts       = [ts1, ts2]
+           self._ts       = ts1, ts2
            self._lookback = lookback
            super().__init__(ts=self._ts)
 
 For any subseries held within a wrapper class intended to be accessed by the
-client, a :class:`~metric.base.GenericTS` could be declared during the
+client, a :class:`~cryptle.metric.base.GenericTS` could be declared during the
 construction of the wrapper class. The format of the
-:meth:`~metric.base.GenericTS.__init__` follows:
+:meth:`~cryptle.metric.base.GenericTS.__init__` follows:
 ``someGenericTS(timeseries_to_be_listened, lookback, eval_func, args)``. The
 :meth:`eval_func` should be implemented in the wrapper class and the ``args`` are
 the arguments that are passed into the :meth:`eval_func`:
@@ -697,22 +697,59 @@ the arguments that are passed into the :meth:`eval_func`:
 .. code:: python
 
    class foo_with_GenereicTS(Timeseries):
-       def __init__(self, ts, lookback):
-           super().__init__(ts=ts)
+       def __init__(self, *ts, lookback):
+           super().__init__(*ts)
            self._lookback = lookback
            self._ts = ts
 
        def eval_foo1(*args):
-           # act as normal evaluate function in Timeseries, to be passed into Generic TS
+           # act as normal evaluate function in Timeseries, to be passed into the GenericTS
 
        def eval_foo2(*args, **kwargs):
            # same as above
 
-       # foo1 is the subseries that is held by foo_with_GenereicTS
+       # foo1 and foo2 is the subseries that is held by foo_with_GenereicTS
        self.foo1 = GenericTS(ts, lookback=lookback, eval_func=eval_foo1, args=[self])
        self.foo2 = GenericTS(ts, lookback=lookback, eval_func=eval_foo2, args=[self])
 
-This is analagous of having a :class:`~metric.base.Timeseries` with a :meth:`eval_func`
-as its :meth:`evaluate` and passed with with ``args``, constrained by ``lookback`` and
+This is analagous of having a :class:`~cryptle.metric.base.Timeseries` with a :meth:`~eval_func`
+as its :meth:`~cryptle.metric.base.Timeseries.evaluate` and passed with with ``args``, constrained by ``lookback`` and
 listens to updates specified by the ``ts`` instead of the ``self.ts`` in
-:class:`~metric.base.Timeseries`.
+:class:`~cryptle.metric.base.Timeseries`.
+
+.. _timeserieswrapper_ref:
+
+Timeseries History
+------------------
+The :class:`~cryptle.metric.base.TimeseriesWrapper` is a optional add-on for the
+:class:`~cryptle.metric.base.Timeseries`. It provides the official historical Timeseries
+values access interface during runtime.
+
+By design and from the previous guide on ``Timeseries``, a
+:class:`~cryptle.metric.base.Timeseries` has no means of accessing its historical
+values. Although a cache is present, its function is to maintain a
+workable store of the listened ``Timeseries``/ datasources. The
+:class:`~cryptle.metric.base.TimeseriesWrapper` is the way of accessing the required data. A
+designated number of data would be cached, and the rest would be routinely
+stored to disk.
+
+To access the historical values of any particular valid Timeseries, simply pass
+that :class:`~cryptle.metric.base.Timeseries` object to the constructor of the
+:class:`~cryptle.metric.base.TimeseriesWrapper`. The values could be retrievable using the
+normal python syntax of list value getting, as the :meth:`~cryptle.metric.base.TimeseriesWrapper.__getitem__`
+is implemented accordingly. So the following works:
+
+.. code:: python
+
+   class FooStrat(Strategy):
+      def __init__(self, period):
+         self.aggregator = Aggregator(period)
+         self.stick = CandleStick(period)
+         self.wma1 = WMA(self.stick.c, 5)
+
+         # Historical access of Timeseries, with 10 historical values cached
+         self.wma1_hist = TimeseriesWrapper(self.wma1, store_num=10)
+
+      def retrieveHistory(self):
+         hist_vals = self.wma1_hist[-20:-5] # this works as longs as their is sufficient data, would retrieve suitable data from disk
+

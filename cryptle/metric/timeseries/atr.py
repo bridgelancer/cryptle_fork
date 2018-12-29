@@ -3,9 +3,11 @@ import numpy as np
 
 
 class ATR(Timeseries):
+    """Compute the ATR value based on Candle input."""
+
     def __init__(self, candle, lookback, name=None):
-        self._ts = [candle.c, candle.h, candle.l]
-        super().__init__(ts=self._ts)
+        self._ts = candle.c, candle.h, candle.l
+        super().__init__(*self._ts)
         self._lookback = lookback
         self.value = None
 
@@ -40,6 +42,3 @@ class ATR(Timeseries):
                 ) / self._lookback
         except:
             pass
-
-    def onTick(self, price, ts, volume, action):
-        raise NotImplementedError

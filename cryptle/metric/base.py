@@ -1,19 +1,15 @@
 """
-Base classes for time series data structures.
-
-Warning
--------
+Base classes for time series data structures.  Warning -------
 The class names :class:`TimeseriesWrapper`, :class:`Timeseries`, and :class:`HistoricalTS` are
 temporary and are subject to change.
 """
-
-# Todo(pine): Refactor observer pattern into reusable set of mixins.
-
-
+# Todo(pine): Refactor observer pattern into reusable set of mixins. (observe for a longer period)
 from functools import wraps
 
 import logging
 import csv
+import os
+import datetime
 
 
 class Metric:
@@ -205,11 +201,14 @@ class TimeseriesWrapper(Metric):
         self.hxtimeseries = HistoricalTS(self.timeseries, store_num)
 
     def __getitem__(self, index):
+        """Wrapping the HistoricalTS and give access via usual sequence syntax."""
         # this only works for ts with one Timeseries
-        return self.hxtimeseries.retrieve(index)
+        return self.hxtimeseries.__getitem__(index)
 
     @property
     def value(self):
+        """ Returning the value of underlying ts and set it as an instance attribute of the
+        wrapper."""
         return self.timeseries.value
 
     def __hash__(self):
@@ -221,29 +220,30 @@ class Timeseries(Metric):
 
     TimeSeries object should only concern about the updating of its series upon arrival of tick or
     candle and no more. The calculation part of the class should only hold the most updated
-    value of the corresponding TimeSeries. The handling of the historical data would
-    be designed and implemented in a later stage. Any cached data that the TimeSeries
-    object maintained should not be accessed by other objects for any external purpose.
+    Any cached data that the TimeSeries object maintained should not be accessed by other objects
+    for any external purpose.
 
-    Ordinary timeseries class is designed to be both an observable and an observer.
+    Ordinary Timeseries class is designed to be both an observable and an observer.
     This means that each instance of a Timeseries class has corresponding publisher/subscriber
     functionality that allows it to broadcast its changes to Timeseries that are listening
     to its updates/listen to updates from other timeseries.
 
+    Upstream Timeseries (e.g. a :class:`~cryptle.metric.timeseries.candle.CandleStick`) is designed
+    to only be an observable but not a observer. They act as a receptor for external data sources
+    and should not depend on other Timeseries object for their updating of values.
+
     Args
     ----
-    ts : :class:`Timeseries`
-        Timeseries object to subscribe (or not rely on a TS if not specified)
+    *vargs : :class:`~cryptle.metric.base.Timeseries`(s)
+        One or more Timeseries objects to subscribe to
 
     """
 
-    # Any timeseries type should also support list-based initialization and
-    # update. The implementation is deferred to a later stage due to
-    # prioritization of tasks.
+    # Todo (MC):
+    # Any timeseries type should also support list-based initialization and update
 
-    # Todo(pine): Replace ts with vargs for upstream timeseries. An argument accepting different
-    # types leads to user code that's prone to errors.
-    def __init__(self, ts=None):
+    def __init__(self, *vargs):
+        self.name = None
 
         # self.subscribers are the list of references to timeseries objects that this instance subscribes to
         self.subscribers = []
@@ -254,33 +254,20 @@ class Timeseries(Metric):
         # self.listeners is the list of references to timeseries objects that listen to this timeseries
         self.listeners = []
 
-        # ts is either a single ts object, or list containing multiple ts objects
-        if ts is not None and not isinstance(ts, list):
-            # for single ts object
-            ts.listeners.append(self)
-            self.subscribers.append(ts)
-        elif ts is not None and isinstance(ts, list):
-            # for a list containing multiple ts objects
-            for t in ts:
-                t.listeners.append(self)
-                self.subscribers.append(t)
+        for arg in vargs:
+            if isinstance(arg, Timeseries):
+                arg.listeners.append(self)
+                self.subscribers.append(arg)
 
-    def __float__(self):
-        try:
-            float(self.value)
-            return float(self.value)
-        except:
-            return None
-
-    # Todo(pine): Add docstring as API documentationA
-    # Todo(pine): Determine how to handle function arguments
-    # should implement for every child class of Timeseries
+    # ???Todo(pine): Determine how to handle function arguments
     def evaluate(self):
-        raise NotImplementedError
+        """Virtual method to be implemented for each child instance of Timeseires"""
+        raise NotImplementedError(
+            "Please implement an evaluate method for every Timeseries instance"
+        )
 
-    # by default, a listener would update only after all its subscribers updated once
     def processBroadcast(self, pos):
-        """To be called when the upstream"""
+        """To be called when all the listened Timeseries updated at least once."""
         if len(self.subscribers) == 1:
             self.update()
         else:
@@ -291,9 +278,10 @@ class Timeseries(Metric):
                 self.subscribers_broadcasted.clear()
                 self.update()
 
-    # Todo(pine): This should take arguments, requiring subclasses to know the internals of the
+    # ???Todo(pine): This should take arguments, requiring subclasses to know the internals of the
     # observables defeats the purpose of having this interface
     def update(self):
+        """Wrapper interface for controlling the updating behaviour when there is new update."""
         # by current design, all evaluate of listeners would be called if candle decides to broadcast
         self.evaluate()
 
@@ -303,110 +291,84 @@ class Timeseries(Metric):
         # 1. find the index corresponds to the root instance in each listener.subscribers
         # 2. pass the index to listener
         for listener in self.listeners:
-            pos = [id(x) for x in listener.subscribers].index(
-                id(self)
-            )  # @TODO this breaks when there are identical values
+            pos = [id(x) for x in listener.subscribers].index(id(self))
             listener.processBroadcast(pos)
 
-    # currently not in use
     def register(self, new_ts):
         """Registers another :class:`Timeseries` object as a listener."""
         self.listeners[new_ts.name] = new_ts
         # self.listners.append(new_ts)
 
-    # currently not in use
     def unregister(self, ts):
         """Unregister the provided listener."""
         del self.listeners[ts.name]
         # self.listeners.pop(ts)
 
-    # Todo(pine): Take lookback as a decorator argument
     @staticmethod
-    def cache(func):
-        """Decorator for any Timeseries method to maintain its valid main cache
+    def prune(arg, lookback=None):
+        """The Timeseries class prune method (as opposed to the HistoricalTS one)."""
+        if lookback is None:
+            lookback = arg._lookback
+
+        if len(arg._cache) < lookback:
+            return arg._cache
+        else:
+            return arg._cache[-lookback :]
+
+    @staticmethod
+    def cache(prune):
+        """Decorator for any Timeseries method to maintain its valid cache
         for calculating its output value.
 
         The class method to be decorated should initialize self._cache as empty
-        list. The class should also contain an attribute ``._lookback`` for
+        list. The class should also contain a private attribute ``._lookback`` for
         caching purpose.
 
+        Args
+        ----
+        prune_type: str
+            Positional argument to decorator function, either 'normal' or 'historical'
+
         """
 
-        def prune(lst, lookback):
-            if len(lst) < lookback:
-                return lst
-            else:
-                return lst[-lookback:]
+        def with_prune_type(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                # set alias self
+                # a hack - args[0] must be "self"
+                self = args[0]
+                if prune is "normal":
+                    prune_type = Timeseries.prune
+                elif prune == "historical":
+                    prune_type = HistoricalTS.prune
 
-        def wrapper(*args, **kwargs):
-            # set alias self
-            self = args[0]
-            # a hack - args[0] must be "self"
-            # if no self._cache in original ts, create one for it
-            if '_cache' not in self.__dict__.keys():
-                self._cache = []
-            if isinstance(self._ts, list):
-                # exception case handling - for CandleStick-like object
-                if self._ts[-1] is None or isinstance(self._ts[-1], float):
-                    self._cache.append(self._ts[-1])
-                    self._cache = prune(self._cache, self._lookback)
-                # handle the case when self._ts is a list of ts objects
-                if isinstance(self._ts[-1], Timeseries):
-                    zip(*self._cache)
-                    try:
-                        self._cache.append([float(ts) for ts in self._ts])
-                    except:
-                        pass
-                    self._cache = prune(self._cache, self._lookback)
-                    zip(*self._cache)
+                # if no self._cache in original ts, create one for it
+                if "_cache" not in self.__dict__.keys():
+                    self._cache = []
 
-            elif isinstance(self._ts, Timeseries):
-                # handle the case when self._ts is a ts object or when candlestick as underlying ts
-                try:
-                    self._cache.append(float(self._ts))
-                except:
-                    pass
-                # consider disallow any direct sourcing from candlestick apart from direct object
-                try:
-                    if self.bar:
-                        self._cache.pop()
-                        self._cache.append(self._ts.accessBar())
-                except:
-                    pass
-            self._cache = prune(self._cache, self._lookback)
-            func(*args, **kwargs)
+                if isinstance(self._ts, Timeseries):
+                    if self._ts.value is not None:
+                        self._cache.append(float(self._ts))
+                if isinstance(self._ts, tuple):
+                    buffer = []
+                    for ts in self._ts:
+                        if isinstance(ts, list):
+                            pass
+                        if isinstance(ts, Timeseries):
+                            if ts.value is not None:
+                                buffer.append(ts.value)
 
-        return wrapper
+                    if len(buffer) == 1:
+                        self._cache.append(self._ts[0].value)
+                    elif len(buffer) > 1:
+                        self._cache.append(buffer)
 
-    # Todo(pine): Take lookback as a decorator argument, what if a timeseries wants a different
-    # lenght of bar_cache and cache? (To be fair that a super rare use case example)
-    @staticmethod
-    def bar_cache(func):
-        """ Decorator for instance methods to keep a cache for open, close, high, and low values.
+                self._cache = prune_type(self)
+                func(*args, **kwargs)
 
-        The class that owns the method to be decorated needs to initialize self.o, self.c, self.h,
-        self.l as empty lists. It should also contain an attribute self._lookback for caching
-        purpose.
-        """
+            return wrapper
 
-        def wrapper(self, **kwargs):
-            self.o.append(float(candle.o))
-            self.c.append(float(candle.c))
-            self.h.append(float(candle.h))
-            self.l.append(float(candle.l))
-            self.t = float(candle.t)
-
-            if len(self.o) < self._lookback:
-                return
-            elif len(self.o) >= self._lookback:
-                self.o = self.o[-self._lookback :]
-                self.c = self.c[-self._lookback :]
-                self.h = self.h[-self._lookback :]
-                self.l = self.l[-self._lookback :]
-
-            func(*args, **kwargs)
-
-        return wrapper
+        return with_prune_type
 
     def importBars(self):
         """ Import functionality to import well defined excel columns as Timeseries objects """
@@ -420,26 +382,53 @@ class Timeseries(Metric):
 class GenericTS(Timeseries):
     """Generic Timeseries object for sub-timeseries held by wrapper Metric class
 
-    Args:
-        ts = :class:`Timeseries` to be listened to, evalute meethod is called whevener ts broadcasts
-        lookback  = same as :class:`Timeseries`
-        eval_func = a function implemeneted in Wrapper class, equivalent to the evaluate method in Timeseries
-        args      = arguments required to pass into eval_func for proper evaluation of the :class:`GenericTS` value
+    Args
+    ----
+    ts : :class:`cryptle.metric.base.Timeseries`
+        One or more ``Timeseries`` to be listened to, evaluate method is called whever ts broadcasts
+    lookback : int
+        Same as :class:`~cryptle.metric.base.Timeseries`
+    eval_func : function
+        A function implemented in the wrapping :class:`~cryptle.metric.base.Timeseries` class, equivalent to
+        the evalutate method of the ``Timeseries``
+    args : list
+        A list of arguments to be passed into the :meth:`eval_func` of
+        :class:`~cryptle.metric.base.GenericTS` value1
+    tocache : boolean, optional
+        Parameter for determining whether to use the :meth:`~cryptle.metric.base.Timeseries.cache`
+        decorator, False by default
+    name : boolean, optional
+        For easy referencing of GenericTS instance when necessary
 
     """
 
-    def __init__(self, ts, name=None, lookback=None, eval_func=None, args=None):
-        super().__init__(ts=ts)
+    def __init__(
+        self, *ts, name=None, lookback=None, eval_func=None, args=None, tocache=True
+    ):
+        super().__init__(*ts)
+        self.name = name
         self._lookback = lookback
         self._ts = ts
         self._cache = []
         self.eval_func = eval_func
         self.args = args
-        self.name = name
+        self.tocache = tocache
         self.value = None
 
-    @Timeseries.cache
     def evaluate(self):
+        if self.tocache:
+            self.eval_with_cache()
+        else:
+            self.eval_without_cache()
+
+    @Timeseries.cache("normal")
+    def eval_with_cache(self):
+        """Use when caching is needed."""
+        self.value = self.eval_func(*self.args)
+        self.broadcast()
+
+    def eval_without_cache(self):
+        """Use when caching is not needed."""
         self.value = self.eval_func(*self.args)
         self.broadcast()
 
@@ -447,72 +436,133 @@ class GenericTS(Timeseries):
 class HistoricalTS(Timeseries):
     """Base class for management, storage, and retrieval of historical :class:`Timeseries` data.
 
-    Args:
-        ts = :class:`Timeseries` to store.
+    The current design of the storage of generated historical values is stored to directory named
+    "histlog", in which the timestamp of the stamp of the first generated file during that execution
+    would be used as the subdirectory name. Indiviudal historical timeseries values would be stored
+    within a file under their respective class name and hash id to ensure uniqueness.
+
+    Args
+    ----
+    ts : :class:`~cryptle.metric.base.Timeseries`
+        The ``Timeseries`` to be stored and retrievable during runtime and in the future.
+    store_num : int, optional
+        The number of values to be cached during runtime before writing to disk.
 
     """
 
     def __init__(self, ts, store_num=10000):
-        super().__init__(ts=ts)
+        super().__init__(ts)
         self._ts = ts
         self._lookback = store_num
         self._cache = []
         self.value = None
         self.flashed = False
 
-    # write to disk
-    def write(self):
-        """Write stored data to disk."""
-        # filename changes accorindgly
+        # Setting up correct directory structure
+        current_time = datetime.datetime.now()
+        current_time_f = current_time.strftime("%Y-%m-%d %H:%M:%S")
+        subdirpath = os.path.join("histlog", current_time_f)
+
+        dirpath = os.path.join(
+            os.getcwd(), subdirpath
+        )  # relative pathing to the execution
+
+        self.dir = dirpath
+        self.dirpaths = []
+
+        # Some leniency to let all files fall into same folder
+        for i in range(-3, 3):
+            diff_time = current_time + datetime.timedelta(seconds=i)
+            diff_time_f = diff_time.strftime("%Y-%m-%d %H:%M:%S")
+            subdirpath = os.path.join("histlog", diff_time_f)
+            self.dirpaths.append(os.path.join(os.getcwd(), subdirpath))
+
+    def write(self, num_to_write):
+        """Write stored data to disk.
+
+        The behaviour of this function is that the filename changes accorind to the has of the id of
+        the Timeseries object to be written.
+
+        """
+
+        try:
+            if all(not os.path.exists(dirpath) for dirpath in self.dirpaths):
+                os.makedirs(self.dir)
+                os.chdir(self.dir)
+            else:
+                os.chdir(self.dir)
+        except Exception as e:
+            raise OSError(
+                "Error in creating the required directory for storing HistoricalTS values."
+            )
+
         filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
         if not self.flashed:
-            with open(filename, 'w', newline='') as file:
+            with open(filename, "w", newline="") as file:
                 file.write(
                     "Beginning of new file: should record the running instance metainfo \n"
                 )
             self.flashed = True
 
-        with open(filename, "a", newline='') as file:
+        with open(filename, "a", newline="") as file:
             wr = csv.writer(file)
-            wr.writerow(self._cache[: self._lookback])
-        del self._cache[: self._lookback]
+            wr.writerow(self._cache[:num_to_write])
 
-    # Todo(pine): Implement the memory cleanup
-    # update historical cache based on updated value
-    def prune(self, lst):
-        """Write cache to disk and delete them from main memory."""
+        os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
+
+    @staticmethod
+    def prune(self):
+        """HistoricalTS class prune method. Write cache to disk and delete them from main memory."""
         if 2 * self._lookback >= len(self._cache):
-            return lst
+            return self._cache
         else:
-            self.write()
-            return lst[-self._lookback - 1 :]
+            self.write(self._lookback)
+            del self._cache[: self._lookback]
+            return self._cache[-self._lookback - 1 :]
 
+    @Timeseries.cache("historical")
     def evaluate(self):
-        # this function should update whenever a change in the ts is present
-        if isinstance(self._ts, list):
-            if self._ts[-1] is None or isinstance(self._ts[-1], float):
-                self._cache.append(self._ts[-1])
-            if isinstance(self._ts[-1], Timeseries):
-                zip(*self._cache)
-                try:
-                    self._cache.append([float(ts) for ts in self._ts])
-                except:
-                    pass
-                zip(*self._cache)
-        elif isinstance(self._ts, Timeseries):
-            try:
-                self._cache.append(float(self._ts))
-            except:
-                pass
-        self._cache = self.prune(self._cache)
-
+        """Caching handled by the cache decorator and class prune method"""
         if len(self._cache) > 0:
             self.value = self._cache[-1]
         else:
             pass
 
-    # Todo(pine): Change this to __getitem__()
-    def retrieve(self, index):
+    # Todo(MC): To make this more smart in getting the required values
+    @staticmethod
+    def readCSV(cache, filename):
+        """Helper function to return a list of usable values from pre-formatted csv file.
+
+        Currently, this function non-selectively read the whole csv and reconstruct a python list.
+        This is not the desired behaviour. It is designed to be only retrieve a suitable and
+        reasonable amount of data from disk via some algorithm.
+
+        Args
+        ---
+        cache : list
+            Residual cache maintained on the fly
+        filename: string
+            Name of the csv file containing the data
+
+        Returns
+        -------
+        lst[index]: list
+            List of requested values.
+
+        """
+        lst = []
+        with open(filename, "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            for i, row in enumerate(f):
+                if i == 0:
+                    pass
+                else:
+                    row = [float(x) for x in row.rstrip("\n").split(",")]
+                    lst += row
+            lst += cache
+        return lst
+
+    def __getitem__(self, index):
         """Get historical values.
 
         Args
@@ -522,7 +572,8 @@ class HistoricalTS(Timeseries):
 
         Returns
         -------
-        List of requested values.
+        lst[index]: list
+            List of requested values.
 
         """
         # only support this currently
@@ -537,8 +588,10 @@ class HistoricalTS(Timeseries):
         ## col counts from right to left (end to beginning)
         # colstart = abs(index.start) - rowstart * self._lookback
         # colend   = abs(index.end) - rowed * self._lookback
+
         filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
-        lst = []
+        filepath = os.path.join(self.dir, filename)
+
         if isinstance(index, slice):
             try:
                 # for handling index cases with integer bounded intervals and steps i.e. [-4:-2]
@@ -548,46 +601,23 @@ class HistoricalTS(Timeseries):
                 ):
                     # if still within caching limit, retrieve from cache
                     return self._cache[index]
-            except TypeError as e:
+            except TypeError:
                 # for handling index cases without integer bounded intervals and steps i.e. [-2:]
                 if index.stop is None and abs(index.start) < self._lookback:
                     # if still within caching limit, retrieve from cache
                     return self._cache[index]
-                if index.stop is None and abs(index.start) >= self._lookback:
+                elif index.stop is None and abs(index.start) >= self._lookback:
                     # if not within caching limit, retrieve from file
-                    with open(filename, "r") as f:
-                        reader = csv.reader(f, delimiter=',')
-                        for i, row in enumerate(f):
-                            if i == 0:
-                                pass
-                            else:
-                                row = [float(x) for x in row.rstrip('\n').split(',')]
-                                lst += row
-                        lst += self._cache
-
+                    lst = HistoricalTS.readCSV(self._cache, filepath)
+                    return lst[index]
             else:
-                with open(filename, "r") as f:
-                    reader = csv.reader(f, delimiter=',')
-                    for i, row in enumerate(f):
-                        if i == 0:
-                            pass
-                        else:
-                            row = [float(x) for x in row.rstrip('\n').split(',')]
-                            lst += row
-                    lst += self._cache
+                lst = HistoricalTS.readCSV(self._cache, filepath)
                 return lst[index]
 
         elif isinstance(index, int):
+            # for handling index cases with single intenger only
             if abs(index) < self._lookback:
                 return self._cache[index]
             else:
-                with open(filename, "r") as f:
-                    reader = csv.reader(f, delimiter=',')
-                    for i, row in enumerate(f):
-                        if i == 0:
-                            pass
-                        else:
-                            row = [float(x) for x in row.rstrip('\n').split(',')]
-                            lst += row
-                    lst += self._cache
+                lst = HistoricalTS.readCSV(self._cache, filepath)
                 return lst[index]

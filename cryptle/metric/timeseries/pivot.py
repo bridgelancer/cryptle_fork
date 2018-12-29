@@ -3,8 +3,8 @@ from cryptle.metric.base import Timeseries
 
 class PivotPoints(Timeseries):
     def __init__(self, timestamp, interval, high, low, close, days=1, n=8, list=False):
-        self._ts = [timestamp, close, high, low]
-        super().__init__(ts=self._ts)
+        self._ts = timestamp, close, high, low
+        super().__init__(*self._ts)
         self._days = days
         self._interval = interval
         self._lookback = int(
@@ -23,7 +23,7 @@ class PivotPoints(Timeseries):
         if list:
             self.onList()
 
-    @Timeseries.cache
+    @Timeseries.cache('normal')
     def evaluate(self):
         if self.timestamp % (24 * 60 * 60) == 86400 - self._interval:
             # update the essential values of the previous period

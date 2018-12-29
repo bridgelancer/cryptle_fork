@@ -1,15 +1,17 @@
 from cryptle.metric.base import Timeseries, GenericTS
 from cryptle.event import on, Bus
 
-'''Candle-related Timeseries object.
+"""Candle-related Timeseries object.
 
-These objects are unique as client must pass a candle-like object that is in a format similar to [o,
-c, h, l, (v)] in order to initialize these Timeseries. This makes intuitive sense as these objecbar
-are not aggregating facility of ticks but rather a reducing facility that output the latest value of
-the aggreagated bar. There is currently no generic bar aggregating objecbar
-implemented for the new Timeseries paradigm.
+These objects are unique as client must pass a candle-like object that is in a format analgous to [o,
+c, h, l, (v)] in order to initialize this Timeseries.
 
-'''
+This exists as a result of the segregation of responsibility. The aggregating responsibility of
+ticksticks are extracted out to :class:`~cryptle.aggregator`. This class serves as an portal for
+other Timeseries to retrieve ready-to-use Candle data from initializing their own cache and
+calculating their own values.
+
+"""
 
 # TODO - Segregate Observer/Observable pattern from Timeseries baseclass to allow CandleStick to
 # change to non TS-type object
@@ -33,7 +35,7 @@ def Volume(lst):
     return lst[-1][4]
 
 
-class CandleStick(Timeseries):
+class CandleStick:
     """ Extracted wrapper function of the original CandleBar class """
 
     def __init__(
@@ -46,32 +48,55 @@ class CandleStick(Timeseries):
         Low=Low,
         Volume=Volume,
     ):
-        super().__init__()
         self._lookback = lookback
-        # self._ts needs pruning in this case - @TODO
         self._ts = []
         # eval_func for GenericTS objects
-        self.o = GenericTS(self._ts, lookback=lookback, eval_func=Open, args=[self._ts])
+        self.o = GenericTS(
+            name="open",
+            lookback=lookback,
+            eval_func=Open,
+            args=[self._ts],
+            tocache=False,
+        )
         self.c = GenericTS(
-            self._ts, lookback=lookback, eval_func=Close, args=[self._ts]
+            name="close",
+            lookback=lookback,
+            eval_func=Close,
+            args=[self._ts],
+            tocache=False,
         )
-        self.h = GenericTS(self._ts, lookback=lookback, eval_func=High, args=[self._ts])
-        self.l = GenericTS(self._ts, lookback=lookback, eval_func=Low, args=[self._ts])
+        self.h = GenericTS(
+            name="high",
+            lookback=lookback,
+            eval_func=High,
+            args=[self._ts],
+            tocache=False,
+        )
+        self.l = GenericTS(
+            name="low",
+            lookback=lookback,
+            eval_func=Low,
+            args=[self._ts],
+            tocache=False
+        )
         self.v = GenericTS(
-            self._ts, lookback=lookback, eval_func=Volume, args=[self._ts]
+            name="volume",
+            lookback=lookback,
+            eval_func=Volume,
+            args=[self._ts],
+            tocache=False,
         )
-        self.value = None
         self.bar = bar
 
-    # CandleStick has a unique functino appendTS that makes itself a ts generating source
+    # CandleStick has a unique function source that makes itself a ts generating source
+    # todo(MC): segregate abstraction layer appropriately
+    @on('new_candle')
     @on('aggregator:new_candle')
-    def appendTS(self, data):
+    def source(self, data):
         self._ts.append(data)
-        self.evaluate()
-        self.broadcast()
-        self.prune()
+        self.update()
 
-    def evaluate(self):
+    def update(self):
         # eval_func passed to GenericTS objects held within CandleStick
         self.o.evaluate()
         self.c.evaluate()
@@ -79,18 +104,11 @@ class CandleStick(Timeseries):
         self.l.evaluate()
         self.v.evaluate()
 
-        # the evaluate function should automatically push a bar to self._cache
-        try:
-            self.value = float(self.o)  # use self.o is the default value
-        except:
-            self.value = None
-
-    # @TODO temporariliy disabled pruning - buggy behaviour causing downstream TS objects fail to update
-    # after 365 bars while self._ts remains pruned
-    def prune(self):
-        # if len(self._ts) >= 365:
-        #   self._ts = self._ts[-365:]
-        pass
+    # Todo temporariliy disabled pruning - some buggy behaviour causing downstream TS objects fail to update
+    # after 365 bars while self._ts is pruned appropriately
+    def shred(self):
+        if len(self._ts) >= 30: self._ts = self._ts[-30:]
+        else: pass
 
     def accessBar():
         return [float(x) for x in [self.o, self, c, self.h, self.l, self.v]]

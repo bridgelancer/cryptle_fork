@@ -3,8 +3,13 @@ import numpy as np
 
 
 class BollingerBand(Timeseries):
+    """Timeseries class that holds the subseries for upperband, lowerband and bandwidth of a common
+    Bollingerband."""
+
     def __init__(self, ts, lookback, sd=2, name=None, upper_sd=None, lower_sd=None):
-        super().__init__(ts=ts)
+        super().__init__(ts)
+        self.name = "bollinger"
+
         if upper_sd is None:
             self._uppersd = sd
         else:
@@ -51,6 +56,3 @@ class BollingerBand(Timeseries):
             self.value = (self.upperband / self.lowerband - 1) * 100
         except:
             pass
-
-    def onTick(self, price, timestamp, volume, action):
-        raise NotImplementedError

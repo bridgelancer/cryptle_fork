@@ -7,8 +7,21 @@ def default(lookback):
 
 
 class RSI(Timeseries):
-    def __init__(self, ts, lookback, name=None, weight=default):
-        super().__init__(ts=ts)
+    """ Timeseries that calculate the relative strenth index of the upstreatm.
+
+    Args
+    ----
+    lookback : int
+        The lookback period for calculating RSI.
+    default : function, optional
+        The weighing function for the EMA calculation, default to be 1/lookback.
+
+    Note: Complies with the TradingView value
+
+    """
+
+    def __init__(self, ts, lookback, name="rsi", weight=default):
+        super().__init__(ts)
         self._lookback = lookback
         self._ts = ts
         self._cache = []

@@ -16,6 +16,8 @@ from collections import ChainMap
 dataset = get_sample_candles()
 tickset = get_sample_trades()
 
+# Most of these tests are all deprecated because of the new Registry format
+
 #def test_construction():
 #    def CB1():
 #        #print('successful construction')
@@ -24,7 +26,7 @@ tickset = get_sample_trades()
 #    setup = ['open', [['once per bar'], {}], 1]
 #    cb1 = CodeBlock(CB1, setup)
 #    assert cb1.name == 'CB1'
-#
+
 #def test_on_close():
 #    def twokprice():
 #        flags = {"twokflag": True, 'twokflagyou': True}
