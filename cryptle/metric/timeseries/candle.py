@@ -73,11 +73,7 @@ class CandleStick:
             tocache=False,
         )
         self.l = GenericTS(
-            name="low",
-            lookback=lookback,
-            eval_func=Low,
-            args=[self._ts],
-            tocache=False
+            name="low", lookback=lookback, eval_func=Low, args=[self._ts], tocache=False
         )
         self.v = GenericTS(
             name="volume",
@@ -107,8 +103,10 @@ class CandleStick:
     # Todo temporariliy disabled pruning - some buggy behaviour causing downstream TS objects fail to update
     # after 365 bars while self._ts is pruned appropriately
     def shred(self):
-        if len(self._ts) >= 30: self._ts = self._ts[-30:]
-        else: pass
+        if len(self._ts) >= 30:
+            self._ts = self._ts[-30:]
+        else:
+            pass
 
     def accessBar():
         return [float(x) for x in [self.o, self, c, self.h, self.l, self.v]]

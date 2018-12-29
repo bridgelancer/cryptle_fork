@@ -313,7 +313,7 @@ class Timeseries(Metric):
         if len(arg._cache) < lookback:
             return arg._cache
         else:
-            return arg._cache[-lookback :]
+            return arg._cache[-lookback:]
 
     @staticmethod
     def cache(prune):
