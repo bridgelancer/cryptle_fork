@@ -19,7 +19,7 @@ cd cryptle
 sudo pip install .
 ```
 
-#### Development setup
+## Development setup
 [venv](https://docs.python.org/3/library/venv.html) is the recommended
 method to create a local development environment and manage dependencies. The
 following is a quick look at how to use venv with pip to set up a virutal
@@ -44,19 +44,28 @@ pip install -e .[dev]
    source, and any changes is effective immediately. Adding `[dev]` makes pip to
    install development packages from `extra_requires`.
 
+##### _Issues on Debian/Ubuntu/Mint_
+See [StackOverflow](https://stackoverflow.com/a/47842394/7768732) for the quick
+answer. The following summary gives a bit more context to the problem.
 
-## Dev tools
+Even though venv is now part of Python's standard library, Debian based systems
+doesn't have the `ensurepip` Python package in their default python distribution,
+which is one of `venv`'s dependencies.
+
+To resolve fix this, simply do as the error says and install the package
+`python3-venv`. If you installed other versions of python from apt, such as
+python3.6, you would have to install the corresponding package, such as
+`python3.6-venv`.
+
+
+#### Testing
 Cryptle uses [pytest](https://docs.pytest.org/en/latest/index.html) for testing.
-Run unittests with following command:
-```bash
-make test
-```
 
-Run all tests, including integration tests that are I/O bound, with either
-commands(this may take a while):
-```bash
-make testall
-```
+Run unittests with command `make test`. This only run tests in the directory
+`test/unit`.
+
+Run all tests, including I/O bound integration tests, with the command `make
+testall` (this may take a while).
 
 Build the documentation locally by running the following at the root package
 directory:
@@ -71,9 +80,16 @@ starts a simple server, and launch the page in your default browser all in one
 go.
 
 
+#### Code style
+All code must be formatted with [black](https://github.com/ambv/black) before
+committed. The CI _will reject_ commits that doesn't pass black's check. The
+only project configuration is we skip string normalisation, i.e. you may use
+single quote strings.
+
+
 ## FAQ
 
-##### ImportError: No module named '\_tkinter'
+##### ImportError: No module named `_tkinter`
 If you're getting the warning _failing to import module 'plotting' from module
 'cryptle'_, your will need to install system libraries for python tkinter, which
 is the default backend of matplotlib.

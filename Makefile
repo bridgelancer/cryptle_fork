@@ -1,4 +1,5 @@
 # Unit test configuration (pytest)
+#   config goes to pytest.ini (pyproject.toml to be supported)
 test:
 	@pytest test/unit
 
@@ -26,11 +27,13 @@ servedoc: doc
 
 
 # Pylint used for linting
+#   configs goes to .pylintrc
 lint:
 	@pylint cryptle
 
 
 # Black keeps consistent style with enforced formatting
+#   configs goes to pyproject.toml
 format:
 	@black cryptle
 
