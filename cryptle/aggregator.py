@@ -1,5 +1,8 @@
+import logging
 from cryptle.metric.base import Candle
 from cryptle.event import source, on, Bus
+
+logger = logging.getLogger(__name__)
 
 
 class Aggregator:
@@ -39,7 +42,7 @@ class Aggregator:
             list-based representation of a tick data in [value, volume, timestamp, action]
         """
         if len(data) == 4:
-            value, volume, timestamp, action = data[0], data[1], data[2], data[3]
+            value, timestamp, volume, action = data
         else:
             return NotImplementedError
 
@@ -48,6 +51,7 @@ class Aggregator:
         # initialise the candle collection
         if self.last_bar is None:
             self._pushInitCandle(value, timestamp, volume, action)
+            logger.debug('Pushed the first candle')
             return
 
         # if tick arrived before next bar, update current candle
@@ -63,7 +67,9 @@ class Aggregator:
                 self._pushEmptyCandle(
                     self.last_close, self.last_bar_timestamp + self.period
                 )
+                logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
             self._pushInitCandle(value, timestamp, volume, action)
+            logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
 
     def _is_updated(self, timestamp):
         return timestamp < self.last_bar_timestamp + self.period

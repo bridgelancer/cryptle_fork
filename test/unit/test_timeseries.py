@@ -72,7 +72,7 @@ def test_sma():
     bus.bind(stick)
 
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
 
     assert ma- 197.475 < 1e-7
 
@@ -87,7 +87,7 @@ def test_wma():
     bus.bind(stick)
 
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
     assert ma- 210.675 < 1e-7
 
 def test_recursive():
@@ -101,7 +101,7 @@ def test_recursive():
 
     ma = SMA(WMA(stick.o, 5), 3)
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
     assert ma- 139.2208333333 < 1e-7
 
 def test_ema():
@@ -115,7 +115,7 @@ def test_ema():
 
     ma = EMA(stick.o, 5)
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i+1, 0])
+        pushTick([price, i, 0, 0])
     assert ma- 221.029 < 1e-7
 
 def test_bollinger():
@@ -129,7 +129,7 @@ def test_bollinger():
 
     bollinger = BollingerBand(stick.o, 5)
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
 
     assert bollinger.upperband -  1344.7345184202045 < 1e-7
     assert bollinger.lowerband -  (-914.1845184202044) < 1e-7
@@ -146,7 +146,7 @@ def test_rsi():
 
     rsi = RSI(stick.o, 5)
     for i, price in enumerate(alt_quad_1k):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
 
     assert rsi - 61.8272076519321  < 1e-7
 
@@ -165,7 +165,7 @@ def test_macd():
     macd  = MACD(wma5, wma8, 3)
 
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
     assert macd.diff - 52.04722222222 < 1e-7
     assert macd.diff_ma -17.7111111111 < 1e-7
     assert macd.signal - 34.696296296296 < 1e-7
@@ -193,7 +193,7 @@ def test_kurtosis():
 
     kurt = Kurtosis(stick.o, 5)
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
     assert kurt- -3.231740264178196 < 1e-5
 
 def test_skewness():
@@ -207,7 +207,7 @@ def test_skewness():
 
     skew = Skewness(stick.o, 5)
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
     assert skew- -0.582459640454958 < 1e-5
 
 def test_volatility():
@@ -221,7 +221,7 @@ def test_volatility():
 
     sd = SD(stick.o, 5)
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
     assert sd- 0.00187307396323 < 1e-7
 
 
@@ -237,7 +237,7 @@ def test_diff():
     sd = SD(stick.o, 5)
     diff = Difference(sd)
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
     assert diff- -3.2466947194 * 1e-5 < 1e-7
 
 
@@ -253,7 +253,8 @@ def test_TimeseriesWrapperRetrieval():
     sd = Difference(stick.o, 1)
     sd_w = TimeseriesWrapper(sd, store_num=10)
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
+
 
     assert sd_w[-21:-19] == [750.8125, -770.3125]
     assert sd_w[-9] == 1001.3125
@@ -287,7 +288,7 @@ def test_TimeseriesWrapperRetrieval():
 #    pivot = PivotPoints(timestamp, 3600, stick.h, stick.l, stick.c)
 #
 #    for i, price in enumerate(alt_quad_1k):
-#        pushTick([price, 0, i*400 + 1, 0])
+#        pushTick([price, i, 0, 0])
 #
 #    assert pivot.pp -15687.9791666666667 < 1e-7
 #    assert pivot.r[2] - 108892.041666667 < 1e-7

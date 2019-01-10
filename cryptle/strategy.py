@@ -209,8 +209,6 @@ class Strategy:
     # [ Data input interface ]
     def pushTrade(self, pair, price, timestamp, volume, action):
         """Input tick data."""
-        logger.tick('Received tick of {}', pair)
-
         try:
             self.onTrade(pair, price, timestamp, volume, action)
         except AttributeError:
@@ -361,6 +359,7 @@ class SingleAssetStrategy(TradingStrategy):
         self, price: float, timestamp: float, volume: float, action: bool
     ) -> None:
 
+        logger.tick('Received tick of {}', (price, timestamp, volume, action))
         # todo: input validation
         try:
             self.onTrade(price, timestamp, volume, action)

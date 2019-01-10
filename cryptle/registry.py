@@ -1,6 +1,10 @@
+import logging
+from collections import OrderedDict
+
 from cryptle.event import source, on, Bus
 from cryptle.codeblock import CodeBlock
-from collections import OrderedDict
+
+logger = logging.getLogger(__name__)
 
 
 class Registry:
@@ -45,30 +49,31 @@ class Registry:
         for codeblock in self.codeblocks:
             codeblock.initialize()
 
-    @on(
-        'tick'
-    )  # tick should be agnostic to source of origin, but should take predefined format
-    def onTick(self, tick):
+    # tick should be agnostic to source of origin, but should take predefined format
+    @on('tick')
+    def onTrade(self, tick):
         # ***this sequence matters a lot***
+
+        # logger.debug('Registry received tick: {}', tick)
+
         if self.current_price is not None:
             self.handleCheck(tick)
         self.new_open = False
         self.new_close = False
         self.current_price = tick[0]
-        self.current_time = tick[2]
+        self.current_time = tick[1]
+
         self.updateLookUp()
 
     # separate interface from implementation details
-    @on('aggregator:new_open')  # 'open', 'close' events should be emitted by aggregator
+    @on('aggregator:new_open')
     def onOpen(self, price):
         self.new_open = True
         self.open_price = price
         self.updateLookUp()
 
     # separate interface from implementation details
-    @on(
-        'aggregator:new_close'
-    )  # 'open', 'close' events should be emitted by aggregator
+    @on('aggregator:new_close')
     def onClose(self, price):
         self.close_price = price
         self.new_close = True

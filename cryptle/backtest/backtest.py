@@ -188,15 +188,16 @@ class Backtest:
             self.exchange.volume = volume
             self.exchange.timestamp = timestamp
             if strat.__class__.__bases__[-1].__name__ == 'Strategy':
-                strat.pushTick(
+                strat.pushTrade(
                     price, timestamp, volume, action
                 )  # push the tick to strat
-            # remember to change the name of strategy
+
+            # Todo: Remember to change the name of strategy
             elif strat.__class__.__bases__[-1].__name__ == 'SingleAssetStrategy':
                 # emit a tick Event to kickstart the SingleAssetStrat strategy
                 # WARNING: check tick format to see whether it still fits dataset
-                self.emitTick(
-                    [float(price), float(volume), float(timestamp), float(action)]
+                strat.pushTrade(
+                    float(price), float(timestamp), float(volume), bool(action)
                 )
 
             if callback:
@@ -210,9 +211,6 @@ class Backtest:
             self.exchange.timestamp = t
             if strat.__name__ == 'Strategy':
                 strat.pushCandle(o, c, h, l, t, v)  # push the candle stick to strat
-            elif strat.__name__ == 'NewStrategy':
-                # emit a 'candle' Event to kickstart the new strategy
-                pass
             if callback:
                 callback(strat)
 
