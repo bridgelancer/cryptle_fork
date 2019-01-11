@@ -28,7 +28,10 @@
 # python
 __pycache__/
 .ipynb_checkpoints/
-.venv/
+env
+venv
+.env
+.venv
 *.egg-info/
 *.pyc
 
