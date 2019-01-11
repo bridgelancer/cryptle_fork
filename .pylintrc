@@ -17,3 +17,6 @@ jobs=1
 disable=C,      # ignore conventions linting till it's properly cleaned up
         W0221,  # arguments-differ, function signature overload
         E1205,  # arguments-differ, we use
+
+[REPORT]
+output-format=colorized
