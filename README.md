@@ -8,7 +8,7 @@ exchanges.
 
 
 ## Installation
-Python3.5 is required to run cryptle.
+Python3.6 is required to run cryptle.
 
 Cryptle is not yet avaliable on [PyPI](https://pypi.org/) and must be installed 
 from source. Obtain a copy of the source tree and install it with
@@ -19,7 +19,7 @@ cd cryptle
 sudo pip install .
 ```
 
-## Development setup
+### Development setup
 [venv](https://docs.python.org/3/library/venv.html) is the recommended
 method to create a local development environment and manage dependencies. The
 following is a quick look at how to use venv with pip to set up a virutal
@@ -44,21 +44,12 @@ pip install -e .[dev]
    source, and any changes is effective immediately. Adding `[dev]` makes pip to
    install development packages from `extra_requires`.
 
-##### _Issues on Debian/Ubuntu/Mint_
-See [StackOverflow](https://stackoverflow.com/a/47842394/7768732) for the quick
-answer. The following summary gives a bit more context to the problem.
-
-Even though venv is now part of Python's standard library, Debian based systems
-doesn't have the `ensurepip` Python package in their default python distribution,
-which is one of `venv`'s dependencies.
-
-To resolve fix this, simply do as the error says and install the package
-`python3-venv`. If you installed other versions of python from apt, such as
-python3.6, you would have to install the corresponding package, such as
-`python3.6-venv`.
+See FAQ for [issues on Debian/Ubuntu/Mint](#install-python-venv-on-debian).
 
 
-#### Testing
+## Contributing
+
+### Testing
 Cryptle uses [pytest](https://docs.pytest.org/en/latest/index.html) for testing.
 
 Run unittests with command `make test`. This only run tests in the directory
@@ -79,12 +70,33 @@ For convenience sake, the provided command `make servedoc` builds the docs,
 starts a simple server, and launch the page in your default browser all in one
 go.
 
-
-#### Code style
+### Code style
 All code must be formatted with [black](https://github.com/ambv/black) before
 committed. The CI _will reject_ commits that doesn't pass black's check. The
 only project configuration is we skip string normalisation, i.e. you may use
-single quote strings.
+single quote strings. Black limits to 88 character as line width.
+
+#### Imports
+All imports should be done at the top of a python file. The only exception for
+this is for resolving between packages for different OS or Python version.
+
+The order of import should be __stdlib__, __external dependencies__, then
+__internal modules__. External dependencies meaning packages that are installed
+from somewhere outside the project, i.e. ones that came with pip install.
+Internal packages meaning code from other parts of the project.
+
+#### Naming convention
+The following should cover most cases. If in doubt, consult the [Google Python
+Style Guide](https://google.github.io/styleguide/pyguide.html#Comments). When
+there's any conflict between Google and the following, this list should take
+precedence.
+
+- snake_case for variables and module level functions.
+- CamelCase for classes.
+- mixedCase for methods.
+- Avoid puncations for package names. Excessively long names i.e. 15 character
+  long may use underscores. However, if your package name is that long, you
+  should consider giving it a better name.
 
 
 ## FAQ
@@ -95,8 +107,20 @@ If you're getting the warning _failing to import module 'plotting' from module
 is the default backend of matplotlib.
 [Solution](https://stackoverflow.com/questions/50327906/importerror-no-module-named-tkinter-please-install-the-python3-tk-package)
 
-##### Why not [pipenv](https://pipenv.readthedocs.io/en/latest/)?
+##### Install python3-venv on Debian
+See [StackOverflow](https://stackoverflow.com/a/47842394/7768732) for the quick
+answer. The following summary gives a bit more context to the problem.
 
+Even though venv is now part of Python's standard library, Debian based systems
+doesn't have the `ensurepip` Python package in their default python distribution,
+which is one of `venv`'s dependencies.
+
+To resolve fix this, simply do as the error says and install the package
+`python3-venv`. If you installed other versions of python from apt, such as
+python3.6, you would have to install the corresponding package, such as
+`python3.6-venv`.
+
+##### Why not [pipenv](https://pipenv.readthedocs.io/en/latest/)?
 Pipenv's is VERY slow in generating the lockfile. Besides, cryptle has grown
 from a monolithic repository for both library and application into a
 stand-alone framework package. This removes the need for pipenv's most desired
