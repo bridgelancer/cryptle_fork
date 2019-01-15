@@ -25,8 +25,7 @@ method to create a local development environment and manage dependencies. The
 following is a quick look at how to use venv with pip to set up a virutal
 environment to use/develop cryptle.
 
-Python3.6 is required to setup dev environemnt. (Blame
-[black](https://github.com/ambv/black) for that)
+Python3.6 is required to setup dev environemnt.
 
 ```
 python3.6 -m venv .venv
@@ -72,9 +71,10 @@ go.
 
 ### Code style
 All code must be formatted with [black](https://github.com/ambv/black) before
-committed. The CI _will reject_ commits that doesn't pass black's check. The
-only project configuration is we skip string normalisation, i.e. you may use
-single quote strings. Black limits to 88 character as line width.
+committed. The CI _will_ reject commits that doesn't pass black's check. The
+only black configuration we have is skip string normalisation, i.e. you may use
+single quote strings. In fact we prefer single quoted strings. Also note that
+black limits to 88 character as line width.
 
 #### Imports
 All imports should be done at the top of a python file. The only exception for
@@ -102,15 +102,26 @@ precedence.
 ## FAQ
 
 ##### ImportError: No module named `_tkinter`
-If you're getting the warning _failing to import module 'plotting' from module
-'cryptle'_, your will need to install system libraries for python tkinter, which
-is the default backend of matplotlib.
-[Solution](https://stackoverflow.com/questions/50327906/importerror-no-module-named-tkinter-please-install-the-python3-tk-package)
+If you're getting the warning `failing to import module 'plotting' from module
+'cryptle'`, your will need to install system libraries for python tkinter, which
+is the default backend of matplotlib. To fix, install tk with this command:
+```
+$ sudo apt-get install python3-tk
+```
+Or use a different backend.
+```
+import matplotlib
+matplotlib.use("agg")
+import matplotlib.pyplot as plt
+```
+
+[Source](https://stackoverflow.com/questions/50327906/importerror-no-module-named-tkinter-please-install-the-python3-tk-package).
 
 ##### Install python3-venv on Debian
-See [StackOverflow](https://stackoverflow.com/a/47842394/7768732) for the quick
-answer. The following summary gives a bit more context to the problem.
-
+Install the `venv` package through apt
+```
+$ sudo apt-get install python3-venv
+```
 Even though venv is now part of Python's standard library, Debian based systems
 doesn't have the `ensurepip` Python package in their default python distribution,
 which is one of `venv`'s dependencies.
@@ -119,6 +130,8 @@ To resolve fix this, simply do as the error says and install the package
 `python3-venv`. If you installed other versions of python from apt, such as
 python3.6, you would have to install the corresponding package, such as
 `python3.6-venv`.
+
+[Source](https://stackoverflow.com/a/47842394/7768732).
 
 ##### Why not [pipenv](https://pipenv.readthedocs.io/en/latest/)?
 Pipenv's is VERY slow in generating the lockfile. Besides, cryptle has grown
