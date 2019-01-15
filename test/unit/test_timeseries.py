@@ -50,6 +50,17 @@ bars = [
 def pushTick(tick):
     return tick
 
+@source('candle')
+def pushCandle(bar):
+    return bar
+
+def pushSeries(series):
+    for i, price in enumerate(series):
+        pushTick([price, 0, i, 0])
+
+def pushAltQuad():
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 0, i, 0])
 
 @source('candle')
 def pushCandle(bar):
@@ -93,7 +104,6 @@ def bind(bus, stick_period=3, aggregator_period=3):
     bus.bind(stick)
     bus.bind(aggregator)
     return bus, stick
-
 
 # decorator for testing timeseries.value after looping through alt_quad
 def val(func):
@@ -139,6 +149,10 @@ def test_rsi(stick):
     # not checked
     return rsi, 57.342237492321196
 
+@val
+def test_rsi(stick):
+    rsi = RSI(stick.o, 5)
+    return rsi, 61.8272076519321
 
 def test_bollinger():
     bus = Bus()
@@ -174,24 +188,25 @@ def test_atr():
     for i, bar in enumerate(bars):
         pushCandle([*bar, 0])
 
-
 @val
 def test_kurtosis(stick):
     kurt = Kurtosis(stick.o, 5)
     return kurt, -3.231740264178196
-
 
 @val
 def test_skewness(stick):
     skew = Skewness(stick.o, 5)
     return skew, -0.582459640454958
 
-
 @val
 def test_volatility(stick):
     sd = SD(stick.o, 5)
     return sd, 0.00187307396323
 
+@val
+def test_return(stick):
+    r = BarReturn(stick.o, stick.c, 5, all_close=True)
+    return r, 986.0625
 
 @val
 def test_return(stick):
