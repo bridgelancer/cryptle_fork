@@ -576,6 +576,17 @@ class GenericTS(Timeseries):
     #    self.value = val
     #    self.broadcast()
 
+    #def eval_with_cache(self):
+    #    """Use when caching is needed."""
+    #    val = self.eval_func(*self.args)
+    #    if val is not None:
+    #        self.eval(val)
+
+    #@MemoryTS.cache("normal")
+    #def eval(self, val):
+    #    self.value = val
+    #    self.broadcast()
+
     def eval_without_cache(self):
         """Use when caching is not needed."""
         self.value = self.eval_func(*self.args)
