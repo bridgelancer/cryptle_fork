@@ -633,6 +633,10 @@ class DiskTS(Metric):
     def cleanup(self):
         self.write(None)
 
+
+    def cleanup(self):
+        self.write(None)
+
     def write(self, num_to_write):
         """Write stored data to disk.
 
