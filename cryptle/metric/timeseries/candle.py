@@ -65,36 +65,33 @@ class CandleStick:
         self.name = name
 
         # eval_func for GenericTS objects
-        self._o_buffer = GenericTS(
-            name="open_buffer",
+        self._o_cache = GenericTS(
+            name="open_cache",
             lookback=lookback,
             eval_func=Open,
             args=[self._ts],
             tocache=False,
         )
-        self._c_buffer = GenericTS(
-            name="close_buffer",
+        self._c_cache = GenericTS(
+            name="close_cache",
             lookback=lookback,
             eval_func=Close,
             args=[self._ts],
             tocache=False,
         )
-        self._h_buffer = GenericTS(
-            name="high_buffer",
+        self._h_cache = GenericTS(
+            name="high_cache",
             lookback=lookback,
             eval_func=High,
             args=[self._ts],
             tocache=False,
         )
-        self._l_buffer = GenericTS(
-            name="low_buffer",
-            lookback=lookback,
-            eval_func=Low,
-            args=[self._ts],
-            tocache=False,
+        self._l_cache = GenericTS(
+            name="low_cache", lookback=lookback, eval_func=Low, args=[self._ts], tocache=False
+
         )
-        self._v_buffer = GenericTS(
-            name="volume_buffer",
+        self._v_cache = GenericTS(
+            name="volume_cache",
             lookback=lookback,
             eval_func=Volume,
             args=[self._ts],
@@ -102,47 +99,47 @@ class CandleStick:
         )
 
         self.o = GenericTS(
-            self._o_buffer,
+            self._o_cache,
             name='open',
-            lookback=lookback,
+            lookback=lookback
             eval_func=cache,
-            args=[self._o_buffer],
+            args=[self._o_cache],
             tocache=True,
         )
 
         self.c = GenericTS(
-            self._c_buffer,
+            self._c_cache,
             name='close',
-            lookback=lookback,
+            lookback=lookback
             eval_func=cache,
-            args=[self._c_buffer],
+            args=[self._c_cache],
             tocache=True,
         )
 
         self.h = GenericTS(
-            self._h_buffer,
+            self._h_cache,
             name='high',
-            lookback=lookback,
+            lookback=lookback
             eval_func=cache,
-            args=[self._h_buffer],
+            args=[self._h_cache],
             tocache=True,
         )
 
         self.l = GenericTS(
-            self._l_buffer,
+            self._l_cache,
             name='low',
-            lookback=lookback,
+            lookback=lookback
             eval_func=cache,
-            args=[self._l_buffer],
+            args=[self._l_cache],
             tocache=True,
         )
 
         self.v = GenericTS(
-            self._v_buffer,
+            self._v_cache,
             name='volume',
-            lookback=lookback,
+            lookback=lookback
             eval_func=cache,
-            args=[self._v_buffer],
+            args=[self._v_cache],
             tocache=True,
         )
         self.bar = bar
@@ -157,11 +154,11 @@ class CandleStick:
 
     def update(self):
         # eval_func passed to GenericTS objects held within CandleStick
-        self._o_buffer.evaluate()
-        self._c_buffer.evaluate()
-        self._h_buffer.evaluate()
-        self._l_buffer.evaluate()
-        self._v_buffer.evaluate()
+        self._o_cache.evaluate()
+        self._c_cache.evaluate()
+        self._h_cache.evaluate()
+        self._l_cache.evaluate()
+        self._v_cache.evaluate()
 
     def shred(self):
         if len(self._ts) >= 30:
