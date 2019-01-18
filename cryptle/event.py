@@ -226,7 +226,7 @@ def on(event):
 
     def decorator(method):
         if hasattr(method, '_events'):
-            method._events += event
+            method._events.append(event)
         else:
             method._events = [event]
         return method
