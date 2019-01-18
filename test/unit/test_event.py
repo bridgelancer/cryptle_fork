@@ -4,6 +4,7 @@ from functools import wraps
 import pytest
 
 import cryptle.event as event
+from cryptle.event import source, on
 
 
 class CallbackReached(Exception):
@@ -34,7 +35,7 @@ def test_direct_emit():
 
 
 def test_global_on():
-    @event.on('test_event')
+    @on('test_event')
     def callback(data):
         assert data == None
 
@@ -44,18 +45,18 @@ def test_global_on():
 
 
 def test_global_source_on():
-    @event.source('test_event')
-    def source():
+    @source('test_event')
+    def produce():
         return None
 
-    @event.on('test_event')
+    @on('test_event')
     def callback(data):
         assert data == None
 
     bus = event.Bus()
-    bus.bind(source)
+    bus.bind(produce)
     bus.bind(callback)
-    source()
+    produce()
 
 
 def test_bound_bus_bound_callback():
@@ -96,7 +97,7 @@ def test_unbound_on_method_unbound_bus():
     evt = 'test_event'
 
     class SMA:
-        @event.on(evt)
+        @on(evt)
         def test(self, data):
             assert data == None
 
@@ -111,7 +112,7 @@ def test_unbound_source_method_unbound_bus():
     evt = 'test_event'
 
     class Tick:
-        @event.source(evt)
+        @source(evt)
         def test(self):
             return 1
 
@@ -125,12 +126,12 @@ def test_unbound_source_method_unbound_bus():
 
 def test_1_source_callback_combined_instance():
     class Ticker:
-        @event.source('tick')
+        @source('tick')
         def tick(self):
             return 1
 
         @reached
-        @event.on('tick')
+        @on('tick')
         def recv(self, data):
             assert data == 1
 
@@ -143,13 +144,13 @@ def test_1_source_callback_combined_instance():
 
 def test_1_source_instance_1_callback_instance():
     class Ticker:
-        @event.source('tick')
+        @source('tick')
         def tick(self, val=0):
             return val
 
     class Candle:
         @reached
-        @event.on('tick')
+        @on('tick')
         def recv(self, data, expect=0):
             assert data == expect
 
@@ -169,7 +170,7 @@ def test_1_callback_n_events():
         def __init__(self):
             self.called = 0
 
-        @event.on('tick')
+        @on('tick')
         def print_tick(self, data):
             self.called += 1
             return data
@@ -185,8 +186,8 @@ def test_1_callback_n_events():
 
 
 def test_multi_on(capsys):
-    @event.on('test1')
-    @event.on('test2')
+    @on('test1')
+    @on('test2')
     def callback(data):
         print('reached')
 
