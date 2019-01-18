@@ -60,12 +60,12 @@ def pushCandle(bar):
 
 def pushSeries(series):
     for i, price in enumerate(series):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
 
 
 def pushAltQuad(ts=None):
     for i, price in enumerate(alt_quad):
-        pushTick([price, 0, i, 0])
+        pushTick([price, i, 0, 0])
 
 @source('candle')
 def pushCandle(bar):
