@@ -3,6 +3,10 @@ from cryptle.event import on, Bus
 
 """ Temporary solution for passing timestamp to various Timeseries object """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class Timestamp(Timeseries):
     def __init__(self, lookback):

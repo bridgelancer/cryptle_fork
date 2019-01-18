@@ -139,7 +139,7 @@ class BitstampFeed:
         logger.info('Attempting to connect')
         url = _build_bitstamp_url()
         self._ws.connect(url)
-        logger.info('Connection establishedd')
+        logger.info('Connection established')
 
         self._recv_thread = Thread(target=self._recvForever)
         self._recv_thread.setDaemon(True)

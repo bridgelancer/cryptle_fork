@@ -1,5 +1,8 @@
 from cryptle.metric.base import Timeseries
-import numpy as np
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def default(lookback):
@@ -22,6 +25,7 @@ class RSI(Timeseries):
 
     def __init__(self, ts, lookback, name="rsi", weight=default):
         super().__init__(ts)
+        logger.debug('Obj: {}. Initialized the parent Timeseries of RSI.', type(self))
         self._lookback = lookback
         self._ts = ts
         self._cache = []
@@ -32,6 +36,7 @@ class RSI(Timeseries):
         self._ema_down = None
 
     def evaluate(self):
+        logger.debug('Obj {} Calling evaluate in RSI.', type(self))
         self._cache.append(float(self._ts))
         if len(self._cache) < 2:
             return
@@ -90,6 +95,3 @@ class RSI(Timeseries):
                 self.value = 50
 
         self.broadcast()
-
-    def onTick(self, price, timestamp, volume, action):
-        raise NotImplementedError

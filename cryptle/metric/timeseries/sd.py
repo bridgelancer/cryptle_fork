@@ -1,5 +1,9 @@
-from cryptle.metric.base import Timeseries
+from cryptle.metric.base import Timeseries, MemoryTS
 import numpy as np
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SD(Timeseries):
@@ -14,13 +18,15 @@ class SD(Timeseries):
 
     def __init__(self, ts, lookback, name=None):
         super().__init__(ts)
+        logger.debug('Obj: {}. Initialized the parent Timeseries of SD.', type(self))
         self._lookback = lookback
         self._ts = ts
         self.value = 0
         self._cache = []
 
-    @Timeseries.cache('normal')
+    @MemoryTS.cache('normal')
     def evaluate(self):
+        logger.debug('Obj {} Calling evaluate in SD.', type(self))
         calc = self._cache[:]
         if np.std(calc) > 0.001 * np.average(
             calc

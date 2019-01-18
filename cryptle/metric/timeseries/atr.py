@@ -1,15 +1,24 @@
-from cryptle.metric.base import Timeseries, GenericTS
+from cryptle.metric.base import MultivariateTS, GenericTS
 import numpy as np
 
+import logging
 
-class ATR(Timeseries):
-    """Compute the ATR value based on Candle input."""
+logger = logging.getLogger(__name__)
+
+
+# Todo(MC) Could consider rewrite to take individual candle.c, candle.h, candle.l instaed
+class ATR(MultivariateTS):
+    """Compute the ATR value based on Candle input.
+
+    Args
+    ----
+    candle: :class:`~cryptle.metric.timeseries.candle.CandleStick`
+        CandleStick object for updating
+    """
 
     def __init__(self, candle, lookback, name=None):
-        self._ts = candle.c, candle.h, candle.l
-        super().__init__(*self._ts)
         self._lookback = lookback
-        self.value = None
+        self.prev_value = None
 
         def true_range(atr):
             if len(atr._cache) >= 3:
@@ -27,18 +36,38 @@ class ATR(Timeseries):
                 t3 = abs(float(low) - float(last_close))
                 return max(t1, t2, t3)
 
+        def value(atr):
+            try:
+                if atr.prev_value is None:
+                    return float(self._tr)
+                else:
+                    return (
+                        atr.prev_value * (self._lookback - 1) + float(self._tr)
+                    ) / self._lookback
+            except:
+                pass
+
         self._tr = GenericTS(
-            self._ts, lookback=lookback, eval_func=true_range, args=[self]
+            candle.c,
+            candle.h,
+            candle.l,
+            lookback=lookback,
+            eval_func=true_range,
+            args=[self],
         )  # tr is the true_range object to be passed into the "ATR" wrapper
+        self.value = GenericTS(
+            self._tr, lookback=lookback, eval_func=value, args=[self]
+        )
+        logger.debug(
+            'Obj:{}. Finished declaration of all Timeseries objects', type(self)
+        )
+        super().__init__(candle.c, candle.h, candle.l)
+        logger.debug(
+            'Obj: {}. Initialized the parent MultivariateTS of BollingerBand',
+            type(self),
+        )
+        logger.debug('Obj: {}. Initialized BollingerBand', type(self))
 
     def evaluate(self):
+        logger.debug('Obj: {} Calling evaluate in bollinger', type(self))
         self.broadcast()
-        try:
-            if self.value is None:
-                self.value = float(self._tr)
-            else:
-                self.value = (
-                    self.value * (self._lookback - 1) + float(self._tr)
-                ) / self._lookback
-        except:
-            pass

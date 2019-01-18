@@ -1,18 +1,26 @@
-"""
-Base classes for time series data structures.  Warning -------
-The class names :class:`TimeseriesWrapper`, :class:`Timeseries`, and :class:`HistoricalTS` are
-temporary and are subject to change.
+"""Base classes for time series data structures.
+
+This module provides Timeseries and MultivariateTS as the primary objects for cascading
+runtime updating data and calculate the respective valid values. These objects could be
+recursively applied to another Timeseries or MultivariateTS.
+
+Historical Timeseiries values are also accessible, with the feature of writing to disk
+to prevent excessive memory usage during runtime.
+
 """
 # Todo(pine): Refactor observer pattern into reusable set of mixins. (observe for a longer period)
 from functools import wraps
+from collections import OrderedDict
 
 import logging
 import csv
 import os
 import datetime
 
+logger = logging.getLogger(__name__)
 
-class Metric:
+
+class Metric:  # pylint: disable=no-member
     """Mixin class that provides dunder methods for of data objects witha single value."""
 
     def __int__(self):
@@ -186,127 +194,230 @@ class Model:
         pass
 
 
-class TimeseriesWrapper(Metric):
-    """Wrapper class for Timeseries and HistoricalTS.
-
-    This class encapsulated the computational part and history storage part of
-    time series data containers. It contains the value-computing object
-    (Timeseries at the moment) and historical data object (HistoricalTS at the
-    moment).
-
-    """
-
-    def __init__(self, ts, store_num=10000, **kwargs):
-        self.timeseries = ts
-        self.hxtimeseries = HistoricalTS(self.timeseries, store_num)
-
-    def __getitem__(self, index):
-        """Wrapping the HistoricalTS and give access via usual sequence syntax."""
-        # this only works for ts with one Timeseries
-        return self.hxtimeseries.__getitem__(index)
-
-    @property
-    def value(self):
-        """ Returning the value of underlying ts and set it as an instance attribute of the
-        wrapper."""
-        return self.timeseries.value
-
-    def __hash__(self):
-        return id(self)
-
-
+# Todo (MC):
+# Any timeseries type should also support list-based initialization and update
 class Timeseries(Metric):
     """Container for time series data.
 
-    TimeSeries object should only concern about the updating of its series upon arrival of tick or
-    candle and no more. The calculation part of the class should only hold the most updated
-    Any cached data that the TimeSeries object maintained should not be accessed by other objects
-    for any external purpose.
+    Timeseries contains the necessary machinery for calculating and accessing current
+    and historical Timeseries values.
 
     Ordinary Timeseries class is designed to be both an observable and an observer.
-    This means that each instance of a Timeseries class has corresponding publisher/subscriber
-    functionality that allows it to broadcast its changes to Timeseries that are listening
-    to its updates/listen to updates from other timeseries.
+    This means that each instance of a Timeseries class has corresponding
+    subscriber/publisher functionality that allows it to broadcast its changes to
+    Timeseries that are listening to its updates/listen to updates from other
+    timeseries.
 
-    Upstream Timeseries (e.g. a :class:`~cryptle.metric.timeseries.candle.CandleStick`) is designed
-    to only be an observable but not a observer. They act as a receptor for external data sources
-    and should not depend on other Timeseries object for their updating of values.
+    Some upstream Timeseries (e.g. a
+    :class:`~cryptle.metric.timeseries.candle.CandleStick`) is designed to only be an
+    observable but not a observer. They act as a receptor for external data sources and
+    should not depend on other Timeseries object for their updating of values.
 
     Args
     ----
-    *vargs : :class:`~cryptle.metric.base.Timeseries`(s)
-        One or more Timeseries objects to subscribe to
+    *vargs : :class:`~cryptle.metric.base.Timeseries` or :class:`~cryptle.metric.base.MultivariateTS`
+        One or more Timeseries/MultivariateTS objects to subscribe to
 
     """
 
-    # Todo (MC):
-    # Any timeseries type should also support list-based initialization and update
-
     def __init__(self, *vargs):
-        self.name = None
+        self.mxtimeseries = MemoryTS(self)
+        self.hxtimeseries = DiskTS(self)
+        self.value = None
 
-        # self.subscribers are the list of references to timeseries objects that this instance subscribes to
+        # self.publishers are the list of references to timeseries objects that this
+        # instance subscribes to
+        self.publishers = []
+
+        # self.publishers_broadcasted is the set of timeseries that broadcasted
+        # previously
+        self.publishers_broadcasted = set()
+
+        # self.subscribers is the list of references to timeseries objects that listen
+        # to this timeseries
         self.subscribers = []
 
-        # self.subscribers_broadcasted is the set of timeseries that broadcasted previously
-        self.subscribers_broadcasted = set()
-
-        # self.listeners is the list of references to timeseries objects that listen to this timeseries
-        self.listeners = []
-
         for arg in vargs:
-            if isinstance(arg, Timeseries):
-                arg.listeners.append(self)
-                self.subscribers.append(arg)
+            arg.subscribers.append(self)
+            logger.info('\nSubscribe {} as a subscriber of {}', type(self), type(arg))
+            self.publishers.append(arg)
+            logger.info('Listen {} as a listener of {} \n', type(arg), type(self))
+
+    def __getitem__(self, index):
+        """Wrapping the DiskTS and give access via usual list-value getting syntax."""
+        return self.hxtimeseries.__getitem__(index)
 
     # ???Todo(pine): Determine how to handle function arguments
     def evaluate(self):
         """Virtual method to be implemented for each child instance of Timeseires"""
         raise NotImplementedError(
-            "Please implement an evaluate method for every Timeseries instance"
+            "Please implement an evaluate method for every Timeseries instance."
         )
 
     def processBroadcast(self, pos):
         """To be called when all the listened Timeseries updated at least once."""
-        if len(self.subscribers) == 1:
+        if len(self.publishers) == 1:
+            logger.debug(
+                'Obj: {}. All publisher broadcasted, proceed to updating', type(self)
+            )
             self.update()
         else:
-            self.subscribers_broadcasted.add(self.subscribers[pos])
-            if len(self.subscribers_broadcasted) < len(self.subscribers):
-                pass
+            self.publishers_broadcasted.add(self.publishers[pos])
+            if len(self.publishers_broadcasted) < len(self.publishers):
+                logger.debug(
+                    'Obj: {}. Number of publisher broadcasted: {}',
+                    type(self),
+                    len(self.publishers_broadcasted),
+                )
+                logger.debug(
+                    'Obj: {}. Number of publisher remaining: {}',
+                    type(self),
+                    len(self.publishers) - len(self.publishers_broadcasted),
+                )
             else:
-                self.subscribers_broadcasted.clear()
+                self.publishers_broadcasted.clear()
                 self.update()
+                logger.debug(
+                    'Obj: {}. All publisher broadcasted, proceed to updating',
+                    type(self),
+                )
 
     # ???Todo(pine): This should take arguments, requiring subclasses to know the internals of the
     # observables defeats the purpose of having this interface
     def update(self):
-        """Wrapper interface for controlling the updating behaviour when there is new update."""
-        # by current design, all evaluate of listeners would be called if candle decides to broadcast
+        """Wrapper interface for controlling the updating behaviour when there is new
+        update."""
+        # By current design, all :meth:`evaluate` of subscribers would be called if
+        # candle decides to broadcast
+        logger.debug(
+            'Obj: {}. Calling evaluate method of the respective Timeseries', type(self)
+        )
         self.evaluate()
+        # The :meth:`evaluate` of hxtimeseries would also be called by default, could
+        # modify this behaviour in the future
+        self.hxtimeseries.evaluate()
 
     def broadcast(self):
-        """Call :meth:`processBroadcast` of all listeners."""
+        """Call :meth:`~processBroadcast` of all subscribers."""
         # for list version of this paradigm
-        # 1. find the index corresponds to the root instance in each listener.subscribers
-        # 2. pass the index to listener
-        for listener in self.listeners:
-            pos = [id(x) for x in listener.subscribers].index(id(self))
-            listener.processBroadcast(pos)
+        # 1. find the index corresponds to the root instance in each
+        #    subscriber.publishers
+        # 2. pass the index to subscriber
+        for subscriber in self.subscribers:
+            pos = [id(x) for x in subscriber.publishers].index(id(self))
+            logger.debug(
+                'Obj: {}, Calling processBroadcast of subscriber {}',
+                type(self),
+                type(subscriber),
+            )
+            subscriber.processBroadcast(pos)
 
-    def register(self, new_ts):
-        """Registers another :class:`Timeseries` object as a listener."""
-        self.listeners[new_ts.name] = new_ts
-        # self.listners.append(new_ts)
+    def subscribe(self, new_ts):
+        """Registers another :class:`~Timeseries` object as a subscriber."""
+        logger.info('Obj: {}, registering {} as a subscriber', self, new_ts)
+        self.subscribers.append(new_ts)
 
-    def unregister(self, ts):
-        """Unregister the provided listener."""
-        del self.listeners[ts.name]
-        # self.listeners.pop(ts)
+    def unsubscribe(self, ts_to_remove):
+        """Unregister an existing subscriber."""
+        logger.info('Obj: {}, unregistering {} as a subscriber', self, ts)
+        # to be implemented
+
+    def listen(self, new_ts):
+        """Registers another :class:`~Timeseries` object as a subscriber."""
+        logger.info('Obj: {}, registering {} as a listener', self, new_ts)
+        self.listeners.append(new_ts)
+
+    def unlisten(self, ts_to_remove):
+        """Unregister an existing subscriber."""
+        logger.info('Obj: {}, unregistering {} as a listener', self, ts)
+        # to be implemented
+
+    def importBars(self):
+        """ Import functionality to import well defined excel columns as Timeseries
+        objects """
+        raise NotImplementedError
+
+    def __hash__(self):
+        """ Let :class:`~Timeseries` be usable as dict keys, ignoring the object
+        state."""
+        return id(self)
+
+
+class MultivariateTS:
+    """Wrapper for objects holding multiple Timeseries objects
+
+    MultivariateTS provides integrating facilities for objects that hold multiple
+    Timeseries object to interface with the publisher-subscriber interface at ease.
+
+    Without the use of MultivariateTS, any objects subclassed from Timeseries that would
+    wish to listen to all the Timeseries objects held by a particular wrapping construct
+    would have to reference back to the module defining that wrapping construct, and
+    write correspondingly. This makes room for errors and inadverent use of the wrapping
+    construct in place of the intended Timeseries.
+
+    Therefore, any object that intends to hold several Timeseries and is not a
+    Timeseries itself should subclass from MultivariateTS.
+
+    In the future, integration tests would be developed at the strategy level to check
+    whether the Timeseries/TSwrapper intialized by the user code (the implemented
+    strategy module).
+
+    Args
+    ----
+    *vargs : :class:`~cryptle.metric.base.Timeseries` or :class:`~cryptle.metric.base.MultivariateTS`
+        One or more Timeseries/MultivariateTS objects to subscribe to
+    """
+
+    def __init__(self, *vargs):
+        self.subscribers = []
+        self.publishers = []
+        self.publishers_broadcasted = set()
+
+        for arg in vargs:
+            arg.subscribers.append(self)
+            self.publishers.append(arg)
+
+    def get_generic_ts(self):
+        """Return a list of the GenericTS within the wrapper, sorted by the alphabetical
+        order of their key names"""
+
+        lst_ts = []
+        for name, obj in OrderedDict(
+            sorted(self.__dict__.items(), key=lambda t: str.lower(t[0]))
+        ).items():
+            if isinstance(obj, Timeseries):
+                lst_ts.append(obj)
+        return lst_ts
+
+    def broadcast(self):
+        """Duck-typed with the :meth:`~cryptle.metric.base.Timeseries.broadcast`"""
+        pass
+
+    def processBroadcast(self, pos):
+        """Duck-typed with the :meth:`~cryptle.metric.base.Timeseries.processBroadcast`"""
+        pass
+
+    broadcast = Timeseries.broadcast
+    processBroadcast = Timeseries.processBroadcast
+
+    def update(self):
+        """Call the class evaluate method"""
+        self.evaluate()
+
+    def evaluate(self):
+        """Virtual method to be implemented for each child instance of Timeseires"""
+        raise NotImplementedError(
+            "Please implement an evaluate method for every MultivariateTS instance."
+        )
+
+
+class MemoryTS(Metric):
+    def __init__(self, ts):
+        self._ts = ts
 
     @staticmethod
     def prune(arg, lookback=None):
-        """The Timeseries class prune method (as opposed to the HistoricalTS one)."""
+        """The MemoryTS class prune method (as opposed to the DiskTS one)."""
         if lookback is None:
             lookback = arg._lookback
 
@@ -317,39 +428,39 @@ class Timeseries(Metric):
 
     @staticmethod
     def cache(prune):
-        """Decorator for any Timeseries method to maintain its valid cache
-        for calculating its output value.
+        """Decorator for any :meth:`evaluate` to maintain its valid cache for
+        calculating its output value.
 
-        The class method to be decorated should initialize self._cache as empty
-        list. The class should also contain a private attribute ``._lookback`` for
-        caching purpose.
+        The class method to be decorated should initialize self._cache as empty list.
+        The class should also contain a private attribute ``._lookback`` for caching
+        purpose.
+
+        It handles the cachine of possible types being pased into ``self._ts`` of a Timeseries.
 
         Args
         ----
         prune_type: str
-            Positional argument to decorator function, either 'normal' or 'historical'
+            argument to specify the prune function to be used, either 'normal' or
+            'historical'
 
         """
 
         def with_prune_type(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                # set alias self
-                # a hack - args[0] must be "self"
+                # set alias self - hacking interface
                 self = args[0]
-                if prune is "normal":
-                    prune_type = Timeseries.prune
-                elif prune == "historical":
-                    prune_type = HistoricalTS.prune
 
-                # if no self._cache in original ts, create one for it
-                if "_cache" not in self.__dict__.keys():
-                    self._cache = []
+                if prune is "normal":
+                    prune_type = MemoryTS.prune
+                elif prune == "historical":
+                    prune_type = DiskTS.prune
 
                 if isinstance(self._ts, Timeseries):
                     if self._ts.value is not None:
                         self._cache.append(float(self._ts))
-                if isinstance(self._ts, tuple):
+
+                elif isinstance(self._ts, tuple):
                     buffer = []
                     for ts in self._ts:
                         if isinstance(ts, list):
@@ -357,11 +468,24 @@ class Timeseries(Metric):
                         if isinstance(ts, Timeseries):
                             if ts.value is not None:
                                 buffer.append(ts.value)
+                        if isinstance(ts, MultivariateTS):
+                            lst_ts = ts.get_generic_ts()
+                            for t in lst_ts:
+                                if t.value is not None:
+                                    buffer.append(t.value)
 
                     if len(buffer) == 1:
                         self._cache.append(self._ts[0].value)
                     elif len(buffer) > 1:
                         self._cache.append(buffer)
+
+                elif isinstance(self._ts, MultivariateTS):
+                    lst_ts = self._ts.get_generic_ts()
+                    buffer = []
+                    for ts in lst_ts:
+                        if ts.value is not None:
+                            buffer.append(ts.value)
+                    self._cache.append(buffer)
 
                 self._cache = prune_type(self)
                 func(*args, **kwargs)
@@ -370,50 +494,41 @@ class Timeseries(Metric):
 
         return with_prune_type
 
-    def importBars(self):
-        """ Import functionality to import well defined excel columns as Timeseries objects """
-        raise NotImplementedError
-
-    def __hash__(self):
-        """ Let :class:`Timeseries` be usable as dict keys, ignoring the object state."""
-        return id(self)
-
 
 class GenericTS(Timeseries):
-    """Generic Timeseries object for sub-timeseries held by wrapper Metric class
+    """Generic Timeseries object for sub-timeseries held by a MultivariateTS
 
     Args
     ----
-    ts : :class:`cryptle.metric.base.Timeseries`
-        One or more ``Timeseries`` to be listened to, evaluate method is called whever ts broadcasts
+    ts : :class:`~cryptle.metric.base.Timeseries` or :class:`~cryptle.metric.base.MultivariateTS`
+        One or more ``Timeseries`` or ``MultivariateTS`` to be listened to, evaluate method is called whever
+        ts broadcasts
     lookback : int
         Same as :class:`~cryptle.metric.base.Timeseries`
     eval_func : function
-        A function implemented in the wrapping :class:`~cryptle.metric.base.Timeseries` class, equivalent to
-        the evalutate method of the ``Timeseries``
+        A function implemented in the __init__ method of the wrapping
+        class, equivalent to the evalutate method of the ``Timeseries``
     args : list
         A list of arguments to be passed into the :meth:`eval_func` of
-        :class:`~cryptle.metric.base.GenericTS` value1
+        :class:`~cryptle.metric.base.GenericTS` value
     tocache : boolean, optional
-        Parameter for determining whether to use the :meth:`~cryptle.metric.base.Timeseries.cache`
-        decorator, False by default
+        Parameter for determining whether to use the
+        :meth:`~cryptle.metric.base.Timeseries.cache` decorator, False by default
     name : boolean, optional
         For easy referencing of GenericTS instance when necessary
 
     """
 
     def __init__(
-        self, *ts, name=None, lookback=None, eval_func=None, args=None, tocache=True
+        self, *vargs, name=None, lookback=None, eval_func=None, args=None, tocache=True
     ):
-        super().__init__(*ts)
-        self.name = name
+        super().__init__(*vargs)
         self._lookback = lookback
-        self._ts = ts
+        self._ts = vargs
         self._cache = []
         self.eval_func = eval_func
         self.args = args
         self.tocache = tocache
-        self.value = None
 
     def evaluate(self):
         if self.tocache:
@@ -421,7 +536,7 @@ class GenericTS(Timeseries):
         else:
             self.eval_without_cache()
 
-    @Timeseries.cache("normal")
+    @MemoryTS.cache("normal")
     def eval_with_cache(self):
         """Use when caching is needed."""
         self.value = self.eval_func(*self.args)
@@ -433,25 +548,26 @@ class GenericTS(Timeseries):
         self.broadcast()
 
 
-class HistoricalTS(Timeseries):
-    """Base class for management, storage, and retrieval of historical :class:`Timeseries` data.
+class DiskTS(Metric):
+    """Class for management, storage, and retrieval of historical :class:`Timeseries`
+    data.
 
-    The current design of the storage of generated historical values is stored to directory named
-    "histlog", in which the timestamp of the stamp of the first generated file during that execution
-    would be used as the subdirectory name. Indiviudal historical timeseries values would be stored
-    within a file under their respective class name and hash id to ensure uniqueness.
+    The current design of the storage of generated historical values is stored to
+    directory named "histlog", in which the timestamp of the stamp of the first
+    generated file during that execution would be used as the subdirectory name.
+    Indiviudal historical timeseries values would be stored within a file under their
+    respective class name and hash id to ensure uniqueness.
 
     Args
     ----
     ts : :class:`~cryptle.metric.base.Timeseries`
-        The ``Timeseries`` to be stored and retrievable during runtime and in the future.
+        The ``Timeseries`` to be stored and retrievable during runtime
     store_num : int, optional
         The number of values to be cached during runtime before writing to disk.
 
     """
 
     def __init__(self, ts, store_num=10000):
-        super().__init__(ts)
         self._ts = ts
         self._lookback = store_num
         self._cache = []
@@ -480,8 +596,8 @@ class HistoricalTS(Timeseries):
     def write(self, num_to_write):
         """Write stored data to disk.
 
-        The behaviour of this function is that the filename changes accorind to the has of the id of
-        the Timeseries object to be written.
+        The behaviour of this function is that the filename changes accorind to the has
+        of the id of the Timeseries object to be written.
 
         """
 
@@ -493,14 +609,14 @@ class HistoricalTS(Timeseries):
                 os.chdir(self.dir)
         except Exception as e:
             raise OSError(
-                "Error in creating the required directory for storing HistoricalTS values."
+                "Error in creating the required directory for storing DiskTS values."
             )
 
         filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
         if not self.flashed:
             with open(filename, "w", newline="") as file:
                 file.write(
-                    "Beginning of new file: should record the running instance metainfo \n"
+                    "Beginning of new file: should record the running instance metainfo. \n"
                 )
             self.flashed = True
 
@@ -512,7 +628,8 @@ class HistoricalTS(Timeseries):
 
     @staticmethod
     def prune(self):
-        """HistoricalTS class prune method. Write cache to disk and delete them from main memory."""
+        """DiskTS class prune method. Write cache to disk and delete them from main
+        memory."""
         if 2 * self._lookback >= len(self._cache):
             return self._cache
         else:
@@ -520,9 +637,9 @@ class HistoricalTS(Timeseries):
             del self._cache[: self._lookback]
             return self._cache[-self._lookback - 1 :]
 
-    @Timeseries.cache("historical")
+    @MemoryTS.cache("historical")
     def evaluate(self):
-        """Caching handled by the cache decorator and class prune method"""
+        """Caching handled by the cache decorator and DiskTS class prune method"""
         if len(self._cache) > 0:
             self.value = self._cache[-1]
         else:
@@ -531,18 +648,20 @@ class HistoricalTS(Timeseries):
     # Todo(MC): To make this more smart in getting the required values
     @staticmethod
     def readCSV(cache, filename):
-        """Helper function to return a list of usable values from pre-formatted csv file.
+        """Helper function to return a list of usable values from pre-formatted csv
+        file.
 
-        Currently, this function non-selectively read the whole csv and reconstruct a python list.
-        This is not the desired behaviour. It is designed to be only retrieve a suitable and
-        reasonable amount of data from disk via some algorithm.
+        Currently, this function non-selectively read the whole csv and reconstruct
+        a python list.  This is not the desired behaviour. It is designed to be only
+        retrieve a suitable and reasonable amount of data from disk via some
+        algorithm.
 
         Args
         ---
         cache : list
             Residual cache maintained on the fly
         filename: string
-            Name of the csv file containing the data
+            Name of the csv file containing the stored data
 
         Returns
         -------
@@ -568,7 +687,7 @@ class HistoricalTS(Timeseries):
         Args
         ----
         index : slice
-            A slice object - only allows -xxx:-xx retrieval method
+            A slice object - could handle all valid item retrieval syntax.
 
         Returns
         -------
@@ -594,7 +713,8 @@ class HistoricalTS(Timeseries):
 
         if isinstance(index, slice):
             try:
-                # for handling index cases with integer bounded intervals and steps i.e. [-4:-2]
+                # for handling index cases with integer bounded intervals and steps i.e.
+                # [-4:-2]
                 if (
                     abs(index.stop) < self._lookback
                     and abs(index.start) < self._lookback
@@ -602,16 +722,17 @@ class HistoricalTS(Timeseries):
                     # if still within caching limit, retrieve from cache
                     return self._cache[index]
             except TypeError:
-                # for handling index cases without integer bounded intervals and steps i.e. [-2:]
+                # for handling index cases without integer bounded intervals and steps
+                # i.e. [-2:]
                 if index.stop is None and abs(index.start) < self._lookback:
                     # if still within caching limit, retrieve from cache
                     return self._cache[index]
                 elif index.stop is None and abs(index.start) >= self._lookback:
                     # if not within caching limit, retrieve from file
-                    lst = HistoricalTS.readCSV(self._cache, filepath)
+                    lst = DiskTS.readCSV(self._cache, filepath)
                     return lst[index]
             else:
-                lst = HistoricalTS.readCSV(self._cache, filepath)
+                lst = DiskTS.readCSV(self._cache, filepath)
                 return lst[index]
 
         elif isinstance(index, int):
@@ -619,5 +740,5 @@ class HistoricalTS(Timeseries):
             if abs(index) < self._lookback:
                 return self._cache[index]
             else:
-                lst = HistoricalTS.readCSV(self._cache, filepath)
+                lst = DiskTS.readCSV(self._cache, filepath)
                 return lst[index]

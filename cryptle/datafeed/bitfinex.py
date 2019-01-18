@@ -124,7 +124,7 @@ class BitfinexFeed:
 
         logger.info('Attempting to connect')
         self._ws.connect(WSURL, **options)
-        logger.info('Connection establishedd')
+        logger.info('Connection established')
 
         self._recv_thread = Thread(target=self._recvForever)
         self._recv_thread.setDaemon(True)

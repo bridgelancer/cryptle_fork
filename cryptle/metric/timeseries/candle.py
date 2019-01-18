@@ -13,6 +13,10 @@ calculating their own values.
 
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # TODO - Segregate Observer/Observable pattern from Timeseries baseclass to allow CandleStick to
 # change to non TS-type object
 def Open(lst):
@@ -84,7 +88,7 @@ class CandleStick:
         )
         self.bar = bar
 
-    # CandleStick has a unique function source that makes itself a ts generating source
+    # CandleStick has a unique :meth:`source` that makes itself a timeseries generating source
     # todo(MC): segregate abstraction layer appropriately
     @on('new_candle')
     @on('aggregator:new_candle')
@@ -93,15 +97,12 @@ class CandleStick:
         self.update()
 
     def update(self):
-        # eval_func passed to GenericTS objects held within CandleStick
         self.o.evaluate()
         self.c.evaluate()
         self.h.evaluate()
         self.l.evaluate()
         self.v.evaluate()
 
-    # Todo temporariliy disabled pruning - some buggy behaviour causing downstream TS objects fail to update
-    # after 365 bars while self._ts is pruned appropriately
     def shred(self):
         if len(self._ts) >= 30:
             self._ts = self._ts[-30:]

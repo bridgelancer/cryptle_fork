@@ -1,15 +1,17 @@
-from cryptle.metric.base import Timeseries, GenericTS
-from cryptle.metric.timeseries.wma import WMA
+from cryptle.metric.base import GenericTS, MultivariateTS
 
+import logging
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 def default(lookback):
     return [2 * (i + 1) / (lookback * (lookback + 1)) for i in range(lookback)]
 
 
-class MACD(Timeseries):
-    """The implementation of moving-average convergence divergence.
+class MACD(MultivariateTS):
+    """The wrapper implementation of moving-average convergence divergence.
 
     This should take two moving-average Timeseries to initialize. The two upstreatm MAs should
     update concurrently. The updating behaviour of this class is ensured by the
@@ -24,15 +26,21 @@ class MACD(Timeseries):
     lookback: int
         Lookback of the MACD object (or the signal period)
 
+    Attributes
+    ---
+    diff : :class:`cryptle.metric.base.GenericTS`
+        The Timeseries object for calculating the difference between fast and slow MAs.
+    diff_ma : :class:`cryptle.metric.base.GenericTS`
+        The Timeseries object for calculating the moving-average of the diff attribute.
+    signal : :class:`cryptle.metric.base.GenericTS`
+        The Timeseries object for calculating the difference between diff and diff_ma attribute.
+
     """
 
     def __init__(self, fast, slow, lookback, name="macd", weights=default):
         self.name = name
         self._lookback = lookback
-        super().__init__()
-
         self._weights = weights(lookback)
-        self.value = None
 
         def diff(fast, slow):
             try:
@@ -73,6 +81,15 @@ class MACD(Timeseries):
             eval_func=signal,
             args=[self],
         )
+        logger.debug(
+            'Obj: {}. Finished declaration of all Timeseries objects', type(self)
+        )
+        super().__init__(fast, slow)
+        logger.debug(
+            'Obj: {}. Initialized the parent MultivariateTS of MACD', type(self)
+        )
+        logger.debug('Obj: {}. Initialized MACD', type(self))
 
     def evaluate(self):
-        pass
+        logger.debug('Obj: {} Calling evaluate in MACD', type(self))
+        self.broadcast()

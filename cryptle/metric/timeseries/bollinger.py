@@ -1,42 +1,63 @@
-from cryptle.metric.base import Timeseries, GenericTS
+from cryptle.metric.base import Timeseries, GenericTS, MultivariateTS
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-class BollingerBand(Timeseries):
-    """Timeseries class that holds the subseries for upperband, lowerband and bandwidth of a common
-    Bollingerband."""
+class BollingerBand(MultivariateTS):
+    """Wrapper class that holds the subseries for upperband, lowerband and bandwidth and value
+    of a common Bollingerband.
+
+    Args
+    ----
+    lookback: int
+        The lookback period for sampling and calculating the BollingerBand suite
+    sd: float, optional
+        The desired standard deviation for the object to calculate, default to 2
+    upper_sd: float, optional
+        Default to value of ``sd``. Specify the upperband of the BollingerBand suite
+    lower_sd: float, optional
+        Default to value of ``sd``. Specify the lowerband of the BollingerBand suite
+
+    Attributes
+    ----------
+    width: :class:`~cryptle.metric.base.GenericTS`
+        Timeseries object that calculates and updates the bollinger band width.
+    upperband: :class:`~cryptle.metric.base.GenericTS`
+        Timeseries object that calculates and updates the upperband value of BollingerBand
+    lowerband: :class:`~cryptle.metric.base.GenericTS`
+        Timeseries object that calculates and updates the lowerband value of BollingerBand
+    value: :class:`~cryptle.metric.base.GenericTS`
+        Timeseries object that calculates and updates the bollinger band percentage.
+
+    Note: Terminology adopted from TradingView
+
+    """
 
     def __init__(self, ts, lookback, sd=2, name=None, upper_sd=None, lower_sd=None):
-        super().__init__(ts)
-        self.name = "bollinger"
-
         if upper_sd is None:
-            self._uppersd = sd
+            uppersd = sd
         else:
             self._uppersd = upper_sd
 
         if lower_sd is None:
-            self._lowersd = sd
+            lowersd = sd
         else:
-            self._lowersd = lower_sd
+            lowersd = lower_sd
 
-        # eval_func for computing subseries
         def width(bb):
             return np.std(bb.width._cache, ddof=0)
 
-        # eval_func for computing subseries
         def upperband(bb):
-            return sum(bb.upperband._cache) / bb._lookback + bb._uppersd * float(
-                bb.width
-            )
+            return sum(bb.upperband._cache) / lookback + uppersd * float(bb.width)
 
-        # eval_func for computing subseries
         def lowerband(bb):
-            return sum(bb.lowerband._cache) / bb._lookback - bb._lowersd * float(
-                bb.width
-            )
+            return sum(bb.lowerband._cache) / lookback - lowersd * float(bb.width)
 
-        # A BollingerBand object holds these subseries
+        def value(bb):
+            return (bb.upperband / bb.lowerband - 1) * 100
+
         self.width = GenericTS(ts, lookback=lookback, eval_func=width, args=[self])
         self.upperband = GenericTS(
             ts, lookback=lookback, eval_func=upperband, args=[self]
@@ -44,15 +65,20 @@ class BollingerBand(Timeseries):
         self.lowerband = GenericTS(
             ts, lookback=lookback, eval_func=lowerband, args=[self]
         )
+        self.value = GenericTS(ts, lookback=lookback, eval_func=value, args=[self])
 
-        self._sd = sd
-        self._ts = ts
-        self._cache = []
-        self._lookback = lookback
-        self.value = None
+        # The MultivariateTS initialization must come ***AFTER** all the Timeseries-(derived)
+        # objects in order to ensure proper updating
+        logger.debug(
+            'Obj: {}. Finished declaration of all Timeseries objects', type(self)
+        )
+        super().__init__(ts)
+        logger.debug(
+            'Obj: {}. Initialized the parent MultivariateTS of BollingerBand',
+            type(self),
+        )
+        logger.debug('Obj: {}. Initialized BollingerBand', type(self))
 
     def evaluate(self):
-        try:
-            self.value = (self.upperband / self.lowerband - 1) * 100
-        except:
-            pass
+        logger.debug('Obj: {} Calling evaluate in bollinger', type(self))
+        self.broadcast()
