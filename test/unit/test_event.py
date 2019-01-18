@@ -182,3 +182,17 @@ def test_1_callback_n_events():
 
     bus.emit('tick', 1)
     assert ticker.called == 2
+
+
+def test_multi_on(capsys):
+    @event.on('test1')
+    @event.on('test2')
+    def callback(data):
+        print('reached')
+
+    bus = event.Bus()
+    bus.bind(callback)
+    bus.emit('test1', None)
+    bus.emit('test2', None)
+    captured = capsys.readouterr()
+    assert captured.out == 'reached\nreached\n'
