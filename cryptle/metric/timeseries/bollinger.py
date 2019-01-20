@@ -55,7 +55,7 @@ class BollingerBand(MultivariateTS):
             lowersd = lower_sd
 
         def width(bb):
-            return np.std(bb.width._cache, ddof=0)
+            return np.std(bb.width._cache, ddof=ddof)
 
         def upperband(bb):
             return sum(bb.upperband._cache) / lookback + uppersd * float(bb.width)
@@ -66,14 +66,19 @@ class BollingerBand(MultivariateTS):
         def value(bb):
             return (bb.upperband / bb.lowerband - 1) * 100
 
-        self.width = GenericTS(ts, lookback=lookback, eval_func=width, args=[self])
+        width_name =f'bollinger_{lookback}.width'
+        upperband_name =f'bollinger_{lookback}.upperband'
+        lowerband_name =f'bollinger_{lookback}.lowerband'
+        value_name =f'bollinger_{lookback}.value'
+
+        self.width = GenericTS(ts, name=width_name,lookback=lookback, eval_func=width, args=[self])
         self.upperband = GenericTS(
-            ts, lookback=lookback, eval_func=upperband, args=[self]
+            ts, name=upperband_name,lookback=lookback, eval_func=upperband, args=[self]
         )
         self.lowerband = GenericTS(
-            ts, lookback=lookback, eval_func=lowerband, args=[self]
+            ts, name=lowerband_name,lookback=lookback, eval_func=lowerband, args=[self]
         )
-        self.value = GenericTS(ts, lookback=lookback, eval_func=value, args=[self])
+        self.value = GenericTS(ts, name=value_name, lookback=lookback, eval_func=value, args=[self])
 
         # The MultivariateTS initialization must come ***AFTER** all the Timeseries-(derived)
         # objects in order to ensure proper updating
