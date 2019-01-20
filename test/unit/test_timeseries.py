@@ -237,6 +237,7 @@ def test_MultivariateTSCache(bind):
 
         @MemoryTS.cache('normal')
         def evaluate(self):
+            self.value = 1
             print('obj {} Calling evaluate in MockTS', type(self))
 
     mock = MockTS(10, wma, bollinger)
@@ -250,6 +251,8 @@ def test_MultivariateTSCache(bind):
         -247.0966190440449,
         564.7297592101022,
     ]
+
+    mock.hxtimeseries.cleanup()
 
 
 # @Deprecated - use Time event instead of a Timeseries where possible
