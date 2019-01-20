@@ -221,9 +221,9 @@ class Timeseries(Metric):
 
     """
 
-    def __init__(self, *vargs):
+    def __init__(self, *vargs, timestamp=None):
         self.mxtimeseries = MemoryTS(self)
-        self.hxtimeseries = DiskTS(self)
+        self.hxtimeseries = DiskTS(self, timestamp)
         self.value = None
 
         # self.publishers are the list of references to timeseries objects that this
@@ -471,22 +471,30 @@ class MemoryTS(Metric):
 
                 elif isinstance(self._ts, tuple):
                     buffer = []
+                    ts_count = 0
                     for ts in self._ts:
                         if isinstance(ts, list):
                             pass
                         if isinstance(ts, Timeseries):
                             if ts.value is not None:
                                 buffer.append(ts.value)
+                            ts_count += 1
                         if isinstance(ts, MultivariateTS):
                             lst_ts = ts.get_generic_ts()
                             for t in lst_ts:
                                 if t.value is not None:
                                     buffer.append(t.value)
+                            ts_count += len(lst_ts)
 
-                    if len(buffer) == 1:
-                        self._cache.append(self._ts[0].value)
-                    elif len(buffer) > 1:
-                        self._cache.append(buffer)
+                    # should be the sum of tsl, including those in MultivariateTS
+                    if len(buffer) != ts_count:
+                        val = func(*args, **kwargs)
+                        return val
+                    else:
+                        if len(buffer) == 1:
+                            self._cache.append(self._ts[0].value)
+                        elif len(buffer) > 1:
+                            self._cache.append(buffer)
 
                 elif isinstance(self._ts, MultivariateTS):
                     lst_ts = self._ts.get_generic_ts()
@@ -536,10 +544,17 @@ class GenericTS(Timeseries):
             return self.name
 
     def __init__(
-        self, *vargs, name=None, lookback=None, eval_func=None, args=None, tocache=True
+        self,
+        *vargs,
+        name=None,
+        lookback=None,
+        eval_func=None,
+        args=None,
+        tocache=True,
+        timestamp=None,
     ):
         self.name = name
-        super().__init__(*vargs)
+        super().__init__(*vargs, timestamp=timestamp)
         self._lookback = lookback
         self._ts = vargs
         self._cache = []
@@ -602,9 +617,14 @@ class DiskTS(Metric):
 
     """
 
-    def __init__(self, ts, store_num=100):
-        self._ts = ts
-        self._lookback = store_num
+    def __init__(self, ts, timestamp=None, store_num=100):
+        if timestamp is None:
+            self._ts = ts
+        else:
+            if isinstance(timestamp, Timeseries):
+                self._ts = timestamp, ts
+
+        self._store_num = store_num
         self._cache = []
         self.value = None
         self.flashed = False
@@ -670,18 +690,22 @@ class DiskTS(Metric):
         with open(dpath / filename, "a", newline="") as file:
 
             wr = csv.writer(file)
-            wr.writerow(self._cache[:num_to_write])
+            if isinstance(self._ts, Timeseries):
+                wr.writerow(self._cache[:num_to_write])
+            elif isinstance(self._ts, tuple):
+                for ts_with_time in self._cache:
+                    wr.writerow(ts_with_time)
 
     @staticmethod
     def prune(self):
         """DiskTS class prune method. Write cache to disk and delete them from main
         memory."""
-        if 2 * self._lookback >= len(self._cache):
+        if 2 * self._store_num >= len(self._cache):
             return self._cache
         else:
-            self.write(self._lookback)
-            del self._cache[: self._lookback]
-            return self._cache[-self._lookback - 1 :]
+            self.write(self._store_num)
+            del self._cache[: self._store_num]
+            return self._cache[-self._store_num - 1 :]
 
     @MemoryTS.cache("historical")
     def evaluate(self):
@@ -748,8 +772,8 @@ class DiskTS(Metric):
         #    now)')
 
         ## row counts from bottom to top (end to beginning)
-        # rowstart = abs(index.start % self._lookback)
-        # rowend   = abs(index.stop % self._lookback)
+        # rowstart = abs(index.start % self._store_num)
+        # rowend   = abs(index.stop % self._store_num)
         ## col counts from right to left (end to beginning)
         # colstart = abs(index.start) - rowstart * self._lookback
         # colend   = abs(index.end) - rowed * self._lookback
@@ -762,18 +786,18 @@ class DiskTS(Metric):
                 # for handling index cases with integer bounded intervals and steps i.e.
                 # [-4:-2]
                 if (
-                    abs(index.stop) < self._lookback
-                    and abs(index.start) < self._lookback
+                    abs(index.stop) < self._store_num
+                    and abs(index.start) < self._store_num
                 ):
                     # if still within caching limit, retrieve from cache
                     return self._cache[index]
             except TypeError:
                 # for handling index cases without integer bounded intervals and steps
                 # i.e. [-2:]
-                if index.stop is None and abs(index.start) < self._lookback:
+                if index.stop is None and abs(index.start) < self._store_num:
                     # if still within caching limit, retrieve from cache
                     return self._cache[index]
-                elif index.stop is None and abs(index.start) >= self._lookback:
+                elif index.stop is None and abs(index.start) >= self._store_num:
                     # if not within caching limit, retrieve from file
                     lst = DiskTS.readCSV(self._cache, filepath)
                     return lst[index]
@@ -783,7 +807,7 @@ class DiskTS(Metric):
 
         elif isinstance(index, int):
             # for handling index cases with single intenger only
-            if abs(index) < self._lookback:
+            if abs(index) < self._store_num:
                 return self._cache[index]
             else:
                 lst = DiskTS.readCSV(self._cache, filepath)

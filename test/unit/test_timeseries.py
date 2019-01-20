@@ -147,11 +147,25 @@ def test_ema(stick):
     return ma, 213.260999989917483
 
 
-@val
-def test_rsi(stick):
-    rsi = RSI(stick.o, 5)
+def test_rsi():
+    bus = Bus()
+    aggregator_period = stick_period = 3
+    stick = CandleStick(stick_period)
+
+    stick = CandleStick(stick_period)
+    timestamp = Timestamp(stick_period)
+    aggregator = Aggregator(aggregator_period)
+
+    bus.bind(pushTick)
+    bus.bind(timestamp)
+    bus.bind(stick)
+    bus.bind(aggregator)
+
+    rsi = RSI(stick.o, 5, timestamp=timestamp)
+    pushAltQuad()
     # not checked
-    return rsi, 57.342237492321196
+    rsi.hxtimeseries.cleanup()
+    compare(rsi, 57.342237492321196)
 
 
 def test_bollinger():
@@ -176,7 +190,7 @@ def test_macd():
 
     compare(macd.diff, 52.04722222222)
     compare(macd.diff_ma, 17.350925925907)
-    compare(macd.signal, 52.04722222222- 17.350925925907)
+    compare(macd.signal, 52.04722222222 - 17.350925925907)
 
 
 def test_atr():
@@ -264,6 +278,7 @@ def test_MultivariateTSCache():
 
         @MemoryTS.cache('normal')
         def evaluate(self):
+            self.value = 1
             print('obj {} Calling evaluate in MockTS', type(self))
 
     mock = MockTS(10, wma, bollinger)
@@ -277,6 +292,8 @@ def test_MultivariateTSCache():
         -247.0966190440449,
         564.7297592101022,
     ]
+
+    mock.hxtimeseries.cleanup()
 
 
 # @Deprecated - use Time event instead of a Timeseries where possible
