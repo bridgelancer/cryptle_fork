@@ -10,6 +10,7 @@ import logging
 import csv
 import os
 import datetime
+import joblib
 
 
 class Metric:
@@ -180,10 +181,34 @@ class Candle:
 
 class Model:
     """Base class for holding statistical model."""
+    def __init__(self, training=None, load=None):
+        self.training = training
+
+        if load is None:
+            pass
+        elif isinstance(load, str):
+            dirpath = os.path.join(
+                os.getcwd(), load
+            )
+            assert os.path.exists(dirpath)
+            self.load(load)
+
+
+    def train(self, training, y_train):
+        pred = self.model.fit(training, y_train)
 
     # reporting function for model exploration and verification
+    def dump(self):
+        joblib.dump(self.model, '.joblib')
+
+    def load(self, directory: str):
+        self.model = joblib.load(directory)
+
     def report(self):
         pass
+
+    def predict(self, dataframe):
+        pred = self.model.predict(dataframe)
 
 
 class TimeseriesWrapper(Metric):
@@ -463,9 +488,10 @@ class HistoricalTS(Timeseries):
         current_time_f = current_time.strftime("%Y-%m-%d %H:%M:%S")
         subdirpath = os.path.join("histlog", current_time_f)
 
+        # absolute pathing to the execution
         dirpath = os.path.join(
             os.getcwd(), subdirpath
-        )  # relative pathing to the execution
+        )
 
         self.dir = dirpath
         self.dirpaths = []
