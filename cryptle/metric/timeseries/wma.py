@@ -7,19 +7,20 @@ logger = logging.getLogger(__name__)
 
 
 class WMA(Timeseries):
+    """Timeseries for calculatig the weighted moving average of upstream.
+
+    Args
+    ----
+    lookback : int
+        The lookback period for sampling and calculating the WMA.
+    weights: list, optional
+        A list of weighting to weigh the past historical values, default to TradingView's
+        implementaion
+
+    """
+
     # Todo May be better to use a function just like EMA instead
     def __init__(self, ts, lookback, name="wma", weights=None):
-        """Timeseries for calcuing the weighted moving average of upstream.
-
-        Args
-        ----
-        lookback : int
-            The lookback period for sampling and calculating the WMA.
-        weights: list, optional
-            A list of weighting to weigh the past historical values, default to TradingView's
-            implementaion
-
-        """
 
         super().__init__(ts)
         logger.debug('Obj: {}. Initialized the parent Timeseries of WMA.', type(self))

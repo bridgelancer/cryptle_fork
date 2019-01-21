@@ -10,6 +10,7 @@ from cryptle.metric.timeseries.ema import EMA
 from cryptle.metric.timeseries.kurtosis import Kurtosis
 from cryptle.metric.timeseries.macd import MACD
 from cryptle.metric.timeseries.pivot import PivotPoints
+from cryptle.metric.timeseries.barreturn import BarReturn
 from cryptle.metric.timeseries.rsi import RSI
 from cryptle.metric.timeseries.sd import SD
 from cryptle.metric.timeseries.skewness import Skewness
@@ -17,6 +18,7 @@ from cryptle.metric.timeseries.sma import SMA
 from cryptle.metric.timeseries.timestamp import Timestamp
 from cryptle.metric.timeseries.volatility import Volatility
 from cryptle.metric.timeseries.wma import WMA
+from cryptle.metric.timeseries.ym import YM
 
 import logging
 import math
@@ -241,6 +243,41 @@ def test_volatility():
     for i, price in enumerate(alt_quad):
         pushTick([price, i, 0, 0])
     assert sd - 0.00187307396323 < 1e-7
+
+
+def test_return():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(3)
+    stick = CandleStick(3)
+
+    bus.bind(aggregator)
+    bus.bind(stick)
+
+    r = BarReturn(stick.o, stick.c, 5, all_close=True)
+    for i, price in enumerate(alt_quad):
+        pushTick([price, i, 0, 0])
+        print(r.value)
+
+    assert r - 986.0625 < 1e-7
+
+
+def test_ym():
+    bus = Bus()
+    bus.bind(pushTick)
+    aggregator = Aggregator(2)
+    stick = CandleStick(2)
+
+    bus.bind(aggregator)
+    bus.bind(stick)
+
+    r = BarReturn(stick.o, stick.c)
+    ym = YM(r)
+
+    for i, price in enumerate(sine):
+        pushTick([price, i, 0, 0])
+
+    assert ym - 3 < 1e-7
 
 
 def test_diff():
