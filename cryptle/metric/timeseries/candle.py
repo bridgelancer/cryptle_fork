@@ -44,7 +44,15 @@ def cache(ts):
 
 
 class CandleStick:
-    """ Extracted wrapper function of the original CandleBar class """
+    """Wrapper object for receiving Candle-like data and transform to usable Timeseries
+    attributes
+
+    Args
+    ----
+    lookback : int
+        The lookback period for caching bar values
+
+    """
 
     def __repr__(self):
         return self.name
@@ -62,9 +70,7 @@ class CandleStick:
     ):
         self._lookback = lookback
         self._ts = []
-        self.name = name
 
-        # eval_func for GenericTS objects
         self._o_buffer = GenericTS(
             name="open_buffer",
             lookback=lookback,

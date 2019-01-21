@@ -238,6 +238,7 @@ class Timeseries(Metric):
         # to this timeseries
         self.subscribers = []
 
+        # Subscribe and Listen to the appropriate body
         for arg in vargs:
             arg.subscribers.append(self)
             logger.info('\nSubscribe {} as a subscriber of {}', repr(self), repr(arg))
@@ -248,13 +249,13 @@ class Timeseries(Metric):
         """Wrapping the DiskTS and give access via usual list-value getting syntax."""
         return self.hxtimeseries.__getitem__(index)
 
-    # ???Todo(pine): Determine how to handle function arguments
     def evaluate(self):
         """Virtual method to be implemented for each child instance of Timeseires"""
         raise NotImplementedError(
             "Please implement an evaluate method for every Timeseries instance."
         )
 
+    # Todo(MC): Unintended behaviour of broadcasts for mismatched updates
     def processBroadcast(self, pos):
         """To be called when all the listened Timeseries updated at least once."""
         if len(self.publishers) == 1:
@@ -283,18 +284,19 @@ class Timeseries(Metric):
                     repr(self),
                 )
 
-    # ???Todo(pine): This should take arguments, requiring subclasses to know the internals of the
-    # observables defeats the purpose of having this interface
     def update(self):
         """Wrapper interface for controlling the updating behaviour when there is new
         update."""
-        # By current design, all :meth:`evaluate` of subscribers would be called if
-        # candle decides to broadcast
         logger.debug(
             'Obj: {}. Calling evaluate method of the respective Timeseries', repr(self)
         )
+
+        # the child :meth:``evaluate`` method either returns None (for Timeseries), or
+        # 'source'/'generic'/'NA' (for GenericTS)
         string = self.evaluate()
         if string != 'source' and string != 'NA':
+            # By current design, all :meth:`evaluate` of subscribers would be called if
+            # candle decides to broadcast
             self.hxtimeseries.evaluate()
             self.broadcast()
 
@@ -350,6 +352,11 @@ class Timeseries(Metric):
         state."""
         return id(self)
 
+    def getSubscribers(self):
+        return self.subscribers
+
+    def getListeners(self):
+        return self.listeners
 
 class MultivariateTS:
     """Wrapper for objects holding multiple Timeseries objects
@@ -405,11 +412,12 @@ class MultivariateTS:
         """Duck-typed with the :meth:`~cryptle.metric.base.Timeseries.processBroadcast`"""
         pass
 
+    # Duck-typing
     broadcast = Timeseries.broadcast
     processBroadcast = Timeseries.processBroadcast
 
     def update(self):
-        """Call the class evaluate method"""
+        """Call the class evaluate and broadcast method"""
         self.evaluate()
         self.broadcast()
 
@@ -449,8 +457,8 @@ class MemoryTS(Metric):
         Args
         ----
         prune_type: str
-            argument to specify the prune function to be used, either 'normal' or
-            'historical'
+            Argument to specify the prune function to be used, either 'normal' or
+            'historical'. Use 'normal' for developing new Timeseries.
 
         """
 
@@ -514,7 +522,7 @@ class MemoryTS(Metric):
 
 
 class GenericTS(Timeseries):
-    """Generic Timeseries object for sub-timeseries held by a MultivariateTS
+    """Generic Timeseries object for sub-timeseries held by a MultivariateTS or any wrapper object
 
     Args
     ----
@@ -580,17 +588,6 @@ class GenericTS(Timeseries):
         else:
             return 'NA'
 
-    # def eval_with_cache(self):
-    #    """Use when caching is needed."""
-    #    val = self.eval_func(*self.args)
-    #    if val is not None:
-    #        self.eval(val)
-
-    # @MemoryTS.cache("normal")
-    # def eval(self, val):
-    #    self.value = val
-    #    self.broadcast()
-
     def eval_without_cache(self):
         """Use when caching is not needed."""
         self.value = self.eval_func(*self.args)
@@ -618,6 +615,7 @@ class DiskTS(Metric):
     """
 
     def __init__(self, ts, timestamp=None, store_num=100):
+        # Handle the case of writing timestamp
         if timestamp is None:
             self._ts = ts
         else:
@@ -765,21 +763,19 @@ class DiskTS(Metric):
             List of requested values.
 
         """
-        # only support this currently
-        # if index.end > 0 or index.start > 0:
-        #    return ValueError('The slice object input for referencing historical value should be by
-        #    negative integers (i.e. ts[-1000:-800] for the 200 values starting from 800 bars from
-        #    now)')
-
-        ## row counts from bottom to top (end to beginning)
+        # row counts from bottom to top (end to beginning)
         # rowstart = abs(index.start % self._store_num)
         # rowend   = abs(index.stop % self._store_num)
-        ## col counts from right to left (end to beginning)
-        # colstart = abs(index.start) - rowstart * self._lookback
-        # colend   = abs(index.end) - rowed * self._lookback
 
-        filename = repr(self._ts) + '_' + str(hash(id(self._ts))) + ".csv"
-        filepath = self.dir / filename
+        # col counts from right to left (end to beginning)
+        # colstart = abs(index.start) - rowstart * self._store_num
+        # colend   = abs(index.end) - rowed * self._store_num
+
+        if isinstance(self._ts, Timeseries):
+            filename = str(self._ts.name) + '_' + str(id(self._ts)) + '.csv'
+        elif isinstance(self._ts, tuple):
+            filename = str(self._ts[1].name) + '_' + str(id(self._ts[1])) + '.csv'
+        filepath = os.path.join(self.dir, filename)
 
         if isinstance(index, slice):
             try:
