@@ -1,5 +1,8 @@
 """
-Base classes for time series data structures.  Warning -------
+Base classes for time series data structures.
+
+Warning
+-------
 The class names :class:`TimeseriesWrapper`, :class:`Timeseries`, and :class:`HistoricalTS` are
 temporary and are subject to change.
 """
@@ -180,9 +183,10 @@ class Candle:
 
 
 class Model:
-    """Base class for holding statistical model."""
-    def __init__(self, training=None, load=None):
+    """Base class for holding machine learnimg model."""
+    def __init__(self, training=None, load=None, name=None):
         self.training = training
+        self.name = name
 
         if load is None:
             pass
@@ -193,13 +197,23 @@ class Model:
             assert os.path.exists(dirpath)
             self.load(load)
 
+    def pushData(self, *args, **kwargs):
+        try:
+            self.onData(args, kwargs)
+        except AttributeError:
+            raise AttributeError('Exepcted implmenetation of onData')
+
+    def preprocess(self):
+        raise NotImplementedError(
+            'Please implement a preprocess method for to handle stored data'
+            )
 
     def train(self, training, y_train):
         pred = self.model.fit(training, y_train)
 
     # reporting function for model exploration and verification
     def dump(self):
-        joblib.dump(self.model, '.joblib')
+        joblib.dump(self.model, self.name + '.joblib')
 
     def load(self, directory: str):
         self.model = joblib.load(directory)
