@@ -4,7 +4,7 @@ from cryptle.aggregator import Aggregator
 from cryptle.scheduler import Scheduler
 
 from cryptle.metric.timeseries.candle import CandleStick
-from cryptle.metric.timeseries.rsi    import RSI
+from cryptle.metric.timeseries.rsi import RSI
 
 from test.utils import get_sample_trades, get_sample_candles
 
@@ -18,7 +18,7 @@ tickset = get_sample_trades()
 
 # Most of these tests are all deprecated because of the new Scheduler format
 
-#def test_construction():
+# def test_construction():
 #    def CB1():
 #        #print('successful construction')
 #        return True, {}
@@ -27,7 +27,7 @@ tickset = get_sample_trades()
 #    cb1 = Rule(CB1, setup)
 #    assert cb1.name == 'CB1'
 
-#def test_on_close():
+# def test_on_close():
 #    def twokprice():
 #        flags = {"twokflag": True, 'twokflagyou': True}
 #        if scheduler.current_price is not None:
@@ -55,7 +55,7 @@ tickset = get_sample_trades()
 #    assert scheduler.close_price == 2727.97
 #
 ### only activate when it is bar open
-#def test_on_open():
+# def test_on_open():
 #
 #    def twokprice():
 #        flags = {"twokflag": True, 'twokflagyou': True}
@@ -83,7 +83,7 @@ tickset = get_sample_trades()
 #    assert scheduler.open_price == 2670.2
 #
 #
-#def test_registration_to_reigstry():
+# def test_registration_to_reigstry():
 #    def CB1():
 #        #print('successful regisration and execution CB1')
 #        pass
@@ -105,7 +105,7 @@ tickset = get_sample_trades()
 #        assert item.name == 'CB' + str(scheduler.rules.index(item) + 1)
 #        #item.checking()
 #
-#def test_initialization():
+# def test_initialization():
 #    def CB1():
 #        #print('successful regisration and execution CB1')
 #        pass
@@ -159,7 +159,7 @@ tickset = get_sample_trades()
 #    assert scheduler.rules[7].logic_status.logic_status == {'damnson': [10000, 1, 0]}
 #
 ##@pytest.mark.skip(reason='not implemented')
-#def test_is_executable():
+# def test_is_executable():
 #    def CB1():
 #        #print('successful regisration and execution CB1')
 #        pass
@@ -207,7 +207,7 @@ tickset = get_sample_trades()
 #        assert scheduler.rules[i].logic_status.is_executable() == True
 #
 #
-#def test_checking():
+# def test_checking():
 #    def CB1(flagValues, flagCB):
 #        #print('successful enforce rudimentary checking CB1')
 #        return True, {}, {}
@@ -249,7 +249,7 @@ tickset = get_sample_trades()
 #        emitTick(data)
 #
 ## Seems like it is working
-#def test_signals_and_augmented_dict_in_checking():
+# def test_signals_and_augmented_dict_in_checking():
 #    def doneInit(flagValues, flagCB):
 #        flags = {"doneInitflag": True}
 #        return True, flags, {}
@@ -303,7 +303,7 @@ tickset = get_sample_trades()
 #        data = [float(x) for x in data]
 #        emitTick(data)
 #
-#def test_localdata():
+# def test_localdata():
 #    rsi_period = 14
 #    rsi_upperthresh =70
 #    rsi_thresh = 40
@@ -360,7 +360,7 @@ tickset = get_sample_trades()
 #        data = [float(x) for x in data]
 #        emitTick(data)
 #
-#def test_set_local_data():
+# def test_set_local_data():
 #    def doneInit(flagValues, flagCB):
 #        flags = {"doneInitflag": True}
 #        return True, flags, {}
@@ -426,6 +426,7 @@ tickset = get_sample_trades()
 #        data = [float(x) for x in data]
 #        emitTick(data)
 
+
 def test_new_scheduler_format():
     def doneInit(flagValues, flagCB):
         flags = {"doneInitflag": True}
@@ -456,58 +457,131 @@ def test_new_scheduler_format():
             testdata = False
             flagCB['twokflagyou'].setLocalData({'twokflagyou': False})
         else:
-            testdata= True
+            testdata = True
             flagCB['twokflagyou'].setLocalData({'twokflagyou': True})
 
         if flagValues['twokflag']:
-            print('successfully check according to flag',
-                    datetime.utcfromtimestamp(scheduler.current_time).strftime('%Y-%m-%d %H:%M:%S'), scheduler.close_price)
+            print(
+                'successfully check according to flag',
+                datetime.utcfromtimestamp(scheduler.current_time).strftime(
+                    '%Y-%m-%d %H:%M:%S'
+                ),
+                scheduler.close_price,
+            )
 
         flags = {}
         localdata = {'testdata': testdata}
         return True, flags, localdata
 
     setup = [
-             (('rule', doneInit),
-                        ('whenExec', 'open'),
-                        ('once per bar', {'type': 'once per bar', 'event': 'bar',
-                                         'refresh_period': 1})
-                        ),
-             (('rule', twokprice),
-                         ('whenExec', 'open'),
-                         ('once per bar', {'type': 'once per bar', 'event': 'bar',
-                                         'max_trigger': 1, 'refresh_period': 1})
-                         ),
-             (('rule', augmented),
-                         ('whenExec', 'open'),
-                         ('once per bar', {'type': 'once per bar', 'event': 'bar',
-                                         'max_trigger': 1, 'refresh_period': 1})
-                         ),
-             (('rule', CB2),
-                         ('whenExec', 'open'),
-                         ('once per bar', {'type': 'once per bar', 'event': 'bar',
-                                         'max_trigger': 1, 'refresh_period': 1}),
-                         ('doneInitflag', {'type': 'n per flag', 'event': 'flag',
-                                         'max_trigger': 100000, 'refresh_period': 1,
-                                         'funcpt': doneInit}),
-                         ('twokflag',     {'type': 'n per flag', 'event': 'flag',
-                                         'max_trigger': 100, 'refresh_period': 1,
-                                         'funcpt': twokprice}),
-                         ('twokflagyou',  {'type': 'n per flag', 'event': 'flag',
-                                         'max_trigger': 100, 'refresh_period': 1,
-                                         'funcpt': twokprice}),
-                         ('aug1',         {'type': 'n per flag', 'event': 'flag',
-                                         'max_trigger': 100, 'refresh_period': 1,
-                                         'funcpt': augmented}),
-                         ('aug2',         {'type': 'n per flag', 'event': 'flag',
-                                         'max_trigger': 100, 'refresh_period': 1,
-                                         'funcpt': augmented}),
-                         ('aug3',         {'type': 'n per flag', 'event': 'flag',
-                                         'max_trigger': 100, 'refresh_period': 1,
-                                         'funcpt': augmented}),
-                         ),
-            ]
-
+        (
+            ('rule', doneInit),
+            ('whenExec', 'open'),
+            (
+                'once per bar',
+                {'type': 'once per bar', 'event': 'bar', 'refresh_period': 1},
+            ),
+        ),
+        (
+            ('rule', twokprice),
+            ('whenExec', 'open'),
+            (
+                'once per bar',
+                {
+                    'type': 'once per bar',
+                    'event': 'bar',
+                    'max_trigger': 1,
+                    'refresh_period': 1,
+                },
+            ),
+        ),
+        (
+            ('rule', augmented),
+            ('whenExec', 'open'),
+            (
+                'once per bar',
+                {
+                    'type': 'once per bar',
+                    'event': 'bar',
+                    'max_trigger': 1,
+                    'refresh_period': 1,
+                },
+            ),
+        ),
+        (
+            ('rule', CB2),
+            ('whenExec', 'open'),
+            (
+                'once per bar',
+                {
+                    'type': 'once per bar',
+                    'event': 'bar',
+                    'max_trigger': 1,
+                    'refresh_period': 1,
+                },
+            ),
+            (
+                'doneInitflag',
+                {
+                    'type': 'n per flag',
+                    'event': 'flag',
+                    'max_trigger': 100000,
+                    'refresh_period': 1,
+                    'funcpt': doneInit,
+                },
+            ),
+            (
+                'twokflag',
+                {
+                    'type': 'n per flag',
+                    'event': 'flag',
+                    'max_trigger': 100,
+                    'refresh_period': 1,
+                    'funcpt': twokprice,
+                },
+            ),
+            (
+                'twokflagyou',
+                {
+                    'type': 'n per flag',
+                    'event': 'flag',
+                    'max_trigger': 100,
+                    'refresh_period': 1,
+                    'funcpt': twokprice,
+                },
+            ),
+            (
+                'aug1',
+                {
+                    'type': 'n per flag',
+                    'event': 'flag',
+                    'max_trigger': 100,
+                    'refresh_period': 1,
+                    'funcpt': augmented,
+                },
+            ),
+            (
+                'aug2',
+                {
+                    'type': 'n per flag',
+                    'event': 'flag',
+                    'max_trigger': 100,
+                    'refresh_period': 1,
+                    'funcpt': augmented,
+                },
+            ),
+            (
+                'aug3',
+                {
+                    'type': 'n per flag',
+                    'event': 'flag',
+                    'max_trigger': 100,
+                    'refresh_period': 1,
+                    'funcpt': augmented,
+                },
+            ),
+        ),
+    ]
 
     scheduler = Scheduler(setup)
 

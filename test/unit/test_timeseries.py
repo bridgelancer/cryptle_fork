@@ -25,6 +25,7 @@ import math
 import time
 import sys
 import traceback
+import numpy as np
 
 const = [3 for i in range(1, 100)]
 lin = [i for i in range(1, 100)]
@@ -64,6 +65,7 @@ def pushSeries(series):
 def pushAltQuad(ts=None):
     for i, price in enumerate(alt_quad):
         pushTick([price, i, 0, 0])
+
 
 @source('candle')
 def pushCandle(bar):
@@ -175,8 +177,11 @@ def test_bollinger():
     bollinger = BollingerBand(stick.o, 5)
     pushAltQuad()
 
+    compare(bollinger.ma, 215.275)
     compare(bollinger.upperband, 1344.7345184202045)
     compare(bollinger.lowerband, -914.1845184202044)
+    compare(bollinger.width, np.std(bollinger.width._cache))
+    compare(bollinger.value, (1344.7345184202045 / -914.1845184202044 - 1) * 100)
 
 
 def test_macd():
@@ -232,6 +237,7 @@ def test_return(stick):
     r = BarReturn(stick.o, stick.c, 5, all_close=True)
     return r, 986.0625
 
+
 @val
 def test_ym(stick):
     r = BarReturn(stick.o, stick.c)
@@ -268,6 +274,7 @@ def test_MultivariateTSCache():
     class MockTS(Timeseries):
         def __repr__(self):
             return self.name
+
         def __init__(self, lookback, wma, bollinger, name='mock'):
             self.name = name
             self._ts = wma, bollinger
@@ -288,6 +295,7 @@ def test_MultivariateTSCache():
     assert mock._cache[-1] == [
         185.77678571428572,
         -914.1845184202044,
+        215.275,
         1344.7345184202045,
         -247.0966190440449,
         564.7297592101022,
