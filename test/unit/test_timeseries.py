@@ -25,6 +25,7 @@ import math
 import time
 import sys
 import traceback
+import numpy as np
 
 import pytest
 
@@ -66,6 +67,7 @@ def pushSeries(series):
 def pushAltQuad(ts=None):
     for i, price in enumerate(alt_quad):
         pushTick([price, i, 0, 0])
+
 
 @source('candle')
 def pushCandle(bar):
@@ -159,8 +161,11 @@ def test_bollinger(bind):
     bollinger = BollingerBand(stick.o, 5)
     pushAltQuad()
 
+    compare(bollinger.ma, 215.275)
     compare(bollinger.upperband, 1344.7345184202045)
     compare(bollinger.lowerband, -914.1845184202044)
+    compare(bollinger.width, np.std(bollinger.width._cache))
+    compare(bollinger.value, (1344.7345184202045 / -914.1845184202044 - 1) * 100)
 
 
 def test_macd(bind):
@@ -247,6 +252,7 @@ def test_MultivariateTSCache(bind):
     assert mock._cache[-1] == [
         185.77678571428572,
         -914.1845184202044,
+        215.275,
         1344.7345184202045,
         -247.0966190440449,
         564.7297592101022,

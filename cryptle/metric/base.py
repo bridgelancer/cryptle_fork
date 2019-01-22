@@ -358,6 +358,7 @@ class Timeseries(Metric):
     def getListeners(self):
         return self.listeners
 
+
 class MultivariateTS:
     """Wrapper for objects holding multiple Timeseries objects
 
@@ -772,10 +773,10 @@ class DiskTS(Metric):
         # colend   = abs(index.end) - rowed * self._store_num
 
         if isinstance(self._ts, Timeseries):
-            filename = str(self._ts.name) + '_' + str(id(self._ts)) + '.csv'
+            filename = repr(self._ts) + '_' + str(id(self._ts)) + '.csv'
         elif isinstance(self._ts, tuple):
-            filename = str(self._ts[1].name) + '_' + str(id(self._ts[1])) + '.csv'
-        filepath = os.path.join(self.dir, filename)
+            filename = repr(self._ts[1]) + '_' + str(id(self._ts[1])) + '.csv'
+        filepath = self.dir / filename
 
         if isinstance(index, slice):
             try:

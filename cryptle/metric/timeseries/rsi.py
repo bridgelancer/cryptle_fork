@@ -28,9 +28,9 @@ class RSI(Timeseries):
     def __repr__(self):
         return self.name
 
-    def __init__(self, ts, lookback, name="rsi", weight=default):
+    def __init__(self, ts, lookback, name="rsi", weight=default, timestamp=None):
         self.name = f'{name}{lookback}'
-        super().__init__(ts)
+        super().__init__(ts, timestamp=timestamp)
         logger.debug('Obj: {}. Initialized the parent Timeseries of RSI.', type(self))
         self._lookback = lookback
         self._ts = ts

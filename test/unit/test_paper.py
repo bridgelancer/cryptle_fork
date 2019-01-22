@@ -5,10 +5,10 @@ from cryptle.exchange.base import Orderbook
 
 
 CAPITAL = 100000.0
-ASSET  =  'btc'
-BASE   =  'usd'
-PAIR   = 'btcusd'
-PRICE  = 1000.0
+ASSET = 'btc'
+BASE = 'usd'
+PAIR = 'btcusd'
+PRICE = 1000.0
 AMOUNT = 100.0
 
 
@@ -39,7 +39,7 @@ def test_paper_limit_order():
     success, oid = paper.limitBuy(ASSET, BASE, AMOUNT, PRICE - 100)
     assert success
 
-    success, oid= paper.limitSell(ASSET, BASE, AMOUNT, PRICE + 100)
+    success, oid = paper.limitSell(ASSET, BASE, AMOUNT, PRICE + 100)
     assert success
 
     assert paper.capital == CAPITAL
