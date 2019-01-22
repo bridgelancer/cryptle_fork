@@ -182,10 +182,8 @@ class CodeBlock:
         self.logic_status.callAll(num_bars)
 
     def refresh(self, resetConstraint, num_bars):
-        """
-        Maintain the local logic_status while it is refreshed by Registry, reset against
-        the passed constraint.
-        """
+        """Maintain the local logic_status while it is refreshed by Registry, reset against
+        the passed constraint."""
         self.logic_status.reset(resetConstraint, num_bars)
 
     def setLocalData(self, dictionary):

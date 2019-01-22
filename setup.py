@@ -10,9 +10,7 @@ setup(
     author_email='',
     description='Cryptle: Algorithmic trading framework',
     packages=find_packages(exclude=['test']),
-    package_data={
-        'cryptle.backtest': ['*.csv'],
-    },
+    package_data={'cryptle.backtest': ['*.csv']},
     zip_safe=False,
     python_requires='>=3.6',
     install_requires=[
@@ -23,6 +21,7 @@ setup(
         'requests>=2.18.4',
         'websocket-client>=0.45',
         'scikit-learn>=0.19.1',
+        'Click>=7.0',
     ],
     extras_require={
         'dev': [
@@ -33,5 +32,8 @@ setup(
             'sphinx-autodoc-typehints>=1.5.1',
             'sphinx-rtd-theme>=0.4.0',
         ]
+    },
+    entry_points={
+        'console_scripts': ['cryptle = cryptle.test.integration.test_strategy:parse']
     },
 )

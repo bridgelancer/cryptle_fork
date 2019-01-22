@@ -33,7 +33,7 @@ python3.6 -m venv .venv
 pip install -e .[dev]
 ```
 1. Create a virtual environment in a new local directory `.venv`. Using
-   `pythone3.6` ensures the installation symlinks to a python3.6 binary.
+   `python3.6` ensures the installation symlinks to a python3.6 binary.
    Substitue with your system's python path when approperiate.
 2. Sources the virtual environment's activation script. This modify future calls
    to python and pip binaries to use the ones provided by the virtual

@@ -160,6 +160,7 @@ class Registry:
         # pters is returning the list of self.func for all ocdblocks for checking
         pters = [item.func for item in self.codeblocks]
 
+        # Todo fix erratic behaviour
         # Currently, all lookup_check is void. No matter 'open'/'close, we only check when new
         # Candle is pushed (i.e. at open). However we guarantee that the
         # registry.last_open/registry.last_close is correct
