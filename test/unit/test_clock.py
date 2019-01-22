@@ -16,6 +16,7 @@ def test_count_seconds(bus):
     class Foo:
         def __init__(self):
             self.count = 0
+
         def add(self, data=None):
             self.count += 1
 
@@ -29,6 +30,7 @@ def test_count_seconds(bus):
     time.sleep(3)
     clock.stop()
     assert foo.count == 3
+
 
 def test_second_sensitivity(bus):
     def check_precision(clock, now):

@@ -12,12 +12,15 @@ from cryptle.metric.generic import *
 
 
 # Initialise sample series
-const       = [3 for i in range(1, 100)]
-lin         = [i for i in  range(1, 100)]
-quad        = [i**2 for i in range(1, 100)]
-alt_quad    = [(100+ ((-1) ** i) * (i/4)**2) for i in range (1, 100)]
-logistic    = [(10 / (1 + 100 * math.exp(-i/10))) for i in range(1, 100)]
-sine        = [(100 + (i/4) * (2* math.sin(i) ** 3 * i - math.sin(i) ** 5) / 2 / (i / 1.5)) for i in range(1, 100)]
+const = [3 for i in range(1, 100)]
+lin = [i for i in range(1, 100)]
+quad = [i ** 2 for i in range(1, 100)]
+alt_quad = [(100 + ((-1) ** i) * (i / 4) ** 2) for i in range(1, 100)]
+logistic = [(10 / (1 + 100 * math.exp(-i / 10))) for i in range(1, 100)]
+sine = [
+    (100 + (i / 4) * (2 * math.sin(i) ** 3 * i - math.sin(i) ** 5) / 2 / (i / 1.5))
+    for i in range(1, 100)
+]
 
 some_data = [
     -1.82348457,
@@ -29,11 +32,14 @@ some_data = [
     -1.0181088,
     3.93764179,
     -8.73177678,
-    5.99949843
+    5.99949843,
 ]
 
+
 def gaussian(mu, sig, start=0, end=100, interval=1):
-    return [math.exp((x - mu) ** 2 / (2 * sig ** 2)) for x in range(start, end, interval)]
+    return [
+        math.exp((x - mu) ** 2 / (2 * sig ** 2)) for x in range(start, end, interval)
+    ]
 
 
 def test_generic_sma():
@@ -57,7 +63,7 @@ def test_generic_wma():
 
     wma = weighted_moving_average(quad, 4)
     for i, val in enumerate(wma):
-        assert val - (i**2 + 6*i + 10) < 1e-6
+        assert val - (i ** 2 + 6 * i + 10) < 1e-6
 
 
 def test_generic_ema():
@@ -67,7 +73,7 @@ def test_generic_ema():
 
     ema = exponential_moving_average(lin, 3)
     for i, val in enumerate(ema):
-        assert val/(i + 3) < 1
+        assert val / (i + 3) < 1
 
 
 def test_generic_bollinger_width():
@@ -76,7 +82,7 @@ def test_generic_bollinger_width():
 
 
 def test_generic_macd():
-    diff, diff_ma  = macd(sine, 5, 8, 3)
+    diff, diff_ma = macd(sine, 5, 8, 3)
     assert abs(diff[-1] + 3.08097455232022) < 1e-6
     assert abs(diff_ma[-1] - 0.5843467703997498) < 1e-6
     assert len(diff) == len(diff_ma)
@@ -86,14 +92,14 @@ def test_generic_pelt():
     gauss = gaussian(0, 1, start=-10, end=10, interval=1)
     random_shit = [1, -10, 100, -1000]
     constant = [1 for i in range(5)]
-    linear = [i+1 for i in range(5)]
-    #cps = pelt(gauss, cost_normal_var)
-    #cps = pelt(random_shit, cost_normal_var)
-    #cps = pelt(some_data, cost_normal_var)
-    #cps = pelt(constant, cost_normal_var)
-    #cps = pelt(linear, cost_normal_var)
-    #cps = pelt(lin, cost_normal_var)
-    #cps = pelt(quad, cost_normal_var)
+    linear = [i + 1 for i in range(5)]
+    # cps = pelt(gauss, cost_normal_var)
+    # cps = pelt(random_shit, cost_normal_var)
+    # cps = pelt(some_data, cost_normal_var)
+    # cps = pelt(constant, cost_normal_var)
+    # cps = pelt(linear, cost_normal_var)
+    # cps = pelt(lin, cost_normal_var)
+    # cps = pelt(quad, cost_normal_var)
 
 
 def test_generic_difference():
@@ -273,6 +279,7 @@ def test_candle_manb():
         bar.pushTick(price, i)
     assert snb == 0
 
+
 def test_candle_diffMACD():
     bar = CandleBar(1)
     wma1 = WMA(bar, 5)
@@ -286,6 +293,7 @@ def test_candle_diffMACD():
     assert diff.value - (-70.11296) < 1e-5
     assert diff.diff_ma - (-35.062037) < 1e-5
     assert diff.diff - (-105.175) < 1e-5
+
 
 if __name__ == '__main__':
     formatter = logging.Formatter(fmt='%(name)s: [%(levelname)s] %(message)s')

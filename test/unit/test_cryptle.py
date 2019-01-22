@@ -21,7 +21,7 @@ def test_portfolio_constructor():
 
 def test_equity():
     values = {'eth': 400}
-    port  = Portfolio()
+    port = Portfolio()
 
     port.deposit('eth', 10)
     assert port.equity(values) == 4000

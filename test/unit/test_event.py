@@ -16,6 +16,7 @@ def reached(func):
     def wrapper(*args, **kwargs):
         func(*args, **kwargs)
         raise CallbackReached
+
     return wrapper
 
 
