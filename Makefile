@@ -20,30 +20,20 @@ test_%:
 doc:
 	@$(MAKE) -C docs html
 
-servedoc: doc
-	@cd docs/_build/html && \
-	    python3 -m webbrowser http://localhost:5000 && \
-	    python3 -m http.server 5000
+servedoc:
+	@cd docs && python3.6 watch.py
 
-
-# Pylint used for linting
-#   configs goes to .pylintrc
-lint:
-	@pylint cryptle
-
-
-# Black keeps consistent style with enforced formatting
-#   configs goes to pyproject.toml
-format:
-	@black cryptle
+initial-python-setup:
+	python3.6 -m venv .venv
+	. .venv/bin/activate; pip install .[dev]
 
 
 # Utililies
-# (pyreverse comes with pylint, dot needs to separately installed)
 PROJECT := cryptle
 CLASS_DIAG := classes_$(PROJECT)
 PACK_DIAG  := packages_$(PROJECT)
 
+# pyreverse comes with pylint, dot needs to separately installed
 uml:
 	@pyreverse -k cryptle -p $(PROJECT)
 	@dot -Tpng $(CLASS_DIAG).dot > $(CLASS_DIAG).png

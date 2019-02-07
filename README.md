@@ -1,4 +1,7 @@
 # Cryptle: Algorithmic trading framework
+<a href="https://github.com/ambv/black"><img alt="Code style: black"
+src="https://img.shields.io/badge/style-black-000000.svg"></a>
+
 Cryptle's web [documentation](http://cryptle-docs.s3-website-ap-southeast-1.amazonaws.com/),
 hosted statically on AWS S3.
 
@@ -10,7 +13,7 @@ exchanges.
 ## Installation
 Python3.6 is required to run cryptle.
 
-Cryptle is not yet avaliable on [PyPI](https://pypi.org/) and must be installed 
+Cryptle is not yet avaliable on [PyPI](https://pypi.org/) and must be installed
 from source. Obtain a copy of the source tree and install it with
 [pip](https://pip.pypa.io/en/stable):
 ```bash
@@ -20,18 +23,16 @@ sudo pip install .
 ```
 
 ### Development setup
-[venv](https://docs.python.org/3/library/venv.html) is the recommended
-method to create a local development environment and manage dependencies. The
-following is a quick look at how to use venv with pip to set up a virutal
-environment to use/develop cryptle.
-
-Python3.6 is required to setup dev environemnt.
-
+[venv](https://docs.python.org/3/library/venv.html) is the recommended method to
+create a local development environment and manage dependencies. A make command
+is provided as the setup shortcut:
 ```
-python3.6 -m venv .venv
-. .venv/bin/activate
-pip install -e .[dev]
+make initial-python-setup
 ```
+
+The following is a quick look at what that command did, and how to use venv with
+pip by yourself to set up a virutal environment to develop python projects.
+
 1. Create a virtual environment in a new local directory `.venv`. Using
    `python3.6` ensures the installation symlinks to a python3.6 binary.
    Substitue with your system's python path when approperiate.
@@ -62,7 +63,7 @@ directory:
 ```bash
 make doc
 ```
-The compiled documentation in HTML can be found relative to the project root at 
+The compiled documentation in HTML can be found relative to the project root at
 `docs/_build/html/index.html`.
 
 For convenience sake, the provided command `make servedoc` builds the docs,

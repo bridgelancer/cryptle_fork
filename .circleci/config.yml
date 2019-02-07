@@ -19,10 +19,7 @@ jobs:
             pip install -q --user virtualenv
       - run:
           name: Actvate virtualenv and install dependencies
-          command: |
-            virtualenv .venv
-            source .venv/bin/activate
-            pip install -q .[dev]
+          command: make initial-python-setup
       - save_cache:
           key: venv-{{ .Branch }}-{{ checksum "setup.py" }}
           paths:

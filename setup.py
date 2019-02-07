@@ -28,9 +28,11 @@ setup(
             'black',
             'pylint>=2',
             'pytest>=3',
+            'pre-commit',
             'Sphinx>=1.7.2',
             'sphinx-autodoc-typehints>=1.5.1',
             'sphinx-rtd-theme>=0.4.0',
+            'watchdog>=0.9.0',
         ]
     },
     entry_points={
