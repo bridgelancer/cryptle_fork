@@ -25,8 +25,10 @@ import math
 import time
 import sys
 import traceback
-import numpy as np
 from datetime import datetime, time, timedelta
+
+import numpy as np
+import pytest
 
 const = [3 for i in range(1, 100)]
 lin = [i for i in range(1, 100)]
@@ -279,7 +281,6 @@ def test_MultivariateTSCache():
         @MemoryTS.cache('normal')
         def evaluate(self):
             self.value = 1
-            print('obj {} Calling evaluate in MockTS', type(self))
 
     mock = MockTS(10, wma, bollinger, store_num=1e100)
     pushAltQuad()
@@ -298,15 +299,9 @@ def test_MultivariateTSCache():
 def test_RetrieveByTimestamp():
     stick_period = aggregator_period = 300
 
-    bus = Bus()
     candle = CandleStick(stick_period)
     timestamp = Timestamp(stick_period)
     aggregator = Aggregator(aggregator_period)
-
-    bus.bind(pushTick)
-    bus.bind(timestamp)
-    bus.bind(candle)
-    bus.bind(aggregator)
 
     start_time = time(9, 15)
 
@@ -352,7 +347,8 @@ def test_RetrieveByTimestamp():
     )
 
     for i, price in enumerate(alt_quad):
-        pushTick([price, 1549524600 + 300 * i, 0, 0])
+        candle.source([price, price, price, price, 0, 0])
+        timestamp.source(1549524600 + 300 * i)
 
     assert abs(afterhr_ret.atTime(datetime.fromtimestamp(1549544100)) - 242) < 1e-7
     assert afterhr_ret.byTime(datetime.fromtimestamp(1549544100), 1549544700) == [
@@ -362,6 +358,7 @@ def test_RetrieveByTimestamp():
     ]
 
     afterhr_ret.hxtimeseries.cleanup()
+
 
 def test_execute_decorator():
     int_t1 = 1549544100
@@ -384,9 +381,10 @@ def test_execute_decorator():
     bus.bind(candle)
     bus.bind(aggregator)
 
-    @MemoryTS.execute(t1, (t5, t6), (t4,t3), t2)
+    @MemoryTS.execute(t1, (t5, t6), (t4, t3), t2)
     def test_execute(c, ts):
         print(c, ts)
+        # Todo Capture stdout and parameterize tests of pytest suite
         return c
 
     foo = GenericTS(
@@ -400,9 +398,60 @@ def test_execute_decorator():
         timestamp=timestamp,
     )
 
+    for i, price in enumerate(alt_quad):
+        candle.source([price, price, price, price, 0, 0])
+        timestamp.source(1549524600 + 300 * i)
+
+
+def test_from_time_delta():
+    int_t1 = 1549544100
+    t1 = datetime.fromtimestamp(1549544100).time()
+    t2 = datetime.fromtimestamp(int_t1 + 900).time()
+    t3 = datetime.fromtimestamp(int_t1 - 300).time()
+    t4 = datetime.fromtimestamp(int_t1 - 600).time()
+    t5 = datetime.fromtimestamp(int_t1 + 1500).time()
+    t6 = datetime.fromtimestamp(int_t1 + 3000).time()
+
+    stick_period = aggregator_period = 300
+
+    bus = Bus()
+    candle = CandleStick(stick_period)
+    timestamp = Timestamp(stick_period)
+    aggregator = Aggregator(aggregator_period)
+
+    bus.bind(pushTick)
+    bus.bind(timestamp)
+    bus.bind(candle)
+    bus.bind(aggregator)
+
+    @MemoryTS.execute(t1, (t5, t6), (t4, t3), t2)
+    def test_execute(c, ts):
+        return c
+
+    foo = GenericTS(
+        candle.c,
+        timestamp,
+        name='test_execute',
+        lookback=6,
+        eval_func=test_execute,
+        args=[candle.c, timestamp],
+        tocache=True,
+        timestamp=timestamp,
+    )
 
     for i, price in enumerate(alt_quad):
-        pushTick([price, 1549524600 + 300 * i, 0, 0])
+        candle.source([price, price, price, price, 0, 0])
+        timestamp.source(1549524600 + 300 * i)
+
+
+    assert [
+        [float(y) for y in x]
+        for x in (
+            foo.fromTimeDelta(
+                1549547100, timedelta(minutes=300), timedelta(minutes=100), time(21, 20)
+            )
+        )
+    ] == [[1549545600, -215.0625]]
 
 
 # @Deprecated - use Time event instead of a Timeseries where possible

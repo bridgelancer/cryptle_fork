@@ -306,14 +306,28 @@ class Timeseries(Metric):
         else:
             return self.hxtimeseries.byTime(start_timestamp, end_timestamp)
 
-    def atTimeDelta(
+    def fromTimeDelta(
         self,
         current_timestamp: Union[int, datetime],
         delta_from: timedelta,
         delta_till: timedelta,
         time: Optional[time] = None,
-    ) -> Optional[float]:
-        pass
+    ) -> Optional[Union[List[float], float]]:
+
+        if not self.isTimestamped:
+            raise NotImplementedError('Only for timestamped Timeseries')
+
+        if isinstance(current_timestamp, int):
+            current_timestamp = datetime.fromtimestamp(current_timestamp)
+
+        if current_timestamp - delta_from > current_timestamp - delta_till:
+            raise ValueError(
+                'Please input valid delta_from/delta_till timedelta objects'
+            )
+
+        return self.hxtimeseries.fromTimeDelta(
+            current_timestamp, delta_from, delta_till, time
+        )
 
     def atTime(self, timestamp: Union[int, datetime]) -> float:
         """Find value by timestamp, return that value if found"""
@@ -516,8 +530,10 @@ class MemoryTS(Metric):
         """Decorator for specifying time to return valid values from eval_func of
         :class:``cryptle.metric.base.GenericTS`` objects.
 
-        Note: The last argument of *args passed into eval_func must be an instance of
-        :class:``cryptle.metric.timeseries.timestamp``.
+        Args
+        ----
+        *args: time or (time, time)
+            starting time, or (start, stop) time tuple
 
         """
         time_tuples = []
@@ -531,6 +547,13 @@ class MemoryTS(Metric):
                 time_tuples.append(a)
 
         def decorator(func):
+            """
+
+            Note: The last argument of *args passed into eval_func must be an instance of
+            :class:``cryptle.metric.timeseries.timestamp``.
+
+            """
+
             @wraps(func)
             def wrapper(*args):
                 ts = args[-1]
@@ -603,22 +626,22 @@ class MemoryTS(Metric):
                             pass
                         if isinstance(ts, Timeseries):
                             if ts.value is not None:
-                                buffer.append(ts.value)
+                                buffer.append(float(ts.value))
                             ts_count += 1
                         if isinstance(ts, MultivariateTS):
                             lst_ts = ts.get_generic_ts()
                             for t in lst_ts:
                                 if t.value is not None:
-                                    buffer.append(t.value)
+                                    buffer.append(float(t.value))
                             ts_count += len(lst_ts)
 
-                    # Should be the sum of tsl, including those in MultivariateTS
+                    # Should be the sum of ts, including those in MultivariateTS
                     if len(buffer) != ts_count:
                         val = func(*args, **kwargs)
                         return val
                     else:
                         if len(buffer) == 1:
-                            self._cache.append(self._ts[0].value)
+                            self._cache.append(float(self._ts[0].value))
                         elif len(buffer) > 1:
                             self._cache.append(buffer)
 
@@ -627,7 +650,7 @@ class MemoryTS(Metric):
                     buffer = []
                     for ts in lst_ts:
                         if ts.value is not None:
-                            buffer.append(ts.value)
+                            buffer.append(float(ts.value))
                     self._cache.append(buffer)
 
                 self._cache = prune_type(self)
@@ -773,7 +796,6 @@ class DiskTS(Metric):
 
     def cleanup(self):
         self.write(None)
-        print(f'{repr(self._ts)} length:  {len(self._cache)}')
 
     def write(self, num_to_write):
         """Write stored data to disk.
@@ -905,22 +927,22 @@ class DiskTS(Metric):
 
         if isinstance(index, slice):
             try:
-                # for handling index cases with integer bounded intervals and steps i.e.
+                # For handling index cases with integer bounded intervals and steps i.e.
                 # [-4:-2]
                 if (
                     abs(index.stop) < self._store_num
                     and abs(index.start) < self._store_num
                 ):
-                    # if still within caching limit, retrieve from cache
+                    # If still within caching limit, retrieve from cache
                     return self._cache[index]
             except TypeError:
-                # for handling index cases without integer bounded intervals and steps
+                # For handling index cases without integer bounded intervals and steps
                 # i.e. [-2:]
-                if index.stop is None and abs(index.start) < self._store_num:
-                    # if still within caching limit, retrieve from cache
+                if index.stop is None and abs(index.start) < 2 * self._store_num:
+                    # If still within caching limit, retrieve from cache
                     return self._cache[index]
-                elif index.stop is None and abs(index.start) >= self._store_num:
-                    # if not within caching limit, retrieve from file
+                elif index.stop is None and abs(index.start) >= 2 * self._store_num:
+                    # If not within caching limit, retrieve from file
                     lst = DiskTS.readCSV(self._cache, filepath)
                     return lst[index]
             else:
@@ -928,8 +950,8 @@ class DiskTS(Metric):
                 return lst[index]
 
         elif isinstance(index, int):
-            # for handling index cases with single intenger only
-            if abs(index) < self._store_num:
+            # For handling index cases with single intenger only
+            if abs(index) < 2 * self._store_num:
                 return self._cache[index]
             else:
                 lst = DiskTS.readCSV(self._cache, filepath)
@@ -938,7 +960,7 @@ class DiskTS(Metric):
     def atTime(self, timestamp):
         s = sc(self._cache, key=itemgetter(0))
         try:
-            return s.find(timestamp)[1]
+            return float(s.find(timestamp)[1])
         except:
             return None
 
@@ -950,7 +972,7 @@ class DiskTS(Metric):
             record = s.find_ge(timestamp)
             return s[s.index(record) :]
         except ValueError:
-            return None
+            return s[:]
 
     def toTime(self, timestamp, lst=None):
         if lst is None:
@@ -960,12 +982,31 @@ class DiskTS(Metric):
             record = s.find_le(timestamp)
             return s[: s.index(record) + 1]
         except ValueError:
-            return None
+            return s[:]
 
     def byTime(self, start_timestamp, end_timestamp):
         from_start = self.fromTime(start_timestamp)
         till_end = self.toTime(end_timestamp, lst=from_start)
         return till_end
 
-    def byTimeDelta(self):
-        pass
+    def fromTimeDelta(self, current_timestamp, delta_from, delta_till, time):
+        start_timestamp = current_timestamp - delta_from
+        end_timestamp = current_timestamp - delta_till
+
+        window = self.byTime(start_timestamp.timestamp(), end_timestamp.timestamp())
+
+        start_date = start_timestamp.date()
+        end_date = end_timestamp.date()
+
+        def daterange(d1, d2):
+            return (d1 + timedelta(days=i) for i in range((d1 - d2).days + 1))
+
+        lst = []
+        if time is None:
+            return window
+        else:
+            for d in daterange(start_date, end_date):
+                dt = datetime.combine(d, time)
+                val = self.atTime(dt.timestamp())
+                lst.append([dt.timestamp(), float(val)])
+        return lst
