@@ -353,10 +353,6 @@ def test_RetrieveByTimestamp():
 
     for i, price in enumerate(alt_quad):
         pushTick([price, 1549524600 + 300 * i, 0, 0])
-        try:
-            pass
-        except:
-            pass
 
     assert abs(afterhr_ret.atTime(datetime.fromtimestamp(1549544100)) - 242) < 1e-7
     assert afterhr_ret.byTime(datetime.fromtimestamp(1549544100), 1549544700) == [
@@ -364,6 +360,49 @@ def test_RetrieveByTimestamp():
         [1549544400, -310.8125],
         [1549544700, 258.75],
     ]
+
+    afterhr_ret.hxtimeseries.cleanup()
+
+def test_execute_decorator():
+    int_t1 = 1549544100
+    t1 = datetime.fromtimestamp(1549544100).time()
+    t2 = datetime.fromtimestamp(int_t1 + 900).time()
+    t3 = datetime.fromtimestamp(int_t1 - 300).time()
+    t4 = datetime.fromtimestamp(int_t1 - 600).time()
+    t5 = datetime.fromtimestamp(int_t1 + 1500).time()
+    t6 = datetime.fromtimestamp(int_t1 + 3000).time()
+
+    stick_period = aggregator_period = 300
+
+    bus = Bus()
+    candle = CandleStick(stick_period)
+    timestamp = Timestamp(stick_period)
+    aggregator = Aggregator(aggregator_period)
+
+    bus.bind(pushTick)
+    bus.bind(timestamp)
+    bus.bind(candle)
+    bus.bind(aggregator)
+
+    @MemoryTS.execute(t1, (t5, t6), (t4,t3), t2)
+    def test_execute(c, ts):
+        print(c, ts)
+        return c
+
+    foo = GenericTS(
+        candle.c,
+        timestamp,
+        name='test_execute',
+        lookback=6,
+        eval_func=test_execute,
+        args=[candle.c, timestamp],
+        tocache=True,
+        timestamp=timestamp,
+    )
+
+
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 1549524600 + 300 * i, 0, 0])
 
 
 # @Deprecated - use Time event instead of a Timeseries where possible

@@ -16,7 +16,7 @@ import logging
 import csv
 import os
 from pathlib import Path
-import datetime
+from datetime import datetime, time, timedelta
 from operator import itemgetter
 from typing import Union, Optional, List, Tuple
 
@@ -259,7 +259,7 @@ class Timeseries(Metric):
         return self.hxtimeseries.__getitem__(index)
 
     def fromTime(
-        self, start_timestamp: Union[int, datetime.datetime]
+        self, start_timestamp: Union[int, datetime]
     ) -> Optional[List[Tuple[float, float]]]:
         """Find value by timestamp, returns all records starting from start_timestamp"""
         if not self.isTimestamped:
@@ -267,11 +267,11 @@ class Timeseries(Metric):
 
         if isinstance(start_timestamp, int):
             return self.hxtimeseries.fromTime(start_timestamp)
-        elif isinstance(start_timestamp, datetime.datetime):
+        elif isinstance(start_timestamp, datetime):
             return self.hxtimeseries.fromTime(start_timestamp.timestamp())
 
     def toTime(
-        self, end_timestamp: Union[int, datetime.datetime]
+        self, end_timestamp: Union[int, datetime]
     ) -> Optional[List[Tuple[float, float]]]:
         """Find value by timestamp, returns all records starting from end_timestamp"""
 
@@ -280,15 +280,13 @@ class Timeseries(Metric):
 
         if isinstance(end_timestamp, int):
             return self.hxtimeseries.toTime(end_timestamp)
-        elif isinstance(end_timestamp, datetime.datetime):
+        elif isinstance(end_timestamp, datetime):
             return self.hxtimeseries.toTime(end_timestamp.timestamp())
         else:
             raise NotImplementedError('Please input int or datetime argument')
 
     def byTime(
-        self,
-        start_timestamp: Union[int, datetime.datetime],
-        end_timestamp: Union[int, datetime.datetime],
+        self, start_timestamp: Union[int, datetime], end_timestamp: Union[int, datetime]
     ) -> Optional[Union[List[Tuple[float, float]], float]]:
         """Find value by timestamp, returns all records between start_timestamp till
         end_timestamp"""
@@ -296,9 +294,9 @@ class Timeseries(Metric):
         if not self.isTimestamped:
             raise NotImplementedError('Only for timestamped Timeseries')
 
-        if isinstance(start_timestamp, datetime.datetime):
+        if isinstance(start_timestamp, datetime):
             start_timestamp = start_timestamp.timestamp()
-        if isinstance(end_timestamp, datetime.datetime):
+        if isinstance(end_timestamp, datetime):
             end_timestamp = end_timestamp.timestamp()
 
         if end_timestamp < start_timestamp:
@@ -308,12 +306,21 @@ class Timeseries(Metric):
         else:
             return self.hxtimeseries.byTime(start_timestamp, end_timestamp)
 
-    def atTime(self, timestamp: Union[int, datetime.datetime]) -> float:
+    def atTimeDelta(
+        self,
+        current_timestamp: Union[int, datetime],
+        delta_from: timedelta,
+        delta_till: timedelta,
+        time: Optional[time] = None,
+    ) -> Optional[float]:
+        pass
+
+    def atTime(self, timestamp: Union[int, datetime]) -> float:
         """Find value by timestamp, return that value if found"""
         if not self.isTimestamped:
             raise NotImplementedError('Only for timestamped Timeseries')
 
-        if isinstance(timestamp, datetime.datetime):
+        if isinstance(timestamp, datetime):
             timestamp = timestamp.timestamp()
 
         return self.hxtimeseries.atTime(timestamp)
@@ -503,6 +510,45 @@ class MultivariateTS:
 class MemoryTS(Metric):
     def __init__(self, ts):
         self._ts = ts
+
+    @staticmethod
+    def execute(*args: Union[Tuple[time, time], time]):
+        """Decorator for specifying time to return valid values from eval_func of
+        :class:``cryptle.metric.base.GenericTS`` objects.
+
+        Note: The last argument of *args passed into eval_func must be an instance of
+        :class:``cryptle.metric.timeseries.timestamp``.
+
+        """
+        time_tuples = []
+
+        # Construct a formatted list of tuples (start_time, end_time)
+        for a in args:
+            if isinstance(a, time):
+                time_tuples.append((a, a))
+            elif isinstance(a, tuple):
+                assert a[1] > a[0]
+                time_tuples.append(a)
+
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args):
+                ts = args[-1]
+                dt = datetime.fromtimestamp(ts)
+                for tt in time_tuples:
+                    if (
+                        time(dt.hour, dt.minute) >= tt[0]
+                        and time(dt.hour, dt.minute) <= tt[1]
+                    ):
+                        return func(*args)
+                    else:
+                        continue
+
+                return None
+
+            return wrapper
+
+        return decorator
 
     @staticmethod
     def prune(arg, lookback=None):
@@ -705,7 +751,7 @@ class DiskTS(Metric):
         self.flashed = False
 
         # Setting up correct directory structure
-        current_time = datetime.datetime.now()
+        current_time = datetime.now()
         current_time_f = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
         histroot = Path('histlog')
@@ -720,7 +766,7 @@ class DiskTS(Metric):
 
         # Some leniency to let all files fall into same folder
         for i in range(-3, 3):
-            diff_time = current_time + datetime.timedelta(seconds=i)
+            diff_time = current_time + timedelta(seconds=i)
             diff_time_f = diff_time.strftime("%Y-%m-%d %H:%M:%S")
             subdirpath = histroot / diff_time_f
             self.dirpaths.append(Path.cwd() / subdirpath)
@@ -920,3 +966,6 @@ class DiskTS(Metric):
         from_start = self.fromTime(start_timestamp)
         till_end = self.toTime(end_timestamp, lst=from_start)
         return till_end
+
+    def byTimeDelta(self):
+        pass
