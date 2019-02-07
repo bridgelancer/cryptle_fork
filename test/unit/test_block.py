@@ -1,7 +1,7 @@
 from cryptle.event import Bus, on, source
-from cryptle.codeblock import CodeBlock
+from cryptle.rule import Rule
 from cryptle.aggregator import Aggregator
-from cryptle.registry import Registry
+from cryptle.scheduler import Scheduler
 
 from cryptle.metric.timeseries.candle import CandleStick
 from cryptle.metric.timeseries.rsi    import RSI
@@ -16,7 +16,7 @@ from collections import ChainMap
 dataset = get_sample_candles()
 tickset = get_sample_trades()
 
-# Most of these tests are all deprecated because of the new Registry format
+# Most of these tests are all deprecated because of the new Scheduler format
 
 #def test_construction():
 #    def CB1():
@@ -24,14 +24,14 @@ tickset = get_sample_trades()
 #        return True, {}
 #
 #    setup = ['open', [['once per bar'], {}], 1]
-#    cb1 = CodeBlock(CB1, setup)
+#    cb1 = Rule(CB1, setup)
 #    assert cb1.name == 'CB1'
 
 #def test_on_close():
 #    def twokprice():
 #        flags = {"twokflag": True, 'twokflagyou': True}
-#        if registry.current_price is not None:
-#            if registry.current_price > 1000:
+#        if scheduler.current_price is not None:
+#            if scheduler.current_price > 1000:
 #                flags['twokflag'] = True
 #            else:
 #                flags['twokflag'] = False
@@ -39,7 +39,7 @@ tickset = get_sample_trades()
 #        return True, flags
 #
 #    setup = {twokprice: ['close', [['once per bar'], {}], 1]}
-#    registry = Registry(setup)
+#    scheduler = Scheduler(setup)
 #
 #    @source('aggregator:new_close')
 #    def parseClose(val):
@@ -47,20 +47,20 @@ tickset = get_sample_trades()
 #
 #    bus = Bus()
 #    bus.bind(parseClose)
-#    bus.bind(registry)
+#    bus.bind(scheduler)
 #
 #    for value in dataset:
 #        print(value[1])
 #        parseClose(float(value[1]))
-#    assert registry.close_price == 2727.97
+#    assert scheduler.close_price == 2727.97
 #
 ### only activate when it is bar open
 #def test_on_open():
 #
 #    def twokprice():
 #        flags = {"twokflag": True, 'twokflagyou': True}
-#        if registry.current_price is not None:
-#            if registry.current_price > 1000:
+#        if scheduler.current_price is not None:
+#            if scheduler.current_price > 1000:
 #                flags['twokflag'] = True
 #            else:
 #                flags['twokflag'] = False
@@ -68,7 +68,7 @@ tickset = get_sample_trades()
 #        return True, flags
 #
 #    setup = {twokprice: [['open'], [['once per bar'],{}], 1]}
-#    registry = Registry(setup)
+#    scheduler = Scheduler(setup)
 #
 #    @source('aggregator:new_open')
 #    def parseOpen(val):
@@ -76,11 +76,11 @@ tickset = get_sample_trades()
 #
 #    bus = Bus()
 #    bus.bind(parseOpen)
-#    bus.bind(registry)
+#    bus.bind(scheduler)
 #    for value in dataset:
 #        print(value[0])
 #        parseOpen(float(value[0]))
-#    assert registry.open_price == 2670.2
+#    assert scheduler.open_price == 2670.2
 #
 #
 #def test_registration_to_reigstry():
@@ -100,9 +100,9 @@ tickset = get_sample_trades()
 #             CB2: ['close', [['once per bar'], {}], 2],
 #             CB3: ['open', [['once per bar'], {}], 3],
 #             }
-#    registry = Registry(setup)
-#    for item in registry.codeblocks:
-#        assert item.name == 'CB' + str(registry.codeblocks.index(item) + 1)
+#    scheduler = Scheduler(setup)
+#    for item in scheduler.rules:
+#        assert item.name == 'CB' + str(scheduler.rules.index(item) + 1)
 #        #item.checking()
 #
 #def test_initialization():
@@ -148,15 +148,15 @@ tickset = get_sample_trades()
 #             CB8: ['open', [[], {'n per flag': [[CB6, 'damnson', 10000], ]}], 8],
 #             }
 #
-#    registry = Registry(setup)
-#    assert registry.codeblocks[0].logic_status.logic_status == {'bar': [1, 1, 0]}
-#    assert registry.codeblocks[1].logic_status.logic_status == {'trade': [1, 1, 0]}
-#    assert registry.codeblocks[2].logic_status.logic_status == {'period': [1, 2, 0]}
-#    assert registry.codeblocks[3].logic_status.logic_status == {'damn': [1, 1, 0]}
-#    assert registry.codeblocks[4].logic_status.logic_status == {'bar': [3, 1, 0]}
-#    assert registry.codeblocks[5].logic_status.logic_status == {'period': [3, 2, 0]}
-#    assert registry.codeblocks[6].logic_status.logic_status == {'trade': [3, 1, 0]}
-#    assert registry.codeblocks[7].logic_status.logic_status == {'damnson': [10000, 1, 0]}
+#    scheduler = Scheduler(setup)
+#    assert scheduler.rules[0].logic_status.logic_status == {'bar': [1, 1, 0]}
+#    assert scheduler.rules[1].logic_status.logic_status == {'trade': [1, 1, 0]}
+#    assert scheduler.rules[2].logic_status.logic_status == {'period': [1, 2, 0]}
+#    assert scheduler.rules[3].logic_status.logic_status == {'damn': [1, 1, 0]}
+#    assert scheduler.rules[4].logic_status.logic_status == {'bar': [3, 1, 0]}
+#    assert scheduler.rules[5].logic_status.logic_status == {'period': [3, 2, 0]}
+#    assert scheduler.rules[6].logic_status.logic_status == {'trade': [3, 1, 0]}
+#    assert scheduler.rules[7].logic_status.logic_status == {'damnson': [10000, 1, 0]}
 #
 ##@pytest.mark.skip(reason='not implemented')
 #def test_is_executable():
@@ -202,9 +202,9 @@ tickset = get_sample_trades()
 #             CB8: ['open', [[], {'n per flag': [[CB6, 'damnson', 10000], ]}], 8],
 #             }
 #
-#    registry = Registry(setup)
+#    scheduler = Scheduler(setup)
 #    for i in range(0, 8, 1):
-#        assert registry.codeblocks[i].logic_status.is_executable() == True
+#        assert scheduler.rules[i].logic_status.is_executable() == True
 #
 #
 #def test_checking():
@@ -213,7 +213,7 @@ tickset = get_sample_trades()
 #        return True, {}, {}
 #
 #    def CB2(flagValues, flagCB):
-#        #print('successful enforce rudimentary checking CB2', registry.current_time)
+#        #print('successful enforce rudimentary checking CB2', scheduler.current_time)
 #        return True, {}, {}
 #
 #    def CB3(flagValues, flagCB):
@@ -221,7 +221,7 @@ tickset = get_sample_trades()
 #        return True, {}, {}
 #
 #    def CB4(flagValues, flagCB):
-#        #print('successful enforce rudimentary checking CB4', registry.current_time)
+#        #print('successful enforce rudimentary checking CB4', scheduler.current_time)
 #        return True, {}, {}
 #
 #    setup = {
@@ -235,13 +235,13 @@ tickset = get_sample_trades()
 #    def emitTick(tick):
 #        return tick
 #
-#    registry = Registry(setup)
+#    scheduler = Scheduler(setup)
 #    aggregator = Aggregator(3600)
 #
 #    bus = Bus()
 #    bus.bind(emitTick)
 #    bus.bind(aggregator)
-#    bus.bind(registry)
+#    bus.bind(scheduler)
 #
 #    for tick in tickset:
 #        data = [tick[0], tick[2], tick[1], tick[3]]
@@ -256,8 +256,8 @@ tickset = get_sample_trades()
 #
 #    def twokprice(flagValues, flagCB):
 #        flags = {"twokflag": True, 'twokflagyou': True}
-#        if registry.current_price is not None:
-#            if registry.current_price > 980:
+#        if scheduler.current_price is not None:
+#            if scheduler.current_price > 980:
 #                flags['twokflag'] = True
 #            else:
 #                flags['twokflag'] = False
@@ -267,13 +267,13 @@ tickset = get_sample_trades()
 #    # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
 #    # workup in aggregator in data format to achieve it @REVIEW
 #    def CB2(flagValues, flagCB, testdata=None):
-#        if registry.current_price < 990 and testdata:
+#        if scheduler.current_price < 990 and testdata:
 #            testdata = False
 #        else:
 #            testdata= True
 #        if flagValues['twokflag']:
 #            print('successfully check according to flag',
-#                    datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'), registry.close_price)
+#                    datetime.utcfromtimestamp(scheduler.current_time).strftime('%Y-%m-%d %H:%M:%S'), scheduler.close_price)
 #
 #        flags = {}
 #        localdata = {'testdata': testdata}
@@ -287,7 +287,7 @@ tickset = get_sample_trades()
 #                 'twokflagyou', 10],]}], 3],
 #             }
 #
-#    registry = Registry(setup)
+#    scheduler = Scheduler(setup)
 #    @source('tick')
 #    def emitTick(tick):
 #        return tick
@@ -295,7 +295,7 @@ tickset = get_sample_trades()
 #
 #    bus = Bus()
 #    bus.bind(emitTick)
-#    bus.bind(registry)
+#    bus.bind(scheduler)
 #    bus.bind(aggregator)
 #
 #    for tick in tickset:
@@ -329,7 +329,7 @@ tickset = get_sample_trades()
 #            if rsi < rsi_thresh:
 #                rsi_sell_flag = False
 #                rsi_signal = False
-#            #print(rsi, datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'))
+#            #print(rsi, datetime.utcfromtimestamp(scheduler.current_time).strftime('%Y-%m-%d %H:%M:%S'))
 #            #print(rsi_signal, rsi_sell_flag, "\n")
 #        except Exception as e:
 #            print(e)
@@ -343,7 +343,7 @@ tickset = get_sample_trades()
 #        [[doneInit, 'doneInitflag', 1000000],]}], 1],
 #            }
 #
-#    registry = Registry(setup)
+#    scheduler = Scheduler(setup)
 #    @source('tick')
 #    def emitTick(tick):
 #        return tick
@@ -351,7 +351,7 @@ tickset = get_sample_trades()
 #
 #    bus = Bus()
 #    bus.bind(emitTick)
-#    bus.bind(registry)
+#    bus.bind(scheduler)
 #    bus.bind(aggregator)
 #    bus.bind(stick)
 #
@@ -366,8 +366,8 @@ tickset = get_sample_trades()
 #        return True, flags, {}
 #
 #    def twokprice(flagValues, flagCB, twokflag=None, twokflagyou=True):
-#        if registry.current_price is not None:
-#            if registry.current_price > 980 and not twokflagyou:
+#        if scheduler.current_price is not None:
+#            if scheduler.current_price > 980 and not twokflagyou:
 #                twokflag = True
 #            else:
 #                twokflag = False
@@ -386,7 +386,7 @@ tickset = get_sample_trades()
 #    # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
 #    # workup in aggregator in data format to achieve it @REVIEW
 #    def CB2(flagValues, flagCB, testdata=None):
-#        if registry.current_price > 990 and testdata:
+#        if scheduler.current_price > 990 and testdata:
 #            testdata = False
 #            flagCB['twokflagyou'].setLocalData({'twokflagyou': False})
 #        else:
@@ -395,7 +395,7 @@ tickset = get_sample_trades()
 #
 #        if flagValues['twokflag']:
 #            print('successfully check according to flag',
-#                    datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'), registry.close_price)
+#                    datetime.utcfromtimestamp(scheduler.current_time).strftime('%Y-%m-%d %H:%M:%S'), scheduler.close_price)
 #
 #        flags = {}
 #        localdata = {'testdata': testdata}
@@ -410,7 +410,7 @@ tickset = get_sample_trades()
 #                 'twokflagyou', 10], [augmented, 'aug1', 1],[augmented, 'aug2', 1],[augmented, 'aug3', 1],]}], 4],
 #             }
 #
-#    registry = Registry(setup)
+#    scheduler = Scheduler(setup)
 #    @source('tick')
 #    def emitTick(tick):
 #        return tick
@@ -418,7 +418,7 @@ tickset = get_sample_trades()
 #
 #    bus = Bus()
 #    bus.bind(emitTick)
-#    bus.bind(registry)
+#    bus.bind(scheduler)
 #    bus.bind(aggregator)
 #
 #    for tick in tickset:
@@ -426,14 +426,14 @@ tickset = get_sample_trades()
 #        data = [float(x) for x in data]
 #        emitTick(data)
 
-def test_new_registry_format():
+def test_new_scheduler_format():
     def doneInit(flagValues, flagCB):
         flags = {"doneInitflag": True}
         return True, flags, {}
 
     def twokprice(flagValues, flagCB, twokflag=None, twokflagyou=True):
-        if registry.current_price is not None:
-            if registry.current_price > 980 and not twokflagyou:
+        if scheduler.current_price is not None:
+            if scheduler.current_price > 980 and not twokflagyou:
                 twokflag = True
             else:
                 twokflag = False
@@ -452,7 +452,7 @@ def test_new_registry_format():
     # currently there is no mechnisitic ways to retrieve the last bar close time. Need a minor
     # workup in aggregator in data format to achieve it @REVIEW
     def CB2(flagValues, flagCB, testdata=None):
-        if registry.current_price > 990 and testdata:
+        if scheduler.current_price > 990 and testdata:
             testdata = False
             flagCB['twokflagyou'].setLocalData({'twokflagyou': False})
         else:
@@ -461,29 +461,29 @@ def test_new_registry_format():
 
         if flagValues['twokflag']:
             print('successfully check according to flag',
-                    datetime.utcfromtimestamp(registry.current_time).strftime('%Y-%m-%d %H:%M:%S'), registry.close_price)
+                    datetime.utcfromtimestamp(scheduler.current_time).strftime('%Y-%m-%d %H:%M:%S'), scheduler.close_price)
 
         flags = {}
         localdata = {'testdata': testdata}
         return True, flags, localdata
 
     setup = [
-             (('codeblock', doneInit),
+             (('rule', doneInit),
                         ('whenExec', 'open'),
                         ('once per bar', {'type': 'once per bar', 'event': 'bar',
                                          'refresh_period': 1})
                         ),
-             (('codeblock', twokprice),
+             (('rule', twokprice),
                          ('whenExec', 'open'),
                          ('once per bar', {'type': 'once per bar', 'event': 'bar',
                                          'max_trigger': 1, 'refresh_period': 1})
                          ),
-             (('codeblock', augmented),
+             (('rule', augmented),
                          ('whenExec', 'open'),
                          ('once per bar', {'type': 'once per bar', 'event': 'bar',
                                          'max_trigger': 1, 'refresh_period': 1})
                          ),
-             (('codeblock', CB2),
+             (('rule', CB2),
                          ('whenExec', 'open'),
                          ('once per bar', {'type': 'once per bar', 'event': 'bar',
                                          'max_trigger': 1, 'refresh_period': 1}),
@@ -509,7 +509,7 @@ def test_new_registry_format():
             ]
 
 
-    registry = Registry(setup)
+    scheduler = Scheduler(setup)
 
     @source('tick')
     def emitTick(tick):
@@ -519,7 +519,7 @@ def test_new_registry_format():
 
     bus = Bus()
     bus.bind(emitTick)
-    bus.bind(registry)
+    bus.bind(scheduler)
     bus.bind(aggregator)
 
     for tick in tickset:

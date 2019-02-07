@@ -337,30 +337,30 @@ Built-in Events
 - Time related: :class:`~cryptle.clock.Clock`
 
 
-.. _registry_ref:
+.. _scheduler_ref:
 
-Registry
+Scheduler
 --------
 It is often a nightmare to manage flags and restraining the execution of
 Strategy methods while implementing a trading strategy.
-:class:`~cryptle.registry.Registry`, together with
+:class:`~cryptle.scheduler.Scheduler`, together with
 :class:`~cryptle.codeblock.CodeBlock` and
 :class:`~cryptle.codeblock.LogicStatus`, is a set of integral solution of
 mitigating the inadverent uses of class flags and promoting source code
 maintainability of Strategy class.
 
-:class:`~cryptle.registry.Registry` handles :class:`~cryptle.strategy.Strategy`
+:class:`~cryptle.scheduler.Scheduler` handles :class:`~cryptle.strategy.Strategy`
 class's state information and controls the order and restraints of function
 blocks execution.
 
 .. warning::
 
-   Registry might change to another name to better reflect its
+   Scheduler might change to another name to better reflect its
    true functionality within the Strategy/CodeBlocks framework.
 
 The methods of a Strategy class requiring control should be passed in a ``list``
-of ``tuple`` to the ``setup`` argument of the constructor of the Registry. The
-order of execution of the Strategy methods to be controlled by the Registry
+of ``tuple`` to the ``setup`` argument of the constructor of the Scheduler. The
+order of execution of the Strategy methods to be controlled by the Scheduler
 would check and execute as in its tuple entry in the order of the list.
 
 There is a predefined structure for the tuple to wrap a Strategy method. Within
@@ -372,7 +372,7 @@ and flags. They take the format of ('constraint_name', {keys: args})
 
 The dictionary specified within the tuple of constraints and flags consists of
 predefined string keys to convey information of that particular constraint to the
-Registry. The available keys and their use are:
+Scheduler. The available keys and their use are:
 
 key:
    -  ``type``: the type of constraint category this constrinat belongs to
@@ -385,38 +385,38 @@ key:
      flag type.
 
 
-During construction of the Registry, :class:`~cryptle.registry.Registry` would
+During construction of the Scheduler, :class:`~cryptle.scheduler.Scheduler` would
 create an attribute ``codeblocks``. This holds a list of
 :class:`~cryptle.codeblock.CodeBlock` objects.
 :class:`~cryptle.codeblock.CodeBlock` would be documented separately in this
 guide but the essence is that it provides interface for
-:class:`~cryptle.registry.Registry` to properly maintain the actual
+:class:`~cryptle.scheduler.Scheduler` to properly maintain the actual
 ``logic_status`` of the Strategy methods.
 
 .. code:: python
 
-   class Registry:
+   class Scheduler:
       def __init__(self, *setup):
          self.codeblocks = list(map(CodeBlock, *setup))
 
 .. note::
 
    This is not complying to the design intent of the rest of the framework. In
-   the future the Registry should not directly handle data source. Instead the
+   the future the Scheduler should not directly handle data source. Instead the
    data handling part should be delegated to the Strategy instance with the use
    of the :class:`~cryptle.strategy.Strategy` interfaces provided.
 
 The control of the execution of the methods of the Strategy was achieved by the
 combined use of various **onEvent** functions such as
-:meth:`~cryptle.registry.Registry.onTick`,
-:meth:`~cryptle.registry.Registry.refreshLogicStatus` and the
-:meth:`~cryptle.registry.Registry.check` method.  **onEvent** functions could
+:meth:`~cryptle.scheduler.Scheduler.onTick`,
+:meth:`~cryptle.scheduler.Scheduler.refreshLogicStatus` and the
+:meth:`~cryptle.scheduler.Scheduler.check` method.  **onEvent** functions could
 listen to an external source via the Event bus architecture in order to update
 its internal state for the Strategy, or being directly called by the Strategy.
 
 .. code:: python
 
-   class Registry:
+   class Scheduler:
       def __init__(self, *setup):
          # other appropriate initialization
          self.codeblocks = list(map(CodeBlock, *setup))
@@ -434,18 +434,18 @@ its internal state for the Strategy, or being directly called by the Strategy.
    class FooStrat(Strategy):
       def __init__(self):
          # appropriate initialization of setup and other components
-         self.registry = Registry(setup)
+         self.scheduler = Scheduler(setup)
 
       def onTrade(self, price, timestamp, amount, action):
          # receive data and kickstart all relevant Bus-related Events
-         self.registry.onTick(tick)
+         self.scheduler.onTick(tick)
 
-The Strategy :meth:`~cryptle.Strategy.onTrade` method calls Registry to cascade
+The Strategy :meth:`~cryptle.Strategy.onTrade` method calls Scheduler to cascade
 the new information and triggers the necessary updating and checking.
 
 .. code:: python
 
-   class Registry:
+   class Scheduler:
       # ...
 
       @on('tick')
@@ -465,21 +465,21 @@ the new information and triggers the necessary updating and checking.
             # execute this codeblock if fullfilled someCondition
             codeblock.check()
 
-Schematic representation of how Registry cascade the information to check
+Schematic representation of how Scheduler cascade the information to check
 executability of individual CodeBlock held in ``codeblocks``.
 
-In the above scenario, the :class:`Registry` class will listen for tick via
-:meth:`~cryptle.registry.Registry.onTick`. Upon each arrival of tick, the
-:meth:`~cryptle.registry.Registry.check` function would be called. If all the
+In the above scenario, the :class:`Scheduler` class will listen for tick via
+:meth:`~cryptle.scheduler.Scheduler.onTick`. Upon each arrival of tick, the
+:meth:`~cryptle.scheduler.Scheduler.check` function would be called. If all the
 conditions to execute a particular Strategy method are fulfilled, the indiviudal
-:class:`~cryptle.codeblock.CodeBlock` of the :class:`~cryptle.registry.Registry`
+:class:`~cryptle.codeblock.CodeBlock` of the :class:`~cryptle.scheduler.Scheduler`
 would be called and updated to execute the function and update the local
 :class:`~cryptle.codeblock.CodeBlock` ``logic_status``, ``flags`` and
 ``localdata``  for the Strategy method.
 
 .. code:: python
 
-   class Registry:
+   class Scheduler:
       # ...
 
       def check(self, codeblock):
@@ -503,9 +503,9 @@ would be called and updated to execute the function and update the local
 
          # Also updates LogicStatus subsequently
 
-These ``logic_status`` are also dependent on :class:`~class.registry.Registry` for
+These ``logic_status`` are also dependent on :class:`~class.scheduler.Scheduler` for
 its proper maintenance under relevant changes of the external state. In this case,
-the :meth:`~cryptle.registry.Registry.refreshLogicStatus` is responsible for
+the :meth:`~cryptle.scheduler.Scheduler.refreshLogicStatus` is responsible for
 refreshing the LogicStatus appropriately.
 
 .. _codeblocks_ref:
@@ -515,7 +515,7 @@ CodeBlock
 CodeBlock is both a data structure containing meta-information and also an
 abstraction layer for maintaing these meta-information of a Strategy method.
 
-It provides necessary interface for both :class:`~cryptle.registry.Registry` and
+It provides necessary interface for both :class:`~cryptle.scheduler.Scheduler` and
 Strategy methods to systematically access and update the values of ``logic_status``
 and maintain the values of ``flags`` and ``localdata``.
 
@@ -531,13 +531,13 @@ other :class:`~cryptle.codeblock.Codeblock`.
 :class:`~cryptle.codeblock.Codeblock` and not intented to be accessed by other
 :class:`~cryptle.codeblock.Codeblock`.
 
-Several class methods are available for :class:`~cryptle.registry.Registry` to
+Several class methods are available for :class:`~cryptle.scheduler.Scheduler` to
 call during various situations. The ``logic_status`` of inidivdual
 :class:`~cryptle.codeblock.CodeBlock` are initialized by
 :meth:`~cryptle.codeblock.CodeBlock.initialize` when the setup ``sub-tuples``
-was first passed into the constructor of the Registry.
+was first passed into the constructor of the Scheduler.
 
-:class:`~cryptle.registry.Registry` then checks conditions based on the
+:class:`~cryptle.scheduler.Scheduler` then checks conditions based on the
 individual :class:`~cryptle.codeblock.LogicStatus` of a
 :class:`~cryptle.codeblock.CodeBlock`. During execution of a Strategy method,
 any updates of the own ``localdata``, ``flags`` would be returned by the
@@ -622,9 +622,9 @@ True for ``triggered`` and the ``logic_status`` would be correspondingly updated
 by :meth:`~cryptle.codeblock.CodeBlock.update`.
 
 The :meth:`~cryptle.codeblock.Codeblock.refresh` method would be called by the
-:meth:`~cryptle.registry.Registry.refreshLogicStatus` method of the
-:class:`~cryptle.registry.Registry`. For details, please refer to the
-documentation of the Registry.
+:meth:`~cryptle.scheduler.Scheduler.refreshLogicStatus` method of the
+:class:`~cryptle.scheduler.Scheduler`. For details, please refer to the
+documentation of the Scheduler.
 
 .. _timeseries_ref:
 

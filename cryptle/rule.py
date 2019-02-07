@@ -4,18 +4,18 @@ from collections import ChainMap
 class LogicStatus:
     """
     A wrapper snippet of the logic_status dictionary to provide utility for maintaining and
-    determining the executability of a CodeBlock
+    determining the executability of a Rule
 
     Args
     ---
     whenexec     : tuple
         The intended time of execution
     constraints  : tuple
-        The logical constraints imposed on and flags that the CodeBLock could access to
+        The logical constraints imposed on and flags that the Rule could access to
 
     The inner workings are relevant to developer for developing new types of constraints. Specifically, the
     individual constraint functions are defined within the LogicStatus class. They provide interface
-    for CodeBlocks/Registry to update the values of the local logic_status at appropriate time.
+    for Rules/Scheduler to update the values of the local logic_status at appropriate time.
 
     """
 
@@ -69,7 +69,7 @@ class LogicStatus:
     def callAll(self, num_bars):
         """Call all constraint functions and pass num_bars as arg.
 
-        Called during initialization and refreshing of Registry
+        Called during initialization and refreshing of Scheduler
 
         """
 
@@ -129,22 +129,22 @@ class LogicStatus:
             self.logic_status[const_name] = [max_trigger, 1, num_bars]
 
 
-class CodeBlock:
+class Rule:
     """
-    CodeBlocks are objects to be maintained by a Registry. They are created from a tuple
+    Rules are objects to be maintained by a Scheduler. They are created from a tuple
     corresponds to the the entry of the setup for that particular Stratey method.
-    The format of passing the setup metainfo to Registry is documented in PivotStrat and guides.
+    The format of passing the setup metainfo to Scheduler is documented in PivotStrat and guides.
 
     Augments the client functions to maintain its own logic status and maintian its state
-    transitions. Also provides a public interface for setting the localdata of another CodeBlock
+    transitions. Also provides a public interface for setting the localdata of another Rule
     via the :meth:`setLocalData` method by a Strategy method.
 
     Args
     ---
     functpt: reference to strategy method.
-        The key of the setup dictionary entry that maps to the setup info of this CodeBlock
+        The key of the setup dictionary entry that maps to the setup info of this Rule
     setup: list
-        The value of the setup dictionary entry that corresponds to the funcpt key of this CodeBlock
+        The value of the setup dictionary entry that corresponds to the funcpt key of this Rule
 
     """
 
@@ -160,14 +160,14 @@ class CodeBlock:
         self.flags = {}
         self.localdata = {}
 
-    # run initialization for each item in Registry.codeblocks
+    # run initialization for each item in Scheduler.rules
     def initialize(self):
         # codes that are really used for initialize the logical status based on the setup info
-        """Initialize the logic_status of the local CodeBlock at num_bars as 0."""
+        """Initialize the logic_status of the local Rule at num_bars as 0."""
         self.logic_status.callAll(0)
 
     def check(self, num_bars, flagvalues):
-        """Update CodeBlock metainfo after client method returns"""
+        """Update Rule metainfo after client method returns"""
         flagValues, flagCB = unpackDict(*flagvalues)
         self.triggered, self.flags, self.localdata = self.func(
             flagValues, flagCB, **self.localdata
@@ -182,23 +182,25 @@ class CodeBlock:
         self.logic_status.callAll(num_bars)
 
     def refresh(self, resetConstraint, num_bars):
-        """Maintain the local logic_status while it is refreshed by Registry, reset against
-        the passed constraint."""
+        """
+        Maintain the local logic_status while it is refreshed by Scheduler, reset against
+        the passed constraint.
+        """
         self.logic_status.reset(resetConstraint, num_bars)
 
     def setLocalData(self, dictionary):
-        """Public interface for client function to access other CodeBlocks localdata"""
+        """Public interface for client function to access other Rules localdata"""
         for k, v in dictionary.items():
             if k in self.localdata.keys():
                 self.localdata[k] = v
             else:
                 raise ValueError(
-                    'Only for resetting existing values of localdata of a CodeBlock.'
+                    'Only for resetting existing values of localdata of a Rule.'
                 )
 
 
 def unpackDict(*flagvalues):
-    """Module function that handles the unpacking of flagvalues that Registry passed into CodeBlock"""
+    """Module function that handles the unpacking of flagvalues that Scheduler passed into Rule"""
     flagTuple = dict(ChainMap(*flagvalues))
     flagValues = dict([(k, v[0]) for k, v in flagTuple.items()])
     flagCB = dict([(k, v[1]) for k, v in flagTuple.items()])

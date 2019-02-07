@@ -2,32 +2,34 @@ import logging
 from collections import OrderedDict
 
 from cryptle.event import source, on, Bus
-from cryptle.codeblock import CodeBlock
+from cryptle.rule import Rule
+from collections import OrderedDict
+
 
 logger = logging.getLogger(__name__)
 
 
-class Registry:
-    """ Registry class keeps record of the Strategy class's state information.
+class Scheduler:
+    """ Scheduler class keeps record of the Strategy class's state information.
 
-    A setup tuple would be passed during the construction of the Registry. This would inialize
-    all the CodeBlocks that would be subsequently maintained by the Registry and also via the
-    interactions between CodeBlocks where necessary.
+    A setup tuple would be passed during the construction of the Scheduler. This would
+    inialize all the Rules that would be subsequently maintained by the Scheduler and
+    also via the interactions between Rules where necessary.
 
     Args
     ---
     setup: tuple
         The tuple of tuples held by the Strategy
 
-    It is also responsible for controlling the execution of logical tests
-    at desired time and frequency as time elapsed. This is achieved by various onEvent functions.
-    These functions are responsible for listening to system-generated events via the evnet Bus and
-    refreshes the logic_status at suitable time point.
+    It is also responsible for controlling the execution of logical tests at desired
+    time and frequency as time elapsed. This is achieved by various onEvent functions.
+    These functions are responsible for listening to system-generated events via the
+    evnet Bus and refreshes the logic_status at suitable time point.
 
     """
 
     def __init__(self, *setup):
-        self.codeblocks = list(map(CodeBlock, *setup))
+        self.rules = list(map(Rule, *setup))
 
         # bar-related states that should be sourced from aggregator
         self.bars = []
@@ -46,15 +48,15 @@ class Registry:
         self.sell_count = 0
         self.lookup_check = {'open': self.new_open, 'close': self.new_close, '': True}
 
-        for codeblock in self.codeblocks:
-            codeblock.initialize()
+        for rule in self.rules:
+            rule.initialize()
 
     # tick should be agnostic to source of origin, but should take predefined format
     @on('tick')
     def onTrade(self, tick):
         # ***this sequence matters a lot***
 
-        # logger.debug('Registry received tick: {}', tick)
+        # logger.debug('Scheduler received tick: {}', tick)
 
         if self.current_price is not None:
             self.handleCheck(tick)
@@ -96,8 +98,8 @@ class Registry:
     def onCandle(self, bar):
         self.num_bars += 1
         self.bars.append(bar)
-        for codeblock in self.codeblocks:
-            self.refreshLogicStatus(codeblock, 'candle')
+        for rule in self.rules:
+            self.refreshLogicStatus(rule, 'candle')
         if len(self.bars) > 1000:
             self.bars = self.bars[-1000:]
 
@@ -106,8 +108,8 @@ class Registry:
     @on('aggregator:new_candle')
     def onPeriod(self, bar):
         timeToRefresh = False
-        for codeblock in self.codeblocks:
-            logic_status = codeblock.logic_status.logic_status
+        for rule in self.rules:
+            logic_status = rule.logic_status.logic_status
 
             if 'period' not in logic_status.keys():
                 continue
@@ -118,38 +120,36 @@ class Registry:
                     timeToRefresh = True
 
             if timeToRefresh:
-                self.refreshLogicStatus(codeblock, 'period')
+                self.refreshLogicStatus(rule, 'period')
 
-    def refreshLogicStatus(self, codeblock, timeEvent):
+    def refreshLogicStatus(self, rule, timeEvent):
         """
-        refreshLogicStatus handles all changes in logic status of a codeblock
+        refreshLogicStatus handles all changes in logic status of a rule
         due to the invocation of refresh functions.
 
         """
 
-        logic_status = codeblock.logic_status.logic_status
+        logic_status = rule.logic_status.logic_status
 
         if timeEvent == 'candle':
             for cat, val in logic_status.items():
                 if cat == 'bar':
-                    codeblock.refresh(cat, self.num_bars)
+                    rule.refresh(cat, self.num_bars)
         elif timeEvent == 'period':
             for cat, val in logic_status.items():
                 if cat == 'period':
-                    codeblock.refresh(cat, self.num_bars)
+                    rule.refresh(cat, self.num_bars)
 
     def handleCheck(self, tick):
-        """Wrapper function for calling check for each codeblock"""
-        for code in self.codeblocks:
+        """Wrapper function for calling check for each rule"""
+        for code in self.rules:
             self.check(code)
 
-    def check(self, codeblock):
+    def check(self, rule):
         """Actual checking to deliver the required control flow"""
-        logic_status = codeblock.logic_status.logic_status
-        whenexec = codeblock.logic_status.whenexec
-        dictionary = [
-            constraint[1] for constraint in codeblock.logic_status.constraints
-        ]
+        logic_status = rule.logic_status.logic_status
+        whenexec = rule.logic_status.whenexec
+        dictionary = [constraint[1] for constraint in rule.logic_status.constraints]
 
         Flags = list(
             filter(
@@ -158,22 +158,22 @@ class Registry:
             )
         )
         # pters is returning the list of self.func for all ocdblocks for checking
-        pters = [item.func for item in self.codeblocks]
+        pters = [item.func for item in self.rules]
 
         # Todo fix erratic behaviour
         # Currently, all lookup_check is void. No matter 'open'/'close, we only check when new
         # Candle is pushed (i.e. at open). However we guarantee that the
-        # registry.last_open/registry.last_close is correct
+        # scheduler.last_open/scheduler.last_close is correct
         if self.lookup_check[whenexec] and all(
             lst[0] > 0 for key, lst in logic_status.items()
         ):
             # list comprehension to remove duplicates
-            duplicate = [self.codeblocks[pters.index(flag['funcpt'])] for flag in Flags]
-            # augment duplicate with codeblocks to pass into inidividual CodeBlock
+            duplicate = [self.rules[pters.index(flag['funcpt'])] for flag in Flags]
+            # augment duplicate with rules to pass into inidividual Rule
             augmented = [
                 dict(t)
                 for t in {
                     tuple((k, (v, d)) for k, v in d.flags.items()) for d in duplicate
                 }
             ]
-            codeblock.check(self.num_bars, augmented)
+            rule.check(self.num_bars, augmented)

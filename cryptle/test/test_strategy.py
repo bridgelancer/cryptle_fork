@@ -152,7 +152,7 @@ def onEvent(holder):
 @parse.command()
 @pass_strat
 def aggregatorAndCandle(holder):
-    """Check whether the register and setup, if used, are both present in equal number"""
+    """Check whether the scheduler and setup, if used, are both present in equal number"""
     from cryptle.aggregator import Aggregator
     from cryptle.metric.timeseries.candle import CandleStick
 
@@ -180,20 +180,20 @@ def aggregatorAndCandle(holder):
 
 @parse.command()
 @pass_strat
-def codeblocks(holder):
+def rule(holder):
 
-    _check('Checking signature of codeblocks.')
+    _check('Checking signature of rules.')
     strat = holder.strat
 
     function_lst = []
     for tup in getmembers(strat):
         name, obj = tup
-        if name == 'registry':
-            registry = obj
+        if name == 'scheduler':
+            scheduler = obj
         if callable(obj):
             function_lst.append(obj)
 
-    if registry is None:
+    if scheduler is None:
         return
 
     # modify this func_lst to a list that contains the desired function signature
@@ -223,7 +223,7 @@ def codeblocks(holder):
 
     correct_name_func_set = set(correct_name_func_lst)
     annotated_func_set = set(annotated_func_lst)
-    cb_set = set([codeblock.func for codeblock in registry.codeblocks])
+    cb_set = set([rule.func for rule in scheduler.rules])
 
     correct_name = correct_name_func_set.intersection(cb_set) == cb_set
     annotated = annotated_func_set.intersection(cb_set) == cb_set
@@ -233,6 +233,6 @@ def codeblocks(holder):
     if not annotated:
         _warn('Please consider annoate the function appropriately \n')
     if not correct_name:
-        _warn('Please consider follow the naming convention of codeblocks \n')
+        _warn('Please consider follow the naming convention of rules \n')
     if not annotated and not correct_name:
-        _fail('Please review the function signature and setup passed to registry \n')
+        _fail('Please review the function signature and setup passed to scheduler\n')

@@ -58,16 +58,16 @@ Event Bus
 .. autoclass:: cryptle.clock.Clock
 
 
-Registry
+Scheduler
 --------
 
-.. automodule:: cryptle.registry
+.. automodule:: cryptle.scheduler
 
-   .. autoclass:: Registry
+   .. autoclass:: Scheduler
       :members:
 
 All actionnames and constraints supported are documented in
-:ref:`Registry <registry_ref>` under User Guides.
+:ref:`Scheduler <scheduler_ref>` under User Guides.
 
 
 Datafeeds
