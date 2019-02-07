@@ -1,5 +1,5 @@
 from cryptle.logging import *
-from cryptle.metric.base import Candle, Timeseries, MemoryTS, MultivariateTS
+from cryptle.metric.base import Candle, Timeseries, MemoryTS, MultivariateTS, GenericTS
 from cryptle.aggregator import Aggregator
 from cryptle.event import source, on, Bus
 from cryptle.metric.timeseries.atr import ATR
@@ -26,6 +26,7 @@ import time
 import sys
 import traceback
 import numpy as np
+from datetime import datetime, time, timedelta
 
 const = [3 for i in range(1, 100)]
 lin = [i for i in range(1, 100)]
@@ -291,6 +292,77 @@ def test_MultivariateTSCache():
         1344.7345184202045,
         -247.0966190440449,
         564.7297592101022,
+    ]
+
+
+def test_RetrieveByTimestamp():
+    stick_period = aggregator_period = 300
+
+    bus = Bus()
+    candle = CandleStick(stick_period)
+    timestamp = Timestamp(stick_period)
+    aggregator = Aggregator(aggregator_period)
+
+    bus.bind(pushTick)
+    bus.bind(timestamp)
+    bus.bind(candle)
+    bus.bind(aggregator)
+
+    start_time = time(9, 15)
+
+    def afterhr_return(c, o, h, l, ts):
+        dt = datetime.fromtimestamp(ts)
+
+        # the case of the start of after hours the day before
+        if time(dt.hour, dt.minute) >= time(16, 30):
+            start_dt = datetime(dt.year, dt.month, dt.day, 9, 15, 0) + timedelta(days=1)
+            prev_close_dt = start_dt - timedelta(hours=16)
+        # the case of the start of after hours the day after
+        elif time(dt.hour, dt.minute) < start_time:
+            start_dt = datetime(dt.year, dt.month, dt.day, 9, 15, 0)
+            prev_close_dt = start_dt - timedelta(hours=16)
+        else:
+            # append 0 for morning close
+            if time(dt.hour, dt.minute) == time(12, 25):
+                return 0
+            # append 0 for day close
+            elif time(dt.hour, dt.minute) == time(16, 25):
+                return 0
+            # otherwise return None
+            else:
+                return None
+
+        bar_count = int((dt.timestamp() - prev_close_dt.timestamp()) / (5 * 60))
+
+        if dt < start_dt and dt > prev_close_dt:
+            return c[-1] - o[-1 - bar_count]
+        else:
+            return None
+
+    afterhr_ret = GenericTS(
+        candle.o,
+        candle.c,
+        timestamp,
+        name='afterhr_return',
+        lookback=6,
+        eval_func=afterhr_return,
+        args=[candle.c, candle.o, candle.h, candle.l, timestamp],
+        tocache=True,
+        timestamp=timestamp,
+    )
+
+    for i, price in enumerate(alt_quad):
+        pushTick([price, 1549524600 + 300 * i, 0, 0])
+        try:
+            pass
+        except:
+            pass
+
+    assert abs(afterhr_ret.atTime(datetime.fromtimestamp(1549544100)) - 242) < 1e-7
+    assert afterhr_ret.byTime(datetime.fromtimestamp(1549544100), 1549544700) == [
+        [1549544100, 242],
+        [1549544400, -310.8125],
+        [1549544700, 258.75],
     ]
 
 

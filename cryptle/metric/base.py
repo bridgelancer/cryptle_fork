@@ -17,6 +17,10 @@ import csv
 import os
 from pathlib import Path
 import datetime
+from operator import itemgetter
+from typing import Union, Optional, List, Tuple
+
+from cryptle.metric.sorted_collection import SortedCollection as sc
 
 logger = logging.getLogger(__name__)
 
@@ -226,6 +230,11 @@ class Timeseries(Metric):
         self.hxtimeseries = DiskTS(self, timestamp=timestamp, store_num=store_num)
         self.value = None
 
+        if timestamp is None:
+            self._with_timestamp = False
+        else:
+            self._with_timestamp = True
+
         # self.publishers are the list of references to timeseries objects that this
         # instance subscribes to
         self.publishers = []
@@ -248,6 +257,69 @@ class Timeseries(Metric):
     def __getitem__(self, index):
         """Wrapping the DiskTS and give access via usual list-value getting syntax."""
         return self.hxtimeseries.__getitem__(index)
+
+    def fromTime(
+        self, start_timestamp: Union[int, datetime.datetime]
+    ) -> Optional[List[Tuple[float, float]]]:
+        """Find value by timestamp, returns all records starting from start_timestamp"""
+        if not self.isTimestamped:
+            raise NotImplementedError('Only for timestamped Timeseries')
+
+        if isinstance(start_timestamp, int):
+            return self.hxtimeseries.fromTime(start_timestamp)
+        elif isinstance(start_timestamp, datetime.datetime):
+            return self.hxtimeseries.fromTime(start_timestamp.timestamp())
+
+    def toTime(
+        self, end_timestamp: Union[int, datetime.datetime]
+    ) -> Optional[List[Tuple[float, float]]]:
+        """Find value by timestamp, returns all records starting from end_timestamp"""
+
+        if not self.isTimestamped:
+            raise NotImplementedError('Only for timestamped Timeseries')
+
+        if isinstance(end_timestamp, int):
+            return self.hxtimeseries.toTime(end_timestamp)
+        elif isinstance(end_timestamp, datetime.datetime):
+            return self.hxtimeseries.toTime(end_timestamp.timestamp())
+        else:
+            raise NotImplementedError('Please input int or datetime argument')
+
+    def byTime(
+        self,
+        start_timestamp: Union[int, datetime.datetime],
+        end_timestamp: Union[int, datetime.datetime],
+    ) -> Optional[Union[List[Tuple[float, float]], float]]:
+        """Find value by timestamp, returns all records between start_timestamp till
+        end_timestamp"""
+
+        if not self.isTimestamped:
+            raise NotImplementedError('Only for timestamped Timeseries')
+
+        if isinstance(start_timestamp, datetime.datetime):
+            start_timestamp = start_timestamp.timestamp()
+        if isinstance(end_timestamp, datetime.datetime):
+            end_timestamp = end_timestamp.timestamp()
+
+        if end_timestamp < start_timestamp:
+            raise ValueError('Please input valid start/end timestamp')
+        elif end_timestamp == start_timestamp:
+            return self.atTime(start_timestamp)
+        else:
+            return self.hxtimeseries.byTime(start_timestamp, end_timestamp)
+
+    def atTime(self, timestamp: Union[int, datetime.datetime]) -> float:
+        """Find value by timestamp, return that value if found"""
+        if not self.isTimestamped:
+            raise NotImplementedError('Only for timestamped Timeseries')
+
+        if isinstance(timestamp, datetime.datetime):
+            timestamp = timestamp.timestamp()
+
+        return self.hxtimeseries.atTime(timestamp)
+
+    def isTimestamped(self):
+        return self._with_timestamp
 
     def evaluate(self):
         """Virtual method to be implemented for each child instance of Timeseires"""
@@ -816,3 +888,35 @@ class DiskTS(Metric):
             else:
                 lst = DiskTS.readCSV(self._cache, filepath)
                 return lst[index]
+
+    def atTime(self, timestamp):
+        s = sc(self._cache, key=itemgetter(0))
+        try:
+            return s.find(timestamp)[1]
+        except:
+            return None
+
+    def fromTime(self, timestamp, lst=None):
+        if lst is None:
+            lst = self._cache
+        s = sc(lst, key=itemgetter(0))
+        try:
+            record = s.find_ge(timestamp)
+            return s[s.index(record) :]
+        except ValueError:
+            return None
+
+    def toTime(self, timestamp, lst=None):
+        if lst is None:
+            lst = self._cache
+        s = sc(lst, key=itemgetter(0))
+        try:
+            record = s.find_le(timestamp)
+            return s[: s.index(record) + 1]
+        except ValueError:
+            return None
+
+    def byTime(self, start_timestamp, end_timestamp):
+        from_start = self.fromTime(start_timestamp)
+        till_end = self.toTime(end_timestamp, lst=from_start)
+        return till_end
