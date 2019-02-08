@@ -14,9 +14,16 @@ class ATR(MultivariateTS):
     ----
     candle: :class:`~cryptle.metric.timeseries.candle.CandleStick`
         CandleStick object for updating
+
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
     """
 
-    def __init__(self, candle, lookback, name=None):
+    def __repr__(self):
+        return self.name
+
+    def __init__(self, candle, lookback, name='atr'):
+        self.name = f'{name}{lookback}'
         self._lookback = lookback
         self.prev_value = None
 
@@ -70,4 +77,3 @@ class ATR(MultivariateTS):
 
     def evaluate(self):
         logger.debug('Obj: {} Calling evaluate in bollinger', type(self))
-        self.broadcast()

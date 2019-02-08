@@ -7,14 +7,21 @@ logger = logging.getLogger(__name__)
 
 
 class SMA(Timeseries):
+    """Timeseries for calculating the simple moving average of the upstream.
+
+    Args
+    ----
+    lookback : int
+        The lookback period for calculating the SMA.
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
+    """
+
+    def __repr__(self):
+        return self.name
+
     def __init__(self, ts, lookback, name="sma", list=False):
-        """Timeseries for calculating the simple moving average of the upstream.
-
-        Args
-        ----
-        lookback : The lookback period for calculating the SMA.
-
-        """
+        self.name = f'{name}{lookback}'
         super().__init__(ts)
         logger.debug('Obj: {}. Initialized the parent Timeseries of SMA.', type(self))
         self._lookback = lookback
@@ -30,7 +37,6 @@ class SMA(Timeseries):
     def evaluate(self, candle=None):
         logger.debug('Obj {} Calling evaluate in SMA.', type(self))
         self.value = np.mean(self._cache)
-        self.broadcast()
 
     def onList(self):
         pass

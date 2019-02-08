@@ -25,6 +25,8 @@ class MACD(MultivariateTS):
         A moving-average Timeseries object with longer lookback period.
     lookback: int
         Lookback of the MACD object (or the signal period)
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
 
     Attributes
     ---
@@ -37,8 +39,11 @@ class MACD(MultivariateTS):
 
     """
 
+    def __repr__(self):
+        return self.name
+
     def __init__(self, fast, slow, lookback, name="macd", weights=default):
-        self.name = name
+        self.name = f'{name}{fast._lookback}_{slow._lookback}_{lookback}'
         self._lookback = lookback
         self._weights = weights(lookback)
 
@@ -92,4 +97,3 @@ class MACD(MultivariateTS):
 
     def evaluate(self):
         logger.debug('Obj: {} Calling evaluate in MACD', type(self))
-        self.broadcast()

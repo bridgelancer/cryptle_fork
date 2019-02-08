@@ -15,6 +15,7 @@ from collections import OrderedDict
 import logging
 import csv
 import os
+from pathlib import Path
 import datetime
 
 logger = logging.getLogger(__name__)
@@ -239,9 +240,9 @@ class Timeseries(Metric):
 
         for arg in vargs:
             arg.subscribers.append(self)
-            logger.info('\nSubscribe {} as a subscriber of {}', type(self), type(arg))
+            logger.info('\nSubscribe {} as a subscriber of {}', repr(self), repr(arg))
             self.publishers.append(arg)
-            logger.info('Listen {} as a listener of {} \n', type(arg), type(self))
+            logger.info('Listen {} as a listener of {} \n', repr(arg), repr(self))
 
     def __getitem__(self, index):
         """Wrapping the DiskTS and give access via usual list-value getting syntax."""
@@ -258,7 +259,7 @@ class Timeseries(Metric):
         """To be called when all the listened Timeseries updated at least once."""
         if len(self.publishers) == 1:
             logger.debug(
-                'Obj: {}. All publisher broadcasted, proceed to updating', type(self)
+                'Obj: {}. All publisher broadcasted, proceed to updating', repr(self)
             )
             self.update()
         else:
@@ -266,12 +267,12 @@ class Timeseries(Metric):
             if len(self.publishers_broadcasted) < len(self.publishers):
                 logger.debug(
                     'Obj: {}. Number of publisher broadcasted: {}',
-                    type(self),
+                    repr(self),
                     len(self.publishers_broadcasted),
                 )
                 logger.debug(
                     'Obj: {}. Number of publisher remaining: {}',
-                    type(self),
+                    repr(self),
                     len(self.publishers) - len(self.publishers_broadcasted),
                 )
             else:
@@ -279,7 +280,7 @@ class Timeseries(Metric):
                 self.update()
                 logger.debug(
                     'Obj: {}. All publisher broadcasted, proceed to updating',
-                    type(self),
+                    repr(self),
                 )
 
     # ???Todo(pine): This should take arguments, requiring subclasses to know the internals of the
@@ -290,12 +291,19 @@ class Timeseries(Metric):
         # By current design, all :meth:`evaluate` of subscribers would be called if
         # candle decides to broadcast
         logger.debug(
-            'Obj: {}. Calling evaluate method of the respective Timeseries', type(self)
+            'Obj: {}. Calling evaluate method of the respective Timeseries', repr(self)
         )
-        self.evaluate()
+        string = self.evaluate()
+        if string != 'source' and string != 'NA':
+            self.hxtimeseries.evaluate()
+            self.broadcast()
+
         # The :meth:`evaluate` of hxtimeseries would also be called by default, could
         # modify this behaviour in the future
-        self.hxtimeseries.evaluate()
+
+        # This introduces a buggy behaviour - as self.hxtimeseries.evaluate is called later than any
+        # of the listener, at the end of the broadcastin cascade this will result in in completing
+        # caching of values.
 
     def broadcast(self):
         """Call :meth:`~processBroadcast` of all subscribers."""
@@ -307,7 +315,7 @@ class Timeseries(Metric):
             pos = [id(x) for x in subscriber.publishers].index(id(self))
             logger.debug(
                 'Obj: {}, Calling processBroadcast of subscriber {}',
-                type(self),
+                repr(self),
                 type(subscriber),
             )
             subscriber.processBroadcast(pos)
@@ -403,6 +411,7 @@ class MultivariateTS:
     def update(self):
         """Call the class evaluate method"""
         self.evaluate()
+        self.broadcast()
 
     def evaluate(self):
         """Virtual method to be implemented for each child instance of Timeseires"""
@@ -451,9 +460,9 @@ class MemoryTS(Metric):
                 # set alias self - hacking interface
                 self = args[0]
 
-                if prune is "normal":
+                if prune is 'normal':
                     prune_type = MemoryTS.prune
-                elif prune == "historical":
+                elif prune == 'historical':
                     prune_type = DiskTS.prune
 
                 if isinstance(self._ts, Timeseries):
@@ -488,7 +497,8 @@ class MemoryTS(Metric):
                     self._cache.append(buffer)
 
                 self._cache = prune_type(self)
-                func(*args, **kwargs)
+                val = func(*args, **kwargs)
+                return val
 
             return wrapper
 
@@ -519,9 +529,16 @@ class GenericTS(Timeseries):
 
     """
 
+    def __repr__(self):
+        if self.name is None:
+            return 'GenericTS'
+        else:
+            return self.name
+
     def __init__(
         self, *vargs, name=None, lookback=None, eval_func=None, args=None, tocache=True
     ):
+        self.name = name
         super().__init__(*vargs)
         self._lookback = lookback
         self._ts = vargs
@@ -532,20 +549,38 @@ class GenericTS(Timeseries):
 
     def evaluate(self):
         if self.tocache:
-            self.eval_with_cache()
+            string = self.eval_with_cache()
+            return string
         else:
-            self.eval_without_cache()
+            string = self.eval_without_cache()
+            return string
 
     @MemoryTS.cache("normal")
     def eval_with_cache(self):
         """Use when caching is needed."""
-        self.value = self.eval_func(*self.args)
-        self.broadcast()
+        val = self.eval_func(*self.args)
+        if val is not None:
+            self.value = val
+            return 'generic'
+        else:
+            return 'NA'
+
+    # def eval_with_cache(self):
+    #    """Use when caching is needed."""
+    #    val = self.eval_func(*self.args)
+    #    if val is not None:
+    #        self.eval(val)
+
+    # @MemoryTS.cache("normal")
+    # def eval(self, val):
+    #    self.value = val
+    #    self.broadcast()
 
     def eval_without_cache(self):
         """Use when caching is not needed."""
         self.value = self.eval_func(*self.args)
         self.broadcast()
+        return 'source'
 
 
 class DiskTS(Metric):
@@ -567,7 +602,7 @@ class DiskTS(Metric):
 
     """
 
-    def __init__(self, ts, store_num=10000):
+    def __init__(self, ts, store_num=100):
         self._ts = ts
         self._lookback = store_num
         self._cache = []
@@ -577,11 +612,13 @@ class DiskTS(Metric):
         # Setting up correct directory structure
         current_time = datetime.datetime.now()
         current_time_f = current_time.strftime("%Y-%m-%d %H:%M:%S")
-        subdirpath = os.path.join("histlog", current_time_f)
 
-        dirpath = os.path.join(
-            os.getcwd(), subdirpath
-        )  # relative pathing to the execution
+        histroot = Path('histlog')
+        subdirpath = histroot / current_time_f
+
+        # absolute pathing to the execution
+        dirpath = Path.cwd() / subdirpath
+        assert dirpath.is_absolute()
 
         self.dir = dirpath
         self.dirpaths = []
@@ -590,8 +627,11 @@ class DiskTS(Metric):
         for i in range(-3, 3):
             diff_time = current_time + datetime.timedelta(seconds=i)
             diff_time_f = diff_time.strftime("%Y-%m-%d %H:%M:%S")
-            subdirpath = os.path.join("histlog", diff_time_f)
-            self.dirpaths.append(os.path.join(os.getcwd(), subdirpath))
+            subdirpath = histroot / diff_time_f
+            self.dirpaths.append(Path.cwd() / subdirpath)
+
+    def cleanup(self):
+        self.write(None)
 
     def write(self, num_to_write):
         """Write stored data to disk.
@@ -600,31 +640,34 @@ class DiskTS(Metric):
         of the id of the Timeseries object to be written.
 
         """
-
+        dpath = None
         try:
-            if all(not os.path.exists(dirpath) for dirpath in self.dirpaths):
+            if all([not Path.exists(dirpath) for dirpath in self.dirpaths]):
                 os.makedirs(self.dir)
-                os.chdir(self.dir)
+                dpath = self.dir
             else:
-                os.chdir(self.dir)
+                for dirpath in self.dirpaths:
+                    if Path.exists(dirpath):
+                        dpath = dirpath
+                        break
         except Exception as e:
             raise OSError(
                 "Error in creating the required directory for storing DiskTS values."
             )
 
-        filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
+        filename = repr(self._ts) + '_' + str(hash(id(self._ts))) + ".csv"
+
         if not self.flashed:
-            with open(filename, "w", newline="") as file:
+            with open(dpath / filename, "w", newline="") as file:
                 file.write(
                     "Beginning of new file: should record the running instance metainfo. \n"
                 )
             self.flashed = True
 
-        with open(filename, "a", newline="") as file:
+        with open(dpath / filename, "a", newline="") as file:
+
             wr = csv.writer(file)
             wr.writerow(self._cache[:num_to_write])
-
-        os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
     @staticmethod
     def prune(self):
@@ -708,8 +751,8 @@ class DiskTS(Metric):
         # colstart = abs(index.start) - rowstart * self._lookback
         # colend   = abs(index.end) - rowed * self._lookback
 
-        filename = str(self._ts.__class__.__name__) + str(hash(id(self._ts))) + ".csv"
-        filepath = os.path.join(self.dir, filename)
+        filename = repr(self._ts) + '_' + str(hash(id(self._ts))) + ".csv"
+        filepath = self.dir / filename
 
         if isinstance(index, slice):
             try:

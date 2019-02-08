@@ -13,9 +13,16 @@ class Difference(Timeseries):
     ---
     n : int, optional
         The integer for specifying the n-difference needed, default is 1.
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
+
     """
 
-    def __init__(self, ts, n=1, name=None):
+    def __repr__(self):
+        return self.name
+
+    def __init__(self, ts, n=1, name='difference'):
+        self.name = f'{name}_{n}diff'
         super().__init__(ts)
         logger.debug(
             'Obj: {}. Initialized the parent Timeseries of Difference.', type(self)
@@ -32,4 +39,3 @@ class Difference(Timeseries):
         if len(self._cache) == self._lookback:
             output = np.diff(self._cache, self._n)
             self.value = output[-1]
-            self.broadcast()

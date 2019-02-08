@@ -19,7 +19,11 @@ class YM(Timeseries):
 
     """
 
-    def __init__(self, r, lookback=6):
+    def __repr__(self):
+        return self.name
+
+    def __init__(self, r, lookback=6, name='ym'):
+        self.name = name
         super().__init__(r)
         logger.debug('Obj:{}. Initialized the parent Timeseries of YM.', type(self))
         self._ts = r
@@ -30,7 +34,6 @@ class YM(Timeseries):
 
     @MemoryTS.cache('normal')
     def evaluate(self):
-
         if len(self._cache) != self._lookback:
             return
 
@@ -39,25 +42,24 @@ class YM(Timeseries):
         val = 0
 
         for ret in self._cache:
-            # sign is the sign of ret
+            # Sign is the sign of ret
             if ret != 0:
                 sign = math.copysign(1, ret)
             else:
                 sign = 0
 
-            # initialize: add the val to sign
+            # Initialize: add the val to sign
             if prev_mo == 0:
                 prev_mo = sign
                 val += sign
-            # if sign of previous momentum equal to current sign return
+            # If sign of previous momentum equal to current sign return
             elif math.copysign(1, prev_mo) == sign:
                 abs_prev_mo = math.fabs(prev_mo) + 0.5
                 prev_mo = math.copysign(abs_prev_mo, prev_mo)
                 val += prev_mo
-            # if sign of previous momentum does not equal to current sign of return
+            # If sign of previous momentum does not equal to current sign of return
             elif math.copysign(1, prev_mo) != sign:
                 prev_mo = sign
                 val += sign
 
         self.value = val
-        self.broadcast()

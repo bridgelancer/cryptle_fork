@@ -24,6 +24,8 @@ class PivotPoints(Timeseries):
         The number of days to refresh the PivotPoints, default to 1 day.
     n: int, optional
         Number of support and resistnace levels to store, default to 8.
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
 
     Attributes
     ----------
@@ -38,7 +40,22 @@ class PivotPoints(Timeseries):
 
     """
 
-    def __init__(self, timestamp, interval, high, low, close, days=1, n=8, list=False):
+    def __repr__(self):
+        return self.name
+
+    def __init__(
+        self,
+        timestamp,
+        interval,
+        high,
+        low,
+        close,
+        days=1,
+        n=8,
+        list=False,
+        name='pivot',
+    ):
+        self.name = f'{name}{interval}'
         self._ts = timestamp, close, high, low
         super().__init__(*self._ts)
         logger.debug(

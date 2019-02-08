@@ -13,10 +13,16 @@ class Skewness(Timeseries):
     ----
     lookback : int
         The lookback period for sampling upstream timeseries values.
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
 
     """
 
-    def __init__(self, ts, lookback, name=None):
+    def __repr__(self):
+        return self.name
+
+    def __init__(self, ts, lookback, name='skewness'):
+        self.name = f'{name}{lookback}'
         super().__init__(ts)
         logger.debug(
             'Obj: {}. Initialized the parent Timeseries of Skewness.', type(self)
@@ -29,4 +35,3 @@ class Skewness(Timeseries):
     def evaluate(self):
         logger.debug('Obj {} Calling evaluate in WMA.', type(self))
         self.value = sp.skew(self._cache, bias=False)
-        self.broadcast()

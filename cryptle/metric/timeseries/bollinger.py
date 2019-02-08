@@ -19,6 +19,8 @@ class BollingerBand(MultivariateTS):
         Default to value of ``sd``. Specify the upperband of the BollingerBand suite
     lower_sd: float, optional
         Default to value of ``sd``. Specify the lowerband of the BollingerBand suite
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
 
     Attributes
     ----------
@@ -35,7 +37,13 @@ class BollingerBand(MultivariateTS):
 
     """
 
-    def __init__(self, ts, lookback, sd=2, name=None, upper_sd=None, lower_sd=None):
+    def __repr__(self):
+        return self.name
+
+    def __init__(
+        self, ts, lookback, sd=2, upper_sd=None, lower_sd=None, name='bollinger'
+    ):
+        self.name = f'{name}{lookback}'
         if upper_sd is None:
             uppersd = sd
         else:
@@ -81,4 +89,3 @@ class BollingerBand(MultivariateTS):
 
     def evaluate(self):
         logger.debug('Obj: {} Calling evaluate in bollinger', type(self))
-        self.broadcast()

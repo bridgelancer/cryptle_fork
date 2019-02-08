@@ -23,7 +23,11 @@ class BarReturn(Timeseries):
 
     """
 
-    def __init__(self, o, c, bar=1, all_open=False, all_close=False):
+    def __repr__(self):
+        return self.name
+
+    def __init__(self, o, c, bar=1, all_open=False, all_close=False, name='barreturn'):
+        self.name = name
         super().__init__(o, c)
         logger.debug('Obj:{}. Initialized the parent Timeseries of Return.', type(self))
         self._ts = o, c
@@ -55,4 +59,3 @@ class BarReturn(Timeseries):
                 self.value = (
                     self._cache[-1][1] - self._cache[-1 - (self._lookback - 1)][1]
                 )
-        self.broadcast()

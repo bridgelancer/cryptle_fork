@@ -176,7 +176,7 @@ class Aggregator:
         new_candle = Candle(value, value, value, value, round_ts, 0, 0)
         self._bars.append(new_candle)
         self._pushAllMetrics(value, value, value, value, round_ts, 0, 0)
-        return new_candle
+        return new_candle._bar
 
     @property
     def last_bar(self):

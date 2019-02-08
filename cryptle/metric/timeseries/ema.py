@@ -17,11 +17,16 @@ class EMA(Timeseries):
         The lookback period for sampling and calculating the EMA.
     weight: function
         A function that returns a fraction (smaller than 1 in value)
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
 
     """
 
+    def __repr__(self):
+        return self.name
+
     def __init__(self, ts, lookback, name="ema", weight=default):
-        self.name = name
+        self.name = f'{name}{lookback}'
         super().__init__(ts)
         logger.debug('Obj: {}. Initialized the parent Timeseries of EMA.', type(self))
         self._lookback = lookback
@@ -39,4 +44,3 @@ class EMA(Timeseries):
             self.value = (
                 float(self._ts) * self._weight + (1 - self._weight) * self.value
             )
-        self.broadcast()

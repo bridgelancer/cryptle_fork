@@ -20,8 +20,11 @@ class WMA(Timeseries):
     """
 
     # Todo May be better to use a function just like EMA instead
-    def __init__(self, ts, lookback, name="wma", weights=None):
+    def __repr__(self):
+        return self.name
 
+    def __init__(self, ts, lookback, name="wma", weights=None):
+        self.name = f'{name}{lookback}'
         super().__init__(ts)
         logger.debug('Obj: {}. Initialized the parent Timeseries of WMA.', type(self))
         self._lookback = lookback
@@ -37,4 +40,3 @@ class WMA(Timeseries):
         logger.debug('Obj {} Calling evaluate in WMA.', type(self))
         if len(self._cache) == self._lookback:
             self.value = np.average(self._cache, axis=0, weights=self._weights)
-        self.broadcast()

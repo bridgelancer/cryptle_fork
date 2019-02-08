@@ -51,6 +51,25 @@ def pushTick(tick):
     return tick
 
 
+@source('candle')
+def pushCandle(bar):
+    return bar
+
+
+def pushSeries(series):
+    for i, price in enumerate(series):
+        pushTick([price, i, 0, 0])
+
+
+def pushAltQuad(ts=None):
+    for i, price in enumerate(alt_quad):
+        pushTick([price, i, 0, 0])
+
+
+def compare(obj, val, threshold=1e-7):
+    assert abs(obj - val) < threshold
+
+
 def test_candle():
     bus = Bus()
     stick = CandleStick(1)
@@ -59,11 +78,6 @@ def test_candle():
 
     bus.bind(aggregator)
     bus.bind(stick)
-
-    @source('candle')
-    def pushCandle(bar):
-        return bar
-
     bus.bind(pushCandle)
 
     for i, bar in enumerate(bars):
@@ -72,125 +86,86 @@ def test_candle():
     assert stick._ts[-1] == [6, 6, 6, 6, 2, 8, 0]
 
 
-def test_sma():
-    bus = Bus()
+def bind(bus, stick_period=3, aggregator_period=3):
+    stick = CandleStick(stick_period)
+    aggregator = Aggregator(aggregator_period)
     bus.bind(pushTick)
-    aggregator = Aggregator(3)  # set to be a 1 second aggregator
-    stick = CandleStick(1)
+    bus.bind(stick)
+    bus.bind(aggregator)
+    return bus, stick
+
+
+# decorator for testing timeseries.value after looping through alt_quad
+def val(func):
+    def decorator():
+        bus = Bus()
+        bus, stick = bind(bus)
+        ma, val = func(stick)
+
+        for i, price in enumerate(alt_quad):
+            pushTick([price, i, 0, 0])
+        compare(ma, val)
+
+    return decorator
+
+
+@val
+def test_sma(stick):
     ma = SMA(stick.o, 5)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-
-    assert ma - 197.475 < 1e-7
+    return ma, 197.475
 
 
-def test_wma():
-    bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(3)
-    stick = CandleStick(1)
+@val
+def test_wma(stick):
     ma = WMA(stick.o, 5)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-    assert ma - 210.675 < 1e-7
+    return ma, 210.675
 
 
-def test_recursive():
-    bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(3)
-    stick = CandleStick(1)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
+@val
+def test_recursive(stick):
     ma = SMA(WMA(stick.o, 5), 3)
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-    assert ma - 139.2208333333 < 1e-7
+    return ma, 134.65416666666666
 
 
-def test_ema():
-    bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(1)  # set to be a 1 second aggregator
-    stick = CandleStick(1)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
+@val
+def test_ema(stick):
     ma = EMA(stick.o, 5)
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-    assert ma - 221.029 < 1e-7
+    return ma, 213.260999989917483
+
+
+@val
+def test_rsi(stick):
+    rsi = RSI(stick.o, 5)
+    # not checked
+    return rsi, 57.342237492321196
 
 
 def test_bollinger():
     bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(1)
-    stick = CandleStick(1)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
+    bus, stick = bind(bus, 1, 1)
 
     bollinger = BollingerBand(stick.o, 5)
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
+    pushAltQuad()
 
-    assert bollinger.upperband - 1344.7345184202045 < 1e-7
-    assert bollinger.lowerband - (-914.1845184202044) < 1e-7
-
-
-def test_rsi():
-    bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(3)  # set to be a 1 second aggregator
-    stick = CandleStick(1)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
-    rsi = RSI(stick.o, 5)
-    for i, price in enumerate(alt_quad_1k):
-        pushTick([price, i, 0, 0])
-
-    assert rsi - 61.8272076519321 < 1e-7
+    compare(bollinger.upperband, 1344.7345184202045)
+    compare(bollinger.lowerband, -914.1845184202044)
 
 
 def test_macd():
     bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(1)
-    stick = CandleStick(1)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
+    bus, stick = bind(bus, 1, 1)
 
     wma5 = WMA(stick.o, 5)
     wma8 = WMA(stick.o, 8)
     macd = MACD(wma5, wma8, 3)
+    pushAltQuad()
 
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-    assert macd.diff - 52.04722222222 < 1e-7
-    assert macd.diff_ma - 17.7111111111 < 1e-7
-    assert macd.signal - 34.696296296296 < 1e-7
+    compare(macd.diff, 52.04722222222)
+    compare(macd.diff_ma, 17.350925925907)
+    compare(macd.signal, 52.04722222222- 17.350925925907)
 
 
 def test_atr():
-    @source('candle')
-    def pushCandle(bar):
-        return bar
-
     bus = Bus()
     bus.bind(pushCandle)
     aggregator = Aggregator(5)
@@ -200,138 +175,70 @@ def test_atr():
         pushCandle([*bar, 0])
 
 
-def test_kurtosis():
-    bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(3)
-    stick = CandleStick(1)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
+@val
+def test_kurtosis(stick):
     kurt = Kurtosis(stick.o, 5)
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-    assert kurt - -3.231740264178196 < 1e-5
+    return kurt, -3.231740264178196
 
 
-def test_skewness():
-    bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(3)
-    stick = CandleStick(1)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
+@val
+def test_skewness(stick):
     skew = Skewness(stick.o, 5)
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-    assert skew - -0.582459640454958 < 1e-5
+    return skew, -0.582459640454958
 
 
-def test_volatility():
-    bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(3)
-    stick = CandleStick(1)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
+@val
+def test_volatility(stick):
     sd = SD(stick.o, 5)
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-    assert sd - 0.00187307396323 < 1e-7
+    return sd, 0.00187307396323
 
 
-def test_return():
-    bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(3)
-    stick = CandleStick(3)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
+@val
+def test_return(stick):
     r = BarReturn(stick.o, stick.c, 5, all_close=True)
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-        print(r.value)
+    return r, 986.0625
 
-    assert r - 986.0625 < 1e-7
-
-
-def test_ym():
-    bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(2)
-    stick = CandleStick(2)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
+@val
+def test_ym(stick):
     r = BarReturn(stick.o, stick.c)
     ym = YM(r)
+    return ym, 0
 
-    for i, price in enumerate(sine):
-        pushTick([price, i, 0, 0])
-
-    assert ym - 3 < 1e-7
-
-
-def test_diff():
-    bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(1)
-    stick = CandleStick(1)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
-
+@val
+def test_diff(stick):
     sd = SD(stick.o, 5)
     diff = Difference(sd)
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-    assert diff - -3.2466947194 * 1e-5 < 1e-7
+    return diff, -1.335580558397 * 1e-4
 
 
 def test_TimeseriesWrapperRetrieval():
     bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(1)
-    stick = CandleStick(1)
-
-    bus.bind(aggregator)
-    bus.bind(stick)
+    bus, stick = bind(bus, 1, 1)
 
     diff = Difference(stick.o, 1)
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
-
+    pushAltQuad()
 
     assert diff[-21:-19] == [750.8125, -770.3125]
     assert diff[-9] == 1001.3125
-    assert diff.value == 1188.3125
+    compare(diff, 1188.3125)
 
 
 def test_MultivariateTSCache():
     bus = Bus()
-    bus.bind(pushTick)
-    aggregator = Aggregator(1)
-    stick = CandleStick(1)
+    bus, stick = bind(bus, 1, 1)
+
     bollinger = BollingerBand(stick.o, 5)
     wma = WMA(stick.o, 7)
 
-    bus.bind(aggregator)
-    bus.bind(stick)
-
     class MockTS(Timeseries):
-        def __init__(self, lookback, wma, bollinger):
+        def __repr__(self):
+            return self.name
+        def __init__(self, lookback, wma, bollinger, name='mock'):
+            self.name = name
             self._ts = wma, bollinger
             self._cache = []
             self._lookback = lookback
-            self.value = None
+            self.value = name
             super().__init__(wma, bollinger)
 
         @MemoryTS.cache('normal')
@@ -339,9 +246,7 @@ def test_MultivariateTSCache():
             print('obj {} Calling evaluate in MockTS', type(self))
 
     mock = MockTS(10, wma, bollinger)
-
-    for i, price in enumerate(alt_quad):
-        pushTick([price, i, 0, 0])
+    pushAltQuad()
 
     assert len(mock._cache) == 10
     assert mock._cache[-1] == [
@@ -364,7 +269,7 @@ def test_MultivariateTSCache():
 #    bus.bind(timestamp)
 #
 #    for i, price in enumerate(alt_quad):
-#        pushTick([price, 0, i, 0])
+#        pushTick([price, i, 0, 0])
 #    assert timestamp - 80 < 1e-7
 
 # skipped because of this is running suscipiously long

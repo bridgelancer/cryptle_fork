@@ -10,13 +10,14 @@ logger = logging.getLogger(__name__)
 
 class Timestamp(Timeseries):
     def __init__(self, lookback):
+        self.name = 'timestamp'
         super().__init__()
         self._lookback = lookback
         self._ts = []
         self.value = None
 
     @on("aggregator:new_timestamp")
-    def appendTS(self, timestamp):
+    def source(self, timestamp):
         self._ts.append(timestamp)
         self.evaluate()
         self.broadcast()

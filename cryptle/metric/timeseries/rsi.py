@@ -18,12 +18,18 @@ class RSI(Timeseries):
         The lookback period for calculating RSI.
     default : function, optional
         The weighing function for the EMA calculation, default to be 1/lookback.
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
 
     Note: Complies with the TradingView value
 
     """
 
+    def __repr__(self):
+        return self.name
+
     def __init__(self, ts, lookback, name="rsi", weight=default):
+        self.name = f'{name}{lookback}'
         super().__init__(ts)
         logger.debug('Obj: {}. Initialized the parent Timeseries of RSI.', type(self))
         self._lookback = lookback
@@ -93,5 +99,3 @@ class RSI(Timeseries):
                 self.value = 0
             elif self._ema_up == 0 and self._ema_down == 0:
                 self.value = 50
-
-        self.broadcast()

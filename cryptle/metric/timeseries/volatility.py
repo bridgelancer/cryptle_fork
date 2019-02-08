@@ -13,10 +13,16 @@ class Volatility(Timeseries):
     ----
     lookback : int
         The lookback period for sampling and calculating the 1/sd.
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
 
     """
 
-    def __init__(self, ts, lookback):
+    def __repr__(self):
+        return self.name
+
+    def __init__(self, ts, lookback, name='volatility'):
+        self.name = f'{name}{lookback}'
         super().__init__(ts)
         logger.debug(
             'Obj: {}. Initialized the parent Timeseries of Volatility.', type(self)

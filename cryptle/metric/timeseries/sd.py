@@ -13,10 +13,16 @@ class SD(Timeseries):
     ---
     lookback : int
         The lookback period for sampling and calculating the standard deviation.
+    name : str, optional
+        To be used by :meth:`__repr__` method for debugging
 
     """
 
-    def __init__(self, ts, lookback, name=None):
+    def __repr__(self):
+        return self.name
+
+    def __init__(self, ts, lookback, name='sd'):
+        self.name = f'{name}{lookback}'
         super().__init__(ts)
         logger.debug('Obj: {}. Initialized the parent Timeseries of SD.', type(self))
         self._lookback = lookback
@@ -34,4 +40,3 @@ class SD(Timeseries):
             self.value = 1 / np.std(calc, ddof=1)
         else:
             self.value = (float(self._ts) - np.average(calc)) / 0.001 * np.average(calc)
-        self.broadcast()

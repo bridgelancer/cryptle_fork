@@ -655,6 +655,10 @@ To make all these work, subclasses of :class:`Timeseries` must do the following:
 3. Declare an attribute ``_ts`` (ts shortform for timeseries) in the
    constructor. The instance will listen for any update in ``self._ts``.
 
+For debugging purposes, an attribute ``name`` is used in the base class for
+logging. User may choose to provide a name by assigning to the instance
+attribute before calling the base class :meth:`Timeseries.__init__` method.
+
 .. note::
 
    Some object within the Timeseries folder (e.g. CandleStick) has no observable
@@ -703,12 +707,17 @@ An example of Timeseries might look like:
 .. code:: python
 
    class Foo(Timeseries):
-       def __init__(self, ts, lookback):
+       # For debugging purpose
+       def __repr__(self)
+           return self.name
+
+       def __init__(self, ts, lookback, name='foo'):
+           self.name = name
            super().__init__(ts)
            self._lookback = lookback
            self._ts = ts
 
-       # generate self._cache for accessing historical self._ts value
+       # Generate self._cache for accessing historical self._ts value
        @MemoryTS.cache('normal')
        def evaluate(self):
            # some code that would be updated when ts updates
@@ -718,6 +727,10 @@ only supported behaviour of updating is to wait till all the listened timeseries
 update at least once before its :meth:`evaluate` function to run. More sophisticated
 control would be implemented if necessary. In this case, the ``self._ts`` attribute
 should be set to a list of the Timeseries objects to be listened to:
+
+An optional ``name`` attribute could be defined as mentioned in the previous part.
+In this case, the implementation of the :meth:`__repr__` method of the subclass would
+make the ``name`` be shown in debugging logs present in the base class level.
 
 .. note::
 
