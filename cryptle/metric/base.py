@@ -12,6 +12,7 @@ to prevent excessive memory usage during runtime.
 from functools import wraps
 from collections import OrderedDict
 
+from cryptle.metric.update_status import UpdateStatus
 import logging
 import csv
 import os
@@ -221,10 +222,11 @@ class Timeseries(Metric):
 
     """
 
-    def __init__(self, *vargs):
+    def __init__(self, *vargs, update_mode='näive'):
         self.mxtimeseries = MemoryTS(self)
         self.hxtimeseries = DiskTS(self)
         self.value = None
+        self.update_mode = update_mode
 
         # self.publishers are the list of references to timeseries objects that this
         # instance subscribes to
@@ -244,6 +246,8 @@ class Timeseries(Metric):
             self.publishers.append(arg)
             logger.info('Listen {} as a listener of {} \n', repr(arg), repr(self))
 
+        self.status = UpdateStatus(update_mode, self.publishers)
+
     def __getitem__(self, index):
         """Wrapping the DiskTS and give access via usual list-value getting syntax."""
         return self.hxtimeseries.__getitem__(index)
@@ -257,31 +261,17 @@ class Timeseries(Metric):
 
     def processBroadcast(self, pos):
         """To be called when all the listened Timeseries updated at least once."""
-        if len(self.publishers) == 1:
-            logger.debug(
-                'Obj: {}. All publisher broadcasted, proceed to updating', repr(self)
-            )
-            self.update()
+        if self.update_mode == 'näive':
+            status = self.status.handleBroadcast(pos)
         else:
-            self.publishers_broadcasted.add(self.publishers[pos])
-            if len(self.publishers_broadcasted) < len(self.publishers):
-                logger.debug(
-                    'Obj: {}. Number of publisher broadcasted: {}',
-                    repr(self),
-                    len(self.publishers_broadcasted),
-                )
-                logger.debug(
-                    'Obj: {}. Number of publisher remaining: {}',
-                    repr(self),
-                    len(self.publishers) - len(self.publishers_broadcasted),
-                )
-            else:
-                self.publishers_broadcasted.clear()
-                self.update()
-                logger.debug(
-                    'Obj: {}. All publisher broadcasted, proceed to updating',
-                    repr(self),
-                )
+            raise NotImplementedError('Timeseries in progress...')
+
+        if status == 'clear':
+            self.update()
+        elif status == 'hold':
+            pass
+        else:
+            raise NotImplementedError('No such keyword in processing')
 
     # ???Todo(pine): This should take arguments, requiring subclasses to know the internals of the
     # observables defeats the purpose of having this interface
@@ -376,14 +366,17 @@ class MultivariateTS:
         One or more Timeseries/MultivariateTS objects to subscribe to
     """
 
-    def __init__(self, *vargs):
+    def __init__(self, *vargs, update_mode='näive'):
         self.subscribers = []
         self.publishers = []
         self.publishers_broadcasted = set()
+        self.update_mode = update_mode
 
         for arg in vargs:
             arg.subscribers.append(self)
             self.publishers.append(arg)
+
+        self.status = UpdateStatus(update_mode, self.publishers)
 
     def get_generic_ts(self):
         """Return a list of the GenericTS within the wrapper, sorted by the alphabetical

@@ -22,11 +22,58 @@ update, in case the Timeseries was timestamped. Yet another possible mode of con
 would be specifying the number of broadcasts received for each subscriber before proceed
 to updating.
 
-This module intends to be an abstraction that allows the effective implementation of all
-these modes of updating and allows easy extension of any mode of processing brodacsts in
+This module intends to be an abstraction that allows effective implementation of all
+these modes of updating and allows easy extension of any mode of processing broadcasts in
 Timeseries in the future.
 
 """
 
+from typing import List
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class UpdateStatus:
-    pass
+    def __init__(self, update_mode: str, publishers):
+        self.update_mode = update_mode
+        self.publishers = publishers
+        self.publishers_broadcasted = set()
+
+    def handleBroadcast(self, pos):
+        status = None
+        if self.update_mode == 'näive':
+            status = self.näiveHandle(pos)
+        else:
+            raise NotImplementedError('UpdateStatus in progress...')
+        return status
+
+    # Todo change type(self) to appropriate object
+    def näiveHandle(self, pos):
+        if len(self.publishers) == 1:
+            logger.debug(
+                'Obj: {}. All publisher broadcasted, proceed to updating', type(self)
+            )
+            return 'clear'
+        else:
+            self.publishers_broadcasted.add(self.publishers[pos])
+            if len(self.publishers_broadcasted) < len(self.publishers):
+                logger.debug(
+                    'Obj: {}. Number of publisher broadcasted: {}',
+                    type(self),
+                    len(self.publishers_broadcasted),
+                )
+                logger.debug(
+                    'Obj: {}. Number of publisher remaining: {}',
+                    type(self),
+                    len(self.publishers) - len(self.publishers_broadcasted),
+                )
+                return 'hold'
+            else:
+                self.publishers_broadcasted.clear()
+                logger.debug(
+                    'Obj: {}. All publisher broadcasted, proceed to updating',
+                    type(self),
+                )
+                return 'clear'
