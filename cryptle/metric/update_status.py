@@ -45,12 +45,18 @@ class UpdateStatus:
         status = None
         if self.update_mode == 'näive':
             status = self.näiveHandle(pos)
+        elif self.update_mode == 'concurrent':
+            status = self.concurrentHandle(pos)
         else:
             raise NotImplementedError('UpdateStatus in progress...')
         return status
 
+    def concurrentHandle(self, pos):
+        raise NotImplementedError('Concurrent handle in progress...')
+
     # Todo change type(self) to appropriate object
     def näiveHandle(self, pos):
+        """Handle the broadcast as in original implementation"""
         if len(self.publishers) == 1:
             logger.debug(
                 'Obj: {}. All publisher broadcasted, proceed to updating', type(self)
@@ -58,6 +64,7 @@ class UpdateStatus:
             return 'clear'
         else:
             self.publishers_broadcasted.add(self.publishers[pos])
+
             if len(self.publishers_broadcasted) < len(self.publishers):
                 logger.debug(
                     'Obj: {}. Number of publisher broadcasted: {}',

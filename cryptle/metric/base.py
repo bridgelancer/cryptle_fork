@@ -11,8 +11,8 @@ to prevent excessive memory usage during runtime.
 # Todo(pine): Refactor observer pattern into reusable set of mixins. (observe for a longer period)
 from functools import wraps
 from collections import OrderedDict
-
 from cryptle.metric.update_status import UpdateStatus
+
 import logging
 import csv
 import os
