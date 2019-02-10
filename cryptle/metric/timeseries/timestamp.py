@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 class Timestamp(Timeseries):
+
+    def __repr__(self):
+        return self.name
+
     def __init__(self, lookback):
         self.name = 'timestamp'
         super().__init__()
