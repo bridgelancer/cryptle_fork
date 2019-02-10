@@ -24,6 +24,7 @@ class Timestamp(Timeseries):
     def source(self, timestamp):
         self._ts.append(timestamp)
         self.evaluate()
+        self.__class__.graph.updateBroadcastStatus(self)
         self.broadcast()
         self.prune()
 

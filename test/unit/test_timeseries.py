@@ -1,5 +1,5 @@
 from cryptle.logging import *
-from cryptle.metric.base import Candle, Timeseries, MemoryTS, MultivariateTS
+from cryptle.metric.base import Candle, Timeseries, MemoryTS, MultivariateTS, GenericTS
 from cryptle.aggregator import Aggregator
 from cryptle.event import source, on, Bus
 from cryptle.metric.timeseries.atr import ATR

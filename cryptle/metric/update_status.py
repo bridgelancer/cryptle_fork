@@ -41,18 +41,32 @@ class UpdateStatus:
         self.publishers = publishers
         self.publishers_broadcasted = set()
 
-    def handleBroadcast(self, pos):
+    def handleBroadcast(self, ts, pos):
         status = None
         if self.update_mode == 'näive':
             status = self.näiveHandle(pos)
         elif self.update_mode == 'concurrent':
-            status = self.concurrentHandle(pos)
+            status = self.concurrentHandle(ts, pos)
         else:
             raise NotImplementedError('UpdateStatus in progress...')
         return status
 
-    def concurrentHandle(self, pos):
-        raise NotImplementedError('Concurrent handle in progress...')
+    def concurrentHandle(self, ts, pos):
+        graph = ts.__class__.graph
+        # from graph retrieve all the source
+        if graph.inDegree(ts) == 1:
+            logger.debug(
+                'Obj: {}. All publisher broadcasted, proceed to updating', type(self)
+            )
+            return 'clear'
+        else:
+            for predecessor in graph.predecessors(ts):
+                # print(repr(predecessor), graph.attr(predecessor, 'is_broadcasted'))
+                if graph.attr(predecessor, 'is_broadcasted'):
+                    pass
+                else:
+                    return 'hold'
+            return 'clear'
 
     # Todo change type(self) to appropriate object
     def näiveHandle(self, pos):

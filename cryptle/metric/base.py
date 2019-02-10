@@ -269,8 +269,8 @@ class Timeseries(Metric):
 
         # print(Timeseries.graph.nodeView())
         # print(Timeseries.graph.edges())
-        print(repr(self), list(Timeseries.graph.predecessors(self)))
-        print(Timeseries.graph.roots(self))
+        # print(repr(self), list(Timeseries.graph.predecessors(self)))
+        # print(Timeseries.graph.roots(self))
 
     def __getitem__(self, index):
         """Wrapping the DiskTS and give access via usual list-value getting syntax."""
@@ -286,7 +286,9 @@ class Timeseries(Metric):
     def processBroadcast(self, pos):
         """To be called when all the listened Timeseries updated at least once."""
         if self.update_mode == 'näive':
-            status = self.status.handleBroadcast(pos)
+            status = self.status.handleBroadcast(self, pos)
+        elif self.update_mode == 'concurrent':
+            status = self.status.handleBroadcast(self, pos)
         else:
             raise NotImplementedError('Timeseries in progress...')
 
@@ -296,6 +298,8 @@ class Timeseries(Metric):
             pass
         else:
             raise NotImplementedError('No such keyword in processing')
+
+        Timeseries.graph.checkResetCondition()
 
     # ???Todo(pine): This should take arguments, requiring subclasses to know the internals of the
     # observables defeats the purpose of having this interface
@@ -391,10 +395,13 @@ class MultivariateTS:
         One or more Timeseries/MultivariateTS objects to subscribe to
     """
 
-    def __init__(self, *vargs, update_mode='näive'):
+    def __init__(self, *vargs, update_mode=None):
         self.subscribers = []
         self.publishers = []
         self.publishers_broadcasted = set()
+        if update_mode is None:
+            update_mode = 'näive'
+
         self.update_mode = update_mode
 
         for arg in vargs:
@@ -554,10 +561,14 @@ class GenericTS(Timeseries):
             return self.name
 
     def __init__(
-        self, *vargs, name=None, lookback=None, eval_func=None, args=None, tocache=True
+        self, *vargs, name=None, lookback=None, eval_func=None, args=None, tocache=True,
+        update_mode=None,
     ):
         self.name = name
-        super().__init__(*vargs)
+        if update_mode is None:
+            update_mode = 'näive'
+
+        super().__init__(*vargs, update_mode=update_mode)
         self._lookback = lookback
         self._ts = vargs
         self._cache = []
@@ -597,6 +608,7 @@ class GenericTS(Timeseries):
     def eval_without_cache(self):
         """Use when caching is not needed."""
         self.value = self.eval_func(*self.args)
+        Timeseries.graph.updateBroadcastStatus(self)
         self.broadcast()
         return 'source'
 
