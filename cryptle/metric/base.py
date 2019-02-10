@@ -17,7 +17,11 @@ import logging
 import csv
 import os
 from pathlib import Path
-import datetime
+from datetime import datetime, time, timedelta
+from operator import itemgetter
+from typing import Union, Optional, List, Tuple
+
+from cryptle.metric.graph import TSGraph
 
 logger = logging.getLogger(__name__)
 
@@ -222,11 +226,19 @@ class Timeseries(Metric):
 
     """
 
-    def __init__(self, *vargs, update_mode='näive'):
+    graph = TSGraph()
+
+    def __init__(self, *vargs, timestamp=None, update_mode='näive'):
         self.mxtimeseries = MemoryTS(self)
         self.hxtimeseries = DiskTS(self)
         self.value = None
         self.update_mode = update_mode
+        self.is_source = None
+
+        if timestamp is None:
+            self._with_timestamp = False
+        else:
+            self._with_timestamp = True
 
         # self.publishers are the list of references to timeseries objects that this
         # instance subscribes to
@@ -247,6 +259,18 @@ class Timeseries(Metric):
             logger.info('Listen {} as a listener of {} \n', repr(arg), repr(self))
 
         self.status = UpdateStatus(update_mode, self.publishers)
+        if not vargs:
+            self.is_source = True
+        else:
+            self.is_source = False
+
+        Timeseries.graph.addNode(self)
+        self.roots = Timeseries.graph.roots(self)
+
+        # print(Timeseries.graph.nodeView())
+        # print(Timeseries.graph.edges())
+        print(repr(self), list(Timeseries.graph.predecessors(self)))
+        print(Timeseries.graph.roots(self))
 
     def __getitem__(self, index):
         """Wrapping the DiskTS and give access via usual list-value getting syntax."""
@@ -286,6 +310,7 @@ class Timeseries(Metric):
         string = self.evaluate()
         if string != 'source' and string != 'NA':
             self.hxtimeseries.evaluate()
+            Timeseries.graph.updateBroadcastStatus(self)
             self.broadcast()
 
         # The :meth:`evaluate` of hxtimeseries would also be called by default, could
@@ -603,7 +628,7 @@ class DiskTS(Metric):
         self.flashed = False
 
         # Setting up correct directory structure
-        current_time = datetime.datetime.now()
+        current_time = datetime.now()
         current_time_f = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
         histroot = Path('histlog')
@@ -618,7 +643,7 @@ class DiskTS(Metric):
 
         # Some leniency to let all files fall into same folder
         for i in range(-3, 3):
-            diff_time = current_time + datetime.timedelta(seconds=i)
+            diff_time = current_time + timedelta(seconds=i)
             diff_time_f = diff_time.strftime("%Y-%m-%d %H:%M:%S")
             subdirpath = histroot / diff_time_f
             self.dirpaths.append(Path.cwd() / subdirpath)
