@@ -2,7 +2,6 @@ from setuptools import setup, find_packages
 
 import cryptle
 
-
 setup(
     name='cryptle',
     version=cryptle.get_version(),
@@ -22,6 +21,7 @@ setup(
         'websocket-client>=0.45',
         'scikit-learn>=0.19.1',
         'Click>=7.0',
+        'networkx>=2.2',
     ],
     extras_require={
         'dev': [
