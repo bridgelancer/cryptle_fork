@@ -2,6 +2,9 @@ import networkx as nx
 import networkx.algorithms.dag as dag
 import networkx.algorithms.traversal.depth_first_search as dfs
 
+from typing import Any, List, Optional
+from datetime import time
+
 """Graph representation of the state of Timeseries connection using networkx library"""
 
 
@@ -68,6 +71,21 @@ class TSGraph:
     def attr(self, ts, attr):
         """Returns the value of a particular node attribute of the ts"""
         return self.graph.nodes[ts][attr]
+
+    def setNodeAttr(self, ts, attr_name: str, attr_val: Any):
+        self.graph.nodes[ts][attr_name] = attr_val
+
+    def setExecuteTime(self, predecessor, successor, t: Optional[List[time]] = None):
+        if time is None:
+            raise ValueError('Please input a valid time')
+
+        if not isinstance(t, list):
+            t = [t]
+
+        self.graph[predecessor][successor]['execute_time'] = t
+
+    def getExecuteTime(self, predecessor, successor):
+        return self.graph[predecessor][successor]['execute_time']
 
     def roots(self, ts):
         """Recursively search for the source of the ts and returns. Results cached"""

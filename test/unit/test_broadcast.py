@@ -26,7 +26,7 @@ import time
 import sys
 import traceback
 import pytest
-from datetime import datetime
+from datetime import datetime, time
 
 const = [3 for i in range(1, 100)]
 lin = [i for i in range(1, 100)]
@@ -94,10 +94,7 @@ def test_same_episode():
             return None
 
     def bar_f(v, ts):
-        if ts == 1549544100 + 600:
-            return sum(v._cache[-3:])
-        else:
-            return None
+        return sum(v._cache[-3:])
 
     bar = GenericTS(
         candle.o,
@@ -107,6 +104,9 @@ def test_same_episode():
         eval_func=bar_f,
         args=[candle.o, timestamp],
         tocache=True,
+        timestamp=timestamp,
+        update_mode='daily',
+        execute_time=[time(21, 5), time(21, 10)]
     )
 
     start_to_entry_vol = GenericTS(
@@ -119,7 +119,7 @@ def test_same_episode():
         tocache=True,
     )
 
-    def foo_f(start_to_entry_vol, o):
+    def foo_f(bar, start_to_entry_vol):
         print('returning')
         return -1
 
@@ -131,7 +131,7 @@ def test_same_episode():
         eval_func=foo_f,
         args=[bar, start_to_entry_vol],
         tocache=True,
-        update_mode='concurrent',
+        update_mode='näive',
     )
 
     for i, price in enumerate(alt_quad):

@@ -29,6 +29,7 @@ Timeseries in the future.
 """
 
 from typing import List
+from datetime import datetime
 
 import logging
 
@@ -36,7 +37,8 @@ logger = logging.getLogger(__name__)
 
 
 class UpdateStatus:
-    def __init__(self, update_mode: str, publishers):
+    def __init__(self, ts, update_mode: str, publishers):
+        self.ts = ts
         self.update_mode = update_mode
         self.publishers = publishers
         self.publishers_broadcasted = set()
@@ -52,17 +54,34 @@ class UpdateStatus:
             The index of publisher that broadcasted the update
 
         """
+
         status = None
         if self.update_mode == 'näive':
             status = self.näiveHandling(pos)
         elif self.update_mode == 'concurrent':
             status = self.concurrentHandling(ts)
-        elif self.modate_mode == 'conditional':
+        elif self.update_mode == 'conditional':
             status = self.conditionalHandling(ts, pos)
+        elif self.update_mode == 'daily':
+            status = self.dailyTimeHandling(ts, pos)
         else:
             raise NotImplementedError('UpdateStatus in progress...')
 
         return status
+
+    def dailyTimeHandling(self, ts, pos):
+        """Check whether the current timestmap matches to the daily execute time.
+        Proceed to näiveHanlding if passed."""
+        graph = ts.__class__.graph
+
+        if datetime.fromtimestamp(ts.timestamp).time() in graph.getExecuteTime(
+            ts.timestamp, ts
+        ):
+            pass
+        else:
+            return 'hold'
+
+        return self.näiveHandling(pos)
 
     def conditionalHandling(self, ts, pos):
         """To be implemented"""

@@ -228,7 +228,7 @@ class Timeseries(Metric):
 
     graph = TSGraph()
 
-    def __init__(self, *vargs, timestamp=None, update_mode='näive'):
+    def __init__(self, *vargs, timestamp=None, execute_time=None, update_mode='näive'):
         self.mxtimeseries = MemoryTS(self)
         self.hxtimeseries = DiskTS(self)
         self.value = None
@@ -240,13 +240,11 @@ class Timeseries(Metric):
         else:
             self._with_timestamp = True
 
+        self.timestamps = timestamp
+
         # self.publishers are the list of references to timeseries objects that this
         # instance subscribes to
         self.publishers = []
-
-        # self.publishers_broadcasted is the set of timeseries that broadcasted
-        # previously
-        self.publishers_broadcasted = set()
 
         # self.subscribers is the list of references to timeseries objects that listen
         # to this timeseries
@@ -258,18 +256,28 @@ class Timeseries(Metric):
             self.publishers.append(arg)
             logger.info('Listen {} as a listener of {} \n', repr(arg), repr(self))
 
-        self.status = UpdateStatus(update_mode, self.publishers)
+        self.status = UpdateStatus(self, update_mode, self.publishers)
 
         if not vargs:
             self.is_source = True
         else:
             self.is_source = False
 
+        # Add TS as node in graph
         Timeseries.graph.addNode(self)
         self.roots = Timeseries.graph.roots(self)
 
+        # Intialization of graph for timestamped Timeseries
+        if (
+            self._with_timestamp
+            and update_mode == 'daily'
+        ):
+            Timeseries.graph.setExecuteTime(timestamp, self, execute_time)
+
         # print(Timeseries.graph.nodeView())
-        # print(Timeseries.graph.edges())
+        # for u, v, c in (Timeseries.graph.graph.edges.data('execute_time')):
+        #     print(repr(u), repr(v), c)
+        # print('\n')
         # print(repr(self), list(Timeseries.graph.predecessors(self)))
         # print(Timeseries.graph.roots(self))
 
@@ -291,6 +299,8 @@ class Timeseries(Metric):
         elif self.update_mode == 'concurrent':
             status = self.status.handleBroadcast(self, pos)
         elif self.update_mode == 'conditional':
+            status = self.status.handleBroadcast(self, pos)
+        elif self.update_mode == 'daily':
             status = self.status.handleBroadcast(self, pos)
         else:
             raise NotImplementedError('Further mode in development...')
@@ -319,13 +329,6 @@ class Timeseries(Metric):
             self.hxtimeseries.evaluate()
             Timeseries.graph.updateBroadcastStatus(self)
             self.broadcast()
-
-        # The :meth:`evaluate` of hxtimeseries would also be called by default, could
-        # modify this behaviour in the future
-
-        # This introduces a buggy behaviour - as self.hxtimeseries.evaluate is called later than any
-        # of the listener, at the end of the broadcastin cascade this will result in in completing
-        # caching of values.
 
     def broadcast(self):
         """Call :meth:`~processBroadcast` of all subscribers."""
@@ -401,7 +404,6 @@ class MultivariateTS:
     def __init__(self, *vargs, update_mode=None):
         self.subscribers = []
         self.publishers = []
-        self.publishers_broadcasted = set()
         if update_mode is None:
             update_mode = 'näive'
 
@@ -411,7 +413,7 @@ class MultivariateTS:
             arg.subscribers.append(self)
             self.publishers.append(arg)
 
-        self.status = UpdateStatus(update_mode, self.publishers)
+        self.status = UpdateStatus(self, update_mode, self.publishers)
 
     def get_generic_ts(self):
         """Return a list of the GenericTS within the wrapper, sorted by the alphabetical
@@ -571,19 +573,27 @@ class GenericTS(Timeseries):
         eval_func=None,
         args=None,
         tocache=True,
+        timestamp=None,
         update_mode=None,
+        execute_time=None,
     ):
         self.name = name
         if update_mode is None:
             update_mode = 'näive'
 
-        super().__init__(*vargs, update_mode=update_mode)
+        super().__init__(
+            *vargs,
+            update_mode=update_mode,
+            execute_time=execute_time,
+            timestamp=timestamp,
+        )
         self._lookback = lookback
         self._ts = vargs
         self._cache = []
         self.eval_func = eval_func
         self.args = args
         self.tocache = tocache
+        self.timestamp = timestamp
 
     def evaluate(self):
         if self.tocache:
