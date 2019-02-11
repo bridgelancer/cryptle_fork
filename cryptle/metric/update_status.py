@@ -42,11 +42,21 @@ class UpdateStatus:
         self.publishers_broadcasted = set()
 
     def handleBroadcast(self, ts, pos):
+        """Public interface for TS to call.
+
+        Args
+        ----
+        ts: Timeseries
+            The actual timeseries object that needs to process that broadcast.
+        pos: int
+            The index of publisher that broadcasted the update
+
+        """
         status = None
         if self.update_mode == 'näive':
             status = self.näiveHandling(pos)
         elif self.update_mode == 'concurrent':
-            status = self.concurrentHandling(ts, pos)
+            status = self.concurrentHandling(ts)
         elif self.modate_mode == 'conditional':
             status = self.conditionalHandling(ts, pos)
         else:
@@ -55,11 +65,13 @@ class UpdateStatus:
         return status
 
     def conditionalHandling(self, ts, pos):
+        """To be implemented"""
         raise NotImplementedError()
 
-    def concurrentHandling(self, ts, pos):
+    def concurrentHandling(self, ts):
+        """Handles the broadcast according to indiviudal broadcasting episode."""
         graph = ts.__class__.graph
-        # from graph retrieve all the source
+
         if graph.inDegree(ts) == 1:
             logger.debug(
                 'Obj: {}. All publisher broadcasted, proceed to updating', type(self)
@@ -75,7 +87,7 @@ class UpdateStatus:
 
     # Todo change type(self) to appropriate object
     def näiveHandling(self, pos):
-        """Handle the broadcast as in original implementation"""
+        """Handle the broadcast as in original implementation."""
         if len(self.publishers) == 1:
             logger.debug(
                 'Obj: {}. All publisher broadcasted, proceed to updating', type(self)
