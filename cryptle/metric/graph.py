@@ -73,7 +73,6 @@ class TSGraph:
         else:
             return self.graph.nodes[ts]['root']
 
-
     def updateBroadcastStatus(self, ts):
         """Update broadcast status of Timeseries after broadcasting."""
         # print(f'\nUpdating {repr(ts)}...')
@@ -85,7 +84,7 @@ class TSGraph:
             # print(f'this is a source {repr(ts)}')
             # recursively search all successors, mark them as not broadcasted
             # print(self.dfsSuccessors(ts))
-            for _ , successors in self.dfsSuccessors(ts).items():
+            for _, successors in self.dfsSuccessors(ts).items():
                 for successor in successors:
                     self.graph.nodes[successor]['is_broadcasted'] = False
 
@@ -93,7 +92,12 @@ class TSGraph:
         #     print(repr(node), self.graph.nodes[node])
 
     def checkResetCondition(self):
-        finished = all([self.graph.nodes[node]['is_broadcasted'] == True for node in self.sources()])
+        finished = all(
+            [
+                self.graph.nodes[node]['is_broadcasted'] == True
+                for node in self.sources()
+            ]
+        )
         if finished:
             self.resetBrodcastStatus()
         else:

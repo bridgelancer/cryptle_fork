@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class Timestamp(Timeseries):
-
     def __repr__(self):
         return self.name
 

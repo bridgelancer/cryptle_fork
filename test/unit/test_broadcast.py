@@ -52,6 +52,7 @@ bars = [
 def pushTick(tick):
     return tick
 
+
 def bind(bus, stick_period=3, aggregator_period=3):
     stick = CandleStick(stick_period)
     aggregator = Aggregator(aggregator_period)
@@ -59,6 +60,7 @@ def bind(bus, stick_period=3, aggregator_period=3):
     bus.bind(stick)
     bus.bind(aggregator)
     return bus, stick
+
 
 def test_naive_integration():
     pass
@@ -88,6 +90,24 @@ def test_same_episode():
     def start_to_entry_vol_f(v, ts):
         if ts == 1549544100 or ts == int_t1 + 300 or ts == int_t1 + 900:
             return sum(v._cache[-3:])
+        else:
+            return None
+
+    def bar_f(v, ts):
+        if ts == 1549544100 + 600:
+            return sum(v._cache[-3:])
+        else:
+            return None
+
+    bar = GenericTS(
+        candle.o,
+        timestamp,
+        name='bar',
+        lookback=6,
+        eval_func=bar_f,
+        args=[candle.o, timestamp],
+        tocache=True,
+    )
 
     start_to_entry_vol = GenericTS(
         candle.v,
@@ -104,12 +124,12 @@ def test_same_episode():
         return -1
 
     foo = GenericTS(
+        bar,
         start_to_entry_vol,
-        candle.o,
         name='foo',
         lookback=6,
         eval_func=foo_f,
-        args=[candle.o, start_to_entry_vol],
+        args=[bar, start_to_entry_vol],
         tocache=True,
         update_mode='concurrent',
     )

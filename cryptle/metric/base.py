@@ -259,6 +259,7 @@ class Timeseries(Metric):
             logger.info('Listen {} as a listener of {} \n', repr(arg), repr(self))
 
         self.status = UpdateStatus(update_mode, self.publishers)
+
         if not vargs:
             self.is_source = True
         else:
@@ -289,8 +290,10 @@ class Timeseries(Metric):
             status = self.status.handleBroadcast(self, pos)
         elif self.update_mode == 'concurrent':
             status = self.status.handleBroadcast(self, pos)
+        elif self.update_mode == 'conditional':
+            status = self.status.handleBroadcast(self, pos)
         else:
-            raise NotImplementedError('Timeseries in progress...')
+            raise NotImplementedError('Further mode in development...')
 
         if status == 'clear':
             self.update()
@@ -561,7 +564,13 @@ class GenericTS(Timeseries):
             return self.name
 
     def __init__(
-        self, *vargs, name=None, lookback=None, eval_func=None, args=None, tocache=True,
+        self,
+        *vargs,
+        name=None,
+        lookback=None,
+        eval_func=None,
+        args=None,
+        tocache=True,
         update_mode=None,
     ):
         self.name = name

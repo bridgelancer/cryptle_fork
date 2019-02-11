@@ -12,7 +12,7 @@ Timeseries.
 A Timeseries can opt for using UpdateStatus as one of the methods of controlling the
 constraints of broadcasting and updating. The information of each TS subscriber would be
 obtained from the construction of this class. If no additional information was provided
-for updating, the naive approach would be used. The Timeseries concerned would hold
+for updating, the naive approach would be used. The Timeseries concerned would suspend
 the update cascade until receiving all the broadcast signals from its subscriber.
 
 Several modes of specifying update constraint has been encountered during usage. One
@@ -44,14 +44,20 @@ class UpdateStatus:
     def handleBroadcast(self, ts, pos):
         status = None
         if self.update_mode == 'näive':
-            status = self.näiveHandle(pos)
+            status = self.näiveHandling(pos)
         elif self.update_mode == 'concurrent':
-            status = self.concurrentHandle(ts, pos)
+            status = self.concurrentHandling(ts, pos)
+        elif self.modate_mode == 'conditional':
+            status = self.conditionalHandling(ts, pos)
         else:
             raise NotImplementedError('UpdateStatus in progress...')
+
         return status
 
-    def concurrentHandle(self, ts, pos):
+    def conditionalHandling(self, ts, pos):
+        raise NotImplementedError()
+
+    def concurrentHandling(self, ts, pos):
         graph = ts.__class__.graph
         # from graph retrieve all the source
         if graph.inDegree(ts) == 1:
@@ -61,7 +67,6 @@ class UpdateStatus:
             return 'clear'
         else:
             for predecessor in graph.predecessors(ts):
-                # print(repr(predecessor), graph.attr(predecessor, 'is_broadcasted'))
                 if graph.attr(predecessor, 'is_broadcasted'):
                     pass
                 else:
@@ -69,7 +74,7 @@ class UpdateStatus:
             return 'clear'
 
     # Todo change type(self) to appropriate object
-    def näiveHandle(self, pos):
+    def näiveHandling(self, pos):
         """Handle the broadcast as in original implementation"""
         if len(self.publishers) == 1:
             logger.debug(

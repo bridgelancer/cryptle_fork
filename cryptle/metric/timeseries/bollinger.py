@@ -41,7 +41,7 @@ class BollingerBand(MultivariateTS):
         return self.name
 
     def __init__(
-        self, ts, lookback, sd=2, upper_sd=None, lower_sd=None, name='bollinger'
+        self, ts, lookback, sd=2, upper_sd=None, lower_sd=None, name='bollinger', ddof=0
     ):
         self.name = f'{name}{lookback}'
         if upper_sd is None:
@@ -54,8 +54,11 @@ class BollingerBand(MultivariateTS):
         else:
             lowersd = lower_sd
 
+        def ma(bb):
+            return sum(bb.ma._cache) / lookback
+
         def width(bb):
-            return np.std(bb.width._cache, ddof=0)
+            return np.std(bb.width._cache, ddof=ddof)
 
         def upperband(bb):
             return sum(bb.upperband._cache) / lookback + uppersd * float(bb.width)
@@ -66,14 +69,27 @@ class BollingerBand(MultivariateTS):
         def value(bb):
             return (bb.upperband / bb.lowerband - 1) * 100
 
-        self.width = GenericTS(ts, lookback=lookback, eval_func=width, args=[self])
+        ma_name = f'bollinger_{lookback}.ma'
+        width_name = f'bollinger_{lookback}.width'
+        upperband_name = f'bollinger_{lookback}.upperband'
+        lowerband_name = f'bollinger_{lookback}.lowerband'
+        value_name = f'bollinger_{lookback}.value'
+
+        self.width = GenericTS(
+            ts, name=width_name, lookback=lookback, eval_func=width, args=[self]
+        )
         self.upperband = GenericTS(
-            ts, lookback=lookback, eval_func=upperband, args=[self]
+            ts, name=upperband_name, lookback=lookback, eval_func=upperband, args=[self]
         )
         self.lowerband = GenericTS(
-            ts, lookback=lookback, eval_func=lowerband, args=[self]
+            ts, name=lowerband_name, lookback=lookback, eval_func=lowerband, args=[self]
         )
-        self.value = GenericTS(ts, lookback=lookback, eval_func=value, args=[self])
+        self.value = GenericTS(
+            ts, name=value_name, lookback=lookback, eval_func=value, args=[self]
+        )
+        self.ma = GenericTS(
+            ts, name=ma_name, lookback=lookback, eval_func=ma, args=[self]
+        )
 
         # The MultivariateTS initialization must come ***AFTER** all the Timeseries-(derived)
         # objects in order to ensure proper updating
