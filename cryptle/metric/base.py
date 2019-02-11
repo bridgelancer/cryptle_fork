@@ -495,7 +495,7 @@ class MemoryTS(Metric):
                                     buffer.append(t.value)
                             ts_count += len(lst_ts)
 
-                    # should be the sum of tsl, including those in MultivariateTS
+                    # Should be the sum of tsl, including those in MultivariateTS
                     if len(buffer) != ts_count:
                         val = func(*args, **kwargs)
                         return val
@@ -615,13 +615,15 @@ class DiskTS(Metric):
 
     """
 
+    # Todo change all timestamp to timestamps in various interface
     def __init__(self, ts, timestamp=None, store_num=100):
         # Handle the case of writing timestamp
         if timestamp is None:
             self._ts = ts
+        elif isinstance(timestamp, Timeseries):
+            self._ts = timestamp, ts
         else:
-            if isinstance(timestamp, Timeseries):
-                self._ts = timestamp, ts
+            raise ValueError('Please provide a valid Timestamp object for kwarg timestamp')
 
         self._store_num = store_num
         self._cache = []
@@ -677,7 +679,10 @@ class DiskTS(Metric):
                 "Error in creating the required directory for storing DiskTS values."
             )
 
-        filename = repr(self._ts) + '_' + str(hash(id(self._ts))) + ".csv"
+        if isinstance(self._ts, Timeseries):
+            filename = f'({repr(self._ts)}_{id(self._ts)}.csv'
+        elif isinstance(self._ts, tuple):
+            filename = f'({repr(self._ts[1])}_{id(self._ts[1])}.csv'
 
         if not self.flashed:
             with open(dpath / filename, "w", newline="") as file:
@@ -773,9 +778,9 @@ class DiskTS(Metric):
         # colend   = abs(index.end) - rowed * self._store_num
 
         if isinstance(self._ts, Timeseries):
-            filename = repr(self._ts) + '_' + str(id(self._ts)) + '.csv'
+            filename = f'({repr(self._ts)}_{id(self._ts)}.csv'
         elif isinstance(self._ts, tuple):
-            filename = repr(self._ts[1]) + '_' + str(id(self._ts[1])) + '.csv'
+            filename = f'({repr(self._ts[1])}_{id(self._ts[1])}.csv'
         filepath = self.dir / filename
 
         if isinstance(index, slice):
