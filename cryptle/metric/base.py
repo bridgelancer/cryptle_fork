@@ -255,7 +255,6 @@ class Timeseries(Metric):
             "Please implement an evaluate method for every Timeseries instance."
         )
 
-    # Todo(MC): Unintended behaviour of broadcasts for mismatched updates
     def processBroadcast(self, pos):
         """To be called when all the listened Timeseries updated at least once."""
         if len(self.publishers) == 1:
@@ -623,7 +622,9 @@ class DiskTS(Metric):
         elif isinstance(timestamp, Timeseries):
             self._ts = timestamp, ts
         else:
-            raise ValueError('Please provide a valid Timestamp object for kwarg timestamp')
+            raise ValueError(
+                'Please provide a valid Timestamp object for kwarg timestamp'
+            )
 
         self._store_num = store_num
         self._cache = []
@@ -653,9 +654,7 @@ class DiskTS(Metric):
 
     def cleanup(self):
         self.write(None)
-
-    def cleanup(self):
-        self.write(None)
+        print(f'{repr(self._ts)} length:  {len(self._cache)}')
 
     def write(self, num_to_write):
         """Write stored data to disk.
@@ -664,6 +663,7 @@ class DiskTS(Metric):
         of the id of the Timeseries object to be written.
 
         """
+
         dpath = None
         try:
             if all([not Path.exists(dirpath) for dirpath in self.dirpaths]):
@@ -680,14 +680,15 @@ class DiskTS(Metric):
             )
 
         if isinstance(self._ts, Timeseries):
-            filename = f'({repr(self._ts)}_{id(self._ts)}.csv'
+            filename = f'{repr(self._ts)}_{id(self._ts)}.csv'
         elif isinstance(self._ts, tuple):
-            filename = f'({repr(self._ts[1])}_{id(self._ts[1])}.csv'
+            filename = f'{repr(self._ts[1])}_{id(self._ts[1])}.csv'
 
         if not self.flashed:
             with open(dpath / filename, "w", newline="") as file:
                 file.write(
-                    "Beginning of new file: should record the running instance metainfo. \n"
+                    f"Beginning of new file: should record the running instance metainfo: \
+                    {repr(self._ts)}\n"
                 )
             self.flashed = True
 
@@ -778,9 +779,9 @@ class DiskTS(Metric):
         # colend   = abs(index.end) - rowed * self._store_num
 
         if isinstance(self._ts, Timeseries):
-            filename = f'({repr(self._ts)}_{id(self._ts)}.csv'
+            filename = f'{repr(self._ts)}_{id(self._ts)}.csv'
         elif isinstance(self._ts, tuple):
-            filename = f'({repr(self._ts[1])}_{id(self._ts[1])}.csv'
+            filename = f'{repr(self._ts[1])}_{id(self._ts[1])}.csv'
         filepath = self.dir / filename
 
         if isinstance(index, slice):
