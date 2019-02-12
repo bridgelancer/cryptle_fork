@@ -32,7 +32,7 @@ class Volatility(Timeseries):
         self._cache = []
 
     @MemoryTS.cache('normal')
-    def evaluate(self, bar, candle):
+    def evaluate(self):
         logger.debug('Obj {} Calling evaluate in Volatility.', type(self))
         if np.std(self._cache) > 0:
             self.value = 1 / np.std(self._cache, ddof=1)
