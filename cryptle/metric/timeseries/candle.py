@@ -70,6 +70,7 @@ class CandleStick:
     ):
         self._lookback = lookback
         self._ts = []
+        self.name = name
 
         self._o_buffer = GenericTS(
             name="open_buffer",
