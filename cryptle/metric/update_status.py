@@ -64,6 +64,8 @@ class UpdateStatus:
             status = self.conditionalHandling(ts, pos)
         elif self.update_mode == 'daily':
             status = self.dailyTimeHandling(ts, pos)
+        elif self.update_mode == 'exact':
+            status = self.exectTimeHandling(ts, pos)
         else:
             raise NotImplementedError('UpdateStatus in progress...')
 
@@ -82,6 +84,10 @@ class UpdateStatus:
             return 'hold'
 
         return self.näiveHandling(pos)
+
+    def exactTimeHandling(self, ts, pos):
+        """To be implemented"""
+        raise NotImplementedError()
 
     def conditionalHandling(self, ts, pos):
         """To be implemented"""

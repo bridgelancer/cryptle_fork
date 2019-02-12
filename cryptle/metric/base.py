@@ -268,10 +268,7 @@ class Timeseries(Metric):
         self.roots = Timeseries.graph.roots(self)
 
         # Intialization of graph for timestamped Timeseries
-        if (
-            self._with_timestamp
-            and update_mode == 'daily'
-        ):
+        if self._with_timestamp and update_mode == 'daily':
             Timeseries.graph.setExecuteTime(timestamp, self, execute_time)
 
         # print(Timeseries.graph.nodeView())
