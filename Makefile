@@ -25,7 +25,7 @@ servedoc:
 
 initial-python-setup:
 	python3.6 -m venv .venv
-	. .venv/bin/activate; pip install .[dev]
+	. .venv/bin/activate; pip install -e .[dev]
 
 
 # Utililies

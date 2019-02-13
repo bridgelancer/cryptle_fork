@@ -214,12 +214,13 @@ class Strategy:
         except AttributeError:
             raise AttributeError('Expected implementation of onTrade()')
 
-    def pushCandle(self, pair, op, cl, hi, lo, ts, vol):
+    def pushCandle(self, pair, op, cl, hi, lo, ts, vol, alt_op=None, alt_cl=None, alt_hi=None,
+            alt_lo=None):
         """Input candlestick data."""
         logger.tick('Received candle of {}', pair)
 
         try:
-            self.onCandle(pair, op, cl, hi, lo, ts, vol)
+            self.onCandle(pair, op, cl, hi, lo, ts, vol, alt_op, alt_cl, alt_hi, alt_lo)
         except AttributeError:
             raise AttributeError('Expected implementation of onCandle()')
 
@@ -259,8 +260,8 @@ class TradingStrategy(Strategy):
     # [ Helpers to access exchange ]
     def marketBuy(self, asset: str, amount: float) -> float:
         """Send market buy request to associated exchange"""
-        if amount <= 0:
-            raise ValueError("Expect positive value for amount.")
+        # if amount <= 0:
+        #     raise ValueError("Expect positive value for amount.")
 
         logger.debug('Placing market buy for {:.6g} {}', amount, asset)
         success, price = self.exchange.marketBuy(asset, self.base, amount)
@@ -273,8 +274,8 @@ class TradingStrategy(Strategy):
 
     def marketSell(self, asset: str, amount: float) -> float:
         """Send market sell request to associated exchange"""
-        if amount < 0:
-            raise ValueError("Expect positive value for amount.")
+        # if amount < 0:
+        #     raise ValueError("Expect positive value for amount.")
 
         logger.debug('Placing market sell for {:.6g} {}', amount, asset)
         success, price = self.exchange.marketSell(asset, self.base, amount)
@@ -367,12 +368,12 @@ class SingleAssetStrategy(TradingStrategy):
             raise AttributeError('Expected implementation of onTrade()')
 
     def pushCandle(
-        self, op: float, cl: float, hi: float, lo: float, ts: int, vol: float
-    ) -> None:
+        self, op: float, cl: float, hi: float, lo: float, ts: int, vol: float,
+        alt_op=None, alt_cl=None, alt_hi=None, alt_lo=None, next_open=None) -> None:
 
         # todo: input validation
         try:
-            self.onCandle(op, cl, hi, lo, ts, vol)
+            self.onCandle(op, cl, hi, lo, ts, vol, alt_op, alt_cl, alt_hi, alt_lo, next_open)
         except AttributeError:
             raise AttributeError('Expected implementation of onCandle()')
 

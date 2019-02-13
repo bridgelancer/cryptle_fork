@@ -35,7 +35,8 @@ class MACD(MultivariateTS):
     diff_ma : :class:`cryptle.metric.base.GenericTS`
         The Timeseries object for calculating the moving-average of the diff attribute.
     signal : :class:`cryptle.metric.base.GenericTS`
-        The Timeseries object for calculating the difference between diff and diff_ma attribute.
+        The Timeseries object for calculating the difference between diff and diff_ma
+        attribute.
 
     """
 
