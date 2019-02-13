@@ -4,7 +4,6 @@ from cryptle.event import source, on, Bus
 
 logger = logging.getLogger(__name__)
 
-
 class Aggregator:
     """An implementation of the generic candle aggregator.
 
@@ -25,12 +24,14 @@ class Aggregator:
 
     """
 
-    def __init__(self, period, auto_prune=False, maxsize=500):
+    def __init__(self, period, auto_prune=False, maxsize=500, source_name=None, bus=None):
         self.period = period
         self._bars = []  # this construct might be unnecessary
         self._auto_prune = auto_prune
         self._maxsize = maxsize
         self.last_timestamp = None
+        self.source_name = source_name
+        self.bus = bus
 
     @on('tick')
     def pushTick(self, data):
@@ -68,6 +69,7 @@ class Aggregator:
                     self.last_close, self.last_bar_timestamp + self.period
                 )
                 logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
+            self._pushOpen(value) # pushing the most updated open
             self._pushInitCandle(value, timestamp, volume, action)
             logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
 
@@ -98,7 +100,7 @@ class Aggregator:
         self._pushAllMetrics(*bar)
 
     def _pushAllMetrics(self, o, c, h, l, t, v, nv):
-        self._pushOpen(o)
+        self._pushOpen(o) # pushing the finished bar open
         self._pushClose(c)
         self._pushHigh(h)
         self._pushLow(l)
@@ -152,11 +154,25 @@ class Aggregator:
                 finished_candle.volume,
                 finished_candle.netvol,
             )
+
+            if self.source_name is None:
+                pass
+            else:
+                if isinstance(self.bus, Bus):
+                    self.bus.emit(f'aggregator:new_{self.source_name}_candle', finished_candle._bar)
+
             return finished_candle._bar
         elif len(self._bars) == 1:
             self._pushAllMetrics(
                 value, value, value, value, round_ts, volume, volume * action
             )
+
+            if self.source_name is None:
+                pass
+            else:
+                if isinstance(self.bus, Bus):
+                    self.bus.emit(f'aggregator:new_{self.source_name}_candle', new_candle._bar)
+
             return new_candle._bar
 
         # self._pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)
@@ -164,10 +180,20 @@ class Aggregator:
 
     @source('aggregator:new_candle')
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
+
+        # always show t as the opening time
         t = t - t % self.period
+
         new_candle = Candle(o, c, h, l, t, v, nv)
         self._bars.append(new_candle)
         self._pushAllMetrics(o, c, h, l, t, v, nv)
+
+        if self.source_name is None:
+            pass
+        else:
+            if isinstance(self.bus, Bus):
+                self.bus.emit(f'aggregator:new_{self.source_name}_candle', new_candle._bar)
+
         return new_candle._bar
 
     @source('aggregator:new_candle')
