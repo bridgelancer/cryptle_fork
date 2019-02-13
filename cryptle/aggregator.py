@@ -4,108 +4,51 @@ from cryptle.event import source, on, Bus
 
 logger = logging.getLogger(__name__)
 
+
 class Aggregator:
-    """An implementation of the generic candle aggregator.
+    """ A wrapper for the actual aggregator implementation. Contains decorated aggergator functions
+    for decoupling implementation of aggregator from the use of Event bus."""
 
-    Aggregator is a class that converts tick values of either prices or Timeseries values to candle
-    bar representation. It contains a subset of the functions of the CandleBar class in candle.py as
-    it handles the aggregation of tick data to bar representation. This class is also an extension
-    of the original CandleBar as it is designed to handle any tick-based value upon suitable wiring
-    of interfaces. This class could also accept bar representation of data.
-
-    Args
-    ---
-    period      : int
-        The number of seconds for a candle bar to span
-    auto_prune  : boolean
-        Option to prune the caching by this class
-    maxsize     : int
-        Number of bars to be stored if choosing auto_prune
-
-    """
-
-    def __init__(self, period, auto_prune=False, maxsize=500, source_name=None, bus=None):
+    def __init__(self, period, auto_prune=False, maxsize=500):
         self.period = period
-        self._bars = []  # this construct might be unnecessary
+        self._bars = []
         self._auto_prune = auto_prune
         self._maxsize = maxsize
-        self.last_timestamp = None
-        self.source_name = source_name
-        self.bus = bus
+        self.aggregator = AggregatorImplementation(period, auto_prune, maxsize)
 
     @on('tick')
     def pushTick(self, data):
-        """Provides public interface for accepting ticks.
-
-        Args
-        ---
-        data    : list
-            list-based representation of a tick data in [value, volume, timestamp, action]
-        """
-        if len(data) == 4:
-            value, timestamp, volume, action = data
+        bar = self.aggregator.pushTick(data)
+        if bar is None:
+            pass
+        elif all(isinstance(elem, list) for elem in bar):
+            for elem in bar:
+                self._emitAggregatedCandle(elem)
         else:
-            return NotImplementedError
-
-        self.last_timestamp = timestamp
-
-        # initialise the candle collection
-        if self.last_bar is None:
-            logger.debug(f'Pushed the first candle {data}')
-            return self._pushInitCandle(value, timestamp, volume, action)
-
-        # if tick arrived before next bar, update current candle
-        if self._is_updated(timestamp):
-            self.last_low = min(self.last_low, value)
-            self.last_high = max(self.last_high, value)
-            self.last_close = value
-            self.last_volume += volume
-            self.last_netvol += volume * action
-
-        else:
-            while not self._is_updated(timestamp - self.period):
-                self._pushEmptyCandle(
-                    self.last_close, self.last_bar_timestamp + self.period
-                )
-                logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
-            self._pushOpen(value) # pushing the most updated open
-            self._pushInitCandle(value, timestamp, volume, action)
-            logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
-
-    def _is_updated(self, timestamp):
-        return timestamp < self.last_bar_timestamp + self.period
-
-    def _is_due(self, timestamp):
-        return timestamp > self.last_bar_timestamp + self.period
-
-    def _prune(self, size):
-        try:
-            self._bars = self._bars[-size:]
-        except IndexError:
-            raise ("Empty CandleBar cannot be pruned")
+            self._emitAggregatedCandle(bar)
 
     @on('candle')
     def pushCandle(self, bar):
-        """Provides public interface for accepting aggregated candles.
-
-        Args
-        ---
-        bar     : Candle
-            A Candle object
-
-        """
-        self._pushFullCandle(*bar)
-        # methods that output corresponding events to message bus
+        candle = self.aggregator.pushCandle(bar)
         self._pushAllMetrics(*bar)
+        self._emitFullCandle(candle)
+
+    @source('aggregator:new_candle')
+    def _emitAggregatedCandle(self, bar):
+        return bar
+
+    @source('aggregator:new_candle')
+    def _emitFullCandle(self, candle):
+        return candle
 
     def _pushAllMetrics(self, o, c, h, l, t, v, nv):
-        self._pushOpen(o) # pushing the finished bar open
+        self._pushOpen(o)
         self._pushClose(c)
         self._pushHigh(h)
         self._pushLow(l)
-        self._pushTime(t)
         self._pushVolume(v)
         self._pushNetVolume(nv)
+        self._pushTime(t)
 
     @source('aggregator:new_open')
     def _pushOpen(self, o):
@@ -135,49 +78,143 @@ class Aggregator:
     def _pushNetVolume(self, nv):
         return nv
 
-    @source('aggregator:new_candle')
+    def last_open(self):
+        return self.aggregator.last_open
+
+
+class AggregatorImplementation:
+    """An implementation of the generic candle aggregator.
+
+    Aggregator is a class that converts tick values of either prices or Timeseries values to candle
+    bar representation. It contains a subset of the functions of the CandleBar class in candle.py as
+    it handles the aggregation of tick data to bar representation. This class is also an extension
+    of the original CandleBar as it is designed to handle any tick-based value upon suitable wiring
+    of interfaces. This class could also accept bar representation of data.
+
+    Args
+    ---
+    period      : int
+        The number of seconds for a candle bar to span
+    auto_prune  : boolean
+        Option to prune the caching by this class
+    maxsize     : int
+        Number of bars to be stored if choosing auto_prune
+
+    """
+
+    def __init__(
+        self, period, auto_prune=False, maxsize=500, source_name=None, bus=None
+    ):
+        self.period = period
+        self._bars = []  # this construct might be unnecessary
+        self._auto_prune = auto_prune
+        self._maxsize = maxsize
+        self.last_timestamp = None
+        self.source_name = source_name
+        self.bus = bus
+
+    def pushTick(self, data):
+        """Provides public interface for accepting ticks.
+
+        Args
+        ---
+        data    : list
+            list-based representation of a tick data in [value, volume, timestamp, action]
+        """
+        if len(data) == 4:
+            value, timestamp, volume, action = data
+        else:
+            return NotImplementedError
+
+        self.last_timestamp = timestamp
+
+        # initialise the candle collection
+        if self.last_bar is None:
+            logger.debug(f'Pushed the first candle {data}')
+            return self._pushInitCandle(value, timestamp, volume, action)
+
+        # if tick arrived before next bar, update current candle
+        if self._is_updated(timestamp):
+            self.last_low = min(self.last_low, value)
+            self.last_high = max(self.last_high, value)
+            self.last_close = value
+            self.last_volume += volume
+            self.last_netvol += volume * action
+
+        else:
+            empty_bars = []
+            while not self._is_updated(timestamp - self.period):
+                # Todo: how to wrap this? return a list instead?
+                bar = self._pushEmptyCandle(
+                    self.last_close, self.last_bar_timestamp + self.period
+                )
+                empty_bars.append(bar)
+                logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
+
+            if not empty_bars:
+                return self._pushInitCandle(value, timestamp, volume, action)
+            else:
+                return empty_bars.append(
+                    self._pushInitCandle(value, timestamp, volume, action)
+                )
+
+    def _is_updated(self, timestamp):
+        return timestamp < self.last_bar_timestamp + self.period
+
+    def _is_due(self, timestamp):
+        return timestamp > self.last_bar_timestamp + self.period
+
+    def _prune(self, size):
+        try:
+            self._bars = self._bars[-size:]
+        except IndexError:
+            raise ("Empty CandleBar cannot be pruned")
+
+    def pushCandle(self, bar):
+        """Provides public interface for accepting aggregated candles.
+
+        Args
+        ---
+        bar     : Candle
+            A Candle object
+
+        """
+        return self._pushFullCandle(*bar)
+        # methods that output corresponding events to message bus
+
     def _pushInitCandle(self, value, timestamp, volume, action):
         round_ts = timestamp - timestamp % self.period
         new_candle = Candle(
             value, value, value, value, round_ts, volume, volume * action
         )
         self._bars.append(new_candle)
+
         if len(self._bars) > 1:
             finished_candle = self._bars[-2]
-            self._pushAllMetrics(
-                finished_candle.open,
-                finished_candle.close,
-                finished_candle.high,
-                finished_candle.low,
-                finished_candle.timestamp,
-                finished_candle.volume,
-                finished_candle.netvol,
-            )
-
             if self.source_name is None:
                 pass
             else:
                 if isinstance(self.bus, Bus):
-                    self.bus.emit(f'aggregator:new_{self.source_name}_candle', finished_candle._bar)
+                    self.bus.emit(
+                        f'aggregator:new_{self.source_name}_candle',
+                        finished_candle._bar,
+                    )
 
             return finished_candle._bar
-        elif len(self._bars) == 1:
-            self._pushAllMetrics(
-                value, value, value, value, round_ts, volume, volume * action
-            )
 
+        elif len(self._bars) == 1:
             if self.source_name is None:
                 pass
             else:
                 if isinstance(self.bus, Bus):
-                    self.bus.emit(f'aggregator:new_{self.source_name}_candle', new_candle._bar)
+                    self.bus.emit(
+                        f'aggregator:new_{self.source_name}_candle', new_candle._bar
+                    )
 
             return new_candle._bar
 
-        # self._pushAllMetrics(value, value, value, value, round_ts, volume, volume * action)
         # return new_candle._bar
 
-    @source('aggregator:new_candle')
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
 
         # always show t as the opening time
@@ -185,22 +222,21 @@ class Aggregator:
 
         new_candle = Candle(o, c, h, l, t, v, nv)
         self._bars.append(new_candle)
-        self._pushAllMetrics(o, c, h, l, t, v, nv)
 
         if self.source_name is None:
             pass
         else:
             if isinstance(self.bus, Bus):
-                self.bus.emit(f'aggregator:new_{self.source_name}_candle', new_candle._bar)
+                self.bus.emit(
+                    f'aggregator:new_{self.source_name}_candle', new_candle._bar
+                )
 
         return new_candle._bar
 
-    @source('aggregator:new_candle')
     def _pushEmptyCandle(self, value, timestamp):
         round_ts = timestamp - timestamp % self.period
         new_candle = Candle(value, value, value, value, round_ts, 0, 0)
         self._bars.append(new_candle)
-        self._pushAllMetrics(value, value, value, value, round_ts, 0, 0)
         return new_candle._bar
 
     @property
