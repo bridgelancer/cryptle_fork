@@ -1,6 +1,7 @@
 import inspect
 import logging
 import threading
+import warnings
 from functools import update_wrapper
 from collections import defaultdict
 
@@ -13,11 +14,19 @@ class BusException(Exception):
     pass
 
 
-class ExtraEmit(BusException):
-    pass
+class DuplicateEvent(BusException):
+    def __init__(self):
+        super().__init__()
+        self.expression = 'An emitter may only emit one type of event.'
 
 
-class UnboundEmitter(BusException):
+class DuplicateEmitter(BusException):
+    def __init__(self):
+        super().__init__()
+        self.expression = 'A bus cannot hold duplicates of the same emitter instance.'
+
+
+class UnboundEmitter(Warning):
     pass
 
 
@@ -26,7 +35,7 @@ class _Emitter:
 
     def __init__(self, event, func):
         if isinstance(func, self.__class__):
-            raise ExtraEmit('An emitter may only emit one type of event.')
+            raise DuplicateEvent()
         self.func = func
         self.buses = []
         self.event = event
@@ -200,13 +209,24 @@ class Bus:
 
     def makeEmitter(self, event, func):
         """Return an emitter function binded to the caller bus."""
-        if isinstance(func, _Emitter):
-            if not func.event == event:
-                raise ExtraEmit('An emitter may only emit one type of event.')
-            func.buses.append(self)
-            self._emitters[event].append(func)
-            return func
 
+        # handle already initialised emitter
+        if isinstance(func, _Emitter):
+            if func.event == event:
+                return func
+            else:
+                raise DuplicateEvent()
+
+            if self not in func.buses:
+                func.buses.append(self)
+                self._emitters[event].append(func)
+                return func
+            else:
+                raise DuplicateEmitter()
+
+            raise BusException('Unexpected error in .makeEmitter()')
+
+        # handle raw python function
         emitter = _Emitter(event, func)
         emitter.buses.append(self)
         self._emitters[event].append(emitter)
@@ -258,6 +278,8 @@ class DeferedSource:
             try:
                 return self._bus.makeEmitter(event, method)
             except AttributeError:
-                raise UnboundEmitter('Defered sources must be bound to an event bus.')
+                warnings.warn(
+                    UnboundEmitter('Defered sources must be bound to an event bus.')
+                )
 
         return wrapper
