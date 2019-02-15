@@ -30,6 +30,7 @@ class Aggregator:
     @on('candle')
     def pushCandle(self, bar):
         candle = self.aggregator.pushCandle(bar)
+        # print(self, candle)
         self._pushAllMetrics(*bar)
         self._emitFullCandle(candle)
 
@@ -37,8 +38,9 @@ class Aggregator:
     def _emitAggregatedCandle(self, bar):
         return bar
 
-    @source('aggregator:new_candle')
+    #@source('aggregator:new_candle')
     def _emitFullCandle(self, candle):
+        # print(self, candle)
         return candle
 
     def _pushAllMetrics(self, o, c, h, l, t, v, nv):
@@ -66,7 +68,7 @@ class Aggregator:
     def _pushLow(self, l):
         return l
 
-    @source('aggregator:new_timestamp')
+    #@source('aggregator:new_timestamp')
     def _pushTime(self, t):
         return t
 
@@ -83,7 +85,7 @@ class Aggregator:
 
 
 class AggregatorImplementation:
-    """An implementation of the generic candle aggregator.
+    """Implementation of the generic candle aggregator.
 
     Aggregator is a class that converts tick values of either prices or Timeseries values to candle
     bar representation. It contains a subset of the functions of the CandleBar class in candle.py as
@@ -193,27 +195,19 @@ class AggregatorImplementation:
             finished_candle = self._bars[-2]
             if self.source_name is None:
                 pass
-            else:
-                if isinstance(self.bus, Bus):
-                    self.bus.emit(
-                        f'aggregator:new_{self.source_name}_candle',
-                        finished_candle._bar,
-                    )
 
             return finished_candle._bar
 
-        elif len(self._bars) == 1:
-            if self.source_name is None:
-                pass
-            else:
-                if isinstance(self.bus, Bus):
-                    self.bus.emit(
-                        f'aggregator:new_{self.source_name}_candle', new_candle._bar
-                    )
+    def _emitEvents(self, candle):
+        self.bus.emit(f'aggregator:new_{self.source_name}_open', candle.open)
+        self.bus.emit(f'aggregator:new_{self.source_name}_close', candle.close)
+        self.bus.emit(f'aggregator:new_{self.source_name}_high', candle.high)
+        self.bus.emit(f'aggregator:new_{self.source_name}_low', candle.low)
+        self.bus.emit(f'aggregator:new_{self.source_name}_volume', candle.volume)
+        self.bus.emit(f'aggregator:new_{self.source_name}_net_volume', candle.netvol)
+        self.bus.emit(f'aggregator:new_{self.source_name}_timesatmp', candle.timestamp)
 
-            return new_candle._bar
-
-        # return new_candle._bar
+        self.bus.emit(f'aggregator:new_{self.source_name}_candle', candle._bar)
 
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
 
@@ -227,9 +221,7 @@ class AggregatorImplementation:
             pass
         else:
             if isinstance(self.bus, Bus):
-                self.bus.emit(
-                    f'aggregator:new_{self.source_name}_candle', new_candle._bar
-                )
+                self._emitEvents(new_candle)
 
         return new_candle._bar
 

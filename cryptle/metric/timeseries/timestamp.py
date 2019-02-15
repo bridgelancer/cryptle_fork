@@ -16,7 +16,7 @@ class Timestamp(Timeseries):
         self._ts = []
         self.value = None
 
-    @on("aggregator:new_timestamp")
+    #@on("aggregator:new_timestamp")
     def source(self, timestamp):
         self._ts.append(timestamp)
         self.evaluate()

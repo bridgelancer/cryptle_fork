@@ -368,12 +368,11 @@ class SingleAssetStrategy(TradingStrategy):
             raise AttributeError('Expected implementation of onTrade()')
 
     def pushCandle(
-        self, op: float, cl: float, hi: float, lo: float, ts: int, vol: float,
-        alt_op=None, alt_cl=None, alt_hi=None, alt_lo=None, next_open=None) -> None:
+        self, op: float, cl: float, hi: float, lo: float, ts: int, vol: float, next_open=None) -> None:
 
         # todo: input validation
         try:
-            self.onCandle(op, cl, hi, lo, ts, vol, alt_op, alt_cl, alt_hi, alt_lo, next_open)
+            self.onCandle(op, cl, hi, lo, ts, vol, next_open=next_open)
         except AttributeError:
             raise AttributeError('Expected implementation of onCandle()')
 
