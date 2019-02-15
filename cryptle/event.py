@@ -180,13 +180,13 @@ class Bus:
         When the decorated method is binded to a bus, the functions's return value
         will be sent to the bus before being returned to the caller.
 
-        A source can only emit one event. Multiple buses may be bounded to a source.
-        When the source is called all binded buses will receive the event.
+        A source can only emit one event. Multiple buses may be bound to a source.
+        When the source is called all bound buses will receive the event.
 
         Note
         ----
         In use cases with multiple buses, the order that the buses receive the
-        event is in order that they were binded. This is an implementation
+        event is in order that they were bound. This is an implementation
         detail and is subject to change. Multi-thread usage is thus discouraged.
 
         Warning

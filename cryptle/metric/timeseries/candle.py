@@ -162,8 +162,7 @@ class CandleStick:
 
     # CandleStick has a unique :meth:`source` that makes itself a timeseries generating source
     # todo(MC): segregate abstraction layer appropriately
-    @on('new_candle')
-    @on('aggregator:new_candle')
+    # @on('aggregator:new_candle')
     def source(self, data):
         self._ts.append(data)
         self.update()
