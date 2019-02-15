@@ -1,4 +1,5 @@
 # Cryptle: Algorithmic trading framework
+[![CircleCI](https://circleci.com/gh/pinealan/cryptle.svg?style=svg)](https://circleci.com/gh/pinealan/cryptle)
 <a href="https://github.com/ambv/black"><img alt="Code style: black"
 src="https://img.shields.io/badge/style-black-000000.svg"></a>
 
