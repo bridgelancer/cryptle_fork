@@ -21,9 +21,9 @@ class SD(Timeseries):
     def __repr__(self):
         return self.name
 
-    def __init__(self, ts, lookback, name='sd'):
+    def __init__(self, ts, lookback, name='sd', store_num=100):
         self.name = f'{name}{lookback}'
-        super().__init__(ts)
+        super().__init__(ts, store_num=store_num)
         logger.debug('Obj: {}. Initialized the parent Timeseries of SD.', type(self))
         self._lookback = lookback
         self._ts = ts

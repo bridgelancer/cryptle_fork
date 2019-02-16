@@ -22,9 +22,9 @@ class YM(Timeseries):
     def __repr__(self):
         return self.name
 
-    def __init__(self, r, lookback=6, name='ym'):
+    def __init__(self, r, lookback=6, name='ym', store_num=100):
         self.name = name
-        super().__init__(r)
+        super().__init__(r, store_num=store_num)
         logger.debug('Obj:{}. Initialized the parent Timeseries of YM.', type(self))
         self._ts = r
 
