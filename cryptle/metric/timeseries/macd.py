@@ -42,7 +42,9 @@ class MACD(MultivariateTS):
     def __repr__(self):
         return self.name
 
-    def __init__(self, fast, slow, lookback, name="macd", weights=default):
+    def __init__(
+        self, fast, slow, lookback, name="macd", weights=default, store_num=100
+    ):
         self.name = f'{name}{fast._lookback}_{slow._lookback}_{lookback}'
         self._lookback = lookback
         self._weights = weights(lookback)
@@ -69,6 +71,7 @@ class MACD(MultivariateTS):
             eval_func=diff,
             args=[fast, slow],
             tocache=False,
+            store_num=store_num,
         )
         self.diff_ma = GenericTS(
             self.diff,
@@ -76,6 +79,7 @@ class MACD(MultivariateTS):
             lookback=lookback,
             eval_func=diff_ma,
             args=[self, self._weights, lookback],
+            store_num=store_num,
         )
 
         self.signal = GenericTS(
@@ -85,6 +89,7 @@ class MACD(MultivariateTS):
             lookback=lookback,
             eval_func=signal,
             args=[self],
+            store_num=store_num,
         )
         logger.debug(
             'Obj: {}. Finished declaration of all Timeseries objects', type(self)

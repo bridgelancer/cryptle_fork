@@ -21,9 +21,9 @@ class Difference(Timeseries):
     def __repr__(self):
         return self.name
 
-    def __init__(self, ts, n=1, name='difference'):
+    def __init__(self, ts, n=1, name='difference', store_num=100):
         self.name = f'{name}_{n}diff'
-        super().__init__(ts)
+        super().__init__(ts, store_num=store_num)
         logger.debug(
             'Obj: {}. Initialized the parent Timeseries of Difference.', type(self)
         )

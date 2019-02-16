@@ -21,9 +21,9 @@ class Skewness(Timeseries):
     def __repr__(self):
         return self.name
 
-    def __init__(self, ts, lookback, name='skewness'):
+    def __init__(self, ts, lookback, name='skewness', store_num=100):
         self.name = f'{name}{lookback}'
-        super().__init__(ts)
+        super().__init__(ts, store_num=store_num)
         logger.debug(
             'Obj: {}. Initialized the parent Timeseries of Skewness.', type(self)
         )

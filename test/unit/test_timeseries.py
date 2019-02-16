@@ -88,9 +88,8 @@ def compare(obj, val, threshold=1e-7):
 
 def test_candle():
     bus = Bus()
-    stick = CandleStick(1)
+    stick = CandleStick(1, store_num=1e100)
     aggregator = Aggregator(1)  # set to be a 1 second aggregator
-    stick = CandleStick(1)
 
     bus.bind(aggregator)
     bus.bind(stick)
@@ -103,7 +102,7 @@ def test_candle():
 
 
 def bind(bus, stick_period=3, aggregator_period=3):
-    stick = CandleStick(stick_period)
+    stick = CandleStick(stick_period, store_num=1e100)
     aggregator = Aggregator(aggregator_period)
     bus.bind(pushTick)
     bus.bind(stick)
@@ -125,36 +124,36 @@ def val(func):
     return decorator
 
 
+# Todo Make all tests in memory to avoid any effects by DiskTS
 @val
 def test_sma(stick):
-    ma = SMA(stick.o, 5)
+    ma = SMA(stick.o, 5, store_num=1e100)
     return ma, 197.475
 
 
 @val
 def test_wma(stick):
-    ma = WMA(stick.o, 5)
+    ma = WMA(stick.o, 5, store_num=1e100)
     return ma, 210.675
 
 
 @val
 def test_recursive(stick):
-    ma = SMA(WMA(stick.o, 5), 3)
+    ma = SMA(WMA(stick.o, 5, store_num=1e100), 3, store_num=1e100)
     return ma, 134.65416666666666
 
 
 @val
 def test_ema(stick):
-    ma = EMA(stick.o, 5)
+    ma = EMA(stick.o, 5, store_num=1e100)
     return ma, 213.260999989917483
 
 
 def test_rsi():
     bus = Bus()
     aggregator_period = stick_period = 3
-    stick = CandleStick(stick_period)
+    stick = CandleStick(stick_period, store_num=1e100)
 
-    stick = CandleStick(stick_period)
     timestamp = Timestamp(stick_period)
     aggregator = Aggregator(aggregator_period)
 
@@ -163,10 +162,9 @@ def test_rsi():
     bus.bind(stick)
     bus.bind(aggregator)
 
-    rsi = RSI(stick.o, 5, timestamp=timestamp)
+    rsi = RSI(stick.o, 5, timestamp=timestamp, store_num=1e100)
     pushAltQuad()
     # not checked
-    rsi.hxtimeseries.cleanup()
     compare(rsi, 57.342237492321196)
 
 
@@ -174,7 +172,7 @@ def test_bollinger():
     bus = Bus()
     bus, stick = bind(bus, 1, 1)
 
-    bollinger = BollingerBand(stick.o, 5)
+    bollinger = BollingerBand(stick.o, 5, store_num=1e100)
     pushAltQuad()
 
     compare(bollinger.ma, 215.275)
@@ -188,9 +186,9 @@ def test_macd():
     bus = Bus()
     bus, stick = bind(bus, 1, 1)
 
-    wma5 = WMA(stick.o, 5)
-    wma8 = WMA(stick.o, 8)
-    macd = MACD(wma5, wma8, 3)
+    wma5 = WMA(stick.o, 5, store_num=1e100)
+    wma8 = WMA(stick.o, 8, store_num=1e100)
+    macd = MACD(wma5, wma8, 3, store_num=1e100)
     pushAltQuad()
 
     compare(macd.diff, 52.04722222222)
@@ -210,45 +208,39 @@ def test_atr():
 
 @val
 def test_kurtosis(stick):
-    kurt = Kurtosis(stick.o, 5)
+    kurt = Kurtosis(stick.o, 5, store_num=1e100)
     return kurt, -3.231740264178196
 
 
 @val
 def test_skewness(stick):
-    skew = Skewness(stick.o, 5)
+    skew = Skewness(stick.o, 5, store_num=1e100)
     return skew, -0.582459640454958
 
 
 @val
 def test_volatility(stick):
-    sd = SD(stick.o, 5)
+    sd = SD(stick.o, 5, store_num=1e100)
     return sd, 0.00187307396323
 
 
 @val
 def test_return(stick):
-    r = BarReturn(stick.o, stick.c, 5, all_close=True)
-    return r, 986.0625
-
-
-@val
-def test_return(stick):
-    r = BarReturn(stick.o, stick.c, 5, all_close=True)
+    r = BarReturn(stick.o, stick.c, 5, all_close=True, store_num=1e100)
     return r, 986.0625
 
 
 @val
 def test_ym(stick):
-    r = BarReturn(stick.o, stick.c)
-    ym = YM(r)
+    r = BarReturn(stick.o, stick.c, store_num=1e100)
+    ym = YM(r, store_num=1e100)
     return ym, 0
 
 
 @val
 def test_diff(stick):
-    sd = SD(stick.o, 5)
-    diff = Difference(sd)
+    sd = SD(stick.o, 5, store_num=1e100)
+    diff = Difference(sd, store_num=1e100)
     return diff, -1.335580558397 * 1e-4
 
 
@@ -256,7 +248,7 @@ def test_TimeseriesWrapperRetrieval():
     bus = Bus()
     bus, stick = bind(bus, 1, 1)
 
-    diff = Difference(stick.o, 1)
+    diff = Difference(stick.o, 1, store_num=1e100)
     pushAltQuad()
 
     assert diff[-21:-19] == [750.8125, -770.3125]
@@ -268,27 +260,27 @@ def test_MultivariateTSCache():
     bus = Bus()
     bus, stick = bind(bus, 1, 1)
 
-    bollinger = BollingerBand(stick.o, 5)
-    wma = WMA(stick.o, 7)
+    bollinger = BollingerBand(stick.o, 5, store_num=100)
+    wma = WMA(stick.o, 7, store_num=1e100)
 
     class MockTS(Timeseries):
         def __repr__(self):
             return self.name
 
-        def __init__(self, lookback, wma, bollinger, name='mock'):
+        def __init__(self, lookback, wma, bollinger, name='mock', store_num=100):
             self.name = name
             self._ts = wma, bollinger
             self._cache = []
             self._lookback = lookback
             self.value = name
-            super().__init__(wma, bollinger)
+            super().__init__(wma, bollinger, store_num=store_num)
 
         @MemoryTS.cache('normal')
         def evaluate(self):
             self.value = 1
             print('obj {} Calling evaluate in MockTS', type(self))
 
-    mock = MockTS(10, wma, bollinger)
+    mock = MockTS(10, wma, bollinger, store_num=1e100)
     pushAltQuad()
 
     assert len(mock._cache) == 10
@@ -300,8 +292,6 @@ def test_MultivariateTSCache():
         -247.0966190440449,
         564.7297592101022,
     ]
-
-    mock.hxtimeseries.cleanup()
 
 
 # @Deprecated - use Time event instead of a Timeseries where possible

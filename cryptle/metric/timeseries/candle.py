@@ -67,6 +67,7 @@ class CandleStick:
         Low=Low,
         Volume=Volume,
         name='candle',
+        store_num=100,
     ):
         self._lookback = lookback
         self._ts = []
@@ -115,6 +116,7 @@ class CandleStick:
             eval_func=cache,
             args=[self._o_buffer],
             tocache=True,
+            store_num=store_num,
         )
 
         self.c = GenericTS(
@@ -124,6 +126,7 @@ class CandleStick:
             eval_func=cache,
             args=[self._c_buffer],
             tocache=True,
+            store_num=store_num,
         )
 
         self.h = GenericTS(
@@ -133,6 +136,7 @@ class CandleStick:
             eval_func=cache,
             args=[self._h_buffer],
             tocache=True,
+            store_num=store_num,
         )
 
         self.l = GenericTS(
@@ -142,6 +146,7 @@ class CandleStick:
             eval_func=cache,
             args=[self._l_buffer],
             tocache=True,
+            store_num=store_num,
         )
 
         self.v = GenericTS(
@@ -151,6 +156,7 @@ class CandleStick:
             eval_func=cache,
             args=[self._v_buffer],
             tocache=True,
+            store_num=store_num,
         )
         self.bar = bar
 

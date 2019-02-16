@@ -23,9 +23,9 @@ class WMA(Timeseries):
     def __repr__(self):
         return self.name
 
-    def __init__(self, ts, lookback, name="wma", weights=None):
+    def __init__(self, ts, lookback, name="wma", weights=None, store_num=100):
         self.name = f'{name}{lookback}'
-        super().__init__(ts)
+        super().__init__(ts, store_num=store_num)
         logger.debug('Obj: {}. Initialized the parent Timeseries of WMA.', type(self))
         self._lookback = lookback
         self._weights = weights or [
