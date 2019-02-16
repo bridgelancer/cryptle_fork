@@ -26,9 +26,18 @@ class BarReturn(Timeseries):
     def __repr__(self):
         return self.name
 
-    def __init__(self, o, c, bar=1, all_open=False, all_close=False, name='barreturn'):
+    def __init__(
+        self,
+        o,
+        c,
+        bar=1,
+        all_open=False,
+        all_close=False,
+        name='barreturn',
+        store_num=100,
+    ):
         self.name = name
-        super().__init__(o, c)
+        super().__init__(o, c, store_num=store_num)
         logger.debug('Obj:{}. Initialized the parent Timeseries of Return.', type(self))
         self._ts = o, c
         self.all_open = all_open

@@ -221,9 +221,9 @@ class Timeseries(Metric):
 
     """
 
-    def __init__(self, *vargs, timestamp=None):
+    def __init__(self, *vargs, timestamp=None, store_num=100):
         self.mxtimeseries = MemoryTS(self)
-        self.hxtimeseries = DiskTS(self, timestamp)
+        self.hxtimeseries = DiskTS(self, timestamp=timestamp, store_num=store_num)
         self.value = None
 
         # self.publishers are the list of references to timeseries objects that this
@@ -560,9 +560,10 @@ class GenericTS(Timeseries):
         args=None,
         tocache=True,
         timestamp=None,
+        store_num=100,
     ):
         self.name = name
-        super().__init__(*vargs, timestamp=timestamp)
+        super().__init__(*vargs, timestamp=timestamp, store_num=store_num)
         self._lookback = lookback
         self._ts = vargs
         self._cache = []

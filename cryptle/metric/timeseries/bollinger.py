@@ -41,7 +41,15 @@ class BollingerBand(MultivariateTS):
         return self.name
 
     def __init__(
-        self, ts, lookback, sd=2, upper_sd=None, lower_sd=None, name='bollinger', ddof=0
+        self,
+        ts,
+        lookback,
+        sd=2,
+        upper_sd=None,
+        lower_sd=None,
+        name='bollinger',
+        ddof=0,
+        store_num=100,
     ):
         self.name = f'{name}{lookback}'
         if upper_sd is None:
@@ -76,20 +84,45 @@ class BollingerBand(MultivariateTS):
         value_name = f'bollinger_{lookback}.value'
 
         self.ma = GenericTS(
-            ts, name=ma_name, lookback=lookback, eval_func=ma, args=[self]
+            ts,
+            name=ma_name,
+            lookback=lookback,
+            eval_func=ma,
+            args=[self],
+            store_num=store_num,
         )
 
         self.width = GenericTS(
-            ts, name=width_name, lookback=lookback, eval_func=width, args=[self]
+            ts,
+            name=width_name,
+            lookback=lookback,
+            eval_func=width,
+            args=[self],
+            store_num=store_num,
         )
         self.upperband = GenericTS(
-            ts, name=upperband_name, lookback=lookback, eval_func=upperband, args=[self]
+            ts,
+            name=upperband_name,
+            lookback=lookback,
+            eval_func=upperband,
+            args=[self],
+            store_num=store_num,
         )
         self.lowerband = GenericTS(
-            ts, name=lowerband_name, lookback=lookback, eval_func=lowerband, args=[self]
+            ts,
+            name=lowerband_name,
+            lookback=lookback,
+            eval_func=lowerband,
+            args=[self],
+            store_num=store_num,
         )
         self.value = GenericTS(
-            ts, name=value_name, lookback=lookback, eval_func=value, args=[self]
+            ts,
+            name=value_name,
+            lookback=lookback,
+            eval_func=value,
+            args=[self],
+            store_num=store_num,
         )
 
         # The MultivariateTS initialization must come ***AFTER** all the Timeseries-(derived)

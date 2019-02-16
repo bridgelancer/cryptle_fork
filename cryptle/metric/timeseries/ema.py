@@ -25,9 +25,9 @@ class EMA(Timeseries):
     def __repr__(self):
         return self.name
 
-    def __init__(self, ts, lookback, name="ema", weight=default):
+    def __init__(self, ts, lookback, name="ema", weight=default, store_num=100):
         self.name = f'{name}{lookback}'
-        super().__init__(ts)
+        super().__init__(ts, store_num=store_num)
         logger.debug('Obj: {}. Initialized the parent Timeseries of EMA.', type(self))
         self._lookback = lookback
         self._weight = weight(

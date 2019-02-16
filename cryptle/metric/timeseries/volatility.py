@@ -21,9 +21,9 @@ class Volatility(Timeseries):
     def __repr__(self):
         return self.name
 
-    def __init__(self, ts, lookback, name='volatility'):
+    def __init__(self, ts, lookback, name='volatility', store_num=100):
         self.name = f'{name}{lookback}'
-        super().__init__(ts)
+        super().__init__(ts, store_num=store_num)
         logger.debug(
             'Obj: {}. Initialized the parent Timeseries of Volatility.', type(self)
         )

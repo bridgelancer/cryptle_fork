@@ -90,9 +90,8 @@ def compare(obj, val, threshold=1e-7):
 
 def test_candle():
     bus = Bus()
-    stick = CandleStick(1)
+    stick = CandleStick(1, store_num=1e100)
     aggregator = Aggregator(1)  # set to be a 1 second aggregator
-    stick = CandleStick(1)
 
     bus.bind(aggregator)
     bus.bind(stick)
@@ -171,9 +170,9 @@ def test_bollinger(bind):
 def test_macd(bind):
     bus, stick = bind(1, 1)
 
-    wma5 = WMA(stick.o, 5)
-    wma8 = WMA(stick.o, 8)
-    macd = MACD(wma5, wma8, 3)
+    wma5 = WMA(stick.o, 5, store_num=1e100)
+    wma8 = WMA(stick.o, 8, store_num=1e100)
+    macd = MACD(wma5, wma8, 3, store_num=1e100)
     pushAltQuad()
 
     compare(macd.diff, 52.04722222222)
@@ -214,7 +213,7 @@ def test_diff(loop, bind):
 def test_TimeseriesWrapperRetrieval(bind):
     bus, stick = bind(1, 1)
 
-    diff = Difference(stick.o, 1)
+    diff = Difference(stick.o, 1, store_num=1e100)
     pushAltQuad()
 
     assert diff[-21:-19] == [750.8125, -770.3125]
@@ -225,27 +224,27 @@ def test_TimeseriesWrapperRetrieval(bind):
 def test_MultivariateTSCache(bind):
     bus, stick = bind(1, 1)
 
-    bollinger = BollingerBand(stick.o, 5)
-    wma = WMA(stick.o, 7)
+    bollinger = BollingerBand(stick.o, 5, store_num=100)
+    wma = WMA(stick.o, 7, store_num=1e100)
 
     class MockTS(Timeseries):
         def __repr__(self):
             return self.name
 
-        def __init__(self, lookback, wma, bollinger, name='mock'):
+        def __init__(self, lookback, wma, bollinger, name='mock', store_num=100):
             self.name = name
             self._ts = wma, bollinger
             self._cache = []
             self._lookback = lookback
             self.value = name
-            super().__init__(wma, bollinger)
+            super().__init__(wma, bollinger, store_num=store_num)
 
         @MemoryTS.cache('normal')
         def evaluate(self):
             self.value = 1
             print('obj {} Calling evaluate in MockTS', type(self))
 
-    mock = MockTS(10, wma, bollinger)
+    mock = MockTS(10, wma, bollinger, store_num=1e100)
     pushAltQuad()
 
     assert len(mock._cache) == 10
@@ -257,8 +256,6 @@ def test_MultivariateTSCache(bind):
         -247.0966190440449,
         564.7297592101022,
     ]
-
-    mock.hxtimeseries.cleanup()
 
 
 # @Deprecated - use Time event instead of a Timeseries where possible
