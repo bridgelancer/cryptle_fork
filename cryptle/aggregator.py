@@ -37,7 +37,7 @@ class Aggregator:
     def _emitAggregatedCandle(self, bar):
         return bar
 
-    @source('aggregator:new_candle')
+    # @source('aggregator:new_candle')
     def _emitFullCandle(self, candle):
         return candle
 
@@ -66,7 +66,7 @@ class Aggregator:
     def _pushLow(self, l):
         return l
 
-    @source('aggregator:new_timestamp')
+    # @source('aggregator:new_timestamp')
     def _pushTime(self, t):
         return t
 
@@ -207,10 +207,9 @@ class AggregatorImplementation:
                 pass
             else:
                 if isinstance(self.bus, Bus):
-                    self.bus.emit(
-                        f'aggregator:new_{self.source_name}_candle', new_candle._bar
-                    )
-            return new_candle._bar
+                    self._emitEvents(new_candle)
+
+            # return new_candle._bar
 
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
         t = t - t % self.period

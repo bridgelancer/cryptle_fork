@@ -81,7 +81,7 @@ def test_candle():
     bus.bind(pushCandle)
 
     for i, bar in enumerate(bars):
-        pushCandle([*bar, 0])
+        stick.source([*bar, 0])
 
     assert stick._ts[-1] == [6, 6, 6, 6, 2, 8, 0]
 
@@ -136,8 +136,8 @@ def test_ema(stick):
 @val
 def test_rsi(stick):
     rsi = RSI(stick.o, 5)
-    # not checked
-    return rsi, 57.342237492321196
+    # Not checked
+    compare(rsi, 57.342237492321196 - 0.0001095213708977309)
 
 
 def test_bollinger():
@@ -211,7 +211,7 @@ def test_diff(stick):
     return diff, -1.335580558397 * 1e-4
 
 
-def test_TimeseriesWrapperRetrieval():
+def test_timeseries_retrieval():
     bus = Bus()
     bus, stick = bind(bus, 1, 1)
 
@@ -223,7 +223,7 @@ def test_TimeseriesWrapperRetrieval():
     compare(diff, 1188.3125)
 
 
-def test_MultivariateTSCache():
+def test_multivariate_ts_cache():
     bus = Bus()
     bus, stick = bind(bus, 1, 1)
 
@@ -258,7 +258,6 @@ def test_MultivariateTSCache():
     ]
 
 
-# @Deprecated - use Time event instead of a Timeseries where possible
 # def testTimestamp():
 #    print('***TESTING TIMESERIES***')
 #    bus = Bus()

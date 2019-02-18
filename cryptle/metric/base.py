@@ -632,6 +632,7 @@ class DiskTS(Metric):
 
     def cleanup(self):
         self.write(None)
+        self._cache.clear()
 
     def write(self, num_to_write):
         """Write stored data to disk.
@@ -658,16 +659,18 @@ class DiskTS(Metric):
         filename = repr(self._ts) + '_' + str(hash(id(self._ts))) + ".csv"
 
         if not self.flashed:
-            with open(dpath / filename, "w", newline="") as file:
+            with open(dpath / filename, "w") as file:
                 file.write(
                     "Beginning of new file: should record the running instance metainfo. \n"
                 )
             self.flashed = True
 
-        with open(dpath / filename, "a", newline="") as file:
+        with open(dpath / filename, "a") as file:
 
             wr = csv.writer(file)
             wr.writerow(self._cache[:num_to_write])
+
+        del self._cache[: self._store_num]
 
     @staticmethod
     def prune(self):
@@ -676,9 +679,8 @@ class DiskTS(Metric):
         if 2 * self._lookback >= len(self._cache):
             return self._cache
         else:
-            self.write(self._lookback)
-            del self._cache[: self._lookback]
-            return self._cache[-self._lookback - 1 :]
+            self.write(self._store_num)
+            return self._cache[-self._store_num - 1 :]
 
     @MemoryTS.cache("historical")
     def evaluate(self):
@@ -716,6 +718,7 @@ class DiskTS(Metric):
         with open(filename, "r") as f:
             reader = csv.reader(f, delimiter=",")
             for i, row in enumerate(f):
+                # For header row
                 if i == 0:
                     pass
                 else:
