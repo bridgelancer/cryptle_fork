@@ -110,7 +110,7 @@ def bind(bus, stick_period=3, aggregator_period=3):
     return bus, stick
 
 
-# decorator for testing timeseries.value after looping through alt_quad
+# Decorator for testing timeseries.value after looping through alt_quad
 def val(func):
     def decorator():
         bus = Bus()
@@ -162,7 +162,7 @@ def test_rsi():
     bus.bind(stick)
     bus.bind(aggregator)
 
-    rsi = RSI(stick.o, 5, timestamp=timestamp, store_num=1e100)
+    rsi = RSI(stick.o, 5, timestamps=timestamp, store_num=1e100)
     pushAltQuad()
     # not checked
     compare(rsi, 57.342237492321196)

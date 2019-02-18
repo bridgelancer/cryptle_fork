@@ -221,9 +221,9 @@ class Timeseries(Metric):
 
     """
 
-    def __init__(self, *vargs, timestamp=None, store_num=100):
+    def __init__(self, *vargs, timestamps=None, store_num=100):
         self.mxtimeseries = MemoryTS(self)
-        self.hxtimeseries = DiskTS(self, timestamp=timestamp, store_num=store_num)
+        self.hxtimeseries = DiskTS(self, timestamps=timestamps, store_num=store_num)
         self.value = None
 
         # self.publishers are the list of references to timeseries objects that this
@@ -559,11 +559,11 @@ class GenericTS(Timeseries):
         eval_func=None,
         args=None,
         tocache=True,
-        timestamp=None,
+        timestamps=None,
         store_num=100,
     ):
         self.name = name
-        super().__init__(*vargs, timestamp=timestamp, store_num=store_num)
+        super().__init__(*vargs, timestamps=timestamps, store_num=store_num)
         self._lookback = lookback
         self._ts = vargs
         self._cache = []
@@ -616,12 +616,12 @@ class DiskTS(Metric):
     """
 
     # Todo change all timestamp to timestamps in various interface
-    def __init__(self, ts, timestamp=None, store_num=100):
+    def __init__(self, ts, timestamps=None, store_num=100):
         # Handle the case of writing timestamp
-        if timestamp is None:
+        if timestamps is None:
             self._ts = ts
-        elif isinstance(timestamp, Timeseries):
-            self._ts = timestamp, ts
+        elif isinstance(timestamps, Timeseries):
+            self._ts = timestamps, ts
         else:
             raise ValueError(
                 'Please provide a valid Timestamp object for kwarg timestamp'
