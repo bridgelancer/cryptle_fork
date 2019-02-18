@@ -670,7 +670,7 @@ class DiskTS(Metric):
             wr = csv.writer(file)
             wr.writerow(self._cache[:num_to_write])
 
-        del self._cache[: self._store_num]
+        del self._cache[: self._lookback]
 
     @staticmethod
     def prune(self):
@@ -679,8 +679,8 @@ class DiskTS(Metric):
         if 2 * self._lookback >= len(self._cache):
             return self._cache
         else:
-            self.write(self._store_num)
-            return self._cache[-self._store_num - 1 :]
+            self.write(self._lookback)
+            return self._cache[-self._lookback - 1 :]
 
     @MemoryTS.cache("historical")
     def evaluate(self):

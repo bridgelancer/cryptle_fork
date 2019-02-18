@@ -137,7 +137,7 @@ def test_ema(stick):
 def test_rsi(stick):
     rsi = RSI(stick.o, 5)
     # Not checked
-    compare(rsi, 57.342237492321196 - 0.0001095213708977309)
+    return rsi, 57.342237492321196 - 0.0001095213708977309
 
 
 def test_bollinger():
@@ -209,18 +209,6 @@ def test_diff(stick):
     sd = SD(stick.o, 5)
     diff = Difference(sd)
     return diff, -1.335580558397 * 1e-4
-
-
-def test_timeseries_retrieval():
-    bus = Bus()
-    bus, stick = bind(bus, 1, 1)
-
-    diff = Difference(stick.o, 1)
-    pushAltQuad()
-
-    assert diff[-21:-19] == [750.8125, -770.3125]
-    assert diff[-9] == 1001.3125
-    compare(diff, 1188.3125)
 
 
 def test_multivariate_ts_cache():

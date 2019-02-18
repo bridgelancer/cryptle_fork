@@ -3,6 +3,7 @@ from cryptle.metric.base import Candle, Timeseries, MemoryTS, MultivariateTS, Di
 from cryptle.metric.timeseries.sma import SMA
 from cryptle.metric.timeseries.wma import WMA
 from cryptle.metric.timeseries.candle import CandleStick
+from cryptle.metric.timeseries.difference import Difference
 from cryptle.aggregator import Aggregator
 from cryptle.event import source, Bus
 
@@ -17,8 +18,9 @@ alt_quad = [(100 + ((-1) ** i) * (i / 4) ** 2) for i in range(1, 1000)]
 """Test module for testing the IO operation of DiskTS
 
 Note:
-    Prefer to run with -rxXs pytest flag, same applies to other test modules. A minimum of 4 seconds
-    is needed between successive testing to avoid collision of directory name.
+    Prefer to run with -rxXs pytest flag, same applies to other test modules. A minimum of 2 seconds
+    is needed between successive testing to avoid collision of directory name. No logs would be
+    created after the successful execution of test_remove_files.
 
 """
 
@@ -109,6 +111,26 @@ def test_clean_up():
         cleanup(ts)
 
 
+def test_history_retrieval():
+    bus_h = Bus()
+    stick_h = CandleStick(1)
+    aggregator_h = Aggregator(1)
+    bus_h.bind(pushTick)
+    bus_h.bind(stick_h)
+    bus_h.bind(aggregator_h)
+
+    diff = Difference(stick.o, 1)
+
+    alt_quad_100 = [(100 + ((-1) ** i) * (i / 4) ** 2) for i in range(1, 100)]
+
+    for i, price in enumerate(alt_quad_100):
+        pushTick([price, i, 0, 0])
+
+    assert diff[-21:-19] == [750.8125, -770.3125]
+    assert diff[-9] == 1001.3125
+
+
+# Todo remove xfail mark after Event bus was fixed
 @pytest.mark.xfail(reason='Unresolved bugs in Event bus implementation')
 def test_multiple_bus():
     bus2 = Bus()
@@ -126,13 +148,9 @@ def test_multiple_bus():
     cleanup(wma)
 
 
-@pytest.mark.skip()
 def test_remove_files():
-    pass
-
-
-## For cleaning up the directories constructed
-#    for directory in histroot.iterdir():
-#        for file in directory.iterdir():
-#            os.remove(histroot / directory / file)
-#        Path.rmdir(histroot / directory)
+    ## For cleaning up the directories constructed
+    for directory in histroot.iterdir():
+        for file in directory.iterdir():
+            os.remove(histroot / directory / file)
+        Path.rmdir(histroot / directory)
