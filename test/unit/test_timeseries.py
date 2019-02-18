@@ -127,7 +127,6 @@ def val(func):
     return decorator
 
 
-# Todo Make all tests in memory to avoid any effects by DiskTS
 @val
 def test_sma(stick):
     ma = SMA(stick.o, 5, store_num=1e100)
