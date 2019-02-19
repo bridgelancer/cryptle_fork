@@ -102,16 +102,12 @@ class AggregatorImplementation:
 
     """
 
-    def __init__(
-        self, period, auto_prune=False, maxsize=500, source_name=None, bus=None
-    ):
+    def __init__(self, period, auto_prune=False, maxsize=500):
         self.period = period
         self._bars = []  # this construct might be unnecessary
         self._auto_prune = auto_prune
         self._maxsize = maxsize
         self.last_timestamp = None
-        self.source_name = source_name
-        self.bus = bus
 
     def pushTick(self, data):
         """Provides public interface for accepting ticks.
@@ -191,39 +187,13 @@ class AggregatorImplementation:
 
         if len(self._bars) > 1:
             finished_candle = self._bars[-2]
-            if self.source_name is None:
-                pass
-            else:
-                if isinstance(self.bus, Bus):
-                    self.bus.emit(
-                        f'aggregator:new_{self.source_name}_candle',
-                        finished_candle._bar,
-                    )
 
             return finished_candle._bar
-
-        elif len(self._bars) == 1:
-            if self.source_name is None:
-                pass
-            else:
-                if isinstance(self.bus, Bus):
-                    self.bus.emit(
-                        f'aggregator:new_{self.source_name}_candle', new_candle._bar
-                    )
-            return new_candle._bar
 
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
         t = t - t % self.period
         new_candle = Candle(o, c, h, l, t, v, nv)
         self._bars.append(new_candle)
-
-        if self.source_name is None:
-            pass
-        else:
-            if isinstance(self.bus, Bus):
-                self.bus.emit(
-                    f'aggregator:new_{self.source_name}_candle', new_candle._bar
-                )
 
         return new_candle._bar
 

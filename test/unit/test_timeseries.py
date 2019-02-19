@@ -137,7 +137,7 @@ def test_ema(stick):
 def test_rsi(stick):
     rsi = RSI(stick.o, 5)
     # not checked
-    return rsi, 57.342237492321196
+    return rsi, 57.342237492321196 - 0.0001095213708977309
 
 
 def test_bollinger():
@@ -162,7 +162,7 @@ def test_macd():
 
     compare(macd.diff, 52.04722222222)
     compare(macd.diff_ma, 17.350925925907)
-    compare(macd.signal, 52.04722222222- 17.350925925907)
+    compare(macd.signal, 52.04722222222 - 17.350925925907)
 
 
 def test_atr():
@@ -198,11 +198,13 @@ def test_return(stick):
     r = BarReturn(stick.o, stick.c, 5, all_close=True)
     return r, 986.0625
 
+
 @val
 def test_ym(stick):
     r = BarReturn(stick.o, stick.c)
     ym = YM(r)
     return ym, 0
+
 
 @val
 def test_diff(stick):
@@ -233,6 +235,7 @@ def test_MultivariateTSCache():
     class MockTS(Timeseries):
         def __repr__(self):
             return self.name
+
         def __init__(self, lookback, wma, bollinger, name='mock'):
             self.name = name
             self._ts = wma, bollinger
