@@ -35,67 +35,85 @@ def pushAltQuad():
         pushTick([price, i, 0, 0])
 
 
-stick = CandleStick(1)
 stick2 = CandleStick(1)
 aggregator = Aggregator(1)
 aggregator2 = Aggregator(1)
 
-sma = SMA(stick.o, 7)
 wma = WMA(stick2.o, 7)
 
+stick = CandleStick(1)
+sma = SMA(stick.o, 7)
+
+# modular fixture
 bus = Bus()
 bus.bind(aggregator)
 bus.bind(stick)
 bus.bind(pushTick)
 
-
 pushAltQuad()
 
-histroot = Path.cwd() / Path('histlog')
-# Note the similar problem in DiskTS -> spordic discrepancy due to time diff
-current_time = datetime.datetime.now()
-current_time_f = current_time.strftime('%Y-%m-%d %H:%M:%S')
 
-primary_ts = (sma, stick.o, stick.c, stick.h, stick.l, stick.v)
-
-dirpaths = []
-for i in range(-1, 1):
-    diff_time = current_time + datetime.timedelta(seconds=i)
-    diff_time_f = diff_time.strftime('%Y-%m-%d %H:%M:%S')
-    subdirpath = histroot / diff_time_f
-    dirpaths.append(Path.cwd() / subdirpath)
+@pytest.fixture
+def primary_ts():
+    return (sma, stick.o, stick.c, stick.h, stick.l, stick.v)
 
 
-def assert_file_exists(ts):
-    dpath = None
-    try:
+@pytest.fixture
+def histroot():
+    """Return a Path object of the root directory for storing Timeseries log."""
+    return Path.cwd() / Path('histlog')
+
+
+@pytest.fixture
+def current_time():
+    return datetime.datetime.now()
+
+
+@pytest.fixture
+def assert_file_exists(current_time, histroot):
+    def _decorator(ts):
+        dpath = None
+        dirpaths = []
+        for i in range(-5, 1):
+            diff_time = current_time + datetime.timedelta(seconds=i)
+            diff_time_f = diff_time.strftime('%Y-%m-%d %H:%M:%S')
+            subdirpath = histroot / diff_time_f
+            dirpaths.append(Path.cwd() / subdirpath)
+
         for dirpath in dirpaths:
             if Path.exists(dirpath):
                 dpath = dirpath
                 break
-    except Exception as e:
-        raise OSError(
-            "Error in creating the required directory for storing DiskTS values."
-        )
+        if dpath is None:
+            raise ValueError('The directory path does not exist')
+        path = Path(dpath / f'{repr(ts)}_{id(ts)}.csv')
+        assert path.exists()
+        return path
 
-    path = Path(dpath / f'{repr(ts)}_{id(ts)}.csv')
-    assert path.exists()
-    return path
-
-
-def check_end_state(ts):
-    assert len(ts.hxtimeseries._cache) == 0
-    assert len(ts.hxtimeseries.readCSV([], assert_file_exists(ts))) == 998
+    return _decorator
 
 
-def clean_up(ts):
-    assert len(ts.hxtimeseries._cache) == 198
-    assert len(ts.hxtimeseries.readCSV([], assert_file_exists(ts))) == 800
-    ts.hxtimeseries.cleanup()
-    check_end_state(ts)
+@pytest.fixture
+def check_end_state(assert_file_exists):
+    def _decorator(ts):
+        assert len(ts.hxtimeseries._cache) == 0
+        assert len(ts.hxtimeseries.readCSV([], assert_file_exists(ts))) == 998
+
+    return _decorator
 
 
-def test_file_construction():
+@pytest.fixture
+def clean_up(assert_file_exists, check_end_state):
+    def _decorator(ts):
+        assert len(ts.hxtimeseries._cache) == 198
+        assert len(ts.hxtimeseries.readCSV([], assert_file_exists(ts))) == 800
+        ts.hxtimeseries.cleanup()
+        check_end_state(ts)
+
+    return _decorator
+
+
+def test_file_construction(assert_file_exists, primary_ts):
     """Test both the correct number of files generated and the names of the files"""
     dpath = None
     for ts in primary_ts:
@@ -105,7 +123,7 @@ def test_file_construction():
     assert len(sorted(Path(dpath.parent).glob('*'))) == 6
 
 
-def test_clean_up():
+def test_clean_up(clean_up, primary_ts):
     """Assert the number of elements in file before and after cleaning up"""
     for ts in primary_ts:
         clean_up(ts)
@@ -132,7 +150,7 @@ def test_history_retrieval():
 
 # Todo remove xfail mark after Event bus was fixed
 @pytest.mark.xfail(reason='Unresolved bugs in Event bus implementation')
-def test_multiple_bus():
+def test_multiple_bus(primary_ts, check_end_state, clean_up):
     bus = Bus()
     bus.bind(aggregator)
     bus.bind(stick)
@@ -148,7 +166,7 @@ def test_multiple_bus():
     clean_up(wma)
 
 
-def test_remove_files():
+def test_remove_files(histroot):
     ## For cleaning up the directories constructed
     for directory in histroot.iterdir():
         for file in directory.iterdir():
