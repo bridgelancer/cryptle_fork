@@ -66,7 +66,7 @@ for i in range(-1, 1):
     dirpaths.append(Path.cwd() / subdirpath)
 
 
-def fileExists(ts):
+def assert_file_exists(ts):
     dpath = None
     try:
         for dirpath in dirpaths:
@@ -83,23 +83,23 @@ def fileExists(ts):
     return path
 
 
-def checkEndState(ts):
+def check_end_state(ts):
     assert len(ts.hxtimeseries._cache) == 0
-    assert len(ts.hxtimeseries.readCSV([], fileExists(ts))) == 998
+    assert len(ts.hxtimeseries.readCSV([], assert_file_exists(ts))) == 998
 
 
-def cleanup(ts):
+def clean_up(ts):
     assert len(ts.hxtimeseries._cache) == 198
-    assert len(ts.hxtimeseries.readCSV([], fileExists(ts))) == 800
+    assert len(ts.hxtimeseries.readCSV([], assert_file_exists(ts))) == 800
     ts.hxtimeseries.cleanup()
-    checkEndState(ts)
+    check_end_state(ts)
 
 
 def test_file_construction():
     """Test both the correct number of files generated and the names of the files"""
     dpath = None
     for ts in primary_ts:
-        path = fileExists(ts)
+        path = assert_file_exists(ts)
         dpath = path
 
     assert len(sorted(Path(dpath.parent).glob('*'))) == 6
@@ -108,7 +108,7 @@ def test_file_construction():
 def test_clean_up():
     """Assert the number of elements in file before and after cleaning up"""
     for ts in primary_ts:
-        cleanup(ts)
+        clean_up(ts)
 
 
 def test_history_retrieval():
@@ -141,11 +141,11 @@ def test_multiple_bus():
 
     # Should not affect the state of SMA, known issue documented in xfail reason
     for ts in primary_ts:
-        checkEndState(ts)
+        check_end_state(ts)
 
     # Checking validity of WMA output
-    fileExists(wma)
-    cleanup(wma)
+    assert_file_exists(wma)
+    clean_up(wma)
 
 
 def test_remove_files():
