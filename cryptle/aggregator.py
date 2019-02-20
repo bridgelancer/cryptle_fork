@@ -18,14 +18,11 @@ class Aggregator:
 
     @on('tick')
     def pushTick(self, data):
-        bar = self.aggregator.pushTick(data)
-        if bar is None:
-            pass
-        elif all(isinstance(elem, list) for elem in bar):
-            for elem in bar:
-                self._emitAggregatedCandle(elem)
-        else:
-            self._emitAggregatedCandle(bar)
+        for bar in self.aggregator.pushTick(data):
+            if bar is None:
+                logger.debug('No candle pushed for the first bar')
+            else:
+                self._emitAggregatedCandle(bar)
 
     @on('candle')
     def pushCandle(self, bar):
@@ -120,14 +117,13 @@ class AggregatorImplementation:
         if len(data) == 4:
             value, timestamp, volume, action = data
         else:
-            return NotImplementedError
+            raise NotImplementedError('Please input a tick of correct format.')
 
         self.last_timestamp = timestamp
 
         # initialise the candle collection
         if self.last_bar is None:
-            logger.debug('Pushed the first candle')
-            return self._pushInitCandle(value, timestamp, volume, action)
+            yield self._pushInitCandle(value, timestamp, volume, action)
 
         # if tick arrived before next bar, update current candle
         if self._is_updated(timestamp):
@@ -138,21 +134,10 @@ class AggregatorImplementation:
             self.last_netvol += volume * action
 
         else:
-            empty_bars = []
             while not self._is_updated(timestamp - self.period):
-                # Todo: how to wrap this? return a list instead?
-                bar = self._pushEmptyCandle(
-                    self.last_close, self.last_bar_timestamp + self.period
-                )
-                empty_bars.append(bar)
-                logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
+                yield self._pushEmptyCandle(self.last_close, self.last_bar_timestamp + self.period)
 
-            if not empty_bars:
-                return self._pushInitCandle(value, timestamp, volume, action)
-            else:
-                return empty_bars.append(
-                    self._pushInitCandle(value, timestamp, volume, action)
-                )
+            yield self._pushInitCandle(value, timestamp, volume, action)
 
     def _is_updated(self, timestamp):
         return timestamp < self.last_bar_timestamp + self.period
@@ -187,7 +172,7 @@ class AggregatorImplementation:
 
         if len(self._bars) > 1:
             finished_candle = self._bars[-2]
-
+            logger.debug(f'Pushed finished candle {finished_candle}.')
             return finished_candle._bar
 
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
@@ -195,12 +180,14 @@ class AggregatorImplementation:
         new_candle = Candle(o, c, h, l, t, v, nv)
         self._bars.append(new_candle)
 
+        logger.debug(f'Pushed full candle {new_candle}.')
         return new_candle._bar
 
     def _pushEmptyCandle(self, value, timestamp):
         round_ts = timestamp - timestamp % self.period
         new_candle = Candle(value, value, value, value, round_ts, 0, 0)
         self._bars.append(new_candle)
+        logger.debug(f'Pushed empty candle with timestamp {timestamp}')
         return new_candle._bar
 
     @property
