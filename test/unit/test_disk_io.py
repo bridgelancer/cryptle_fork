@@ -112,12 +112,12 @@ def test_clean_up():
 
 
 def test_history_retrieval():
-    bus_h = Bus()
-    stick_h = CandleStick(1)
-    aggregator_h = Aggregator(1)
-    bus_h.bind(pushTick)
-    bus_h.bind(stick_h)
-    bus_h.bind(aggregator_h)
+    bus = Bus()
+    stick = CandleStick(1)
+    aggregator = Aggregator(1)
+    bus.bind(pushTick)
+    bus.bind(stick)
+    bus.bind(aggregator)
 
     diff = Difference(stick.o, 1)
 
@@ -133,10 +133,10 @@ def test_history_retrieval():
 # Todo remove xfail mark after Event bus was fixed
 @pytest.mark.xfail(reason='Unresolved bugs in Event bus implementation')
 def test_multiple_bus():
-    bus2 = Bus()
-    bus2.bind(aggregator2)
-    bus2.bind(stick2)
-    bus2.bind(pushTick)
+    bus = Bus()
+    bus.bind(aggregator)
+    bus.bind(stick)
+    bus.bind(pushTick)
     pushAltQuad()
 
     # Should not affect the state of SMA, known issue documented in xfail reason
