@@ -5,7 +5,7 @@ from cryptle.event import source, on, Bus
 logger = logging.getLogger(__name__)
 
 
-class Aggregator:
+class DecoratedAggregator:
     """ A wrapper for the actual aggregator implementation. Contains decorated aggergator functions
     for decoupling implementation of aggregator from the use of Event bus."""
 
@@ -14,7 +14,7 @@ class Aggregator:
         self._bars = []
         self._auto_prune = auto_prune
         self._maxsize = maxsize
-        self.aggregator = AggregatorImplementation(period, auto_prune, maxsize)
+        self.aggregator = Aggregator(period, auto_prune, maxsize)
 
     @on('tick')
     def pushTick(self, data):
@@ -79,7 +79,7 @@ class Aggregator:
         return self.aggregator.last_open
 
 
-class AggregatorImplementation:
+class Aggregator:
     """An implementation of the generic candle aggregator.
 
     Aggregator is a class that converts tick values of either prices or Timeseries values to candle
@@ -135,7 +135,9 @@ class AggregatorImplementation:
 
         else:
             while not self._is_updated(timestamp - self.period):
-                yield self._pushEmptyCandle(self.last_close, self.last_bar_timestamp + self.period)
+                yield self._pushEmptyCandle(
+                    self.last_close, self.last_bar_timestamp + self.period
+                )
 
             yield self._pushInitCandle(value, timestamp, volume, action)
 

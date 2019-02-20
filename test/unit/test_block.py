@@ -1,6 +1,6 @@
 from cryptle.event import Bus, on, source
 from cryptle.rule import Rule
-from cryptle.aggregator import Aggregator
+from cryptle.aggregator import DecoratedAggregator
 from cryptle.scheduler import Scheduler
 
 from cryptle.metric.timeseries.candle import CandleStick
@@ -236,7 +236,7 @@ tickset = get_sample_trades()
 #        return tick
 #
 #    scheduler = Scheduler(setup)
-#    aggregator = Aggregator(3600)
+#    aggregator = DecoratedAggregator(3600)
 #
 #    bus = Bus()
 #    bus.bind(emitTick)
@@ -291,7 +291,7 @@ tickset = get_sample_trades()
 #    @source('tick')
 #    def emitTick(tick):
 #        return tick
-#    aggregator = Aggregator(3600)
+#    aggregator = DecoratedAggregator(3600)
 #
 #    bus = Bus()
 #    bus.bind(emitTick)
@@ -347,7 +347,7 @@ tickset = get_sample_trades()
 #    @source('tick')
 #    def emitTick(tick):
 #        return tick
-#    aggregator = Aggregator(180)
+#    aggregator = DecoratedAggregator(180)
 #
 #    bus = Bus()
 #    bus.bind(emitTick)
@@ -414,7 +414,7 @@ tickset = get_sample_trades()
 #    @source('tick')
 #    def emitTick(tick):
 #        return tick
-#    aggregator = Aggregator(3600)
+#    aggregator = DecoratedAggregator(3600)
 #
 #    bus = Bus()
 #    bus.bind(emitTick)
@@ -515,7 +515,7 @@ def test_new_scheduler_format():
     def emitTick(tick):
         return tick
 
-    aggregator = Aggregator(3600)
+    aggregator = DecoratedAggregator(3600)
 
     bus = Bus()
     bus.bind(emitTick)

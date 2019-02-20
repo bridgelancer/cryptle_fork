@@ -153,10 +153,10 @@ def onEvent(holder):
 @pass_strat
 def aggregatorAndCandle(holder):
     """Check whether the scheduler and setup, if used, are both present in equal number"""
-    from cryptle.aggregator import Aggregator
+    from cryptle.aggregator import DecoratedAggregator
     from cryptle.metric.timeseries.candle import CandleStick
 
-    _check('Checking number of Aggregator and CandleStick.')
+    _check('Checking number of DecoratedAggregator and CandleStick.')
     strat = holder.strat
 
     lst = []
@@ -165,7 +165,7 @@ def aggregatorAndCandle(holder):
     # period/lookback
     for tup in getmembers(strat):
         name, obj = tup
-        if isinstance(obj, Aggregator) or isinstance(obj, CandleStick):
+        if isinstance(obj, DecoratedAggregator) or isinstance(obj, CandleStick):
             lst.append(type(obj))
 
     d = {}
@@ -175,7 +175,7 @@ def aggregatorAndCandle(holder):
     if len(set(d.values())) <= 1:
         _pass()
     else:
-        _fail('Please declare equal number of Aggregator and CandleStick')
+        _fail('Please declare equal number of DecoratedAggregator and CandleStick')
 
 
 @parse.command()

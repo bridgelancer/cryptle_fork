@@ -1,6 +1,6 @@
 from cryptle.logging import *
 from cryptle.metric.base import Candle, Timeseries, MemoryTS, MultivariateTS
-from cryptle.aggregator import Aggregator
+from cryptle.aggregator import DecoratedAggregator
 from cryptle.event import source, on, Bus
 from cryptle.metric.timeseries.atr import ATR
 from cryptle.metric.timeseries.bollinger import BollingerBand
@@ -73,7 +73,7 @@ def compare(obj, val, threshold=1e-7):
 def test_candle():
     bus = Bus()
     stick = CandleStick(1)
-    aggregator = Aggregator(1)  # set to be a 1 second aggregator
+    aggregator = DecoratedAggregator(1)  # set to be a 1 second aggregator
     stick = CandleStick(1)
 
     bus.bind(aggregator)
@@ -88,7 +88,7 @@ def test_candle():
 
 def bind(bus, stick_period=3, aggregator_period=3):
     stick = CandleStick(stick_period)
-    aggregator = Aggregator(aggregator_period)
+    aggregator = DecoratedAggregator(aggregator_period)
     bus.bind(pushTick)
     bus.bind(stick)
     bus.bind(aggregator)
@@ -168,7 +168,7 @@ def test_macd():
 def test_atr():
     bus = Bus()
     bus.bind(pushCandle)
-    aggregator = Aggregator(5)
+    aggregator = DecoratedAggregator(5)
     stick = CandleStick(5)
     atr = ATR(stick, 5)
     for i, bar in enumerate(bars):
@@ -266,7 +266,7 @@ def test_MultivariateTSCache():
 #    print('***TESTING TIMESERIES***')
 #    bus = Bus()
 #    bus.bind(pushTick)
-#    aggregator = Aggregator(10) # set to be a 1 second aggregator
+#    aggregator = DecoratedAggregator(10) # set to be a 1 second aggregator
 #    timestamp = Timestamp(5) # to be implemented
 #    bus.bind(aggregator)
 #    bus.bind(timestamp)
@@ -279,7 +279,7 @@ def test_MultivariateTSCache():
 # def testPivotPoints():
 #    bus = Bus()
 #    bus.bind(pushTick)
-#    aggregator = Aggregator(3600)
+#    aggregator = DecoratedAggregator(3600)
 #    stick = CandleStick(3600)
 #    timestamp = Timestamp(5)
 
