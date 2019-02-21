@@ -63,7 +63,7 @@ def bind(bus, stick_period=3, aggregator_period=3):
 
 
 def test_naive_integration():
-    pass
+    pytest.skip('Not implemented for the moment')
 
 
 def test_same_episode():
@@ -131,7 +131,7 @@ def test_same_episode():
         eval_func=foo_f,
         args=[bar, start_to_entry_vol],
         tocache=True,
-        update_mode='näive',
+        update_mode='naive',
     )
 
     for i, price in enumerate(alt_quad):

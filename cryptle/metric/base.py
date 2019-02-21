@@ -19,7 +19,6 @@ import os
 from pathlib import Path
 from datetime import datetime, time, timedelta
 from operator import itemgetter
-from typing import Union, Optional, List, Tuple
 
 from cryptle.metric.graph import TSGraph
 
@@ -228,17 +227,12 @@ class Timeseries(Metric):
 
     graph = TSGraph()
 
-    def __init__(self, *vargs, timestamp=None, execute_time=None, update_mode='näive'):
+    def __init__(self, *vargs, timestamp=None, execute_time=None, update_mode='naive'):
         self.mxtimeseries = MemoryTS(self)
         self.hxtimeseries = DiskTS(self)
         self.value = None
-        self.update_mode = update_mode
-        self.is_source = None
 
-        if timestamp is None:
-            self._with_timestamp = False
-        else:
-            self._with_timestamp = True
+        self._with_timestamp = timestamp is not None
 
         self.timestamps = timestamp
 
@@ -258,10 +252,7 @@ class Timeseries(Metric):
 
         self.status = UpdateStatus(self, update_mode, self.publishers)
 
-        if not vargs:
-            self.is_source = True
-        else:
-            self.is_source = False
+        self._is_source = not vargs
 
         # Add TS as node in graph
         Timeseries.graph.addNode(self)
@@ -291,16 +282,18 @@ class Timeseries(Metric):
 
     def processBroadcast(self, pos):
         """To be called when all the listened Timeseries updated at least once."""
-        if self.update_mode == 'näive':
-            status = self.status.handleBroadcast(self, pos)
-        elif self.update_mode == 'concurrent':
-            status = self.status.handleBroadcast(self, pos)
-        elif self.update_mode == 'conditional':
-            status = self.status.handleBroadcast(self, pos)
-        elif self.update_mode == 'daily':
+        update_mode = self.status.update_mode
+        supported_modes = (
+            update_mode == 'naive',
+            update_mode == 'concurrent',
+            update_mode == 'conditional',
+            update_mode == 'daily',
+        )
+
+        if any(supported_modes):
             status = self.status.handleBroadcast(self, pos)
         else:
-            raise NotImplementedError('Further mode in development...')
+            raise NotImplementedError('Further mode in development')
 
         if status == 'clear':
             self.update()
@@ -402,9 +395,7 @@ class MultivariateTS:
         self.subscribers = []
         self.publishers = []
         if update_mode is None:
-            update_mode = 'näive'
-
-        self.update_mode = update_mode
+            update_mode = 'naive'
 
         for arg in vargs:
             arg.subscribers.append(self)
@@ -576,7 +567,7 @@ class GenericTS(Timeseries):
     ):
         self.name = name
         if update_mode is None:
-            update_mode = 'näive'
+            update_mode = 'naive'
 
         super().__init__(
             *vargs,

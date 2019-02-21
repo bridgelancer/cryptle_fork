@@ -71,8 +71,8 @@ class UpdateStatus:
         """
 
         status = None
-        if self.update_mode == 'näive':
-            status = self.näiveHandling(pos)
+        if self.update_mode == 'naive':
+            status = self.naiveHandling(pos)
         elif self.update_mode == 'concurrent':
             status = self.concurrentHandling(ts)
         elif self.update_mode == 'conditional':
@@ -91,7 +91,7 @@ class UpdateStatus:
 
     def dailyTimeHandling(self, ts, pos):
         """Check whether the current timestmap matches to the daily execute time.
-        Proceed to näiveHanlding if passed."""
+        Proceed to naiveHanlding if passed."""
         graph = ts.__class__.graph
 
         if datetime.fromtimestamp(ts.timestamp).time() in graph.getExecuteTime(
@@ -101,7 +101,7 @@ class UpdateStatus:
         else:
             return 'hold'
 
-        return self.näiveHandling(pos)
+        return self.naiveHandling(pos)
 
     def exactTimeHandling(self, ts, pos):
         """To be implemented"""
@@ -129,7 +129,7 @@ class UpdateStatus:
             return 'clear'
 
     # Todo change type(self) to appropriate object
-    def näiveHandling(self, pos):
+    def naiveHandling(self, pos):
         """Handle the broadcast as in original implementation."""
         if len(self.publishers) == 1:
             logger.debug(

@@ -113,12 +113,10 @@ class TSGraph:
     def updateBroadcastStatus(self, ts):
         """Update broadcast status of Timeseries after broadcasting. Called before
         actual broadcast proceeds."""
-        # print(f'\nUpdating {repr(ts)}...')
         self.graph.nodes[ts]['is_broadcasted'] = True
 
         # All source TS (i.e. open_buffer, timestamp etc.) has no incoming edges
         if self.inDegree(ts) == 0:
-            # print(f'this is a source {repr(ts)}')
 
             # recursively search all successors, mark them as not broadcasted
             for _, successors in self.dfsSuccessors(ts).items():
