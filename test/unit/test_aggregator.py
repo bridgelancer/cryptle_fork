@@ -25,17 +25,13 @@ def pushAltQuad():
 
 @pytest.fixture(scope='module')
 def data_pushing():
-    stick = CandleStick(1)
-    aggregator = DecoratedAggregator(1)
-    sma = SMA(stick.o, 7)
+    aggregator = DecoratedAggregator(5)
 
     bus = Bus()
     bus.bind(aggregator)
-    bus.bind(stick)
     bus.bind(pushTick)
 
-    pushAltQuad()
-    return sma, stick
+    return aggregator
 
 
 @pytest.fixture
@@ -96,13 +92,25 @@ def test_push_tick_with_empty_bars():
                     assert aggregator.last_open == alt_quad_shortened[i]
 
 
-def test_emit_aggregated_candle():
+def test_emit_aggregated_candle(data_pushing):
+    n = 5
+    # getting the aggregator implementation
+    aggregator = data_pushing.aggregator
+
+    for i, price in enumerate(alt_quad):
+        pushTick([price, i, 0, 0])
+        assert len(aggregator._bars) == i // n + 1
+
+        assert aggregator.last_low == min(alt_quad[i - i%n:i+1])
+        assert aggregator.last_high == max(alt_quad[i - i%n:i+1])
+        assert aggregator.last_open == alt_quad[i- i%n]
+        assert aggregator.last_close == alt_quad[i]
+
+@pytest.mark.skip(reason='not implemented')
+def test_emitAllMetrics():
     pass
 
 
-def test_emit_full_candle():
-    pass
-
-
-def test_push_all_metrics():
+@pytest.mark.skip(reason='not implemented')
+def test_emit_order():
     pass

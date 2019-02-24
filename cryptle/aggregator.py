@@ -31,6 +31,7 @@ class DecoratedAggregator:
             if bar is None:
                 logger.debug('No candle pushed for the first bar')
             else:
+                self._emitAllMetrics(*bar)
                 self._emitAggregatedCandle(bar)
 
     @on('candle')
