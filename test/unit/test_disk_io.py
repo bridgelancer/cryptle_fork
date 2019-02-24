@@ -13,7 +13,6 @@ from pathlib import Path
 from enum import Enum
 import datetime
 
-alt_quad = [(100 + ((-1) ** i) * (i / 4) ** 2) for i in range(1, 1000)]
 
 """Test module for testing the IO operation of DiskTS
 
@@ -23,6 +22,9 @@ Note:
     created after the successful execution of test_remove_files.
 
 """
+
+# loop till 999 for allowing caching to occur
+alt_quad = [(100 + ((-1) ** i) * (i / 4) ** 2) for i in range(1, 1000)]
 
 
 @source('tick')
@@ -41,21 +43,25 @@ aggregator2 = Aggregator(1)
 
 wma = WMA(stick2.o, 7)
 
-stick = CandleStick(1)
-sma = SMA(stick.o, 7)
 
-# modular fixture
-bus = Bus()
-bus.bind(aggregator)
-bus.bind(stick)
-bus.bind(pushTick)
+@pytest.fixture(scope='module')
+def data_pushing():
+    stick = CandleStick(1)
+    sma = SMA(stick.o, 7)
 
-pushAltQuad()
+    bus = Bus()
+    bus.bind(aggregator)
+    bus.bind(stick)
+    bus.bind(pushTick)
+
+    pushAltQuad()
+    return sma, stick
 
 
 @pytest.fixture
-def primary_ts():
+def primary_ts(data_pushing):
     """Return the Timeseries objects with cache written for checking"""
+    sma, stick = data_pushing
     return (sma, stick.o, stick.c, stick.h, stick.l, stick.v)
 
 
@@ -81,6 +87,7 @@ def assert_file_exists(current_time, histroot):
         Timeseries object to be checked after data pushing.
 
     """
+
     def _decorator(ts):
         dpath = None
         dirpaths = []
@@ -113,6 +120,7 @@ def check_end_state(assert_file_exists):
         Timeseries object to be checked after data pushing
 
     """
+
     def _decorator(ts):
         assert len(ts.hxtimeseries._cache) == 0
         assert len(ts.hxtimeseries.readCSV([], assert_file_exists(ts))) == 998
@@ -130,6 +138,7 @@ def clean_up(assert_file_exists, check_end_state):
         Timeseries object to be checked after data pushing.
 
     """
+
     def _decorator(ts):
         assert len(ts.hxtimeseries._cache) == 198
         assert len(ts.hxtimeseries.readCSV([], assert_file_exists(ts))) == 800
