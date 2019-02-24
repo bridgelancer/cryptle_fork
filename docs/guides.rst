@@ -686,7 +686,7 @@ So the following works:
 
    class FooStrat(Strategy):
       def __init__(self, period):
-         self.aggregator = Aggregator(period)
+         self.aggregator = DecoratedAggregator(period)
          self.stick = CandleStick(period)
          self.wma = WMA(self.stick.c, 5)
 
