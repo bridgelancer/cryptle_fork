@@ -1,5 +1,3 @@
-from cryptle.logging import *
-from cryptle.metric.base import Candle, Timeseries, MemoryTS, MultivariateTS, DiskTS
 from cryptle.metric.timeseries.sma import SMA
 from cryptle.metric.timeseries.wma import WMA
 from cryptle.metric.timeseries.candle import CandleStick
@@ -10,7 +8,6 @@ from cryptle.event import source, Bus
 import pytest
 import os
 from pathlib import Path
-from enum import Enum
 import datetime
 
 
