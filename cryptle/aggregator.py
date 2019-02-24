@@ -21,7 +21,7 @@ class DecoratedAggregator:
 
     """
 
-    def __init__(self, period, auto_prune=False, maxsize=500):
+    def __init__(self, period, auto_prune=True, maxsize=100):
         self.period = period
         self.aggregator = Aggregator(period, auto_prune, maxsize)
 
@@ -110,7 +110,7 @@ class Aggregator:
 
     """
 
-    def __init__(self, period, auto_prune=False, maxsize=500):
+    def __init__(self, period, auto_prune=True, maxsize=100):
         self.period = period
         self._bars = []  # this construct might be unnecessary
         self._auto_prune = auto_prune
