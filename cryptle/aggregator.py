@@ -179,6 +179,8 @@ class Aggregator:
             value, value, value, value, round_ts, volume, volume * action
         )
         self._bars.append(new_candle)
+        if self._auto_prune:
+            self._prune(self._maxsize)
 
         if len(self._bars) > 1:
             finished_candle = self._bars[-2]
@@ -189,6 +191,8 @@ class Aggregator:
         t = t - t % self.period
         new_candle = Candle(o, c, h, l, t, v, nv)
         self._bars.append(new_candle)
+        if self._auto_prune:
+            self._prune(self._maxsize)
 
         logger.debug(f'Pushed full candle {new_candle}.')
         return new_candle._bar
@@ -197,6 +201,8 @@ class Aggregator:
         round_ts = timestamp - timestamp % self.period
         new_candle = Candle(value, value, value, value, round_ts, 0, 0)
         self._bars.append(new_candle)
+        if self._auto_prune:
+            self._prune(self._maxsize)
         logger.debug(f'Pushed empty candle with timestamp {timestamp}')
         return new_candle._bar
 
