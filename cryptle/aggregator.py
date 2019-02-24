@@ -7,13 +7,21 @@ logger = logging.getLogger(__name__)
 
 class DecoratedAggregator:
     """ A wrapper for the actual aggregator implementation. Contains decorated aggergator functions
-    for decoupling implementation of aggregator from the use of Event bus."""
+    for decoupling implementation of aggregator from the use of Event bus.
+
+    Arg
+    ---
+    period: int
+        The number of seconds for a candle bar to span
+    auto_prune: boolean
+        Option to prune the caching by this class
+    maxsize: int
+        Number of bars to be stored if choosing auto_prune
+
+    """
 
     def __init__(self, period, auto_prune=False, maxsize=500):
         self.period = period
-        self._bars = []
-        self._auto_prune = auto_prune
-        self._maxsize = maxsize
         self.aggregator = Aggregator(period, auto_prune, maxsize)
 
     @on('tick')
@@ -151,7 +159,7 @@ class Aggregator:
         try:
             self._bars = self._bars[-size:]
         except IndexError:
-            raise ("Empty CandleBar cannot be pruned")
+            raise "Empty CandleBar cannot be pruned"
 
     def pushCandle(self, bar):
         """Provides public interface for accepting aggregated candles.
