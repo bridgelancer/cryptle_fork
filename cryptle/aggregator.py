@@ -6,8 +6,9 @@ logger = logging.getLogger(__name__)
 
 
 class DecoratedAggregator:
-    """ A wrapper for the actual aggregator implementation. Contains decorated aggergator functions
-    for decoupling implementation of aggregator from the use of Event bus.
+    """ A wrapper for the actual aggregator implementation. Contains decorated
+    aggergator functions for decoupling implementation of aggregator from the use of
+    Event bus.
 
     Arg
     ---
@@ -35,7 +36,7 @@ class DecoratedAggregator:
     @on('candle')
     def pushCandle(self, bar):
         candle = self.aggregator.pushCandle(bar)
-        self._pushAllMetrics(*bar)
+        self._emitAllMetrics(*bar)
         self._emitFullCandle(candle)
 
     @source('aggregator:new_candle')
@@ -46,7 +47,7 @@ class DecoratedAggregator:
     def _emitFullCandle(self, candle):
         return candle
 
-    def _pushAllMetrics(self, o, c, h, l, t, v, nv):
+    def _emitAllMetrics(self, o, c, h, l, t, v, nv):
         self._pushOpen(o)
         self._pushClose(c)
         self._pushHigh(h)
@@ -90,11 +91,12 @@ class DecoratedAggregator:
 class Aggregator:
     """An implementation of the generic candle aggregator.
 
-    Aggregator is a class that converts tick values of either prices or Timeseries values to candle
-    bar representation. It contains a subset of the functions of the CandleBar class in candle.py as
-    it handles the aggregation of tick data to bar representation. This class is also an extension
-    of the original CandleBar as it is designed to handle any tick-based value upon suitable wiring
-    of interfaces. This class could also accept bar representation of data.
+    Aggregator is a class that converts tick values of either prices or Timeseries
+    values to candle bar representation. It contains a subset of the functions of the
+    CandleBar class in candle.py as it handles the aggregation of tick data to bar
+    representation. This class is also an extension of the original CandleBar as it is
+    designed to handle any tick-based value upon suitable wiring of interfaces. This
+    class could also accept bar representation of data.
 
     Args
     ---
@@ -115,12 +117,16 @@ class Aggregator:
         self.last_timestamp = None
 
     def pushTick(self, data):
-        """Provides public interface for accepting ticks.
+        """Generator function that provides public interface for accepting ticks.
 
         Args
         ---
         data    : list
             list-based representation of a tick data in [value, volume, timestamp, action]
+
+        Note: To receive the outputs of this function, please loop through the generator
+        function returned.
+
         """
         if len(data) == 4:
             value, timestamp, volume, action = data
@@ -129,11 +135,11 @@ class Aggregator:
 
         self.last_timestamp = timestamp
 
-        # initialise the candle collection
+        # Initialize the candle collection
         if self.last_bar is None:
             yield self._pushInitCandle(value, timestamp, volume, action)
 
-        # if tick arrived before next bar, update current candle
+        # If tick arrived before next bar, update current candle
         if self._is_updated(timestamp):
             self.last_low = min(self.last_low, value)
             self.last_high = max(self.last_high, value)
@@ -141,6 +147,7 @@ class Aggregator:
             self.last_volume += volume
             self.last_netvol += volume * action
 
+        # If there is no tick arriving for the bars, yield empty bars
         else:
             while not self._is_updated(timestamp - self.period):
                 yield self._pushEmptyCandle(
@@ -189,22 +196,26 @@ class Aggregator:
 
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
         t = t - t % self.period
-        new_candle = Candle(o, c, h, l, t, v, nv)
-        self._bars.append(new_candle)
+        full_candle = Candle(o, c, h, l, t, v, nv)
+        self._bars.append(full_candle)
         if self._auto_prune:
             self._prune(self._maxsize)
 
-        logger.debug(f'Pushed full candle {new_candle}.')
-        return new_candle._bar
+        logger.debug(f'Pushed full candle {full_candle}.')
+        return full_candle._bar
 
     def _pushEmptyCandle(self, value, timestamp):
         round_ts = timestamp - timestamp % self.period
-        new_candle = Candle(value, value, value, value, round_ts, 0, 0)
-        self._bars.append(new_candle)
+        empty_candle = Candle(value, value, value, value, round_ts, 0, 0)
+        self._bars.append(empty_candle)
         if self._auto_prune:
             self._prune(self._maxsize)
         logger.debug(f'Pushed empty candle with timestamp {timestamp}')
-        return new_candle._bar
+
+        if len(self._bars) > 1:
+            finished_candle = self._bars[-2]
+            logger.debug(f'Returning the second last candle')
+            return finished_candle._bar
 
     @property
     def last_bar(self):
