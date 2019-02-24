@@ -55,6 +55,7 @@ pushAltQuad()
 
 @pytest.fixture
 def primary_ts():
+    """Return the Timeseries objects with cache written for checking"""
     return (sma, stick.o, stick.c, stick.h, stick.l, stick.v)
 
 
@@ -66,11 +67,20 @@ def histroot():
 
 @pytest.fixture
 def current_time():
+    """Return current time."""
     return datetime.datetime.now()
 
 
 @pytest.fixture
 def assert_file_exists(current_time, histroot):
+    """Assert file path of the executed Timeseries exists.
+
+    Args
+    ----
+    ts: Timeseries
+        Timeseries object to be checked after data pushing.
+
+    """
     def _decorator(ts):
         dpath = None
         dirpaths = []
@@ -95,6 +105,14 @@ def assert_file_exists(current_time, histroot):
 
 @pytest.fixture
 def check_end_state(assert_file_exists):
+    """Check the cleanup function of DiskTS and the corresponding IO integrity
+
+    Args
+    ----
+    ts: Timeseries
+        Timeseries object to be checked after data pushing
+
+    """
     def _decorator(ts):
         assert len(ts.hxtimeseries._cache) == 0
         assert len(ts.hxtimeseries.readCSV([], assert_file_exists(ts))) == 998
@@ -104,6 +122,14 @@ def check_end_state(assert_file_exists):
 
 @pytest.fixture
 def clean_up(assert_file_exists, check_end_state):
+    """Check the length of the ``_cache`` attribute of DiskTS after execution and cleaning up
+
+    Args
+    ----
+    ts: Timeseries
+        Timeseries object to be checked after data pushing.
+
+    """
     def _decorator(ts):
         assert len(ts.hxtimeseries._cache) == 198
         assert len(ts.hxtimeseries.readCSV([], assert_file_exists(ts))) == 800
