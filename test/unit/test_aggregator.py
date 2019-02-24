@@ -21,7 +21,7 @@ def decorated_aggregator():
     decorated_aggregator = DecoratedAggregator(5)
 
     bus = Bus()
-    bus.bind(aggregator)
+    bus.bind(decorated_aggregator)
     bus.bind(pushTick)
 
     return decorated_aggregator
@@ -43,7 +43,7 @@ def test_push_init_candle():
 def test_push_tick():
     """Asserting aggregation correctness for each tick pushed"""
     n = 5
-    aggregator = Aggregator(n)
+    aggregator = Aggregator(n, auto_prune=False)
 
     for i, price in enumerate(alt_quad):
         for bar in aggregator.pushTick([price, i, 0, 0]):
@@ -85,12 +85,29 @@ def test_emit_aggregated_candle(decorated_aggregator):
 
     for i, price in enumerate(alt_quad):
         pushTick([price, i, 0, 0])
-        assert len(aggregator._bars) == i // n + 1
+        assert len(aggregator._bars) <= 100
 
         assert aggregator.last_low == min(alt_quad[i - i % n : i + 1])
         assert aggregator.last_high == max(alt_quad[i - i % n : i + 1])
         assert aggregator.last_open == alt_quad[i - i % n]
         assert aggregator.last_close == alt_quad[i]
+
+def test_auto_prune():
+    n = 5
+    aggregator = Aggregator(n, auto_prune=True, maxsize=20)
+
+    for i, price in enumerate(alt_quad):
+        for bar in aggregator.pushTick([price, i, 0, 0]):
+            if bar is None:
+                assert len(aggregator._bars) == 1
+            else:
+                assert bar == aggregator._bars[-2]._bar
+                assert len(aggregator._bars) <= 20
+
+                assert aggregator.last_low == min(alt_quad[i - i % n : i + 1])
+                assert aggregator.last_high == max(alt_quad[i - i % n : i + 1])
+                assert aggregator.last_open == alt_quad[i - i % n]
+                assert aggregator.last_close == alt_quad[i]
 
 
 @pytest.mark.skip(reason='not implemented')
