@@ -474,8 +474,12 @@ class MemoryTS(Metric):
                     prune_type = DiskTS.prune
 
                 if isinstance(self._ts, Timeseries):
-                    if self._ts.value is not None:
-                        self._cache.append(float(self._ts))
+                    # recursively check self._ts.value type and see if it is TS
+                    x = self._ts.value
+                    while isinstance(x, Timeseries):
+                        x = x.value
+                    if x is not None:
+                        self._cache.append(float(self._ts.value))
 
                 elif isinstance(self._ts, tuple):
                     buffer = []
