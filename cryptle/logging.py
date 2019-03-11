@@ -35,6 +35,71 @@ logging.addLevelName(logging.SIGNAL, 'SIGNAL')
 logging.addLevelName(logging.METRIC, 'METRIC')
 logging.addLevelName(logging.TICK, 'TICK')
 
+# Logging level largely referenced from the python standard library
+CRITICAL = 50
+FATAL = CRITICAL
+ERROR = 40
+WARNING = 30
+WARN = WARNING
+INFO = 20
+DEBUG = 10
+NOTSET = 0
+
+# Self-defined logging level
+logging.REPORT = REPORT = 25
+logging.SIGNAL = SIGNAL = 15
+logging.METRIC = METRIC = 13
+logging.TICK = TICK = 5
+
+# Following cookbook recipe
+library_factory = logging.getLogRecordFactory()
+
+# This would provide the callable to replace the _logRecordFactory
+def record_factory(*args, **kwargs):
+    new_factory = library_factory
+    new_factory.getMessage = _logrecord_getmessage_fix
+    print('record_factory in coming')
+    return new_factory(*args, **kwargs)
+
+
+_logRecordFactory = record_factory
+
+# This is essential to use module _logRecordFactory defined instead of overwriting the
+# one in library
+
+libary_logger = logging.Logger
+
+logging.addLevelName(SIGNAL, 'SIGNAL')
+
+
+def makeRecord(
+    self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None
+):
+    """
+    A factory method which can be overridden in subclasses to create
+    specialized LogRecords.
+    """
+    rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
+    if extra is not None:
+        for key in extra:
+            if (key in ["message", "asctime"]) or (key in rv.__dict__):
+                raise KeyError("Attempt to overwrite %r in LogRecord" % key)
+            rv.__dict__[key] = extra[key]
+    return rv
+
+
+libary_logger.makeRecord = makeRecord
+
+FileHandler = logging.FileHandler
+StreamHandler = logging.StreamHandler
+
+
+def getLogger(name=None):
+    if name:
+        return libary_logger.manager.getLogger(name)
+    else:
+        return logging.RootLogger(logging.WARNING)
+
 
 def _report(self, message, *args, **kargs):
     if self.isEnabledFor(logging.REPORT):
@@ -56,12 +121,10 @@ def _tick(self, message, *args, **kargs):
         self._log(logging.TICK, message, args, **kargs)
 
 
-logging.Logger.report = _report
 logging.Logger.signal = _signal
+logging.Logger.report = _report
 logging.Logger.metric = _metric
 logging.Logger.tick = _tick
-
-
 # Monkey patch LogRecord.getMessage() method in logging module
 def _logrecord_getmessage_fix(self):
     msg = str(self.msg)
