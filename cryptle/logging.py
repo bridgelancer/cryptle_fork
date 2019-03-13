@@ -95,7 +95,6 @@ class Logger(logging.Logger):
         """
         Overriden method of the logging.Logger with modified record_factory
         """
-        print('making record in package...')
         rv = record_factory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
         if extra is not None:
             for key in extra:
@@ -161,13 +160,11 @@ class Manager(logging.Manager):
                     self.loggerDict[name] = rv
                     self._fixupChildren(ph, rv)
                     self._fixupParents(rv)
-                print('in manager getLogger: if block', rv, type(rv))
             else:
                 rv = (self.loggerClass or Logger)(name)
                 rv.manager = self
                 self.loggerDict[name] = rv
                 self._fixupParents(rv)
-                print('in manager getLogger: else block', rv, type(rv))
         finally:
             _releaseLock()
         return rv
@@ -182,7 +179,6 @@ class Manager(logging.Manager):
         while (i > 0) and not rv:
             substr = name[:i]
             if substr not in self.loggerDict:
-                print('in package _fixupParents\n')
                 self.loggerDict[substr] = PlaceHolder(alogger)
             else:
                 obj = self.loggerDict[substr]
