@@ -132,7 +132,7 @@ class AggregatorImplementation:
 
         # initialise the candle collection
         if self.last_bar is None:
-            logger.debug('Pushed the first candle')
+            logger.debug(f'Pushed the first candle {data}')
             return self._pushInitCandle(value, timestamp, volume, action)
 
         # if tick arrived before next bar, update current candle
