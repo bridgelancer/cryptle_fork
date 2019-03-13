@@ -27,6 +27,10 @@ import threading
 import sys
 
 
+#--------------------------------------------------------------------------------------
+#   Adoption of standard library logger to cryptle.logging.Logger
+#--------------------------------------------------------------------------------------
+
 logging.REPORT = 25
 logging.SIGNAL = 15
 logging.METRIC = 13
@@ -36,7 +40,7 @@ logging.addLevelName(logging.SIGNAL, 'SIGNAL')
 logging.addLevelName(logging.METRIC, 'METRIC')
 logging.addLevelName(logging.TICK, 'TICK')
 
-# Logging level largely referenced from the python standard library
+# Logging level referenced from the python standard library
 CRITICAL = 50
 FATAL = CRITICAL
 ERROR = 40
@@ -52,10 +56,10 @@ logging.SIGNAL = SIGNAL = 15
 logging.METRIC = METRIC = 13
 logging.TICK = TICK = 5
 
-# Following cookbook recipe
+# Following cookbook recipe of logging-HOWTO
 library_factory = logging.getLogRecordFactory()
 
-# This would provide the callable to replace the _logRecordFactory
+# This would provide the callable to replace the _logRecordFactory of custom Logger
 def record_factory(*args, **kwargs):
     new_factory = library_factory
     new_factory.getMessage = _logrecord_getmessage_fix
@@ -84,7 +88,6 @@ class Logger(logging.Logger):
         self.propagate = True
         self.handlers = []
         self.disabled = False
-        print(f'initializing custom logger {name}')
         super().__init__(name, level)
 
     # Essential to use module _logRecordFactory defined instead of overwriting the one
@@ -96,7 +99,7 @@ class Logger(logging.Logger):
         A factory method which can be overridden in subclasses to create
         specialized LogRecords.
         """
-        print('making record')
+        print('making record in package...')
         rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
         if extra is not None:
             for key in extra:
@@ -108,8 +111,6 @@ class Logger(logging.Logger):
 
 FileHandler = logging.FileHandler
 StreamHandler = logging.StreamHandler
-
-print(id(_logRecordFactory))
 
 def getLogger(name=None):
     if name:
@@ -143,6 +144,9 @@ def _releaseLock():
 # Custom manager
 class Manager(logging.Manager):
 
+    def __init__(self, rootnode):
+        super().__init__(rootnode)
+
     def getLogger(self, name):
         """
         Get a logger with the specified name (channel name), creating it
@@ -161,25 +165,50 @@ class Manager(logging.Manager):
         try:
             if name in self.loggerDict:
                 rv = self.loggerDict[name]
-                if isinstance(rv, logging.PlaceHolder):
+                if isinstance(rv, PlaceHolder):
                     ph = rv
                     rv = (self.loggerClass or Logger)(name)
                     rv.manager = self
                     self.loggerDict[name] = rv
                     self._fixupChildren(ph, rv)
                     self._fixupParents(rv)
-                print('in manager getlogger', rv, isinstance(rv, logging.PlaceHolder))
+                print('in manager getlogger: if block', rv, type(rv))
             else:
                 rv = (self.loggerClass or Logger)(name)
                 rv.manager = self
                 self.loggerDict[name] = rv
                 self._fixupParents(rv)
+                print('in manager getlogger: else block', rv, type(rv))
+            print(self.loggerDict)
         finally:
             _releaseLock()
         print(rv)
         return rv
 
-
+    def _fixupParents(self, alogger):
+        """
+        Ensure that there are either loggers or placeholders all the way
+        from the specified logger to the root of the logger hierarchy.
+        """
+        name = alogger.name
+        i = name.rfind(".")
+        rv = None
+        while (i > 0) and not rv:
+            substr = name[:i]
+            if substr not in self.loggerDict:
+                print('in package _fixupParents\n')
+                self.loggerDict[substr] = PlaceHolder(alogger)
+            else:
+                obj = self.loggerDict[substr]
+                if isinstance(obj, Logger):
+                    rv = obj
+                else:
+                    assert isinstance(obj, PlaceHolder)
+                    obj.append(alogger)
+            i = name.rfind(".", 0, i - 1)
+        if not rv:
+            rv = self.root
+        alogger.parent = rv
 
 class RootLogger(Logger):
     """
@@ -218,7 +247,6 @@ class PlaceHolder(object):
         if alogger not in self.loggerMap:
             self.loggerMap[alogger] = None
 
-
 def _report(self, message, *args, **kargs):
     if self.isEnabledFor(logging.REPORT):
         self._log(logging.REPORT, message, args, **kargs)
@@ -243,7 +271,8 @@ logging.Logger.signal = _signal
 logging.Logger.report = _report
 logging.Logger.metric = _metric
 logging.Logger.tick = _tick
-# Monkey patch LogRecord.getMessage() method in logging module
+
+#--------------------------------------------------------------------------------------
 def _logrecord_getmessage_fix(self):
     msg = str(self.msg)
     if self.args:
