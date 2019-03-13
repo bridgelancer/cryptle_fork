@@ -3,7 +3,7 @@ from cryptle.event import on, Bus
 
 """ Temporary solution for passing timestamp to various Timeseries object """
 
-import logging
+import cryptle.logging as logging
 
 logger = logging.getLogger(__name__)
 

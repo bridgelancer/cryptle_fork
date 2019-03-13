@@ -58,7 +58,6 @@ library_factory = logging.getLogRecordFactory()
 def record_factory(*args, **kwargs):
     new_factory = library_factory
     new_factory.getMessage = _logrecord_getmessage_fix
-    print('record_factory in coming')
     return new_factory(*args, **kwargs)
 
 

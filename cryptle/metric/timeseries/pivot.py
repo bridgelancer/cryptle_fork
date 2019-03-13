@@ -1,6 +1,6 @@
 from cryptle.metric.base import Timeseries, MemoryTS
 
-import logging
+import cryptle.logging as logging
 
 logger = logging.getLogger(__name__)
 

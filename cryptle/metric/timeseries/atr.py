@@ -1,7 +1,7 @@
 from cryptle.metric.base import MultivariateTS, GenericTS
 import numpy as np
 
-import logging
+import cryptle.logging as logging
 
 logger = logging.getLogger(__name__)
 

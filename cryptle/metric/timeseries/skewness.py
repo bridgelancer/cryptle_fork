@@ -1,7 +1,7 @@
 from cryptle.metric.base import Timeseries, MemoryTS
 import scipy.stats as sp
 
-import logging
+import cryptle.logging as logging
 
 logger = logging.getLogger(__name__)
 

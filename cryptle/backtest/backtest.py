@@ -6,7 +6,7 @@ from cryptle.event import source, Bus
 
 import json
 import csv
-import logging
+import cryptle.logging as logging
 
 logger = logging.getLogger(__name__)
 

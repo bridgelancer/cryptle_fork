@@ -14,7 +14,7 @@ Note:
 
 
 import bisect
-import logging
+import cryptle.logging as logging
 from collections import defaultdict
 from typing import Set, Tuple, List, Dict, Union
 

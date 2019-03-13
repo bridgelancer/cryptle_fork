@@ -1,5 +1,5 @@
 import inspect
-import logging
+import cryptle.logging as logging
 import threading
 import warnings
 from functools import update_wrapper

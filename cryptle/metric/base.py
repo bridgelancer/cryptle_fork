@@ -12,7 +12,7 @@ to prevent excessive memory usage during runtime.
 from functools import wraps
 from collections import OrderedDict
 
-import logging
+import cryptle.logging as logging
 import csv
 import os
 from pathlib import Path

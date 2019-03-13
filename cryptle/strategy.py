@@ -1,6 +1,6 @@
 """Strategy base classes and related core componets."""
 
-import logging
+import cryptle.logging as logging
 from collections import defaultdict
 
 

@@ -1,6 +1,6 @@
 from cryptle.metric.base import GenericTS, MultivariateTS
 
-import logging
+import cryptle.logging as logging
 import numpy as np
 
 logger = logging.getLogger(__name__)

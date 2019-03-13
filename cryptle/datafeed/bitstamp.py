@@ -1,7 +1,7 @@
 import sys
 import time
 import json
-import logging
+import cryptle.logging as logging
 import traceback
 from threading import Thread
 from collections import defaultdict

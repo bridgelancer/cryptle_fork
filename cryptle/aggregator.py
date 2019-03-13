@@ -1,4 +1,4 @@
-import logging
+import cryptle.logging as logging
 from cryptle.metric.base import Candle
 from cryptle.event import source, on, Bus
 
