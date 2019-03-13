@@ -66,29 +66,38 @@ _logRecordFactory = record_factory
 # This is essential to use module _logRecordFactory defined instead of overwriting the
 # one in library
 
-library_logger = logging.Logger
 
 logging.addLevelName(SIGNAL, 'SIGNAL')
 
 
-# Monkey patching library_logger's makeRecord method to use the factory
-def makeRecord(
-    self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None
-):
-    """
-    A factory method which can be overridden in subclasses to create
-    specialized LogRecords.
-    """
-    rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
-    if extra is not None:
-        for key in extra:
-            if (key in ["message", "asctime"]) or (key in rv.__dict__):
-                raise KeyError("Attempt to overwrite %r in LogRecord" % key)
-            rv.__dict__[key] = extra[key]
-    return rv
+class Logger(logging.Logger):
 
+    def __init__(self):
+        super().__init__()
 
-library_logger.makeRecord = makeRecord
+    # Monkey patching library_logger's makeRecord method to use the factory
+    def makeRecord(
+        self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None
+    ):
+        """
+        A factory method which can be overridden in subclasses to create
+        specialized LogRecords.
+        """
+        rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
+        if extra is not None:
+            for key in extra:
+                if (key in ["message", "asctime"]) or (key in rv.__dict__):
+                    raise KeyError("Attempt to overwrite %r in LogRecord" % key)
+                rv.__dict__[key] = extra[key]
+        return rv
+
+# Should be different but smae for now
+print(id(Logger))
+print(id(logging.Logger))
+
+# Should be different but smae for now
+print(id(Logger.makeRecord))
+print(id(logging.Logger.makeRecord))
 
 FileHandler = logging.FileHandler
 StreamHandler = logging.StreamHandler
@@ -96,7 +105,7 @@ StreamHandler = logging.StreamHandler
 
 def getLogger(name=None):
     if name:
-        return library_logger.manager.getLogger(name)
+        return Logger.manager.getLogger(name)
     else:
         return logging.RootLogger(logging.WARNING)
 
