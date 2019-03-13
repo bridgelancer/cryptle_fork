@@ -27,9 +27,9 @@ import threading
 import sys
 
 
-#--------------------------------------------------------------------------------------
-#   Adoption of standard library logger to cryptle.logging.Logger
-#--------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+#   Adoption of standard python logging library Logger to cryptle.logging.Logger
+# --------------------------------------------------------------------------------------
 
 logging.REPORT = 25
 logging.SIGNAL = 15
@@ -51,56 +51,42 @@ DEBUG = 10
 NOTSET = 0
 
 # Self-defined logging level
+# Todo(MC): Consider whether to add this to source or to package instead
 logging.REPORT = REPORT = 25
 logging.SIGNAL = SIGNAL = 15
 logging.METRIC = METRIC = 13
 logging.TICK = TICK = 5
 
-# Following cookbook recipe of logging-HOWTO
-library_factory = logging.getLogRecordFactory()
-
+# Following python logging HOW-TO recipe
 # This would provide the callable to replace the _logRecordFactory of custom Logger
 def record_factory(*args, **kwargs):
-    new_factory = library_factory
+    new_factory = logging.getLogRecordFactory()
     new_factory.getMessage = _logrecord_getmessage_fix
     return new_factory(*args, **kwargs)
 
 
-_logRecordFactory = record_factory
-
-def _checkLevel(level):
-    if isinstance(level, int):
-        rv = level
-    elif str(level) == level:
-        if level not in _nameToLevel:
-            raise ValueError("Unknown level: %r" % level)
-        rv = _nameToLevel[level]
-    else:
-        raise TypeError("Level not an integer or a valid string: %r" % level)
-    return rv
-
 class Logger(logging.Logger):
-
     def __init__(self, name, level=NOTSET):
-        self.name = name
-        self.level = _checkLevel(level)
-        self.parent = None
-        self.propagate = True
-        self.handlers = []
-        self.disabled = False
         super().__init__(name, level)
 
-    # Essential to use module _logRecordFactory defined instead of overwriting the one
-    # in library
     def makeRecord(
-        self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None
+        self,
+        name,
+        level,
+        fn,
+        lno,
+        msg,
+        args,
+        exc_info,
+        func=None,
+        extra=None,
+        sinfo=None,
     ):
         """
-        A factory method which can be overridden in subclasses to create
-        specialized LogRecords.
+        Overriden method of the logging.Logger with modified record_factory
         """
         print('making record in package...')
-        rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
+        rv = record_factory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
         if extra is not None:
             for key in extra:
                 if (key in ["message", "asctime"]) or (key in rv.__dict__):
@@ -108,55 +94,45 @@ class Logger(logging.Logger):
                 rv.__dict__[key] = extra[key]
         return rv
 
+    def __repr__(self):
+        level = logging.getLevelName(self.level)
+        return f'<{self.__module__}.{self.__class__.__name__} {level}>'
 
-FileHandler = logging.FileHandler
-StreamHandler = logging.StreamHandler
+
+def _logrecord_getmessage_fix(self):
+    msg = str(self.msg)
+    if self.args:
+        msg = msg.format(*self.args)
+    return msg
+
 
 def getLogger(name=None):
     if name:
         return Logger.manager.getLogger(name)
     else:
-        return logging.RootLogger(logging.WARNING)
+        return RootLogger(WARNING)
+
 
 # Threading-related stuff
 if threading:
     _lock = threading.RLock()
-else: #pragma: no cover
+else:  # pragma: no cover
     _lock = None
 
 
-def _acquireLock():
-    """
-    Acquire the module-level lock for serializing access to shared data.
+_acquireLock = logging._acquireLock
+_releaseLock = logging._releaseLock
 
-    This should be released with _releaseLock().
-    """
-    if _lock:
-        _lock.acquire()
-
-def _releaseLock():
-    """
-    Release the module-level lock acquired by calling _acquireLock().
-    """
-    if _lock:
-        _lock.release()
 
 # Custom manager
 class Manager(logging.Manager):
-
     def __init__(self, rootnode):
         super().__init__(rootnode)
 
+    # For patching references to PlaceHolder and global var in python logging library
     def getLogger(self, name):
         """
-        Get a logger with the specified name (channel name), creating it
-        if it doesn't yet exist. This name is a dot-separated hierarchical
-        name, such as "a", "a.b", "a.b.c" or similar.
-
-        If a PlaceHolder existed for the specified name [i.e. the logger
-        didn't exist but a child of it did], replace it with the created
-        logger and fix up the parent/child references which pointed to the
-        placeholder to now point to the logger.
+        Semantically equivalent to the python standard logging library
         """
         rv = None
         if not isinstance(name, str):
@@ -172,19 +148,18 @@ class Manager(logging.Manager):
                     self.loggerDict[name] = rv
                     self._fixupChildren(ph, rv)
                     self._fixupParents(rv)
-                print('in manager getlogger: if block', rv, type(rv))
+                print('in manager getLogger: if block', rv, type(rv))
             else:
                 rv = (self.loggerClass or Logger)(name)
                 rv.manager = self
                 self.loggerDict[name] = rv
                 self._fixupParents(rv)
-                print('in manager getlogger: else block', rv, type(rv))
-            print(self.loggerDict)
+                print('in manager getLogger: else block', rv, type(rv))
         finally:
             _releaseLock()
-        print(rv)
         return rv
 
+    # For patching references to PlaceHolder and global var in python logging library
     def _fixupParents(self, alogger):
         """
         Ensure that there are either loggers or placeholders all the way
@@ -210,17 +185,10 @@ class Manager(logging.Manager):
             rv = self.root
         alogger.parent = rv
 
-class RootLogger(Logger):
-    """
-    A root logger is not that different to any other logger, except that
-    it must have a logging level and there is only one instance of it in
-    the hierarchy.
-    """
-    def __init__(self, level):
-        """
-        Initialize the logger with the name "root".
-        """
-        Logger.__init__(self, "root", level)
+
+# Providing the RootLogger necessary for the package Logger class
+class RootLogger(logging.RootLogger):
+    pass
 
 # For giving custom Logger instance a custom Manger
 root = RootLogger(WARNING)
@@ -228,24 +196,11 @@ Logger.root = root
 Logger.manager = Manager(Logger.root)
 
 
-class PlaceHolder(object):
-    """
-    PlaceHolder instances are used in the Manager logger hierarchy to take
-    the place of nodes for which no loggers have been defined. This class is
-    intended for internal use only and not as part of the public API.
-    """
-    def __init__(self, alogger):
-        """
-        Initialize with the specified logger being a child of this placeholder.
-        """
-        self.loggerMap = { alogger : None }
+class PlaceHolder(logging.PlaceHolder):
+    pass
 
-    def append(self, alogger):
-        """
-        Add the specified logger as a child of this placeholder.
-        """
-        if alogger not in self.loggerMap:
-            self.loggerMap[alogger] = None
+FileHandler = logging.FileHandler
+StreamHandler = logging.StreamHandler
 
 def _report(self, message, *args, **kargs):
     if self.isEnabledFor(logging.REPORT):
@@ -267,19 +222,14 @@ def _tick(self, message, *args, **kargs):
         self._log(logging.TICK, message, args, **kargs)
 
 
+# Todo(MC): Consider whether to add this to source or to package instead
 logging.Logger.signal = _signal
 logging.Logger.report = _report
 logging.Logger.metric = _metric
 logging.Logger.tick = _tick
 
-#--------------------------------------------------------------------------------------
-def _logrecord_getmessage_fix(self):
-    msg = str(self.msg)
-    if self.args:
-        msg = msg.format(*self.args)
-    return msg
 
-
+# --------------------------------------------------------------------------------------
 class DebugFormatter(logging.Formatter):
     """Create detailed and machine parsable log messages."""
 
@@ -333,42 +283,40 @@ class ColorFormatter(logging.Formatter):
         return record
 
     def _get_color(self, record):
-        if record.levelno >= logging.ERROR:
+        if record.levelno >= ERROR:
             return self.RED
-        elif record.levelno >= logging.WARNING:
+        elif record.levelno >= WARNING:
             return self.YELLOW
-        elif record.levelno >= logging.INFO:
+        elif record.levelno >= INFO:
             return self.GREEN
         else:
             return self.BLUE
 
 
-def make_logger(name, *handlers, level=logging.DEBUG):
+def make_logger(name, *handlers, level=DEBUG):
     """Attach handles to new logger"""
-    logger = logging.getLogger(name)
+    logger = getLogger(name)
     logger.setLevel(level)
     for h in handlers:
         logger.addHandler(h)
     return logger
 
 
-def get_filehandler(fname, level=logging.DEBUG, formatter=DebugFormatter()):
-    fh = logging.FileHandler(fname)
+def get_filehandler(fname, level=DEBUG, formatter=DebugFormatter()):
+    fh = FileHandler(fname)
     fh.setLevel(level)
     fh.setFormatter(formatter)
     return fh
 
 
-def get_streamhandler(
-    stream=sys.stdout, level=logging.INFO, formatter=ColorFormatter()
-):
-    sh = logging.StreamHandler(stream=sys.stdout)
+def get_streamhandler(stream=sys.stdout, level=INFO, formatter=ColorFormatter()):
+    sh = StreamHandler(stream=sys.stdout)
     sh.setLevel(level)
     sh.setFormatter(formatter)
     return sh
 
 
-def configure_root_logger(file, flvl=logging.DEBUG, slvl=logging.REPORT) -> None:
+def configure_root_logger(file, flvl=DEBUG, slvl=REPORT) -> None:
     """Helper routine to setup root logger with file and stream handlers.
 
     Adds a file handler and stream handler to the root logger. These handlers
@@ -384,15 +332,15 @@ def configure_root_logger(file, flvl=logging.DEBUG, slvl=logging.REPORT) -> None
         Log level of the stream handler
 
     """
-    fh = logging.FileHandler('papertrade.log', mode='w')
+    fh = FileHandler('papertrade.log', mode='w')
     fh.setLevel(flvl)
-    fh.setFormatter(cryptle.logging.DebugFormatter())
+    fh.setFormatter(cryptle.DebugFormatter())
 
-    sh = logging.StreamHandler()
+    sh = StreamHandler()
     sh.setLevel(slvl)
-    sh.setFormatter(cryptle.logging.ColorFormatter())
+    sh.setFormatter(cryptle.ColorFormatter())
 
-    root = logging.getLogger()
+    root = getLogger()
     root.addHandler(sh)
     root.addHandler(fh)
     root.setLevel(flvl)
