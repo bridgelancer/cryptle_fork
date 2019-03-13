@@ -142,9 +142,6 @@ def _logrecord_getmessage_fix(self):
     return msg
 
 
-logging.LogRecord.getMessage = _logrecord_getmessage_fix
-
-
 class DebugFormatter(logging.Formatter):
     """Create detailed and machine parsable log messages."""
 
