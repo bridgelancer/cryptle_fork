@@ -66,11 +66,12 @@ _logRecordFactory = record_factory
 # This is essential to use module _logRecordFactory defined instead of overwriting the
 # one in library
 
-libary_logger = logging.Logger
+library_logger = logging.Logger
 
 logging.addLevelName(SIGNAL, 'SIGNAL')
 
 
+# Monkey patching library_logger's makeRecord method to use the factory
 def makeRecord(
     self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None
 ):
@@ -87,7 +88,7 @@ def makeRecord(
     return rv
 
 
-libary_logger.makeRecord = makeRecord
+library_logger.makeRecord = makeRecord
 
 FileHandler = logging.FileHandler
 StreamHandler = logging.StreamHandler
@@ -95,7 +96,7 @@ StreamHandler = logging.StreamHandler
 
 def getLogger(name=None):
     if name:
-        return libary_logger.manager.getLogger(name)
+        return library_logger.manager.getLogger(name)
     else:
         return logging.RootLogger(logging.WARNING)
 
