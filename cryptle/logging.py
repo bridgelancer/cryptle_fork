@@ -203,7 +203,7 @@ class RootLogger(logging.RootLogger):
 
 
 # For giving custom Logger instance a custom Manger
-root = logging.RootLogger(WARNING)
+root = RootLogger(WARNING)
 Logger.root = root
 Logger.manager = Manager(Logger.root)
 
