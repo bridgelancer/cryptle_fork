@@ -1,26 +1,36 @@
 """
-This module defines custom log levels for trading events, monkey patch the
-standard logging module, and provide logging related helpers. The custom level
-sare all defined with severity below logging.WARNING as listed:
+This module provides package-wide logging facility and defines custom log levels for
+trading events.
+
+The implementation of the package Logger largely based on the `standard logging library
+of python <https://docs.python.org/3.5/logging.html>`_. The principle of this extensive
+patching approach is to exercise the developers preferences to logging while
+simultaneously preserving the integrity of standard library source that other
+third-party libraries might depend on.
+
+The custom level share all defined with severity below logging.WARNING as listed:
 
 - REPORT  25
+--INFO    20--
 - SIGNAL  15
 - METRIC  13
 - TICK    5
 
-When cryptle.logging is imported in any one of the modules in a python
-application, loggers created from logging.getLogger will be monkey patched to
-have a log method for each corresponding log level described above. Cryptle
-internally uses `str.format()
-<https://docs.python.org/3/library/string.html#formatstrings>`_ format string
-syntax for log messages. Hence the method `getMessage
-<https://docs.python.org/3/library/logging.html#logging.LogRecord.getMessage>`_
-of LogRecord is monkey patched as well.
+When cryptle.logging is imported in any one of the modules in a python application,
+loggers created from cryptle.logging.getLogger will, in addition to the standard logging
+facilities provided by the standard, extra log method for each corresponding log level
+described above. Users are suggested to use cryptle.logging universally for logging when
+developing in the Cryptle framework. Uses of the standard logging libary is discouraged.
+
+Cryptle internally uses `str.format()
+<https://docs.python.org/3/library/string.html#formatstrings>`_ format string syntax for
+log messages. To encapsulate and limit this change to the package level, a Logger class
+and related structures of the standard library are subclassed and patched.
 
 Default formatters subclassed from `logging.Formatter
 <https://docs.python.org/3/library/logging.html#logging.Formatter>`_ provide a
 unified log format for cryptle. A number of helper functions setup the root
-logger with sensible defaults, tailored for paper-trading and live-trading.
+logger with sensible defaults.
 """
 import logging
 import threading
@@ -100,13 +110,17 @@ class Logger(logging.Logger):
 
 
 def _logrecord_getmessage_fix(self):
+    """Patching for fstring use in Cryptle"""
+
     msg = str(self.msg)
     if self.args:
         msg = msg.format(*self.args)
     return msg
 
 
+# For patching references to PlaceHolder and RootLogger in python logging library
 def getLogger(name=None):
+    """Semantically equivalent to the python standard logging library"""
     if name:
         return Logger.manager.getLogger(name)
     else:
@@ -131,9 +145,8 @@ class Manager(logging.Manager):
 
     # For patching references to PlaceHolder and global var in python logging library
     def getLogger(self, name):
-        """
-        Semantically equivalent to the python standard logging library
-        """
+        """Semantically equivalent to the python standard logging library"""
+
         rv = None
         if not isinstance(name, str):
             raise TypeError('A logger name must be a string')
@@ -161,10 +174,8 @@ class Manager(logging.Manager):
 
     # For patching references to PlaceHolder and global var in python logging library
     def _fixupParents(self, alogger):
-        """
-        Ensure that there are either loggers or placeholders all the way
-        from the specified logger to the root of the logger hierarchy.
-        """
+        """Semantically equivalent to the python standard logging library"""
+
         name = alogger.name
         i = name.rfind(".")
         rv = None
@@ -186,12 +197,13 @@ class Manager(logging.Manager):
         alogger.parent = rv
 
 
-# Providing the RootLogger necessary for the package Logger class
+# For patching references to Logger in python logging library
 class RootLogger(logging.RootLogger):
     pass
 
+
 # For giving custom Logger instance a custom Manger
-root = RootLogger(WARNING)
+root = logging.RootLogger(WARNING)
 Logger.root = root
 Logger.manager = Manager(Logger.root)
 
@@ -199,8 +211,10 @@ Logger.manager = Manager(Logger.root)
 class PlaceHolder(logging.PlaceHolder):
     pass
 
+
 FileHandler = logging.FileHandler
 StreamHandler = logging.StreamHandler
+
 
 def _report(self, message, *args, **kargs):
     if self.isEnabledFor(logging.REPORT):
@@ -332,7 +346,7 @@ def configure_root_logger(file, flvl=DEBUG, slvl=REPORT) -> None:
         Log level of the stream handler
 
     """
-    fh = FileHandler('papertrade.log', mode='w')
+    fh = FileHandler(file, mode='w')
     fh.setLevel(flvl)
     fh.setFormatter(cryptle.DebugFormatter())
 
