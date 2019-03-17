@@ -13,7 +13,7 @@ calculating their own values.
 
 """
 
-import logging
+import cryptle.logging as logging
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,5 @@
 from cryptle.metric.base import Timeseries
-import logging
+import cryptle.logging as logging
 
 logger = logging.getLogger(__name__)
 

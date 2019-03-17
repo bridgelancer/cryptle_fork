@@ -1,4 +1,4 @@
-import logging
+import cryptle.logging as logging
 from collections import OrderedDict
 
 from cryptle.event import source, on, Bus

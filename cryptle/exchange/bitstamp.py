@@ -1,7 +1,7 @@
 import hmac
 import json
 import hashlib
-import logging
+import cryptle.logging as logging
 from time import sleep, time as now
 from threading import Thread
 

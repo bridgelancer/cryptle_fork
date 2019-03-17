@@ -3,7 +3,7 @@ import sys
 import json
 import time
 import socket
-import logging
+import cryptle.logging as logging
 import traceback
 from enum import Enum
 from threading import Thread

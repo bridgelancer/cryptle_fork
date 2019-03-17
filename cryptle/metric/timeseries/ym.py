@@ -1,4 +1,4 @@
-import logging
+import cryptle.logging as logging
 import math
 
 from cryptle.metric.base import Timeseries, MemoryTS

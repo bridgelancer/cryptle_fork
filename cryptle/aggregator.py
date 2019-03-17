@@ -1,4 +1,4 @@
-import logging
+import cryptle.logging as logging
 from cryptle.metric.base import Candle
 from cryptle.event import source, on, Bus
 
@@ -50,9 +50,8 @@ class Aggregator:
 
         # initialise the candle collection
         if self.last_bar is None:
-            self._pushInitCandle(value, timestamp, volume, action)
-            logger.debug('Pushed the first candle')
-            return
+            logger.debug(f'Pushed the first candle {data}')
+            return self._pushInitCandle(value, timestamp, volume, action)
 
         # if tick arrived before next bar, update current candle
         if self._is_updated(timestamp):
