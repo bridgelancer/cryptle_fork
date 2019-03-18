@@ -16,7 +16,7 @@ class Aggregator:
         self._maxsize = maxsize
         self.aggregator = AggregatorImplementation(period, auto_prune, maxsize)
 
-    @on('tick')
+    #@on('tick')
     def pushTick(self, data):
         bar = self.aggregator.pushTick(data)
         if bar is None:
@@ -34,7 +34,7 @@ class Aggregator:
         self._pushAllMetrics(*bar)
         self._emitFullCandle(candle)
 
-    @source('aggregator:new_candle')
+    #@source('aggregator:new_candle')
     def _emitAggregatedCandle(self, bar):
         return bar
 
@@ -80,6 +80,7 @@ class Aggregator:
     def _pushNetVolume(self, nv):
         return nv
 
+    @property
     def last_open(self):
         return self.aggregator.last_open
 
