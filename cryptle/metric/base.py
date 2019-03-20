@@ -241,9 +241,9 @@ class Timeseries(Metric):
         # Subscribe and Listen to the appropriate body
         for arg in vargs:
             arg.subscribers.append(self)
-            logger.info('\nSubscribe {} as a subscriber of {}', repr(self), repr(arg))
+            logger.info(f'Subscribe {repr(self)} as a subscriber of {repr(arg)}')
             self.publishers.append(arg)
-            logger.info('Listen {} as a listener of {} \n', repr(arg), repr(self))
+            logger.info(f'Listen {repr(arg)} as a listener of {repr(self)}')
 
     def __getitem__(self, index):
         """Wrapping the DiskTS and give access via usual list-value getting syntax."""
@@ -259,35 +259,30 @@ class Timeseries(Metric):
         """To be called when all the listened Timeseries updated at least once."""
         if len(self.publishers) == 1:
             logger.debug(
-                'Obj: {}. All publisher broadcasted, proceed to updating', repr(self)
+                f'Obj: {repr(self)}. All publisher broadcasted, proceed to updating'
             )
             self.update()
         else:
             self.publishers_broadcasted.add(self.publishers[pos])
             if len(self.publishers_broadcasted) < len(self.publishers):
                 logger.debug(
-                    'Obj: {}. Number of publisher broadcasted: {}',
-                    repr(self),
-                    len(self.publishers_broadcasted),
+                    f'Obj: {repr(self)}. Number of publisher broadcasted: {len(self.publishers_broadcasted)}',
                 )
                 logger.debug(
-                    'Obj: {}. Number of publisher remaining: {}',
-                    repr(self),
-                    len(self.publishers) - len(self.publishers_broadcasted),
+                    f'Obj: {repr(self)}. Number of publisher remaining: {len(self.publishers) - len(self.publishers_broadcasted)}',
                 )
             else:
                 self.publishers_broadcasted.clear()
                 self.update()
                 logger.debug(
-                    'Obj: {}. All publisher broadcasted, proceed to updating',
-                    repr(self),
+                    f'Obj: {repr(self)}. All publisher broadcasted, proceed to updating',
                 )
 
     def update(self):
         """Wrapper interface for controlling the updating behaviour when there is new
         update."""
         logger.debug(
-            'Obj: {}. Calling evaluate method of the respective Timeseries', repr(self)
+            'Obj: {repr(self)}. Calling evaluate method of the respective Timeseries'
         )
 
         # the child :meth:``evaluate`` method either returns None (for Timeseries), or
@@ -315,30 +310,28 @@ class Timeseries(Metric):
         for subscriber in self.subscribers:
             pos = [id(x) for x in subscriber.publishers].index(id(self))
             logger.debug(
-                'Obj: {}, Calling processBroadcast of subscriber {}',
-                repr(self),
-                type(subscriber),
+                'Obj: {repr(self)}, Calling processBroadcast of subscriber {type(subscriber)}',
             )
             subscriber.processBroadcast(pos)
 
     def subscribe(self, new_ts):
         """Registers another :class:`~Timeseries` object as a subscriber."""
-        logger.info('Obj: {}, registering {} as a subscriber', self, new_ts)
+        logger.info(f'Obj: {self}, registering {new_ts} as a subscriber')
         self.subscribers.append(new_ts)
 
     def unsubscribe(self, ts_to_remove):
         """Unregister an existing subscriber."""
-        logger.info('Obj: {}, unregistering {} as a subscriber', self, ts)
+        logger.info(f'Obj: {self}, unregistering {ts} as a subscriber')
         # to be implemented
 
     def listen(self, new_ts):
         """Registers another :class:`~Timeseries` object as a subscriber."""
-        logger.info('Obj: {}, registering {} as a listener', self, new_ts)
+        logger.info(f'Obj: {self}, registering {new_ts} as a listener')
         self.listeners.append(new_ts)
 
     def unlisten(self, ts_to_remove):
         """Unregister an existing subscriber."""
-        logger.info('Obj: {}, unregistering {} as a listener', self, ts)
+        logger.info(f'Obj: {self}, unregistering {ts} as a listener')
         # to be implemented
 
     def importBars(self):
