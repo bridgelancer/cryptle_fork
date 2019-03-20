@@ -356,9 +356,11 @@ class Paper:
         exec_price = last_price * (1 + self.commission) * (1 + self.slippage)
         self.capital -= amount * exec_price
 
-        logger.info('Market buy {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
-        logger.info('Paid {:.5} commission', last_price * self.commission)
+        w = 7
+        p = 5
 
+        logger.info(f'Market buy {float(amount):{w}.{p}} {pair.upper()} {float(last_price):.{p}}')
+        logger.info(f'Paid {last_price * self.commission:.{p}} commission')
         # Order placement always succeeds
         return True, last_price
 
@@ -369,8 +371,11 @@ class Paper:
         exec_price = last_price * (1 - self.commission) * (1 - self.slippage)
         self.capital += amount * exec_price
 
-        logger.info('Market sell {:7.5} {} ${:.5}', amount, pair.upper(), exec_price)
-        logger.info('Paid {:.5} commission', last_price * self.commission)
+        w = 7
+        p = 5
+
+        logger.info(f'Market sell {float(amount):{w}.{p}} {pair.upper()} {float(last_price):.{p}}')
+        logger.info(f'Paid {last_price * self.commission:.{p}} commission')
 
         # Order placement always succeeds
         return True, last_price
@@ -382,8 +387,11 @@ class Paper:
         exec_price = last_price * (1 + self.commission)
         self.capital -= amount * exec_price
 
-        logger.info('Limit buy {:7.5} {} ${:.5}', amount, pair.upper(), price)
-        logger.info('Paid {:.5} commission', price * self.commission)
+        w = 7
+        p = 5
+
+        logger.info(f'Limit buy {float(amount):{w}.{p}} {pair.upper()} {float(price):.{p}}')
+        logger.info(f'Paid {price * comission:.{p}} commission', price * self.commission)
 
         # Order placement always succeeds
         return True, self._orderbooks[pair].create_bid(amount, price)
