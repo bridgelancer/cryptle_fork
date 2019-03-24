@@ -360,7 +360,7 @@ class Paper:
         p = 5
 
         logger.info(f'Market buy {float(amount):{w}.{p}} {pair.upper()} {float(last_price):.{p}}')
-        logger.info(f'Paid {last_price * self.commission:.{p}} commission')
+        logger.info(f'Paid {float(last_price * self.commission):.{p}} commission')
         # Order placement always succeeds
         return True, last_price
 
@@ -375,7 +375,7 @@ class Paper:
         p = 5
 
         logger.info(f'Market sell {float(amount):{w}.{p}} {pair.upper()} {float(last_price):.{p}}')
-        logger.info(f'Paid {last_price * self.commission:.{p}} commission')
+        logger.info(f'Paid {float(last_price * self.commission):.{p}} commission')
 
         # Order placement always succeeds
         return True, last_price
@@ -391,7 +391,7 @@ class Paper:
         p = 5
 
         logger.info(f'Limit buy {float(amount):{w}.{p}} {pair.upper()} {float(price):.{p}}')
-        logger.info(f'Paid {price * comission:.{p}} commission', price * self.commission)
+        logger.info(f'Paid {price * self.commission:.{p}} commission')
 
         # Order placement always succeeds
         return True, self._orderbooks[pair].create_bid(amount, price)
