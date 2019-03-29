@@ -296,8 +296,9 @@ class IBDatafeed:
     def _adaptTickByTickAllLast(
         self, reqId, tickType, time, price, size, attribs, exchange, specialConditions
     ):
-        # delegates to the eclient thread
-        self.tick_callbacks[reqId](time, price, size)
+        ACTION = None
+        # delegate onTrade callbacks to the eclient thread
+        self.tick_callbacks[reqId](price, time, size, ACTION)
 
 
 VERSION = {'major': 9, 'minor': 73, 'micro': 7}
