@@ -26,6 +26,8 @@ import time
 import sys
 import traceback
 
+import pytest
+
 const = [3 for i in range(1, 100)]
 lin = [i for i in range(1, 100)]
 quad = [i ** 2 for i in range(1, 100)]
@@ -86,64 +88,60 @@ def test_candle():
     assert stick._ts[-1] == [6, 6, 6, 6, 2, 8, 0]
 
 
-def bind(bus, stick_period=3, aggregator_period=3):
-    stick = CandleStick(stick_period)
-    aggregator = Aggregator(aggregator_period)
-    bus.bind(pushTick)
-    bus.bind(stick)
-    bus.bind(aggregator)
-    return bus, stick
+@pytest.fixture
+def bind():
+    """Pytest fixture factory for creating and binding pushTick, CandleStick and Aggregator"""
 
-
-# decorator for testing timeseries.value after looping through alt_quad
-def val(func):
-    def decorator():
+    def _bind(stick_period=3, aggregator_period=3):
         bus = Bus()
-        bus, stick = bind(bus)
-        ma, val = func(stick)
+        stick = CandleStick(stick_period)
+        aggregator = Aggregator(aggregator_period)
+        bus.bind(pushTick)
+        bus.bind(stick)
+        bus.bind(aggregator)
+        return bus, stick
 
-        for i, price in enumerate(alt_quad):
+    return _bind
+
+
+@pytest.fixture
+def loop():
+    """Pytest fixture fixture for looping through any data source and ts"""
+
+    def _loop(data=alt_quad, ts=None, value=None):
+        for i, price in enumerate(data):
             pushTick([price, i, 0, 0])
-        compare(ma, val)
+        compare(ts, value)
 
-    return decorator
-
-
-@val
-def test_sma(stick):
-    ma = SMA(stick.o, 5)
-    return ma, 197.475
+    return _loop
 
 
-@val
-def test_wma(stick):
-    ma = WMA(stick.o, 5)
-    return ma, 210.675
+test_cases = [
+    (SMA, 5, 197.475),
+    (WMA, 5, 210.675),
+    (EMA, 5, 213.260999989917483),
+    (RSI, 5, 57.342237492321196),
+    (Kurtosis, 5, -3.231740264178196),
+    (Skewness, 5, -0.582459640454958),
+    (SD, 5, 0.00187307396323),
+]
 
 
-@val
-def test_recursive(stick):
+# Todo Can parametrize other variables as well (i.e. data, update mode) etc in the future.
+@pytest.mark.parametrize('TS, lookback, val', test_cases)
+def test_ts(bind, loop, TS, lookback, val):
+    bus, stick = bind()
+    loop(ts=TS(stick.o, lookback), value=val)
+
+
+def test_recursive(loop, bind):
+    bus, stick = bind()
     ma = SMA(WMA(stick.o, 5), 3)
-    return ma, 134.65416666666666
+    loop(ts=ma, value=134.65416666666666)
 
 
-@val
-def test_ema(stick):
-    ma = EMA(stick.o, 5)
-    return ma, 213.260999989917483
-
-
-@val
-def test_rsi(stick):
-    rsi = RSI(stick.o, 5)
-    # not checked
-    return rsi, 57.342237492321196
-
-
-def test_bollinger():
-    bus = Bus()
-    bus, stick = bind(bus, 1, 1)
-
+def test_bollinger(bind):
+    bus, stick = bind(1, 1)
     bollinger = BollingerBand(stick.o, 5)
     pushAltQuad()
 
@@ -151,9 +149,8 @@ def test_bollinger():
     compare(bollinger.lowerband, -914.1845184202044)
 
 
-def test_macd():
-    bus = Bus()
-    bus, stick = bind(bus, 1, 1)
+def test_macd(bind):
+    bus, stick = bind(1, 1)
 
     wma5 = WMA(stick.o, 5)
     wma8 = WMA(stick.o, 8)
@@ -162,7 +159,7 @@ def test_macd():
 
     compare(macd.diff, 52.04722222222)
     compare(macd.diff_ma, 17.350925925907)
-    compare(macd.signal, 52.04722222222- 17.350925925907)
+    compare(macd.signal, 52.04722222222 - 17.350925925907)
 
 
 def test_atr():
@@ -175,45 +172,28 @@ def test_atr():
         pushCandle([*bar, 0])
 
 
-@val
-def test_kurtosis(stick):
-    kurt = Kurtosis(stick.o, 5)
-    return kurt, -3.231740264178196
-
-
-@val
-def test_skewness(stick):
-    skew = Skewness(stick.o, 5)
-    return skew, -0.582459640454958
-
-
-@val
-def test_volatility(stick):
-    sd = SD(stick.o, 5)
-    return sd, 0.00187307396323
-
-
-@val
-def test_return(stick):
+def test_return(loop, bind):
+    bus, stick = bind()
     r = BarReturn(stick.o, stick.c, 5, all_close=True)
-    return r, 986.0625
+    loop(ts=r, value=986.0625)
 
-@val
-def test_ym(stick):
+
+def test_ym(loop, bind):
+    bus, stick = bind()
     r = BarReturn(stick.o, stick.c)
     ym = YM(r)
-    return ym, 0
+    loop(ts=ym, value=0)
 
-@val
-def test_diff(stick):
+
+def test_diff(loop, bind):
+    bus, stick = bind()
     sd = SD(stick.o, 5)
     diff = Difference(sd)
-    return diff, -1.335580558397 * 1e-4
+    loop(ts=diff, value=-1.335580558397 * 1e-4)
 
 
-def test_TimeseriesWrapperRetrieval():
-    bus = Bus()
-    bus, stick = bind(bus, 1, 1)
+def test_TimeseriesWrapperRetrieval(bind):
+    bus, stick = bind(1, 1)
 
     diff = Difference(stick.o, 1)
     pushAltQuad()
@@ -223,9 +203,8 @@ def test_TimeseriesWrapperRetrieval():
     compare(diff, 1188.3125)
 
 
-def test_MultivariateTSCache():
-    bus = Bus()
-    bus, stick = bind(bus, 1, 1)
+def test_MultivariateTSCache(bind):
+    bus, stick = bind(1, 1)
 
     bollinger = BollingerBand(stick.o, 5)
     wma = WMA(stick.o, 7)
@@ -233,6 +212,7 @@ def test_MultivariateTSCache():
     class MockTS(Timeseries):
         def __repr__(self):
             return self.name
+
         def __init__(self, lookback, wma, bollinger, name='mock'):
             self.name = name
             self._ts = wma, bollinger
