@@ -1,4 +1,5 @@
 import logging
+import datetime as dt
 import queue
 import time
 import warnings
@@ -15,9 +16,22 @@ logging.getLogger('ibrokers').setLevel(logging.INFO)
 logging.getLogger('ibrokers.client').setLevel(logging.DEBUG)
 # logging.getLogger('ibrokers.wrapper').setLevel(logging.DEBUG)
 
-
 # Avoid clashing with clients in production
 IB_CLIENT_ID = 9
+HKT = dt.timezone(dt.timedelta(hours=8))
+
+DEFAULT_ASSET = 'hsi'
+DEFAULT_BASE = 'hkd'
+DEFAULT_CONTRACT = DEFAULT_ASSET + DEFAULT_BASE
+
+
+def hkex_trading():
+    now = dt.datetime.now(tz=HKT)
+    _time = now.time()
+    _date = now.date()
+    return (
+        (9 < _time.hour and _time.hour < 12) or (13 < _time.hour and _time.hour < 16)
+    ) and (_date.weekday() in range(5))
 
 
 @pytest.fixture(scope='module')
@@ -51,39 +65,37 @@ def test_connection():
     assert not conn.isConnected()
 
 
-ASSET = 'hsi'
-BASE = 'hkd'
-CONTRACT = ASSET + BASE
-
-
 def test_exchange_basic(exchange):
     next_id = exchange._nextOrderId()
     assert isinstance(next_id, int)
 
 
+@pytest.mark.skipif(not hkex_trading(), reason='Out HKEX trading hours')
 def test_exchange_order(exchange):
     exchange.max_timeout = 5
-    exchange.max_retry = 2
+    exchange.max_retry = 3
 
     try:
-        assert exchange.marketBuy('hsi', 'hkd', 1.0)
+        assert exchange.marketSell('hsi', 'hkd', 7.0)
     except MarketOrderFailed as e:
         warnings.warn(UserWarning(f'Market order {e.id} failed. Is the market closed?'))
-        exchange.conn.cancelOrder(e.id)
+        exchange.cancelOrder(e.id)
 
     try:
         assert exchange.marketBuy('tsla', 'usd', 100.0)
     except MarketOrderFailed as e:
         warnings.warn(UserWarning(f'Market order {e.id} failed. Is the market closed?'))
-        exchange.conn.cancelOrder(e.id)
+        exchange.cancelOrder(e.id)
 
 
+@pytest.mark.skipif(not hkex_trading(), reason='Out HKEX trading hours')
 def test_datafeed_marketdata(datafeed):
     class TickCallback:
         def __init__(self):
             self.q = queue.Queue()
 
         def __call__(*args, **kwargs):
+            logging.debug('Tick CB called')
             self.q.put((args, kwargs))
 
     retry = 0
@@ -92,9 +104,10 @@ def test_datafeed_marketdata(datafeed):
     datafeed.onTrade('hsi', 'hkd', cb)
     while retry < max_retry:
         try:
-            cb.q.get(timeout=1)
+            cb.q.get(timeout=5)
         except queue.Empty:
             retry += 1
+            logging.debug('Retrying get market data...')
         else:
             return
     warnings.warn(UserWarning('Recieved no market data. Is the market closed?'))
