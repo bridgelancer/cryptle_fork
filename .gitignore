@@ -9,6 +9,7 @@
 # data/binary
 *.log
 *.log_parsed
+*.plog
 *.csv
 *.json
 *.xlsx

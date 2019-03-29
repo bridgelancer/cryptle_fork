@@ -167,6 +167,16 @@ Standard
       :return: Returns two values. First is a boolean indicating a successful
          trade, second being the order ID.
 
+Order
+`````
+.. members are not autodoc-ed because namedtuple generates unhelpful docs
+.. autoclass:: cryptle.exchange.base.Order
+
+Orderbook
+`````````
+.. autoclass:: cryptle.exchange.base.Orderbook
+   :members:
+
 Paper
 `````
 .. autoclass:: cryptle.exchange.Paper
@@ -203,8 +213,8 @@ Plotting
    :members:
 
 
-Orderbook
----------
+Analytic Orderbook
+------------------
 
 .. automodule:: cryptle.orderbook
    :members:
