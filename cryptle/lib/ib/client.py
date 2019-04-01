@@ -15,6 +15,8 @@ The user just needs to override EWrapper methods to receive the answers.
 
 import queue
 import socket
+import sys
+import traceback
 
 from . import decoder, reader, comm
 from .connection import Connection
@@ -218,9 +220,8 @@ class EClient(object):
                 except BadMessage:
                     logger.info("BadMessage")
                     self.conn.disconnect()
-        except Exception as e:
-            logger.error('%s: %s', type(e), e)
-            raise
+                except Exception as e:
+                    logger.exception('Caught unknown EClient error')
         finally:
             logger.info('EClient decoder loop (message queue consumer) terminating')
             self.disconnect()

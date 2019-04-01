@@ -30,7 +30,8 @@ def hkex_trading():
     _time = now.time()
     _date = now.date()
     return (
-        (9 < _time.hour and _time.hour < 12) or (13 < _time.hour and _time.hour < 16)
+        (9 <= _time.hour and _time.hour <= 12)
+        or (13 <= _time.hour and _time.hour <= 16)
     ) and (_date.weekday() in range(5))
 
 
@@ -62,6 +63,7 @@ def test_connection():
     conn.connect(client_id=IB_CLIENT_ID)
     assert conn.isConnected()
     conn.disconnect()
+    conn.reqGlobalCancel()
     assert not conn.isConnected()
 
 
@@ -70,44 +72,73 @@ def test_exchange_basic(exchange):
     assert isinstance(next_id, int)
 
 
-@pytest.mark.skipif(not hkex_trading(), reason='Out HKEX trading hours')
 def test_exchange_order(exchange):
+    exchange.max_timeout = 1
+    exchange.max_retry = 1
+    exchange.polling = False
+    assert exchange.marketBuy('usd', 'cnh', 100.0)
+
+
+@pytest.mark.skipif(not hkex_trading(), reason='Out HKEX trading hours')
+def test_exchange_order_polling(exchange):
     exchange.max_timeout = 5
     exchange.max_retry = 3
+    exchange.polling = True
 
     try:
-        assert exchange.marketSell('hsi', 'hkd', 7.0)
+        assert exchange.marketBuy('hsi', 'hkd', 7.0)
     except MarketOrderFailed as e:
-        warnings.warn(UserWarning(f'Market order {e.id} failed. Is the market closed?'))
         exchange.cancelOrder(e.id)
 
     try:
         assert exchange.marketBuy('tsla', 'usd', 100.0)
     except MarketOrderFailed as e:
-        warnings.warn(UserWarning(f'Market order {e.id} failed. Is the market closed?'))
         exchange.cancelOrder(e.id)
+
+
+class TickCallback:
+    def __init__(self):
+        self.q = queue.Queue()
+
+    def __call__(self, *args, **kwargs):
+        logging.debug('Tick CB called')
+        self.q.put((args, kwargs))
 
 
 @pytest.mark.skipif(not hkex_trading(), reason='Out HKEX trading hours')
 def test_datafeed_marketdata(datafeed):
-    class TickCallback:
-        def __init__(self):
-            self.q = queue.Queue()
-
-        def __call__(*args, **kwargs):
-            logging.debug('Tick CB called')
-            self.q.put((args, kwargs))
-
     retry = 0
-    max_retry = 5
+    max_retry = 3
     cb = TickCallback()
-    datafeed.onTrade('hsi', 'hkd', cb)
+    rid = datafeed.onTrade('hsi', 'hkd', cb)
     while retry < max_retry:
         try:
-            cb.q.get(timeout=5)
+            cb.q.get(timeout=2)
+            logging.debug('Recieved tick')
+            datafeed._conn.cancelTickByTickData(rid)
         except queue.Empty:
             retry += 1
             logging.debug('Retrying get market data...')
         else:
             return
-    warnings.warn(UserWarning('Recieved no market data. Is the market closed?'))
+
+
+@pytest.mark.skipif(not hkex_trading(), reason='Out HKEX trading hours')
+def test_datafeed_oncandle(datafeed):
+    retry = 0
+    max_retry = 3
+    cb = TickCallback()
+    rid_cnh = datafeed.onCandle('usd', 'cnh', cb)
+    rid_hsi = datafeed.onCandle('hsi', 'hkd', cb)
+    while retry < max_retry:
+        try:
+            cb.q.get(timeout=2)
+            logging.debug('Recieved candle')
+            datafeed._conn.cancelRealTimeBars(rid_cnh)
+            datafeed._conn.cancelRealTimeBars(rid_hsi)
+        except queue.Empty:
+            retry += 1
+            logging.debug('Retrying get market data...')
+        else:
+            return
+    raise AssertionError('Recieved no market data.')
