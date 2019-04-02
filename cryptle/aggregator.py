@@ -90,7 +90,7 @@ class DecoratedAggregator:
 
 
 class Aggregator:
-    """An implementation of the generic candle aggregator.
+    """Implementation of the generic candle aggregator.
 
     Aggregator is a class that converts tick values of either prices or Timeseries
     values to candle bar representation. It contains a subset of the functions of the
@@ -157,6 +157,54 @@ class Aggregator:
 
             yield self._pushInitCandle(value, timestamp, volume, action)
 
+    def pushPartialBar(self, partial_bar):
+        if len(data) == 7:
+            o, c, h, l, ts, v, nv = partial_bar
+        else:
+            return NotImplementedError
+
+        self.last_timestamp = timestamp
+
+        # initialise the candle collection
+        if self.last_bar is None:
+            logger.debug(f'Pushed the first candle {data}')
+            return self._pushPartialInitCandle(partial_bar)
+
+        # if tick arrived before next bar, update current candle
+        if self._is_updated(timestamp):
+            self.last_low = min(self.last_low, l)
+            self.last_high = max(self.last_high, h)
+            self.last_close = c
+            self.last_volume += v
+            self.last_netvol += nv
+
+        else:
+            empty_bars = []
+            while not self._is_updated(timestamp - self.period):
+                # Todo: how to wrap this? return a list instead?
+                bar = self._pushEmptyCandle(
+                    self.last_close, self.last_bar_timestamp + self.period
+                )
+                empty_bars.append(bar)
+                logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
+
+            if not empty_bars:
+                return self._pushPartialInitCandle(partial_bar)
+            else:
+                return empty_bars.append(
+                    self._pushPartialInitCandle(partial_bar)
+                )
+    def _pushPartialInitCandle(self, partial_bar):
+        o, c, h, l, ts, v, nv = partial_bar
+
+        round_ts = ts - ts % self.period
+        new_candle = Candle(*partial_bar)
+        self._bars.append(new_candle)
+
+        if len(self._bars) > 1:
+            finished_candle = self._bars[-2]
+            return finished_candle._bar
+
     def _is_updated(self, timestamp):
         return timestamp < self.last_bar_timestamp + self.period
 
@@ -194,6 +242,17 @@ class Aggregator:
             finished_candle = self._bars[-2]
             logger.debug(f'Pushed finished candle {finished_candle}.')
             return finished_candle._bar
+
+    def _emitEvents(self, candle):
+        self.bus.emit(f'aggregator:new_open', candle.open)
+        self.bus.emit(f'aggregator:new_close', candle.close)
+        self.bus.emit(f'aggregator:new_high', candle.high)
+        self.bus.emit(f'aggregator:new_low', candle.low)
+        self.bus.emit(f'aggregator:new_volume', candle.volume)
+        self.bus.emit(f'aggregator:new_net_volume', candle.netvol)
+        self.bus.emit(f'aggregator:new_timesatmp', candle.timestamp)
+
+        self.bus.emit(f'aggregator:new_candle', candle._bar)
 
     def _pushFullCandle(self, o, c, h, l, t, v, nv):
         t = t - t % self.period
