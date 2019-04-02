@@ -154,24 +154,25 @@ class Aggregator:
                 yield self._pushEmptyCandle(
                     self.last_close, self.last_bar_timestamp + self.period
                 )
+                logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
 
             yield self._pushInitCandle(value, timestamp, volume, action)
 
-    def pushPartialBar(self, partial_bar):
-        if len(data) == 7:
+    def pushPartialCandle(self, partial_bar):
+        if len(partial_bar) == 7:
             o, c, h, l, ts, v, nv = partial_bar
         else:
             return NotImplementedError
 
-        self.last_timestamp = timestamp
+        self.last_timestamp = ts
 
-        # initialise the candle collection
+        # Initialise the candle collection
         if self.last_bar is None:
-            logger.debug(f'Pushed the first candle {data}')
-            return self._pushPartialInitCandle(partial_bar)
+            logger.debug(f'Pushed the first candle {partial_bar}')
+            yield self._pushPartialInitCandle(partial_bar)
 
-        # if tick arrived before next bar, update current candle
-        if self._is_updated(timestamp):
+        # If partial bar arrived before next bar, update current candle
+        if self._is_updated(ts):
             self.last_low = min(self.last_low, l)
             self.last_high = max(self.last_high, h)
             self.last_close = c
@@ -179,21 +180,14 @@ class Aggregator:
             self.last_netvol += nv
 
         else:
-            empty_bars = []
-            while not self._is_updated(timestamp - self.period):
-                # Todo: how to wrap this? return a list instead?
-                bar = self._pushEmptyCandle(
+            while not self._is_updated(ts - self.period):
+                yield self._pushEmptyCandle(
                     self.last_close, self.last_bar_timestamp + self.period
                 )
-                empty_bars.append(bar)
-                logger.debug('Pushed candle with timestamp {}', self.last_bar_timestamp)
+                logger.debug(f'Pushed candle with timestamp {self.last_bar_timestamp}')
 
-            if not empty_bars:
-                return self._pushPartialInitCandle(partial_bar)
-            else:
-                return empty_bars.append(
-                    self._pushPartialInitCandle(partial_bar)
-                )
+            yield self._pushPartialInitCandle(partial_bar)
+
     def _pushPartialInitCandle(self, partial_bar):
         o, c, h, l, ts, v, nv = partial_bar
 
