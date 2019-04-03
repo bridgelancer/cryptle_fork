@@ -17,13 +17,19 @@ def pushTick(tick):
     return tick
 
 
-@pytest.fixture(scope='module')
+@source('partial_candle')
+def pushPartialCandle(partial_candle):
+    return partial_candle
+
+
+@pytest.fixture(scope='function')
 def decorated_aggregator():
     decorated_aggregator = DecoratedAggregator(5)
 
     bus = Bus()
     bus.bind(decorated_aggregator)
     bus.bind(pushTick)
+    bus.bind(pushPartialCandle)
 
     return decorated_aggregator
 
@@ -90,7 +96,6 @@ def test_push_partial_bars():
 
     for i, pbar in enumerate(partial_bars):
         for bar in aggregator.pushPartialCandle(pbar):
-            print(bar)
             if bar is None:
                 assert len(aggregator._bars) == 1
             else:
@@ -119,6 +124,22 @@ def test_emit_aggregated_candle(decorated_aggregator):
         assert aggregator.last_high == max(alt_quad[i - i % n : i + 1])
         assert aggregator.last_open == alt_quad[i - i % n]
         assert aggregator.last_close == alt_quad[i]
+
+
+def test_emit_aggregated_candle_from_partial_bars(decorated_aggregator):
+    """Asserting the bar emission wiring between DecoratedAggregator and Aggregator"""
+    n = 5
+    # getting the aggregator implementation
+    aggregator = decorated_aggregator.aggregator
+
+    for i, pbar in enumerate(partial_bars):
+        pushPartialCandle(pbar)
+        pbs = partial_bars[i - i % n : i + 1]
+
+        assert aggregator.last_low == min([bar[3] for bar in pbs])
+        assert aggregator.last_high == max([bar[2] for bar in pbs])
+        assert aggregator.last_open == pbs[0][0]
+        assert aggregator.last_close == pbs[-1][1]
 
 
 def test_auto_prune():

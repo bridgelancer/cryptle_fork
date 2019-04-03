@@ -34,6 +34,15 @@ class DecoratedAggregator:
                 self._emitAllMetrics(*bar)
                 self._emitAggregatedCandle(bar)
 
+    @on('partial_candle')
+    def pushPartialCandle(self, partial_bar):
+        for bar in self.aggregator.pushPartialCandle(partial_bar):
+            if bar is None:
+                logger.debug('No candle pushed for the first partial candle')
+            else:
+                self._emitAllMetrics(*bar)
+                self._emitAggregatedCandle(bar)
+
     @on('candle')
     def pushCandle(self, bar):
         candle = self.aggregator.pushCandle(bar)
