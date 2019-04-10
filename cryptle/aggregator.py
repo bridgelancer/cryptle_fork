@@ -97,16 +97,12 @@ class DecoratedAggregator:
     def last_open(self):
         return self.aggregator.last_open
 
-
+#Todo(MC): Refactor partial bar aggregation to separate class
 class Aggregator:
     """Implementation of the generic candle aggregator.
 
-    Aggregator is a class that converts tick values of either prices or Timeseries
-    values to candle bar representation. It contains a subset of the functions of the
-    CandleBar class in candle.py as it handles the aggregation of tick data to bar
-    representation. This class is also an extension of the original CandleBar as it is
-    designed to handle any tick-based value upon suitable wiring of interfaces. This
-    class could also accept bar representation of data.
+    Aggregator converts tick values of either prices or Timeseries values to candle bar
+    representation.  This class could also aggregate partial bars.
 
     Args
     ---
@@ -168,10 +164,25 @@ class Aggregator:
             yield self._pushInitCandle(value, timestamp, volume, action)
 
     def pushPartialCandle(self, partial_bar):
+        """Generator function that provides public interface for accepting partial bars.
+
+        The partial bars period should be a fraction of the intended aggregagted candle
+        period.
+
+        Args
+        ---
+        partial_bar: list
+            list-based representation of a partial bar in [open, close, high, low,
+            starting time stamp, volume and net volume]
+
+        Note: To receive the outputs of this function, please loop through the generator
+        function returned.
+
+        """
         if len(partial_bar) == 7:
             o, c, h, l, ts, v, nv = partial_bar
         else:
-            return NotImplementedError
+            raise NotImplementedError('Please input a partial bar of correct format.')
 
         self.last_timestamp = ts
 
