@@ -7,14 +7,11 @@ import warnings
 import pytest
 
 from cryptle.lib.ib import IBConnection, IBExchange, IBDatafeed
-from cryptle.lib.ib import PACKAGE_LOGGER_NAME
 from cryptle.exchange import MarketOrderFailed
 
 
+# Enable all logging, delegates log control to pytest on CLI
 logging.basicConfig(level=logging.DEBUG, format="%(name)s: [%(levelname)s] %(message)s")
-logging.getLogger('ibrokers').setLevel(logging.INFO)
-logging.getLogger('ibrokers.client').setLevel(logging.DEBUG)
-# logging.getLogger('ibrokers.wrapper').setLevel(logging.DEBUG)
 
 # Avoid clashing with clients in production
 IB_CLIENT_ID = 9
@@ -62,9 +59,11 @@ def test_connection():
     conn = IBConnection()
     conn.connect(client_id=IB_CLIENT_ID)
     assert conn.isConnected()
-    conn.disconnect()
     conn.reqGlobalCancel()
+    conn.disconnect()
     assert not conn.isConnected()
+    with pytest.raises(ConnectionError):
+        conn.reqGlobalCancel()
 
 
 def test_exchange_basic(exchange):

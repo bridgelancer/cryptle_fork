@@ -51,14 +51,22 @@ class EWrapper:
         This event is called when there is communication error with TWS.
         """
         if errorCode in NOTIFICATION_CODES:
-            pass
-        elif errorCode in WARNING_CODES:
+            return
+
+        fname, _ = parent_fn_context()
+        if errorCode in WARNING_CODES:
             logger.warning(
-                "-- TWS -- ReqID: %s, Error: %s, %s", reqId, errorCode, errorString
+                "-- TWS -- ReqID: %s, Warn: %s, %s", reqId, errorCode, errorString
             )
         else:
+            # more details on "stack_info" keyword argument
+            # https://docs.python.org/3/library/logging.html#logging.debug
             logger.error(
-                "-- TWS -- ReqID: %s, Error: %s, %s", reqId, errorCode, errorString
+                "-- TWS -- ReqID: %s, Error: %s, %s",
+                reqId,
+                errorCode,
+                errorString,
+                stack_info=1,
             )
 
     def winError(self, text: str, lastError: int):

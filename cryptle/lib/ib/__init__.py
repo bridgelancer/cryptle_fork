@@ -11,14 +11,12 @@ import warnings
 from .client import EClient
 from .wrapper import EWrapper
 from .order import Order
-from .utils import parent_fn_context
 from .mappers import ASSET_CONTRACT_MAP, OrderStatus, OrderType, TWSEvent
-
-from .common import PACKAGE_LOGGER_NAME
 
 from cryptle.exchange import MarketOrderFailed
 
 
+# Get logger under cryptle hierarchy as oppose to under ibrokers like other modules
 logger = logging.getLogger(__name__)
 
 
@@ -53,6 +51,13 @@ class IBConnection(EClient, EWrapper):
         self._error_handlers = collections.defaultdict(list)
         self._listeners = collections.defaultdict(list)
         self.client_id = None
+        self.max_timeout = 5
+
+    def _wait_for_managed_accounts(self):
+        _start_queue = queue.Queue()
+        self.on(TWSEvent.managedAccounts, lambda *x, **y: _start_queue.put((x, y)))
+        # block
+        _start_queue.get(timeout=self.max_timeout)
 
     def connect(self, host='127.0.0.1', port=7497, client_id=None):
         if client_id is None:
@@ -67,6 +72,7 @@ class IBConnection(EClient, EWrapper):
         thread = threading.Thread(target=self.run)
         thread.start()
         self.thread = thread
+        self._wait_for_managed_accounts()
 
     def disconnect(self):
         super().disconnect()
