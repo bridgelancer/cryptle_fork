@@ -11,14 +11,12 @@ import warnings
 from .client import EClient
 from .wrapper import EWrapper
 from .order import Order
-from .utils import parent_fn_context
 from .mappers import ASSET_CONTRACT_MAP, OrderStatus, OrderType, TWSEvent
-
-from .common import PACKAGE_LOGGER_NAME
 
 from cryptle.exchange import MarketOrderFailed
 
 
+# Get logger under cryptle hierarchy as oppose to under ibrokers like other modules
 logger = logging.getLogger(__name__)
 
 
@@ -53,6 +51,13 @@ class IBConnection(EClient, EWrapper):
         self._error_handlers = collections.defaultdict(list)
         self._listeners = collections.defaultdict(list)
         self.client_id = None
+        self.max_timeout = 5
+
+    def _wait_for_managed_accounts(self):
+        _start_queue = queue.Queue()
+        self.on(TWSEvent.managedAccounts, lambda *x, **y: _start_queue.put((x, y)))
+        # block
+        _start_queue.get(timeout=self.max_timeout)
 
     def connect(self, host='127.0.0.1', port=7497, client_id=None):
         if client_id is None:
@@ -67,10 +72,15 @@ class IBConnection(EClient, EWrapper):
         thread = threading.Thread(target=self.run)
         thread.start()
         self.thread = thread
+        self._wait_for_managed_accounts()
 
     def disconnect(self):
         super().disconnect()
-        self.thread.join()
+        try:
+            self.thread.join()
+        except RuntimeError:
+            # main thread already dead, children will be cleaned up by OS
+            pass
 
     def __repr__(self):
         return f'{self.__class__.__qualname__}(id={self.client_id})'
@@ -105,12 +115,16 @@ for event in TWSEvent:
     setattr(EWrapper, event.name, IBConnection.patch(method, event))
 
 
-def _put_to_queue(queue):
-    def _putter(*args, **kwargs):
-        # puts a tuple
-        queue.put((args, kwargs))
+class QueuePutter:
+    def __init__(self, queue, name):
+        self.q = queue
+        self.name = name
 
-    return _putter
+    def __call__(self, *args, **kwargs):
+        self.q.put((args, kwargs))
+
+    def __repr__(self):
+        return 'QueuePutter(%s)' % self.name
 
 
 def makeContract(asset, base):
@@ -137,28 +151,42 @@ class IBExchange:
     """
 
     def __init__(self, conn: IBConnection):
-        self.conn = conn
+        # Settings
         self.max_timeout = 5
         self.max_retry = 5
+        self.polling = False
+
+        self._conn = conn
         self._last_order_id = -1
         self._oid = -1
         self._pending_cancels = set()
 
         # these queues are all synchronization primitives
         self.orderid_queue = queue.Queue()
-        self.conn.on(TWSEvent.nextValidId, _put_to_queue(self.orderid_queue))
+        self._conn.on(
+            TWSEvent.nextValidId,
+            QueuePutter(self.orderid_queue, 'IBExchange._nextOrderid'),
+        )
 
         self.order_queue = queue.Queue()
-        self.conn.on(TWSEvent.orderStatus, _put_to_queue(self.order_queue))
+        self._conn.on(
+            TWSEvent.orderStatus,
+            QueuePutter(self.order_queue, 'IBExchange._pollOrderStatus'),
+        )
 
-        self.conn.onError(201, self._checkReject)
+        self._conn.onError(201, self._checkReject)
 
         self.cancel_queue = queue.Queue()
-        self.conn.onError(202, _put_to_queue(self.cancel_queue))
+        self._conn.onError(
+            202, QueuePutter(self.cancel_queue, 'IBExchange.cancelOrder')
+        )
+
+    def __repr__(self):
+        return f'{self.__class__.__qualname__}(id={self._conn.client_id})'
 
     # === Queue direct consumers ===
     def _nextOrderId(self):
-        self.conn.reqIds()
+        self._conn.reqIds()
         ((oid,), _) = self.orderid_queue.get(timeout=self.max_timeout)
         logger.debug('-- QUEUE -- %s() %r', 'nextOrderId', oid)
 
@@ -172,15 +200,15 @@ class IBExchange:
             return self._oid
 
     def _pollOrderStatus(self, oid) -> OrderStatus:
-        self.conn.reqOpenOrders()
+        self._conn.reqOpenOrders()
         args, _ = self.order_queue.get(timeout=self.max_timeout)
         logger.debug('-- QUEUE -- %s() %r', 'orderStatus', args)
 
         # partially extract args
         order_id, status, *_ = args
         # todo: else put the order back in the queue, will need for limit orders
-        if order_id == oid:
-            return OrderStatus(status)
+        # if order_id == oid:
+        return OrderStatus(status)
 
     # === Internals ===
     def _pollOrderStatusTillFilled(self, oid):
@@ -189,6 +217,7 @@ class IBExchange:
             logger.debug('polling try: %d', retry)
             state = self._pollOrderStatus(oid)
             if state == OrderStatus.FILLED:
+                logger.debug('Polling success')
                 return True
             elif state == OrderStatus.API_PENDING:
                 pass
@@ -200,13 +229,13 @@ class IBExchange:
     def syncPlaceOrder(self, contract, order):
         oid = self._nextOrderId()
         order.orderId = oid
-        self.conn.placeOrder(oid, contract, order)
+        self._conn.placeOrder(oid, contract, order)
         # blocks until the market order is confirmed to have succeed or failed
-        success = self._pollOrderStatusTillFilled(oid)
-        if not success:
-            raise MarketOrderFailed(oid)
-        else:
-            return oid
+        if self.polling:
+            success = self._pollOrderStatusTillFilled(oid)
+            if not success:
+                raise MarketOrderFailed(oid)
+        return oid
 
     def _checkReject(self, oid, reason):
         warnings.warn(f'Order {oid}: {reason}')
@@ -245,15 +274,17 @@ class IBExchange:
         return self.syncPlaceOrder(contract, order)
 
     def cancelOrder(self, oid):
-        self.conn.cancelOrder(oid)
+        self._conn.cancelOrder(oid)
         self._pending_cancels.add(oid)
         try:
-            (rec_oid,), reason = self.cancel_queue.get(timeout=10)
+            args = self.cancel_queue.get(timeout=10)
+            rec_oid = args[0][0]
             logger.debug('-- QUEUE -- %s() %s', 'cancelOrder', rec_oid)
         except queue.Empty:
             return False
         else:
             if rec_oid in self._pending_cancels and rec_oid == oid:
+                logger.debug('Polling success')
                 self._pending_cancels.remove(oid)
                 return True
             else:
@@ -271,8 +302,11 @@ class IBDatafeed:
     """
 
     def __init__(self, conn):
-        self.conn = conn
+        self._conn = conn
         self.tick_callbacks = collections.defaultdict(list)
+
+    def __repr__(self):
+        return f'{self.__class__.__qualname__}(id={self._conn.client_id})'
 
     def onTrade(self, asset, base, callback):
         """
@@ -286,12 +320,33 @@ class IBDatafeed:
         NUM_TICKS = 0  # this is number of historical ticks to get on top of new ones
         IGNORE_SIZE = False  # dunno what this is
 
-        rid = self.conn.getReqId()
+        rid = self._conn.getReqId()
         pair = asset + base
         contract = makeContract(asset, base)
         self.tick_callbacks[rid] = callback
-        self.conn.on(TWSEvent.tickByTickAllLast, self._adaptTickByTickAllLast)
-        self.conn.reqTickByTickData(rid, contract, TICK_TYPE, NUM_TICKS, IGNORE_SIZE)
+        self._conn.on(TWSEvent.tickByTickAllLast, self._adaptTickByTickAllLast)
+        self._conn.reqTickByTickData(rid, contract, TICK_TYPE, NUM_TICKS, IGNORE_SIZE)
+        return rid
+
+    def onCandle(self, asset, base, callback):
+        """
+        Args
+        ----
+        callback : Callable
+            Function that takes (time, price, size) as argument.
+        """
+        # IB EClient request parameters
+        BAR_SIZE = 0  # currently ignored by TWS
+        WHAT_TO_SHOW = 'TRADES'
+        USE_RTH = 1
+
+        rid = self._conn.getReqId()
+        pair = asset + base
+        contract = makeContract(asset, base)
+        self.tick_callbacks[rid] = callback
+        self._conn.on(TWSEvent.realtimeBar, self._adaptRealtimeBar)
+        self._conn.reqRealTimeBars(rid, contract, BAR_SIZE, WHAT_TO_SHOW, USE_RTH, [])
+        return rid
 
     def _adaptTickByTickAllLast(
         self, reqId, tickType, time, price, size, attribs, exchange, specialConditions
@@ -299,6 +354,10 @@ class IBDatafeed:
         ACTION = None
         # delegate onTrade callbacks to the eclient thread
         self.tick_callbacks[reqId](price, time, size, ACTION)
+
+    def _adaptRealtimeBar(self, reqId, t, o, h, l, c, v, wap, count):
+        # delegate onTrade callbacks to the eclient thread
+        self.tick_callbacks[reqId](o, c, h, l, time.time(), v)
 
 
 VERSION = {'major': 9, 'minor': 73, 'micro': 7}

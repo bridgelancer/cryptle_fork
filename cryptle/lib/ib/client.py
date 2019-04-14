@@ -13,8 +13,11 @@ It takes care of almost everything:
 The user just needs to override EWrapper methods to receive the answers.
 """
 
+import functools
 import queue
 import socket
+import sys
+import traceback
 
 from . import decoder, reader, comm
 from .connection import Connection
@@ -34,6 +37,16 @@ logger = get_logger(__name__.split('.')[-1])
 
 
 CONN_STATES = ['DISCONNECTED', 'CONNECTING', 'CONNECTED', 'REDIRECT']
+
+
+def _need_connection(meth):
+    @functools.wraps(meth)
+    def wrapper(self, *args, **kwargs):
+        if not self.isConnected():
+            raise ConnectionError()
+        meth(self, *args, **kwargs)
+
+    return wrapper
 
 
 class EClient(object):
@@ -79,13 +92,10 @@ class EClient(object):
         logger.info("-- CLIENT -- %s()", fname)
         self.conn.sendMsg(full_msg)
 
+    @_need_connection
     def startApi(self):
         """Initiates the message exchange between the client application and
         the TWS/IB Gateway. """
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 2
 
@@ -218,24 +228,18 @@ class EClient(object):
                 except BadMessage:
                     logger.info("BadMessage")
                     self.conn.disconnect()
-        except Exception as e:
-            logger.error('%s: %s', type(e), e)
-            raise
+                except Exception as e:
+                    logger.exception('Caught unknown EClient error')
         finally:
             logger.info('EClient decoder loop (message queue consumer) terminating')
             self.disconnect()
 
+    @_need_connection
     def reqCurrentTime(self):
         """Asks the current system time on the server side."""
 
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         VERSION = 1
-
         msg = make_field(OUT.REQ_CURRENT_TIME) + make_field(VERSION)
-
         self.sendMsg(msg)
 
     def serverVersion(self):
@@ -244,13 +248,10 @@ class EClient(object):
 
         return self.serverVersion_
 
+    @_need_connection
     def setServerLogLevel(self, logLevel: int):
         """The default detail level is ERROR. For more details, see API
         logger."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -271,6 +272,7 @@ class EClient(object):
     ################## Market Data
     ##########################################################################
 
+    @_need_connection
     def reqMktData(
         self,
         reqId: TickerId,
@@ -300,10 +302,6 @@ class EClient(object):
             regulatory snapshots are available for 0.01 USD each.
         mktDataOptions:TagValueList - For internal use only.
             Use default value XYZ. """
-
-        if not self.isConnected():
-            self.wrapper.error(reqId, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_DELTA_NEUTRAL:
             if contract.deltaNeutralContract:
@@ -401,16 +399,13 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelMktData(self, reqId: TickerId):
         """After calling this function, market data for the specified id
         will stop flowing.
 
         reqId: TickerId - The ID that was specified in the call to
             reqMktData(). """
-
-        if not self.isConnected():
-            self.wrapper.error(reqId, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 2
 
@@ -425,6 +420,7 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def reqMarketDataType(self, marketDataType: int):
         """The API can receive frozen market data from Trader
         Workstation. Frozen market data is the last data recorded in our system.
@@ -436,10 +432,6 @@ class EClient(object):
 
         marketDataType:int - 1 for real-time streaming market data or 2 for
             frozen market data"""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_REQ_MARKET_DATA_TYPE:
             self.wrapper.error(
@@ -462,11 +454,8 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def reqSmartComponents(self, reqId: int, bboExchange: str):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_REQ_SMART_COMPONENTS:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -483,11 +472,8 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqMarketRule(self, marketRuleId: int):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_MARKET_RULES:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -500,6 +486,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqTickByTickData(
         self,
         reqId: int,
@@ -508,10 +495,6 @@ class EClient(object):
         numberOfTicks: int,
         ignoreSize: bool,
     ):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_TICK_BY_TICK:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -553,11 +536,8 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelTickByTickData(self, reqId: int):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_TICK_BY_TICK:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -574,6 +554,7 @@ class EClient(object):
     ################## Options
     ##########################################################################
 
+    @_need_connection
     def calculateImpliedVolatility(
         self,
         reqId: TickerId,
@@ -590,10 +571,6 @@ class EClient(object):
         contract:Contract -  Describes the contract.
         optionPrice:double - The price of the option.
         underPrice:double - Price of the underlying."""
-
-        if not self.isConnected():
-            self.wrapper.error(reqId, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_REQ_CALC_IMPLIED_VOLAT:
             self.wrapper.error(
@@ -650,15 +627,12 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelCalculateImpliedVolatility(self, reqId: TickerId):
         """Call this function to cancel a request to calculate
         volatility for a supplied option price and underlying price.
 
         reqId:TickerId - The request ID.  """
-
-        if not self.isConnected():
-            self.wrapper.error(reqId, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_REQ_CALC_IMPLIED_VOLAT:
             self.wrapper.error(
@@ -679,6 +653,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def calculateOptionPrice(
         self,
         reqId: TickerId,
@@ -694,10 +669,6 @@ class EClient(object):
         contract:Contract - Describes the contract.
         volatility:double - The volatility.
         underPrice:double - Price of the underlying."""
-
-        if not self.isConnected():
-            self.wrapper.error(reqId, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_REQ_CALC_IMPLIED_VOLAT:
             self.wrapper.error(
@@ -754,15 +725,12 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelCalculateOptionPrice(self, reqId: TickerId):
         """Call this function to cancel a request to calculate the option
         price and greek values for a supplied volatility and underlying price.
 
         reqId:TickerId - The request ID.  """
-
-        if not self.isConnected():
-            self.wrapper.error(reqId, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_REQ_CALC_IMPLIED_VOLAT:
             self.wrapper.error(
@@ -783,6 +751,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def exerciseOptions(
         self,
         reqId: TickerId,
@@ -806,10 +775,6 @@ class EClient(object):
             exercise. If you have override set to "yes" the natural action would
              be overridden and the out-of-the money option would be exercised.
             Values are: 0 = no, 1 = yes."""
-
-        if not self.isConnected():
-            self.wrapper.error(reqId, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_TRADING_CLASS:
             if contract.tradingClass:
@@ -860,6 +825,7 @@ class EClient(object):
     ################## Orders
     ########################################################################
 
+    @_need_connection
     def placeOrder(self, orderId: OrderId, contract: Contract, order: Order):
         """Call this function to place an order. The order status will
         be returned by the orderStatus event.
@@ -871,10 +837,6 @@ class EClient(object):
             contract which is being traded.
         order:Order - This structure contains the details of tradedhe order.
             Note: Each client MUST connect with a unique clientId."""
-
-        if not self.isConnected():
-            self.wrapper.error(orderId, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_DELTA_NEUTRAL:
             if contract.deltaNeutralContract:
@@ -1525,15 +1487,12 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelOrder(self, orderId: OrderId):
         """Call this function to cancel an order.
 
         orderId:OrderId - The order ID that was specified previously in the call
             to placeOrder()"""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -1541,6 +1500,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqOpenOrders(self):
         """Call this function to request the open orders that were
         placed from this client. Each open order will be fed back through the
@@ -1551,16 +1511,13 @@ class EClient(object):
         orderId will be generated. This association will persist over multiple
         API and TWS sessions.  """
 
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         VERSION = 1
 
         msg = make_field(OUT.REQ_OPEN_ORDERS) + make_field(VERSION)
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqAutoOpenOrders(self, bAutoBind: bool):
         """Call this function to request that newly created TWS orders
         be implicitly associated with the client. When a new TWS order is
@@ -1573,10 +1530,6 @@ class EClient(object):
         associated with the client. If set to FALSE, no association will be
         made."""
 
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         VERSION = 1
 
         msg = (
@@ -1587,6 +1540,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqAllOpenOrders(self):
         """Call this function to request the open orders placed from all
         clients and also from TWS. Each open order will be fed back through the
@@ -1595,16 +1549,13 @@ class EClient(object):
         Note:  No association is made between the returned orders and the
         requesting client."""
 
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         VERSION = 1
 
         msg = make_field(OUT.REQ_ALL_OPEN_ORDERS) + make_field(VERSION)
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqGlobalCancel(self):
         """Use this function to cancel all open orders globally. It
         cancels both API and TWS open orders.
@@ -1612,16 +1563,13 @@ class EClient(object):
         If the order was created in TWS, it also gets canceled. If the order
         was initiated in the API, it also gets canceled."""
 
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         VERSION = 1
 
         msg = make_field(OUT.REQ_GLOBAL_CANCEL) + make_field(VERSION)
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqIds(self):
         """Call this function to request from TWS the next valid ID that
         can be used when placing an order.  After calling this function, the
@@ -1631,10 +1579,6 @@ class EClient(object):
 
         numIds:int - deprecated
         """
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
         numIds = 0
@@ -1647,6 +1591,7 @@ class EClient(object):
     ################## Account and Portfolio
     ########################################################################
 
+    @_need_connection
     def reqAccountUpdates(self, subscribe: bool, acctCode: str):
         """Call this function to start getting account values, portfolio,
         and last update time information via EWrapper.updateAccountValue(),
@@ -1657,10 +1602,6 @@ class EClient(object):
             receiving this information.
         acctCode:str -The account code for which to receive account and
             portfolio updates."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 2
 
@@ -1675,6 +1616,7 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def reqAccountSummary(self, reqId: int, groupName: str, tags: str):
         """Call this method to request and keep up to date the data that appears
         on the TWS Account Window Summary tab. The data is returned by
@@ -1730,10 +1672,6 @@ class EClient(object):
             $LEDGER:ALL - Single flag to relay all cash balance tags* in all
             currencies."""
 
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         VERSION = 1
 
         msg = (
@@ -1746,14 +1684,11 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelAccountSummary(self, reqId: int):
         """Cancels the request for Account Window Summary tab data.
 
         reqId:int - The ID of the data request being canceled."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -1765,12 +1700,9 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqPositions(self):
         """Requests real-time position data for all accounts."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_POSITIONS:
             self.wrapper.error(
@@ -1786,12 +1718,9 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelPositions(self):
         """Cancels real-time position updates."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_POSITIONS:
             self.wrapper.error(
@@ -1807,14 +1736,11 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqPositionsMulti(self, reqId: int, account: str, modelCode: str):
         """Requests positions for account and/or model.
         Results are delivered via EWrapper.positionMulti() and
         EWrapper.positionMultiEnd() """
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_MODELS_SUPPORT:
             self.wrapper.error(
@@ -1836,12 +1762,8 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelPositionsMulti(self, reqId: int):
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_MODELS_SUPPORT:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -1860,14 +1782,11 @@ class EClient(object):
         )
         self.sendMsg(msg)
 
+    @_need_connection
     def reqAccountUpdatesMulti(
         self, reqId: int, account: str, modelCode: str, ledgerAndNLV: bool
     ):
         """Requests account updates for account and/or model."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_MODELS_SUPPORT:
             self.wrapper.error(
@@ -1891,12 +1810,8 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelAccountUpdatesMulti(self, reqId: int):
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_MODELS_SUPPORT:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -1919,12 +1834,8 @@ class EClient(object):
     ################## Daily PnL
     #########################################################################
 
+    @_need_connection
     def reqPnL(self, reqId: int, account: str, modelCode: str):
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_PNL:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -1942,12 +1853,8 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelPnL(self, reqId: int):
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_PNL:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -1960,12 +1867,8 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqPnLSingle(self, reqId: int, account: str, modelCode: str, conid: int):
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_PNL:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -1984,12 +1887,8 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelPnLSingle(self, reqId: int):
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_PNL:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -2006,6 +1905,7 @@ class EClient(object):
     ################## Executions
     #########################################################################
 
+    @_need_connection
     def reqExecutions(self, reqId: int, execFilter: ExecutionFilter):
         """When this function is called, the execution reports that meet the
         filter criteria are downloaded to the client via the execDetails()
@@ -2020,10 +1920,6 @@ class EClient(object):
             reports are returned.
 
         NOTE: Time format must be 'yyyymmdd-hh:mm:ss' Eg: '20030702-14:55'"""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 3
 
@@ -2052,6 +1948,7 @@ class EClient(object):
     ################## Contract Details
     #########################################################################
 
+    @_need_connection
     def reqContractDetails(self, reqId: int, contract: Contract):
         """Call this function to download all details for a particular
         underlying. The contract details will be received via the contractDetails()
@@ -2062,10 +1959,6 @@ class EClient(object):
         contract:Contract - The summary description of the contract being looked
             up.
         """
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_SEC_ID_TYPE:
             if contract.secIdType or contract.secId:
@@ -2145,11 +2038,8 @@ class EClient(object):
     ################## Market Depth
     #########################################################################
 
+    @_need_connection
     def reqMktDepthExchanges(self):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_REQ_MKT_DEPTH_EXCHANGES:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -2163,6 +2053,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqMktDepth(
         self,
         reqId: TickerId,
@@ -2187,10 +2078,6 @@ class EClient(object):
         numRows:int - Specifies the numRowsumber of market depth rows to display.
         mktDepthOptions:TagValueList - For internal use only. Use default value
             XYZ."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_TRADING_CLASS:
             if contract.tradingClass or contract.conId > 0:
@@ -2238,16 +2125,13 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelMktDepth(self, reqId: TickerId):
         """After calling this function, market depth data for the specified id
         will stop flowing.
 
         reqId:TickerId - The ID that was specified in the call to
             reqMktDepth()."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -2259,6 +2143,7 @@ class EClient(object):
     ################## News Bulletins
     #########################################################################
 
+    @_need_connection
     def reqNewsBulletins(self, allMsgs: bool):
         """Call this function to start receiving news bulletins. Each bulletin
         will be returned by the updateNewsBulletin() event.
@@ -2266,10 +2151,6 @@ class EClient(object):
         allMsgs:bool - If set to TRUE, returns all the existing bulletins for
         the currencyent day and any new ones. If set to FALSE, will only
         return new bulletins. """
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -2281,12 +2162,9 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelNewsBulletins(self):
         """Call this function to stop receiving news bulletins."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -2298,15 +2176,12 @@ class EClient(object):
     ################## Financial Advisors
     #########################################################################
 
+    @_need_connection
     def reqManagedAccts(self):
         """Call this function to request the list of managed accounts. The list
         will be returned by the managedAccounts() function on the EWrapper.
 
         Note:  This request can only be made when connected to a FA managed account."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -2314,6 +2189,7 @@ class EClient(object):
 
         return self.sendMsg(msg)
 
+    @_need_connection
     def requestFA(self, faData: FaDataType):
         """Call this function to request FA configuration information from TWS.
         The data returns in an XML string via a "receiveFA" ActiveX event.
@@ -2324,16 +2200,13 @@ class EClient(object):
             2 = PROFILE
             3 = ACCOUNT ALIASES"""
 
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         VERSION = 1
 
         msg = make_field(OUT.REQ_FA) + make_field(VERSION) + make_field(int(faData))
 
         return self.sendMsg(msg)
 
+    @_need_connection
     def replaceFA(self, faData: FaDataType, cxml: str):
         """Call this function to modify FA configuration information from the
         API. Note that this can also be done manually in TWS itself.
@@ -2345,10 +2218,6 @@ class EClient(object):
             3 = ACCOUNT ALIASES
         cxml: str - The XML string containing the new FA configuration
             information.  """
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -2364,6 +2233,7 @@ class EClient(object):
     ################## Historical Data
     #########################################################################
 
+    @_need_connection
     def reqHistoricalData(
         self,
         reqId: TickerId,
@@ -2430,10 +2300,6 @@ class EClient(object):
             2 - dates are returned as a long integer specifying the number of seconds since
                 1/1/1970 GMT.
         chartOptions:TagValueList - For internal use only. Use default value XYZ. """
-
-        if not self.isConnected():
-            self.wrapper.error(reqId, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_TRADING_CLASS:
             if contract.tradingClass or contract.conId > 0:
@@ -2508,16 +2374,13 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelHistoricalData(self, reqId: TickerId):
         """Used if an internet disconnect has occurred or the results of a query
         are otherwise delayed and the application is no longer interested in receiving
         the data.
 
         reqId:TickerId - The ticker ID. Must be a unique value."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -2532,6 +2395,7 @@ class EClient(object):
     # Note that formatData parameter affects intraday bars only
     # 1-day bars always return with date in YYYYMMDD format
 
+    @_need_connection
     def reqHeadTimeStamp(
         self,
         reqId: TickerId,
@@ -2540,10 +2404,6 @@ class EClient(object):
         useRTH: int,
         formatDate: int,
     ):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_REQ_HEAD_TIMESTAMP:
             self.wrapper.error(
                 reqId,
@@ -2577,11 +2437,8 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelHeadTimeStamp(self, reqId: TickerId):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_CANCEL_HEADTIMESTAMP:
             self.wrapper.error(
                 reqId,
@@ -2596,13 +2453,10 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def reqHistogramData(
         self, tickerId: int, contract: Contract, useRTH: bool, timePeriod: str
     ):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_REQ_HISTOGRAM:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -2635,11 +2489,8 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelHistogramData(self, tickerId: int):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_REQ_HISTOGRAM:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -2652,6 +2503,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqHistoricalTicks(
         self,
         reqId: int,
@@ -2664,10 +2516,6 @@ class EClient(object):
         ignoreSize: bool,
         miscOptions: TagValueList,
     ):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_HISTORICAL_TICKS:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -2714,12 +2562,9 @@ class EClient(object):
     ################## Market Scanners
     #########################################################################
 
+    @_need_connection
     def reqScannerParameters(self):
         """Requests an XML string that describes all possible scanner queries."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -2727,6 +2572,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqScannerSubscription(
         self,
         reqId: int,
@@ -2738,10 +2584,6 @@ class EClient(object):
             possible parameters used to filter results.
         scannerSubscriptionOptions:TagValueList - For internal use only.
             Use default value XYZ."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 4
 
@@ -2786,12 +2628,9 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelScannerSubscription(self, reqId: int):
         """reqId:int - The ticker ID. Must be a unique value."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -2807,6 +2646,7 @@ class EClient(object):
     ################## Real Time Bars
     #########################################################################
 
+    @_need_connection
     def reqRealTimeBars(
         self,
         reqId: TickerId,
@@ -2840,10 +2680,6 @@ class EClient(object):
                 requested is returned, even if the time time span falls
                 partially or completely outside.
         realTimeBarOptions:TagValueList - For internal use only. Use default value XYZ."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_TRADING_CLASS:
             if contract.tradingClass:
@@ -2894,14 +2730,11 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelRealTimeBars(self, reqId: TickerId):
         """Call the cancelRealTimeBars() function to stop receiving real time bar results.
 
         reqId:TickerId - The Id that was specified in the call to reqRealTimeBars(). """
-
-        if not self.isConnected():
-            self.wrapper.error(reqId, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 1
 
@@ -2920,6 +2753,7 @@ class EClient(object):
     ################## Fundamental Data
     #########################################################################
 
+    @_need_connection
     def reqFundamentalData(
         self,
         reqId: TickerId,
@@ -2948,10 +2782,6 @@ class EClient(object):
             ReportsFinStatements (financial statements)
             RESC (analyst estimates)
             CalendarReport (company calendar) """
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         VERSION = 2
 
@@ -3005,14 +2835,11 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def cancelFundamentalData(self, reqId: TickerId):
         """Call this function to stop receiving Reuters global fundamental data.
 
         reqId:TickerId - The ID of the data request."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_FUNDAMENTAL_DATA:
             self.wrapper.error(
@@ -3036,11 +2863,8 @@ class EClient(object):
     ################## News
     #########################################################################
 
+    @_need_connection
     def reqNewsProviders(self):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_REQ_NEWS_PROVIDERS:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -3053,6 +2877,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqNewsArticle(
         self,
         reqId: int,
@@ -3060,10 +2885,6 @@ class EClient(object):
         articleId: str,
         newsArticleOptions: TagValueList,
     ):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_REQ_NEWS_ARTICLE:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -3092,6 +2913,7 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def reqHistoricalNews(
         self,
         reqId: int,
@@ -3102,10 +2924,6 @@ class EClient(object):
         totalResults: int,
         historicalNewsOptions: TagValueList,
     ):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_REQ_HISTORICAL_NEWS:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -3141,16 +2959,13 @@ class EClient(object):
     ################## Display Groups
     #########################################################################
 
+    @_need_connection
     def queryDisplayGroups(self, reqId: int):
         """API requests used to integrate with TWS color-grouped windows (display groups).
         TWS color-grouped windows are identified by an integer number. Currently that number ranges from 1 to 7 and are mapped to specific colors, as indicated in TWS.
 
         reqId:int - The unique number that will be associated with the
             response """
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_LINKING:
             self.wrapper.error(
@@ -3170,14 +2985,11 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def subscribeToGroupEvents(self, reqId: int, groupId: int):
         """reqId:int - The unique number associated with the notification.
         groupId:int - The ID of the group, currently it is a number from 1 to 7.
             This is the display group subscription request sent by the API to TWS."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_LINKING:
             self.wrapper.error(
@@ -3199,6 +3011,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def updateDisplayGroup(self, reqId: int, contractInfo: str):
         """reqId:int - The requestId specified in subscribeToGroupEvents().
         contractInfo:str - The encoded value that uniquely represents the
@@ -3208,10 +3021,6 @@ class EClient(object):
             contractID@exchange - any non-combination contract.
                 Examples: 8314@SMART for IBM SMART; 8314@ARCA for IBM @ARCA.
             combo = if any combo is selected."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_LINKING:
             self.wrapper.error(
@@ -3232,12 +3041,9 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def unsubscribeFromGroupEvents(self, reqId: int):
         """reqId:int - The requestId specified in subscribeToGroupEvents()."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_LINKING:
             self.wrapper.error(
@@ -3258,13 +3064,10 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def verifyRequest(self, apiName: str, apiVersion: str):
         """For IB's internal purpose. Allows to provide means of verification
         between the TWS and third party programs."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_LINKING:
             self.wrapper.error(
@@ -3294,13 +3097,10 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def verifyMessage(self, apiData: str):
         """For IB's internal purpose. Allows to provide means of verification
         between the TWS and third party programs."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_LINKING:
             self.wrapper.error(
@@ -3316,13 +3116,10 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def verifyAndAuthRequest(self, apiName: str, apiVersion: str, opaqueIsvKey: str):
         """For IB's internal purpose. Allows to provide means of verification
         between the TWS and third party programs."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_LINKING:
             self.wrapper.error(
@@ -3353,13 +3150,10 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def verifyAndAuthMessage(self, apiData: str, xyzResponse: str):
         """For IB's internal purpose. Allows to provide means of verification
         between the TWS and third party programs."""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_LINKING:
             self.wrapper.error(
@@ -3380,6 +3174,7 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqSecDefOptParams(
         self,
         reqId: int,
@@ -3395,10 +3190,6 @@ class EClient(object):
         exchanges. underlyingSecType The type of the underlying security,
         i.e. STK underlyingConId the contract ID of the underlying security.
         Response comes via EWrapper.securityDefinitionOptionParameter()"""
-
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
 
         if self.serverVersion() < MIN_SERVER_VER_SEC_DEF_OPT_PARAMS_REQ:
             self.wrapper.error(
@@ -3422,24 +3213,18 @@ class EClient(object):
         msg = "".join(flds)
         self.sendMsg(msg)
 
+    @_need_connection
     def reqSoftDollarTiers(self, reqId: int):
         """Requests pre-defined Soft Dollar Tiers. This is only supported for
         registered professional advisors and hedge and mutual funds who have
         configured Soft Dollar Tiers in Account Management."""
 
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         msg = make_field(OUT.REQ_SOFT_DOLLAR_TIERS) + make_field(reqId)
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqFamilyCodes(self):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_REQ_FAMILY_CODES:
             self.wrapper.error(
                 NO_VALID_ID,
@@ -3452,11 +3237,8 @@ class EClient(object):
 
         self.sendMsg(msg)
 
+    @_need_connection
     def reqMatchingSymbols(self, reqId: int, pattern: str):
-        if not self.isConnected():
-            self.wrapper.error(NO_VALID_ID, NOT_CONNECTED.code(), NOT_CONNECTED.msg())
-            return
-
         if self.serverVersion() < MIN_SERVER_VER_REQ_MATCHING_SYMBOLS:
             self.wrapper.error(
                 NO_VALID_ID,

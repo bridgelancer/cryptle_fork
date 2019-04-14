@@ -21,6 +21,15 @@ ASSET_CONTRACT_MAP['hsihkd'] = _
 
 
 _ = Contract()
+_.symbol = 'USD'
+_.secType = 'CASH'
+_.exchange = 'IDEALPRO'
+_.currency = 'CNH'
+
+ASSET_CONTRACT_MAP['usdcnh'] = _
+
+
+_ = Contract()
 _.symbol = 'TSLA'
 _.secType = 'STK'
 _.exchange = 'SMART'
