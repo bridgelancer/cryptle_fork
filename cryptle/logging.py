@@ -217,7 +217,7 @@ logging.Logger.tick = _tick
 class DebugFormatter(logging.Formatter):
     """Create detailed and machine parsable log messages."""
 
-    fmt = '{asctime}:{levelname}:{filename}:{lineno}:{message}'
+    fmt = '{asctime}:{levelname}:{name}:{filename}:{lineno}:{message}'
     datefmt = '%Y%m%dT%H%M%S'
 
     def __init__(self, **kwargs):

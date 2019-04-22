@@ -136,7 +136,7 @@ class Bus:
 
                 # bind emitters
                 if isinstance(attr, _Emitter):
-                    logger.info('Added emitter {}', attr)
+                    logger.debug('Added emitter {}', attr)
                     attr.buses.append(self)
                     decorated = True
 
@@ -205,7 +205,7 @@ class Bus:
     def addListener(self, event, func):
         """Add the provided function to the list of listeners of the provided event."""
         self._callbacks[event].append(func)
-        logger.info('Added listener {} for event "{}" to {}', func, event, self)
+        logger.debug('Added listener {} for event "{}" to {}', func, event, self)
 
     def makeEmitter(self, event, func):
         """Return an emitter function binded to the caller bus."""
@@ -231,7 +231,7 @@ class Bus:
         emitter.buses.append(self)
         self._emitters[event].append(emitter)
 
-        logger.info('Created emitter {} for event "{}"'.format(func, event))
+        logger.debug('Created emitter {} for event "{}"'.format(func, event))
         return emitter
 
 
