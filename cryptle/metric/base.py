@@ -241,9 +241,9 @@ class Timeseries(Metric):
         # Subscribe and Listen to the appropriate body
         for arg in vargs:
             arg.subscribers.append(self)
-            logger.info('\nSubscribe {} as a subscriber of {}', repr(self), repr(arg))
+            logger.info('Subscribe {} as a subscriber of {}', repr(self), repr(arg))
             self.publishers.append(arg)
-            logger.info('Listen {} as a listener of {} \n', repr(arg), repr(self))
+            logger.info('Listen {} as a listener of {}', repr(arg), repr(self))
 
     def __getitem__(self, index):
         """Wrapping the DiskTS and give access via usual list-value getting syntax."""
