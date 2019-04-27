@@ -20,7 +20,7 @@ setup(
         'matplotlib>=2.2.0',
         'requests>=2.18.4',
         'websocket-client>=0.45',
-        'scikit-learn>=0.19.1',
+        'scikit-learn==0.20.3',
         'Click>=7.0',
     ],
     extras_require={
