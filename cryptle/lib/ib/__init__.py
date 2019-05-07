@@ -328,7 +328,7 @@ class IBDatafeed:
         self._conn.reqTickByTickData(rid, contract, TICK_TYPE, NUM_TICKS, IGNORE_SIZE)
         return rid
 
-    def onCandle(self, asset, base, callback):
+    def onCandle(self, asset, base, callback, what_to_show='TRADES'):
         """
         Args
         ----
@@ -337,7 +337,6 @@ class IBDatafeed:
         """
         # IB EClient request parameters
         BAR_SIZE = 0  # currently ignored by TWS
-        WHAT_TO_SHOW = 'TRADES'
         USE_RTH = 1
 
         rid = self._conn.getReqId()
@@ -345,7 +344,7 @@ class IBDatafeed:
         contract = makeContract(asset, base)
         self.tick_callbacks[rid] = callback
         self._conn.on(TWSEvent.realtimeBar, self._adaptRealtimeBar)
-        self._conn.reqRealTimeBars(rid, contract, BAR_SIZE, WHAT_TO_SHOW, USE_RTH, [])
+        self._conn.reqRealTimeBars(rid, contract, BAR_SIZE, what_to_show, USE_RTH, [])
         return rid
 
     def _adaptTickByTickAllLast(
