@@ -33,6 +33,7 @@ unified log format for cryptle. A number of helper functions setup the root
 logger with sensible defaults.
 """
 import logging
+import logging.handlers
 import threading
 import sys
 
@@ -97,10 +98,6 @@ class Logger(logging.Logger):
                     raise KeyError("Attempt to overwrite %r in LogRecord" % key)
                 rv.__dict__[key] = extra[key]
         return rv
-
-
-FileHandler = logging.FileHandler
-StreamHandler = logging.StreamHandler
 
 
 def getLogger(name=None):
@@ -242,7 +239,7 @@ class SimpleFormatter(logging.Formatter):
 class ColorFormatter(logging.Formatter):
     """Create colorize log messages with terminal control characters."""
 
-    fmt = '{name:<10} {asctime} {levelname:<8} {message}'
+    fmt = '{name:<20} {asctime} {levelname:<8} {message}'
     datefmt = '%Y-%m-%d %H:%M:%S'
 
     RESET = '\033[0m'
@@ -287,14 +284,23 @@ def make_logger(name, *handlers, level=DEBUG):
 
 
 def get_filehandler(fname, level=DEBUG, formatter=DebugFormatter()):
-    fh = FileHandler(fname, mode='w')
+    fh = logging.FileHandler(fname, mode='w')
     fh.setLevel(level)
     fh.setFormatter(formatter)
     return fh
 
 
+def get_rotatinghandler(fname, level=DEBUG, formatter=DebugFormatter()):
+    rh = logging.handlers.RotatingFileHandler(
+        fname, maxBytes=10000000, backupCount=10
+    )  # 10MB
+    rh.setLevel(level)
+    rh.setFormatter(formatter)
+    return rh
+
+
 def get_streamhandler(stream=sys.stdout, level=INFO, formatter=ColorFormatter()):
-    sh = StreamHandler(stream=sys.stdout)
+    sh = logging.StreamHandler(stream=sys.stdout)
     sh.setLevel(level)
     sh.setFormatter(formatter)
     return sh
@@ -319,7 +325,7 @@ def configure_root_logger(
 
     """
     if file:
-        fh = get_filehandler(file, level=file_level)
+        fh = get_rotatinghandler(file, level=file_level)
         root.addHandler(fh)
 
     sh = get_streamhandler(stream, level=stream_level)
