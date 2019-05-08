@@ -34,7 +34,7 @@ class Aggregator:
         self._pushAllMetrics(*bar)
         self._emitFullCandle(candle)
 
-    @source('aggregator:new_candle')
+    #@source('aggregator:new_candle')
     def _emitAggregatedCandle(self, bar):
         self._pushAllMetrics(*bar)
         return bar
