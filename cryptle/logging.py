@@ -32,6 +32,7 @@ Default formatters subclassed from `logging.Formatter
 unified log format for cryptle. A number of helper functions setup the root
 logger with sensible defaults.
 """
+import datetime
 import logging
 import logging.handlers
 import threading
@@ -283,6 +284,7 @@ def make_logger(name, *handlers, level=DEBUG):
     return logger
 
 
+# Helper factories
 def get_filehandler(fname, level=DEBUG, formatter=DebugFormatter()):
     fh = logging.FileHandler(fname, mode='w')
     fh.setLevel(level)
@@ -297,6 +299,15 @@ def get_rotatinghandler(fname, level=DEBUG, formatter=DebugFormatter()):
     rh.setLevel(level)
     rh.setFormatter(formatter)
     return rh
+
+
+def get_timedrotatinghandler(fname, level=DEBUG, formatter=DebugFormatter()):
+    th = logging.handlers.TimedRotatingFileHandler(
+        fname, when='D', backupCount=0, atTime=datetime.time(hour=0, minute=0)
+    )  # infinite backup
+    th.setLevel(level)
+    th.setFormatter(formatter)
+    return th
 
 
 def get_streamhandler(stream=sys.stdout, level=INFO, formatter=ColorFormatter()):

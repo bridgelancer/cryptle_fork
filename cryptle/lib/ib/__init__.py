@@ -303,6 +303,8 @@ class IBDatafeed:
 
     def __init__(self, conn):
         self._conn = conn
+        self._conn.on(TWSEvent.tickByTickAllLast, self._adaptTickByTickAllLast)
+        self._conn.on(TWSEvent.realtimeBar, self._adaptRealtimeBar)
         self.tick_callbacks = collections.defaultdict(list)
 
     def __repr__(self):
@@ -324,7 +326,6 @@ class IBDatafeed:
         pair = asset + base
         contract = makeContract(asset, base)
         self.tick_callbacks[rid] = callback
-        self._conn.on(TWSEvent.tickByTickAllLast, self._adaptTickByTickAllLast)
         self._conn.reqTickByTickData(rid, contract, TICK_TYPE, NUM_TICKS, IGNORE_SIZE)
         return rid
 
@@ -343,7 +344,6 @@ class IBDatafeed:
         pair = asset + base
         contract = makeContract(asset, base)
         self.tick_callbacks[rid] = callback
-        self._conn.on(TWSEvent.realtimeBar, self._adaptRealtimeBar)
         self._conn.reqRealTimeBars(rid, contract, BAR_SIZE, what_to_show, USE_RTH, [])
         return rid
 
