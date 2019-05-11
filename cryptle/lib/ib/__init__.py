@@ -348,6 +348,15 @@ class IBDatafeed:
         self._conn.reqRealTimeBars(rid, contract, BAR_SIZE, WHAT_TO_SHOW, USE_RTH, [])
         return rid
 
+    def unsubscribe(self, rid):
+        del self.tick_callbacks[rid]
+        self._conn.cancelRealTimeBars(rid)
+
+    def unsubscribeAll(self):
+        rids = [key for key in self.tick_callbacks.keys()]
+        for rid in rids:
+            self.unsubscribe(rid)
+
     def _adaptTickByTickAllLast(
         self, reqId, tickType, time, price, size, attribs, exchange, specialConditions
     ):
