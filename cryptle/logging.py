@@ -217,7 +217,7 @@ logging.Logger.tick = _tick
 class DebugFormatter(logging.Formatter):
     """Create detailed and machine parsable log messages."""
 
-    fmt = '{asctime}:{levelname}:{filename}:{lineno}:{message}'
+    fmt = '{asctime}:{levelname}:{name}:{filename}:{lineno}:{message}'
     datefmt = '%Y%m%dT%H%M%S'
 
     def __init__(self, **kwargs):
@@ -300,7 +300,9 @@ def get_streamhandler(stream=sys.stdout, level=INFO, formatter=ColorFormatter())
     return sh
 
 
-def configure_root_logger(file, strm=None, flvl=DEBUG, slvl=REPORT) -> None:
+def configure_root_logger(
+    file=None, stream=sys.stdout, file_level=DEBUG, stream_level=REPORT
+) -> None:
     """Helper routine to setup root logger with file and stream handlers.
 
     Adds a file handler and stream handler to the root logger. These handlers
@@ -316,9 +318,10 @@ def configure_root_logger(file, strm=None, flvl=DEBUG, slvl=REPORT) -> None:
         Log level of the stream handler
 
     """
-    fh = get_filehandler(file)
-    sh = get_streamhandler(strm)
+    if file:
+        fh = get_filehandler(file, level=file_level)
+        root.addHandler(fh)
 
+    sh = get_streamhandler(stream, level=stream_level)
     root.addHandler(sh)
-    root.addHandler(fh)
-    root.setLevel(flvl)
+    root.setLevel(file_level if file_level < stream_level else stream_level)
