@@ -37,6 +37,14 @@ _.currency = 'USD'
 
 ASSET_CONTRACT_MAP['tslausd'] = _
 
+_ = Contract()
+_.symbol = 'USD'
+_.secType = 'CASH'
+_.exchange = 'IDEALPRO'
+_.currency = 'CHF'
+
+ASSET_CONTRACT_MAP['usdgbp'] = _
+
 
 OrderStatus = Enum(
     'OrderStatus',
