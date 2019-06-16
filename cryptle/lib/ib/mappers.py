@@ -43,7 +43,7 @@ _.secType = 'CASH'
 _.exchange = 'IDEALPRO'
 _.currency = 'CHF'
 
-ASSET_CONTRACT_MAP['usdgbp'] = _
+ASSET_CONTRACT_MAP['usdchf'] = _
 
 
 OrderStatus = Enum(
