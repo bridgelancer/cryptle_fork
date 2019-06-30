@@ -1,9 +1,12 @@
 """This module maps enums to IB API mnemonics or POD."""
 
-from datetime import date
+from datetime import date, timedelta
 from enum import Enum
 
+from tcalendar import need_rollover
+
 from .contract import Contract
+
 
 
 ASSET_CONTRACT_MAP = {}
@@ -14,8 +17,11 @@ _.symbol = 'HSI'
 _.secType = 'FUT'
 _.exchange = 'HKFE'
 _.currency = 'HKD'
-_.lastTradeDateOrContractMonth = date.today().strftime('%Y%m')
-# _.conid = 327970815
+
+if need_rollover(date.today()):
+    _.lastTradeDateOrContractMonth = (date.today() + timedelta(days=30)).strftime('%Y%m')
+else:
+    _.lastTradeDateOrContractMonth = date.today().strftime('%Y%m')
 _.conid = 369009605
 
 ASSET_CONTRACT_MAP['hsihkd'] = _
