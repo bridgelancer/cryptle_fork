@@ -15,7 +15,8 @@ _.secType = 'FUT'
 _.exchange = 'HKFE'
 _.currency = 'HKD'
 _.lastTradeDateOrContractMonth = date.today().strftime('%Y%m')
-_.conid = 327970815
+# _.conid = 327970815
+_.conid = 369009605
 
 ASSET_CONTRACT_MAP['hsihkd'] = _
 
