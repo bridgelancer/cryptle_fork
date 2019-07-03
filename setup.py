@@ -22,6 +22,7 @@ setup(
         'websocket-client>=0.45',
         'scikit-learn>=0.19.1',
         'Click>=7.0',
+        'business_calendar>=0.2.1',
     ],
     extras_require={
         'dev': [
