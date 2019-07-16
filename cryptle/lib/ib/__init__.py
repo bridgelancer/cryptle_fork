@@ -196,6 +196,7 @@ class IBExchange:
             return oid
         else:
             self._oid += 1
+            self._last_order_id = oid
             logger.debug('Duplicate Order ID from TWS, using %d', self._oid)
             return self._oid
 
