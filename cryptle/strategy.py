@@ -264,15 +264,13 @@ class TradingStrategy(Strategy):
         #     raise ValueError("Expect positive value for amount.")
 
         logger.debug('Placing market buy for {:.6g} {}', amount, asset)
-        self.exchange.marketBuy(asset, self.base, amount)
+        success, price = self.exchange.marketBuy(asset, self.base, amount)
 
-        #success, price = self.exchange.marketBuy(asset, self.base, amount)
-
-        #if success:
-        #    self._cleanupBuy(asset, price, amount)
-        #    return price
-        #else:
-        #    raise ExchangeError('Order placement failed')
+        if success:
+            self._cleanupBuy(asset, price, amount)
+            return price
+        else:
+            raise ExchangeError('Order placement failed')
 
     def marketSell(self, asset: str, amount: float) -> float:
         """Send market sell request to associated exchange"""
@@ -280,14 +278,13 @@ class TradingStrategy(Strategy):
         #     raise ValueError("Expect positive value for amount.")
 
         logger.debug('Placing market sell for {:.6g} {}', amount, asset)
-        #success, price = self.exchange.marketSell(asset, self.base, amount)
-        self.exchange.marketSell(asset, self.base, amount)
+        success, price = self.exchange.marketSell(asset, self.base, amount)
 
-        #if success:
-        #    self._cleanupSell(asset, amount, price)
-        #    return price
-        #else:
-        #    raise ExchangeError('Order placement failed')
+        if success:
+            self._cleanupSell(asset, amount, price)
+            return price
+        else:
+            raise ExchangeError('Order placement failed')
 
     def limitBuy(self, asset: str, amount: float, price: float) -> int:
         """Send limit buy request to associated exchange"""

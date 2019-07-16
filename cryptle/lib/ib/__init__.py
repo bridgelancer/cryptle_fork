@@ -154,7 +154,7 @@ class IBExchange:
         # Settings
         self.max_timeout = 5
         self.max_retry = 5
-        self.polling = False
+        self.polling = True
 
         self._conn = conn
         self._last_order_id = -1
@@ -206,7 +206,7 @@ class IBExchange:
         logger.debug('-- QUEUE -- %s() %r', 'orderStatus', args)
 
         # partially extract args
-        order_id, status, _ = args
+        order_id, status, *_ = args
         # todo: else put the order back in the queue, will need for limit orders
         if order_id == oid:
             return OrderStatus(status), args
@@ -226,25 +226,30 @@ class IBExchange:
                 pass
             else:
                 retry += 1
-        logger.debug('reached max order status polling retries')
+
+            time.sleep(0.1)
+        logger.critical('reached max order status polling retries')
         return False, None
 
     def syncPlaceOrder(self, contract, order) -> float:
         oid = self._nextOrderId()
         order.orderId = oid
         self._conn.placeOrder(oid, contract, order)
+
         # blocks until the market order is confirmed to have succeed or failed
         if self.polling:
             success, final_price = self._pollOrderStatusTillFilled(oid)
             if not success:
                 raise MarketOrderFailed(oid)
-            return final_price
+            return success, final_price
+        else:
+            return False, -100
 
     def _checkReject(self, oid, reason):
         warnings.warn(f'Order {oid}: {reason}')
 
     # === Cryptle standard interface ===
-    def marketBuy(self, asset, base, amount) -> int:
+    def marketBuy(self, asset, base, amount) -> Tuple[bool, int]:
         """
         Args
         ----
@@ -260,7 +265,7 @@ class IBExchange:
         order = makeOrder(OrderType.MARKET, amount)
         return self.syncPlaceOrder(contract, order)
 
-    def marketSell(self, asset, base, amount) -> int:
+    def marketSell(self, asset, base, amount) -> Tuple[bool, int]:
         """
         Args
         ----
