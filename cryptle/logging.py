@@ -301,9 +301,9 @@ def get_rotatinghandler(fname, level=DEBUG, formatter=DebugFormatter()):
     return rh
 
 
-def get_timedrotatinghandler(fname, level=DEBUG, formatter=DebugFormatter()):
+def get_timedrotatinghandler(fname, level=DEBUG, formatter=DebugFormatter(), when='D'):
     th = logging.handlers.TimedRotatingFileHandler(
-        fname, when='D', backupCount=0, atTime=datetime.time(hour=0, minute=0)
+        fname, when=when, backupCount=0, atTime=datetime.time(hour=0, minute=0)
     )  # infinite backup
     th.setLevel(level)
     th.setFormatter(formatter)
