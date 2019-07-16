@@ -1,5 +1,5 @@
 """This module provide abstractions of IB API to adapt to Cryptle."""
-
+from typing import Tuple, Any
 import collections
 import functools
 import logging
@@ -200,43 +200,45 @@ class IBExchange:
             logger.debug('Duplicate Order ID from TWS, using %d', self._oid)
             return self._oid
 
-    def _pollOrderStatus(self, oid) -> OrderStatus:
+    def _pollOrderStatus(self, oid) -> Tuple[OrderStatus, Tuple[Any, ...]]:
         self._conn.reqOpenOrders()
         args, _ = self.order_queue.get(timeout=self.max_timeout)
         logger.debug('-- QUEUE -- %s() %r', 'orderStatus', args)
 
         # partially extract args
-        order_id, status, *_ = args
+        order_id, status, _ = args
         # todo: else put the order back in the queue, will need for limit orders
-        # if order_id == oid:
-        return OrderStatus(status)
+        if order_id == oid:
+            return OrderStatus(status), args
+        else:
+            logger.warn('Unrecognised order ID')
 
     # === Internals ===
     def _pollOrderStatusTillFilled(self, oid):
         retry = 0
         while retry < self.max_retry:
             logger.debug('polling try: %d', retry)
-            state = self._pollOrderStatus(oid)
+            state, args = self._pollOrderStatus(oid)
             if state == OrderStatus.FILLED:
                 logger.debug('Polling success')
-                return True
+                return True, args[4]  # price
             elif state == OrderStatus.API_PENDING:
                 pass
             else:
                 retry += 1
         logger.debug('reached max order status polling retries')
-        return False
+        return False, None
 
-    def syncPlaceOrder(self, contract, order):
+    def syncPlaceOrder(self, contract, order) -> float:
         oid = self._nextOrderId()
         order.orderId = oid
         self._conn.placeOrder(oid, contract, order)
         # blocks until the market order is confirmed to have succeed or failed
         if self.polling:
-            success = self._pollOrderStatusTillFilled(oid)
+            success, final_price = self._pollOrderStatusTillFilled(oid)
             if not success:
                 raise MarketOrderFailed(oid)
-        return oid
+        return final_price
 
     def _checkReject(self, oid, reason):
         warnings.warn(f'Order {oid}: {reason}')
