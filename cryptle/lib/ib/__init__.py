@@ -238,7 +238,7 @@ class IBExchange:
             success, final_price = self._pollOrderStatusTillFilled(oid)
             if not success:
                 raise MarketOrderFailed(oid)
-        return final_price
+            return final_price
 
     def _checkReject(self, oid, reason):
         warnings.warn(f'Order {oid}: {reason}')
