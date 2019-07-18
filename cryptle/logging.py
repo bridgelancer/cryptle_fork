@@ -232,8 +232,10 @@ class SimpleFormatter(logging.Formatter):
         super().__init__(fmt=self.fmt, datefmt=self.datefmt, style='{', **kwargs)
 
     def format(self, record):
+        original_levelname = record.levelname
         record.levelname = '[' + record.levelname + ']'
         s = super().format(record)
+        record.levelname = original_levelname
         return s
 
 
@@ -254,15 +256,16 @@ class ColorFormatter(logging.Formatter):
         super().__init__(fmt=self.fmt, datefmt=self.datefmt, style='{', **kwargs)
 
     def format(self, record):
+        original_levelname = record.levelname
         self._format_levelname(record)
         s = super().format(record)
+        record.levelname = original_levelname
         return s
 
     def _format_levelname(self, record):
         color = self._get_color(record)
         record.levelname = color + record.levelname + self.RESET
         record.levelname = '[' + record.levelname + ']'
-        return record
 
     def _get_color(self, record):
         if record.levelno >= ERROR:
