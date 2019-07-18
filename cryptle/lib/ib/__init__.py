@@ -153,7 +153,7 @@ class IBExchange:
     def __init__(self, conn: IBConnection):
         # Settings
         self.max_timeout = 5
-        self.max_retry = 5
+        self.max_retry = 10
         self.polling = True
 
         self._conn = conn
