@@ -47,10 +47,10 @@ ListOfHistoricalTickLast = list
 PACKAGE_LOGGER_NAME = 'ibrokers'
 
 
-def get_logger(suffix=None, *, name=None):
+def get_ib_logger(suffix=None, *, name=None):
     """Create package specific loggers for easier tracking"""
     if suffix and name:
-        raise ValueError('Only one of suffix or name should be provided')
+        raise ValueError('Only either suffix or name should be provided')
 
     if name:
         logger_name = name

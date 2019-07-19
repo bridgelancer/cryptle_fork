@@ -31,7 +31,7 @@ from .ticktype import *
 from .commission_report import CommissionReport
 
 
-logger = get_logger(__name__.split('.')[-1])
+logger = get_ib_logger(__name__.split('.')[-1])
 
 
 NOTIFICATION_CODES = {2104, 2106, 2107, 2108}

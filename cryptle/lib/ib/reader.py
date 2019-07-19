@@ -14,10 +14,10 @@ import errno
 import threading
 
 from . import comm
-from .common import get_logger
+from .common import get_ib_logger
 
 
-logger = get_logger(__name__.split('.')[-1])
+logger = get_ib_logger(__name__.split('.')[-1])
 
 
 class EReader(threading.Thread):

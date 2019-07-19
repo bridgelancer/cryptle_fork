@@ -14,10 +14,10 @@ import logging
 import inspect
 from typing import Tuple, Dict, Any
 
-from .common import UNSET_INTEGER, UNSET_DOUBLE, get_logger
+from .common import UNSET_INTEGER, UNSET_DOUBLE, get_ib_logger
 
 
-logger = get_logger()
+logger = get_ib_logger()
 
 
 # I use this just to visually emphasize it's a wrapper overriden method

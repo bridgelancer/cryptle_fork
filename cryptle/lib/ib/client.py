@@ -33,7 +33,7 @@ from .errors import *
 from .server_versions import *
 
 
-logger = get_logger(__name__.split('.')[-1])
+logger = get_ib_logger(__name__.split('.')[-1])
 
 
 CONN_STATES = ['DISCONNECTED', 'CONNECTING', 'CONNECTED', 'REDIRECT']
