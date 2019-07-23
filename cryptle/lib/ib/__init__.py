@@ -227,7 +227,7 @@ class IBExchange:
             else:
                 retry += 1
 
-            time.sleep(0.1)
+            time.sleep(0.5)
         logger.critical('reached max order status polling retries')
         return False, None
 
@@ -237,13 +237,16 @@ class IBExchange:
         self._conn.placeOrder(oid, contract, order)
 
         # blocks until the market order is confirmed to have succeed or failed
-        if self.polling:
-            success, final_price = self._pollOrderStatusTillFilled(oid)
-            if not success:
-                raise MarketOrderFailed(oid)
-            return success, final_price
-        else:
-            return False, -100
+        try:
+            if self.polling:
+                success, final_price = self._pollOrderStatusTillFilled(oid)
+                if not success:
+                    raise MarketOrderFailed(oid)
+                return success, final_price
+            else:
+                return False, -100
+        except:
+            logger.critical('Failed to obtain order status')
 
     def _checkReject(self, oid, reason):
         warnings.warn(f'Order {oid}: {reason}')
