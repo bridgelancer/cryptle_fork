@@ -154,7 +154,7 @@ class IBExchange:
         # Settings
         self.max_timeout = 5
         self.max_retry = 10
-        self.polling = True
+        self.polling = False
 
         self._conn = conn
         self._last_order_id = -1
